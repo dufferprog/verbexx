@@ -7,16 +7,31 @@ verbexx is a toy verb-oriented scripting language.  There are no control or defi
 ## Sample verbexx code:
 
 #### Hello world: 
-
 ```
 @OUT "Hello, World!";
 ```
 
 #### Fizzbuzz: 
+```        
+@VAR i value:1;
+@VAR t3 t5; 
 
+@LOOP while:(i <= 100)
+{
+  t3 = (i % 3 == 0); 
+  t5 = (i % 5 == 0);
+
+  @SAY ( @CASE when:(t3 && t5) {"FizzBuzz"}
+               when: t3        {"Fizz"    }
+               when: t5        {"Buzz"    }
+               else:           {i         }           
+       );
+ 
+   i++;
+};
+```
 
 #### Y-combinator:
-
 ```
 // Y-combinator function (copied from a JavaScript example)
 // --------------------------------------------------------
