@@ -1,5 +1,4 @@
 ___
-___
 
 # verbexx
 verbexx is a toy verb-oriented scripting language.  There are no control or definition statements, and there is no distinction between operators and functions.  Verbs do almost everything in verbexx.  The only non-comment syntax element is the expression, consisting of verbs and their parameters, along with parenthesis, braces, and other punctuation.
@@ -22,7 +21,7 @@ like an operator ("+", "-", etc.) needs to be passed to another verb as a parame
 * Many things are missing, including: 
   * No OOP support (classes, inheritance, mixins, multiple dispatch, polymorphism, aspect-oriented programming, etc.)
   * Almost no support for functional programming 
-  * No lazy evaluation (except for verbs like "||" and "&&") 
+  * No lazy evaluation (except for verbs like "&&") 
   * No pattern matching, immutable data, pure functions, monads, functors, continuations, currying, etc.
   * No support for regular expressions
   * No list comprehensions and generators, ranges, coroutines, etc.
@@ -42,10 +41,13 @@ like an operator ("+", "-", etc.) needs to be passed to another verb as a parame
 
 ## Sample verbexx code
 #### Hello world 
+
 ```
 @OUT "Hello, World!";
 ```
+
 #### Fizzbuzz 
+
 ```        
 @VAR i value:1;
 @VAR t3 t5; 
@@ -64,7 +66,9 @@ like an operator ("+", "-", etc.) needs to be passed to another verb as a parame
    i++;
 };
 ```
+
 #### Fibonacci (recursive) 
+
 ```
 fib1 @FCN [n] 
 {
@@ -82,7 +86,9 @@ fib1 @FCN [n]
   i++;
 };
 ```
+
 #### Fibonacci (using tail call)
+
 ```
 fib2 @FCN [n]
 {
@@ -106,7 +112,9 @@ i = -1;
   i++;
 };
 ```
+
 #### Y-combinator
+
 ```
 // Y-combinator function (copied from a JavaScript example)
 // --------------------------------------------------------
@@ -161,5 +169,6 @@ i = -1;
 };
 
 ```
+
 ___
 ___
