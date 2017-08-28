@@ -1,4 +1,4 @@
-   ___
+ ___
 
 # verbexx
 verbexx is a toy verb-oriented scripting language.  There are no control or definition statements, and there is no distinction between operators and functions.  Verbs do almost everything in verbexx.  The only non-comment syntax element is the expression, consisting of verbs and their parameters, along with parenthesis, braces, and other punctuation.
@@ -49,22 +49,22 @@ like an operator ("+", "-", etc.) needs to be passed to another verb as a parame
 #### Fizzbuzz 
 
 ```        
-    @VAR i value:1;
-    @VAR t3 t5; 
+@VAR i value:1;
+@VAR t3 t5; 
 
-    @LOOP while:(i <= 100)
-    {
-      t3 = (i % 3 == 0); 
-      t5 = (i % 5 == 0);
+@LOOP while:(i <= 100)
+{
+  t3 = (i % 3 == 0); 
+  t5 = (i % 5 == 0);
 
-      @SAY ( @CASE when:(t3 && t5) {"FizzBuzz"}
-                   when: t3        {"Fizz"    }
-                   when: t5        {"Buzz"    }
-                   else:           {i         }           
-           );
+  @SAY ( @CASE when:(t3 && t5) {"FizzBuzz"}
+               when: t3        {"Fizz"    }
+               when: t5        {"Buzz"    }
+               else:           {i         }           
+       );
  
-       i++;
-    };
+  i++;
+};
 ```
 
 #### Fibonacci (recursive) 
