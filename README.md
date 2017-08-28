@@ -1,5 +1,3 @@
- ___
-
 # verbexx
 verbexx is a toy verb-oriented scripting language.  There are no control or definition statements, and there is no distinction between operators and functions.  Verbs do almost everything in verbexx.  The only non-comment syntax element is the expression, consisting of verbs and their parameters, along with parenthesis, braces, and other punctuation.
 
@@ -169,6 +167,3 @@ i = -1;
 };
 
 ```
-
-___
-___
