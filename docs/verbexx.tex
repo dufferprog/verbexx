@@ -1,0 +1,864 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%    -----------------
+%    verbexx reference 
+%    -----------------
+%
+%     -- Use TeXworks under Windows 10 to process this .tex file.  (TeXworks should automatically download and install any required packages from CTAN.)
+%     -- Process this file with LuaLaTeX (possibly XeLaTeX, but not pdfLaTeX).
+%     -- Make sure the following Windows fonts are installed: "Arial", "DejaVu Serif", "Courier New".  
+%     -- LuaLaTeX usually needs to be run twice, so that the page numbers in the table of contents are correct. 
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[11pt,oneside]{book}
+
+%\usepackage{lipsum}
+
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{fontspec}
+\usepackage{microtype}
+\usepackage[sf]{titlesec}
+\usepackage{fancyhdr}
+\usepackage[titles]{tocloft}
+\usepackage{verbatim}
+\usepackage{imakeidx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{chngcntr}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{hyperref}                % should be last  
+
+
+%%%%%%%%%%%%% change margins, etc.
+
+\sloppy
+
+\geometry{
+    paperwidth=180mm,
+    paperheight=270mm,
+    includeheadfoot,
+    head=\baselineskip,             % distance from bottom of header to block of text aka \headsep e.g. \baselineskip
+    foot=1cm,                       % distance from top of footer to block of text aka \footskip
+    headheight=13.6pt,              % height for the header block (no equivalent for footer)
+    heightrounded,                  % ensure an integer number of lines
+    marginparwidth=20mm,            % right marginal note width
+    marginparsep=2mm,               % distance from text block to marginal note box
+    top=10mm,                    
+    bottom=10mm,
+    left=25mm,
+    right=25mm,
+    verbose,                        % show the values of the parameters in the log file
+}
+
+
+%%%%%%%%%%%%%% custom colors %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\definecolor{lstbackgroundcolor} {RGB}{250,250,250}
+\definecolor{hyperreflinkcolor}  {RGB}{  0,  0,255}  
+\definecolor{codecolor}          {RGB}{  0,144, 48}
+\definecolor{CODECOLOR}          {RGB}{  0,144, 48}
+
+%%%%%%%%%%%%%% override default font families %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\setmainfont{Cambria}
+%\setmainfont{Georgia}
+%\setmainfont{Gentium Book Basic}
+%\setmainfont{Adobe Garamond Pro}
+%\setmainfont{Adobe Caslon Pro}
+\setmainfont{DejaVu Serif}                       
+%\setmainfont{DejaVu Serif Condensed}     
+%\setmainfont{TeXGyreSchola}
+%\setmainfont{Constantia}                      
+%\setmainfont{Liberation Serif}
+%\setmainfont{Palatino Linotype}
+%\setmainfont{PT Serif}                       
+%\setmainfont{Sitka Small}
+%\setmainfont{Sitka}
+%\setmainfont{Times New Roman}
+%\setmainfont{Junicode}
+
+\setsansfont{Arial}
+%\setmonofont{Courier New}[Scale=1.1]
+%\setmonofont{Courier New}[Scale=1.1]
+\setmonofont{Courier New}
+%\setmonofont{TeXGyre Cursor}
+%\setmonofont{FreeMono}
+%\setmonofont{Liberation Mono}
+
+%%%%%%%%%% modify section header formatting %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\titleformat{\chapter       }[hang]  {\normalfont\LARGE\sffamily\bfseries     }{\thechapter       }{1em}{} 
+\titleformat{\section       }[hang]  {\normalfont\large\sffamily\bfseries     }{\thesection       }{1em}{} 
+\titleformat{\subsection    }[hang]  {\normalfont\normalsize\sffamily\bfseries}{\thesubsection    }{1em}{} 
+\titleformat{\subsubsection }[runin] {\normalfont\normalsize\sffamily\bfseries}{\thesubsubsection }{1em}{} 
+\titleformat{\paragraph     }[runin] {\normalfont\normalsize\sffamily\bfseries}{\theparagraph     }{1em}{} 
+\titleformat{\subparagraph  }[runin] {\normalfont\normalsize\sffamily\bfseries}{\thesubparagraph  }{1em}{} 
+
+\setcounter{secnumdepth}{6}
+\setcounter{tocdepth}   {6}
+
+\titlespacing{\chapter}{0cm}{-0.5cm}{1cm}  
+
+%%%%%%%%%% modify table of contents %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\setlength{\cftbeforechapskip      }{0.5ex}
+\setlength{\cftbeforesecskip       }{-1.0ex}
+\setlength{\cftbeforesubsecskip    }{-1.5ex}
+\setlength{\cftbeforesubsubsecskip }{-2.0ex}
+\setlength{\cftbeforeparaskip      }{-2.0ex}
+\setlength{\cftbeforesubparaskip   }{-2.0ex}
+
+\renewcommand{\contentsname}{Table of Contents}
+
+
+%%%%%%%%%% modify figures and floats %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\floatstyle{boxed}
+%\restylefloat{figure}
+%\captionsetup[figure]{format=hang,
+%                      justification=raggedright, 
+%                      singlelinecheck=off, 
+%                      font=small, 
+%                      labelfont=bf, 
+%                     listformat=simple}
+%\counterwithout{figure}{chapter}
+
+
+%%%%%%%%%% modify headers and footers %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \fancyhead[R]{\xxhdrtoppn}
+  \fancyfoot[R]{\xxhdrbotpn}
+  \renewcommand{\headrulewidth}{\xxhdrrulewidth} 
+  \renewcommand{\footrulewidth}{\xxhdrrulewidth}
+}
+
+\fancypagestyle{main}{
+  \fancyhf{}
+  \fancyhead[R]{\xxhdrtoppn}
+  \fancyhead[L]{\xxhdrtext{\topmark}}
+  \fancyfoot[R]{\xxhdrbotpn}
+  \fancyfoot[L]{\xxhdrtext{\botmark}}
+  \renewcommand{\headrulewidth}{\xxhdrrulewidth} 
+  \renewcommand{\footrulewidth}{\xxhdrrulewidth}
+}
+
+
+\fancypagestyle{abstract}{
+  \fancyhf{}
+  \fancyhead[R]{\xxhdrtoppn}
+  \fancyhead[L]{\xxhdrtext{Abstract}}
+  \fancyfoot[R]{\xxhdrbotpn}
+  \fancyfoot[L]{\xxhdrtext{Abstract}}
+  \renewcommand{\headrulewidth}{\xxhdrrulewidth} 
+  \renewcommand{\footrulewidth}{\xxhdrrulewidth}
+}
+
+\fancypagestyle{preface}{
+  \fancyhf{}
+  \fancyhead[R]{\xxhdrtoppn}
+  \fancyhead[L]{\xxhdrtext{Preface}}
+  \fancyfoot[R]{\xxhdrbotpn}
+  \fancyfoot[L]{\xxhdrtext{Preface}}
+  \renewcommand{\headrulewidth}{\xxhdrrulewidth} 
+  \renewcommand{\footrulewidth}{\xxhdrrulewidth}
+}
+
+\fancypagestyle{contents}{
+  \fancyhf{}
+  \fancyhead[R]{\xxhdrtoppn}
+  \fancyhead[L]{\xxhdrtext{Table of contents}}
+  \fancyfoot[R]{\xxhdrbotpn}
+  \fancyfoot[L]{\xxhdrtext{Table of contents}}
+  \renewcommand{\headrulewidth}{\xxhdrrulewidth} 
+  \renewcommand{\footrulewidth}{\xxhdrrulewidth}
+}
+
+\fancypagestyle{examples}{
+  \fancyhf{}
+  \fancyhead[R]{\xxhdrtoppn}
+  \fancyhead[L]{\xhdrtext{List of examples}}
+  \fancyfoot[R]{\xxhdrbotpn}
+  \fancyfoot[L]{\xxhdrtext{List of examples}}
+  \renewcommand{\headrulewidth}{\xxhdrrulewidth} 
+  \renewcommand{\footrulewidth}{\xxhdrrulewidth}
+}
+
+\fancypagestyle{index}{
+  \fancyhf{}
+  \fancyhead[R]{\xxhdrtoppn}
+  \fancyhead[L]{\xxhdrtext{Index}}
+  \fancyfoot[R]{\xxhdrbotpn}
+  \fancyfoot[L]{\xxhdrtext{Index}}
+  \renewcommand{\headrulewidth}{\xxhdrrulewidth} 
+  \renewcommand{\footrulewidth}{\xxhdrrulewidth}
+}
+
+\newcommand{\xxchapter       }[1]{\chapter{#1}\mark{Section \thechapter : #1}}
+\newcommand{\xxsection       }[1]{\section{#1}\mark{Section \thesection : #1}}
+\newcommand{\xxsubsection    }[1]{\subsection{#1}\mark{Section \thesubsection : #1}}
+\newcommand{\xxsubsubsection }[1]{\subsubsection{#1}\mark{Section \thesubsubsection : #1}}
+
+
+
+%%%%%%%%%% modify paragraph formats %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\setlength{\parindent}{0em}
+\setlength{\parskip  }{1em}
+
+
+%%%%%%%%%%% hyperlink configuration %%%%%%%%%%%%%%%%%%%%%%%
+
+\hypersetup{colorlinks=true}
+\hypersetup{linkcolor=hyperreflinkcolor}
+\hypersetup{linktocpage=true}
+
+
+%%%%%%%%% lstlisting settings %%%%%%%%%%%%%%%%%%%
+
+\lstset{language=}
+\lstset{basicstyle=\color{codecolor}\bfseries\ttfamily}
+\lstset{frame=single, frameround=ffff}
+\lstset{backgroundcolor=\color{lstbackgroundcolor}}
+\lstset{numbers=left, stepnumber=1, numberstyle=\color{black}\tiny, numbersep=20pt} 
+\lstset{numberbychapter=false}
+\lstset{captionpos=b}
+\lstset{xleftmargin=34pt, framexleftmargin=30pt, aboveskip=20pt, belowskip=20pt, resetmargins=true}
+
+\renewcommand{\lstlistingname    }{Example}
+\renewcommand{\lstlistlistingname}{List of Examples}
+
+\captionsetup[lstlisting]{format=hang, justification=raggedright, singlelinecheck=off, font=small, labelfont=bf, listformat=simple}
+%                                                   =centering
+
+\newcommand{\xxlstart}[2]{\begin{lstlisting}[caption={#2},label={#1}]}
+%\newcommand{\xxlend}{\end{lstlisting}}
+
+
+%%%%%%%%%%% shortcut commands and configuration constants
+
+\newcommand{\xxc   }[1]{\textcolor{codecolor}{\bfseries\texttt{#1}}}
+\newcommand{\xxcn  }[1]{{\bfseries\texttt{#1}}}
+\newcommand{\xxcr  }[1]{\textcolor{codecolor}{\texttt{#1}}}
+
+\newcommand{\xxvb  }{\xxc{verbexx}\ }
+\newcommand{\xxvbi }{\xxc{verbexx}\ \index{verbexx}}
+\newcommand{\xxvbu }{verbexx}
+\newcommand{\xxvbn }{\xxc{verbexx}}
+
+\newcommand{\xxi   }[1]{#1\index{#1}}
+\newcommand{\xxic  }[1]{\xxc{#1}\index{#1}}
+\newcommand{\xxicn }[1]{\xxcn{#1}\index{#1}}
+
+\newcommand{\xxiv  }[1]{\xxc{@#1}\index{"@"#1}\index{verb!"@"#1}}
+\newcommand{\xxio  }[1]{\xxc{#1}\index{#1}\index{verb!#1}}
+\newcommand{\xxis  }[1]{\xxc{#1}\index{#1}\index{sigil!#1}}
+\newcommand{\xxik  }[1]{\xxc{#1:}\index{#1:}\index{keyword!#1}}
+
+\newcommand{\xxivn }[1]{\index{"@"#1}\index{verb!"@"#1}}
+\newcommand{\xxion }[1]{\index{#1}\index{verb!#1}}
+\newcommand{\xxisn }[1]{\index{#1}\index{sigil!#1}}
+\newcommand{\xxikn }[1]{\index{#1:}\index{keyword!#1}}
+
+
+\newcommand{\xxhdrtext      }[1]{\small\textit{#1}}
+\newcommand{\xxhdrtoppn     }{\small\thepage}
+\newcommand{\xxhdrbotpn     }{}
+\newcommand{\xxhdrrulewidth }{0.1mm}
+
+\newcommand{\xxhdrinline    }[1]{\textbf{\textsf{#1:\ \ }}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\makeindex
+\title{\fontsize{96}{96} \textsf{\xxvbu}\\ \vspace{20mm} \fontsize{72}{72} \textsf{Reference}}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+\frontmatter
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Title page
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\maketitle
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Abstract
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+\setcounter{page}{2}
+\fancypagestyle{plain}{
+   \fancyhead[L]{}
+   \fancyfoot[L]{\xxhdrtext{Abstract}}
+}
+\pagestyle{abstract}
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+This document describes the \xxvbi interpreted scripting language, which runs from the \xxi{Windows 10} command prompt.  
+
+\xxvb is an unoptimized (exceedingly slow) toy scripting language.  It is not industrial strength, nor is it generally useful.  
+\xxvb resembles a \xxi{conlang}, except it's for computers. 
+
+Main objectives of \xxvb: 
+\begin{itemize}
+\item 
+Almost everything is accomplished by verb calls.  There are no \xxi{control statements} like \xxcn{for}, \xxcn{if}, etc.
+\item
+There is no distinction between \xxi{operators} and \xxi{functions}.  
+Verbs can have both left-side and/or right-side \xxi{positional parameters} or \xxi{keyword parameters} (or none).
+\item 
+Almost all language constructs have to be first-class, since everything is done by verb call.  
+This includes verbs, types, blocks of code (thunks), etc.
+\item
+No specialized statement-specific syntax is allowed, since verb calls do everything.
+This allows the hand-coded DIY parser to be trivial.
+\item
+In many cases, \xxi{sigils} are needed to distinguish between verbs, parameters, and keywords.
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Contents, etc.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+\fancypagestyle{plain}{
+   \fancyhead[L]{}
+   \fancyfoot[L]{\xxhdrtext{Table of contents}}
+}
+\pagestyle{contents}
+\addcontentsline{toc}{chapter}{Table of contents} 
+\tableofcontents
+
+
+%\newpage
+%\addcontentsline{toc}{chapter}{List of Figures} 
+%\listoffigures
+
+\clearpage
+\fancypagestyle{plain}{
+  \fancyhead[L]{}
+  \fancyfoot[L]{\xxhdrtext{List of examples}}
+}
+\pagestyle{examples}
+\addcontentsline{toc}{chapter}{List of examples} 
+\lstlistoflistings 
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    Preface
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+\fancypagestyle{plain}{
+   \fancyhead[L]{}
+   \fancyfoot[L]{\xxhdrtext{Preface}}
+}
+\pagestyle{preface}
+\chapter*{Preface}
+\addcontentsline{toc}{chapter}{Preface}
+
+
+This section contains information that is not directly related to the main \xxvb description.   
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{When it happened}
+\addcontentsline{toc}{section}{When it happened}
+
+Coding started in October 2013, and continued on and off until the present.  
+Hopefully, development will continue in the future. 
+\sectionmark{Preface}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{How it happened}
+\addcontentsline{toc}{section}{How it happened}
+
+\xxvb started out as a command file reader, that could invoke complex mapmaking commands, with many positional and/or keyword parameters.  
+From the very beginning, these parameters could be checked for valid types and value ranges.  
+There were no variables, control statements, built-in operators, or user-defined functions.  
+
+\xxhdrinline{Variables and Verbs}
+Soon, it became obvious that variables were needed, along with flow-of-control facilities, 
+built-in operators (like add, subtract, etc.), and then user-defined functions.  
+There was no distinction between operators (like \xxio{+} or \xxio{=}) and functions, so everything was treated as a verb, 
+no matter how simple or complex the parameters.  
+Pretty soon, first-class verbs were added along with closures, then fixed-length aggregate types.  
+
+\xxhdrinline{Control statements}    
+All throughout, the syntax had to be extremely simple, so that only a trivial parser was required.  
+When building the AST, the parser couldn't engage in guesswork or trial and error. 
+Everything about the syntax had to be immediately obvious at first glance.  
+There could be no special syntax for \xxi{control statements} -- everything had to be done with verb invocations.  
+Fortunately, \xxi{keyword parameters} for verbs were supported, so control statements (like \xxiv{IF}, 
+or \xxiv{DO}) could be implemented as verb calls, where some of the keyword parameters (\xxik{then} or \xxik{else}) were a passed-in chunks of code. 
+Variable declaractions also had to be done (at run time) using verb calls (\xxiv{VAR} or \xxiv{CONST}), rather than special syntax.   
+
+\xxhdrinline{Sigils} 
+To keep the parser simple, there had to be a way to easily distinguish verb names, variable names, keyword names, 
+and \xxiv{GOTO} label names before any variables or user verbs were defined, so sigils were introduced.  
+The \xxis{@} leading sigil marked an identifier as a verb.  
+A \xxis{:} leading sigil marked a label, a trailing \xxis{:} sigil marked a keyword name, and the leading \xxis{\$} sigil marked a variable.    
+The default interpretation of an normal-looking identifier is as a variable, so the \xxc{\$} isn't needed often, 
+but the \xxc{@} is needed on all verbs with alphabetic names that could be mistaken for variables.  
+For verbs like \xxio{+} or \xxio{=}, the default interpretation is as a verb, so no \xxis{@} is needed.  
+However, to pass something like \xxio{=} as a first-class function argument as a parameter to another function, 
+the leading \xxis{\$} sigil is required (example: \xxc{\$=}).    
+Eventually, sigils were added to parenthesis, to indicate how the results of an expression were to be treated when making the AST.  
+The default is to treat a plain expression (like \xxc{(a+b+c)}) as an ordinary value.  
+To treat the results as a verb instead, use the \xxis{@} sigil before the open parenthesis, and after the close parenthesis.  
+To treat the expression results as a keyword name, use the \xxis{:} sigil before the open parenthesis, and after the close parenthesis.        
+
+\xxhdrinline{Exceptions} 
+Special verbs like \xxiv{GOTO}, \xxiv{RETURN}, or \xxiv{BREAK} required some sort of "exceptional" return action capability, 
+so an xception facility had to be added. 
+Soon, a need arose for functions and expressions to return multiple values, so this feature was also added.     
+Eventually, the "language" overshadowed the mapmaking aspect of the program, and became the main focus of development activity.
+
+\xxhdrinline{Name changes} 
+Originally, the name of the interpreter executable was simply \xxic{ex.exe}, but suddenly one day, 
+the antivirus/anti-malware package started objecting to the name \xxic{ex.exe}, 
+and wouldn't allow it to run at all (except for a few hours right after it was erased and recompiled).  
+\xxic{ex.exe} was renamed to \xxic{verbex.exe} to avoid this problem.  
+Before sending up to \xxi{Github}, the name was changed (again) to \xxvbi, so as to not conflict with other software on the internet.  
+This renaming is similar to what happened when the language Rex was renamed to \xxi{Rexx} before release. 
+   
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{Why it happened}
+\addcontentsline{toc}{section}{Why it happened}
+There appears to be a severe shortage of amateur-designed programming languages, so \xxvb was created to help alleviate this shortage.  
+
+Actually, during retirement (after 47+ years working as a programmer), 
+I missed coding, so I started a hobby map-making project in \xxi{C++}. 
+\xxvb was the end result.  
+Just as language-oriented folks often create their own \xxi{conlang}, many computer folks make their own programming language, just for fun. 
+
+
+%\sectionmark{Preface}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\subsection*{Where it happened}
+%\addcontentsline{toc}{section}{Where it happened}
+%\xxvb was coded in the United States.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+\edef\xxpageno{\arabic{page}}
+\mainmatter
+\setcounter{page}{\xxpageno}
+\fancypagestyle{plain}{
+  \fancyhead[L]{}
+  \fancyfoot[L]{\xxhdrtext{\botmark}}
+}
+\pagestyle{main}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\xxchapter{Introduction}
+\xxsection{Script file processing overview}
+
+The \xxvb interpreter executes text files (usually of type .txt) which contain expressions, statements, preprocessor controls, comments, etc.  
+First, the lexer component reads the input files and converts them to a token stream.
+The preprocessor accepts this token stream, actioning any tokens of direct interest to the preprocessor and passing others through to the main parser.
+The main parser builds the AST from the token stream, which is then executed by the interpreter component of \xxvb during the run phase.
+The lexer, preprocessor, and parser can also be called again to parse strings during the run phase (\xxiv{PARSE}) verb).  
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\xxsection{Hello World! example}
+
+Here is the classic program to print \xxc{Hello World!} to the Windows console:  
+
+
+\xxlstart{hello}{Hello, World!}     
+@SAY "Hello, World!"; 
+\end{lstlisting}
+\index{Hello World!}\xxivn{SAY}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\xxsection{Main features}
+
+\begin{enumerate}
+
+\item
+There is no distinction between operators and functions.  
+Everything is considered a "verb"\index{verb}.  
+Verbs can be prefix, postfix, infix, or without arguments.  
+Verbs can be defined to accept zero, one, or many arguments on both the left and right sides.  
+
+Because function invocation syntax is the same as operator invocation syntax, and because functions usually have names that look like variables, the leading \xxis{@} is needed to mark an identifier as a verb, rather than its default interpretation  as a variable.  
+Because keyword parameters also look like variables, the trailing \xxis{:} sigil is needed to mark keywords.  Example: 
+
+
+\xxlstart{siguse}{Sigil usage}
+@VAR ident1 init:1;    
+@VAR ident2;             
+ident2 = 2 * ident1;    
+@SAY ident1 ident2;  
+\end{lstlisting}
+\xxivn{VAR}\xxivn{SAY}\xxion{=}\xxion{*}\xxivn{VAR}
+
+
+Here, the verbs \xxc{@VAR} and \xxc{@SAY} require the \xxc{@} sigil so they will be interpreted as verbs.  
+The \xxc{=} and \xxc{*} verbs require no sigil, since things that look like operators are interpreted as verbs by default.  
+Also, \xxc{ident1} and  \xxc{ident2} don't need sigils, since they are values, which is the default interpretation of things that look like identifiers.  
+The identifier \xxc{init:} needs the trailing semicolon sigil, so it is interpreted as a keyword parameter rather than as a value.   
+Numeric literals like \xxc{1} and \xxc{2} are always interpreted as values, so sigils are never used with them. 
+   
+\item
+Verbs can have positional and keyword arguments on both the left and right sides (right side keyword arguments are far more common).
+
+\item
+Verbs can be defined with either dynamic or lexical scope\index{lexical scope} (the default).  
+Dynamic scope\index{dynamic scope} is used mainly with verbs that get passed chunks of code that access variables in the caller's stack frame.                 
+
+\item
+Almost everything is accomplished through verb calls.  
+This includes conditional and looping "statements",  variable and verb definitions, and more typical things like variable assignment, arithmetic operations, etc.  For example: 
+
+
+\xxlstart{ifuse}{@IF usage}
+@IF (x >= 0)    
+    then:{x}       
+    else:{-x};       
+\end{lstlisting}
+\xxivn{IF}\xxion{>=}
+
+In this example, \xxc{@IF} is a verb that acts like the more usual \xxc{if} statement often found in other languages.   
+The \xxc{then:} and  \xxc{else:} keyword arguments are used to supply the code blocks normally found after the \xxc{then} or \xxc{else} keywords in other languages.  
+Note that a semicolon is required at the after the whole verb invocation, unlike many other langauges.   
+This semicolon is very easy to forget.  
+
+\item
+Most things are first class, meaning they can be assiged to variables, passed as arguments to functions, and returned from functions.  This includes:
+\begin{itemize}
+\item \xxi{variables} and \xxi{literals}
+\item functions and \xxi{closures}
+\item blocks of code (as seen in the \xxc{@IF} example above).
+\end{itemize} 
+
+\item
+Expressions and verbs can have \xxi{multiple return values}. 
+
+
+\item
+\xxvb does not support: 
+\begin{itemize}
+\item \xxi{object-oriented programming}, \xxi{classes}, \xxi{inheritance},\xxi{mixins}, \xxi{decorators}, \xxi{multiple dispatch}, etc.
+\item \xxi{aspect-oriented programming}
+\item proper \xxi{functional programming}, with \xxi{pattern matching},
+\xxi{immutable data}, \xxi{lazy evaluation}, \xxi{monads}, \xxi{continuations}, \xxi{currying}, 
+automatic \xxi{tail call optimization}, \xxi{term rewriting}, \xxi{functors},etc.
+\item \xxi{regular expressions}
+\item \xxi{ranges}, \xxi{generators}, and \xxi{coroutines}
+\item \xxi{concurrency}, \xxi{multithreading}, \xxi{green threads}, \xxi{channels}, \xxi{fibers}, etc.
+\item \xxi{generic programming} and \xxi{templates}
+\item \xxi{type inference}
+\item \xxi{namespaces}
+\item \xxi{enumerations}
+\item \xxi{macros}
+\item \xxi{debuggers} and \xxi{IDEs}
+\item \xxi{foreign function APIs}
+\item \xxi{file I/O} (other than writing to the console)
+\item extended high-precision/high-range floating point and integer values
+\end{itemize} 
+\end{enumerate}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Running from the command line
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\xxchapter{Running from the command line}
+
+\xxsection{Path and DLL setup}
+
+\xxsection{Command prompt}
+From the Windows command prompt, enter: 
+
+\xxlstart{invoke}{Invocation from command prompt}
+verbexx filename.filetype arg1 arg2 arg3 ...
+\end{lstlisting}
+\index{verbexx command}
+
+\begin{itemize}
+\item \xxvb is the name of the executable file (\xxic{verbexx.exe}).
+\item \xxc{filename.filetype} is the name of the file containing the main source code.  It can imbed additional files.  \xxc{filetype} is usually \xxc{.txt}.
+\item \xxc{arg1 arg2 arg3 ...} are optional command line arguments that can be queried during execution.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  Brief tour of verbexx
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\xxchapter{Brief tour of \xxvbu}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\xxsection{Scalar values}
+\index{scalar data items|(}
+
+
+The following types of scalar values are supported: 
+
+\begin{description}[labelwidth=5em, labelsep=1em,leftmargin=6em]
+
+\item[integer] 
+\xxi{integers} signed and unsigned, 8-bit, 16-bit, 32-bit, and 64-bit.
+The following \xxvb types are predefined: 
+\begin{itemize}
+\item
+\xxic{INT8\_T} -- 8-bit, signed -- implemented using C++ \xxicn{int8\_t}
+\item
+\xxic{INT16\_T} -- 16-bit, signed -- implemented using C++ \xxicn{int16\_t}
+\item
+\xxic{INT32\_T} -- 32-bit, signed -- implemented using C++ \xxicn{int32\_t}
+\item
+\xxic{INT64\_T} -- 64-bit, signed -- implemented using C++ \xxicn{int64\_t}
+\item
+\xxic{UINT8\_T} -- 8-bit, unsigned -- implemented using C++ \xxicn{uint8\_t}
+\item
+\xxic{UINT16\_T} -- 16-bit, unsigned -- implemented using C++ \xxicn{uint16\_t}
+\item
+\xxic{UINT32\_T} -- 32-bit, unsigned -- implemented using C++ \xxicn{uint32\_t}
+\item
+\xxic{UINT64\_T} -- 64-bit, unsigned -- implemented using C++ \xxicn{uint64\_t}
+\end{itemize}
+
+Arithmetic operations on these numbers work the same as with \xxi{C} or \xxi{C++}, in regards to overflow, wrap-around, etc. 
+
+\item[float] 
+binary \xxi{floating point}, 32-bit and 64-bit. 
+The following \xxvb types are predefined: 
+\begin{itemize}
+\item
+\xxic{FLOAT32\_T} -- 32-bit, implemented using C++ \xxicn{float}
+\item
+\xxic{FLOAT64\_T} -- 64-bit, implemented using C++ \xxicn{double}
+\end{itemize}
+
+Arithmetic operations on these numbers work the same as with \xxi{C} or \xxi{C++}, in regards to \xxi{floating point precision}, \xxi{floating point range}, 
+\xxi{floating point overflow}, \xxi{floating point underflow}, \xxi{NaN}s, \xxi{floating point rounding mode}, etc.
+
+\item[boolean] 
+\xxi{boolean} \xxic{TRUE}/\xxic{FALSE} values -- these are implemented using C++ \xxicn{bool} data type.
+
+\item[empty] 
+\xxi{empty} -- this a unitialized or non-existent value 
+\end{description}
+
+\index{scalar data items|)}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\xxsection{Non-scalar values}
+\index{non-scalar values|(}
+
+The following types of non-scalar data values are supported: 
+
+\begin{description}[labelwidth=5em, labelsep=1em,leftmargin=6em]
+\item[\xxi{string}]
+This is a variable-length string of UTF-16 characters.  
+These are implemented using \xxic{std::wstring} containers in \xxi{C++ STL}.
+  
+\item[\xxi{vlist}]
+This a normally parameter list for a verb, but can also be used as a general data type.  
+It contains both positional values and keyword values.  
+It is implelented using a C++ STL \xxic{std::vector}\xxc{<...>} container for the positional values, 
+plus a \xxic{std::multimap}\xxc{<std::wstring,...>} container for the keyword values. 
+Note that duplicate key values are allowed.
+A verb invoation has two \xxic{vlist}s, one for the left side arguments, and another for the right side arguments.   
+
+\item[\xxi{slist}]
+This is a chunk of code.  
+It contains zero or more statements. 
+It may contain nested \xxc{slist}s.  
+The outermost code block of the script file is itself an \xxc{slist}.  
+Any nested \xxc{slist} is enclosed in braces (example \xxc{\{statements\}}).
+\xxc{slist}s are first-class values and can be stored in variables, passed to and returned from functions, etc.  
+ 
+The \xxi{AST} produced from the parser is the outermost \xxc{slist}, 
+and the \xxiv{PARSE} verb can be called during execution to parse a \xxic{string} into a nested \xxc{slist}, 
+which can be executed or saved away.   
+
+Note that \xxc{slist}s are not by themselves \xxi{closures} -- any variable usage in an \xxc{slist} refers to its enclosing scope.  
+Verbs that accept \xxc{slist} parameters need to be definew with \xxi{dynamic scope} arther than the default \xxi{static scope}, 
+if the \xxc{slist} is to be executed.
+
+Also note, that the outermost (unbracketed) \xxc{slist} is automatically executed when the run phase starts.  
+This is one of those rare cases where something in \xxvb happens without an explicit verb call. 
+However, nested slists need to be explicitly executed by some verb (like \xxiv{IF}, \xxiv{DO}, etc.).
+
+Also note, that nested \xxc{slist}s do not automatically have their own scope.  
+If an \xxc{slist} needs to run in its own scope, that scope must be created by the verb that executes the \xxc{slist}. 
+Of course, there is a \xxi{top-level scope} automatically created for the outermost unnested \xxc{slist}.         
+
+\item[\xxi{array}]
+
+\item[\xxi{struct}]
+
+\item[\xxi{function}]
+
+\item[\xxi{type}]
+
+
+\end{description}
+\index{non-scalar values|)}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\xxsection{Verb invocation}
+\index{verb invocations|(}\index{verb invocation|(}
+
+\index{verb invocations|)}\index{verb invocation|)}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\xxsection{Console output}
+\index{console output|(}
+
+\index{console output|)}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\xxsection{Expressions}
+\index{expressions|(}
+
+\index{expressions|)}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\xxsection{Statements and slists}
+\index{expressions|(}\index{slists|(}
+
+\index{expressions|)}\index{slists|(}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\xxsection{Built-in verbs}
+\index{built-in verbs|(}
+
+\index{built-in verbs|)}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\xxsection{Verb definitions}
+\index{verb definitions|(}
+
+\index{verb definitions|)}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\xxsection{Multiple return values}
+\index{multiple return values|(}
+
+\index{multiple return values|)}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\xxsection{Code blocks}
+\index{code blocks|(}
+
+\index{code blocks|)}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\xxsection{Control "statements"}
+\index{control ""statements""|(}
+
+\index{control ""statements""|)}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\xxsection{Imported DLLs}
+\index{imported DLLs|(}
+
+\index{imported DLLs|)}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Lexical processing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\xxchapter{Lexical processing}
+
+\xxsection{Input stream encoding}
+\xxsection{Character set}
+\xxsection{Digraphs}
+\xxsection{Source code partitions}
+\xxsubsection{Comments}
+\xxsubsection{Preprocessor text}
+\xxsubsection{Everything else}
+\xxsection{Output tokens}
+\xxsubsection{Sigils}
+\xxsubsection{Stand-alone punctuation tokens}
+\xxsubsection{Numeric literals}
+
+\xxsubsubsection{String literals}
+\
+\xxsubsubsection{Simple strings}
+
+\xxsubsubsection{Strings with escapes}
+\
+\xxsubsection{Non-whitespace strings}
+\xxsubsection{Identifiers}
+\xxsubsection{Operator names}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Preprocessing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\xxchapter{Preprocessing}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Parsing and Syntax
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\xxchapter{Parsing and syntax}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Parsing and Syntax
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\xxchapter{Execution phase}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Index
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+\fancypagestyle{plain}{
+  \fancyhead[L]{}
+  \fancyfoot[L]{\xxhdrtext{Index}}
+}
+\pagestyle{index}
+\addcontentsline{toc}{chapter}{Index}
+\printindex
+
+\end{document}
