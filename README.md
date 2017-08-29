@@ -1,3 +1,4 @@
+
 # verbexx
 verbexx is a toy verb-oriented scripting language.  There are no control or definition statements, and there is no distinction between operators and functions.  Verbs do almost everything in verbexx.  The only non-comment syntax element is the expression, consisting of verbs and their parameters, along with parenthesis, braces, and other punctuation.
 
@@ -17,19 +18,20 @@ like an operator ("+", "-", etc.) needs to be passed to another verb as a parame
 * Verbs, expressions, and chunks of code can have multiple (or no) return values 
 
 * Many things are missing, including: 
-  * No OOP support (classes, inheritance, mixins, multiple dispatch, polymorphism, aspect-oriented programming, etc.)
+  * No OOP support (classes, inheritance, mixins, multiple dispatch, polymorphism, aspect-oriented programming, introspection, etc.)
   * Almost no support for functional programming 
   * No lazy evaluation (except for verbs like "&&") 
   * No pattern matching, immutable data, pure functions, monads, functors, continuations, currying, etc.
   * No support for regular expressions
+  * No garbage collection
   * No list comprehensions and generators, ranges, coroutines, etc.
   * No concurrency, multi-threading, green threads, fibers, channels, etc. 
   * No trancendental functions, BigNum support,and other math support
   * No file I/O (except very limited I/O to/from stdout/stdin)
-  * No fancy general-purpose container structures, iterators, etc.
+  * No fancy general-purpose container structures, iterators, move semantics, etc.
   * No advanced string functions, string interpolation, formatted output, etc.
   * No internationalization and locales, etc.
-  * No web support, HTML, JSON, etc.
+  * No communications or web support -- HTML, sockets, etc.
   * No foreign function APIs 
   * No elaborate type system or type inference, enumerations, etc.
   * No parse-time macros
@@ -55,10 +57,10 @@ like an operator ("+", "-", etc.) needs to be passed to another verb as a parame
   t3 = (i % 3 == 0); 
   t5 = (i % 5 == 0);
 
-  @SAY ( @CASE when:(t3 && t5) {"FizzBuzz"}
-               when: t3        {"Fizz"    }
-               when: t5        {"Buzz"    }
-               else:           {i         }           
+  @SAY ( @CASE when:(t3 && t5) { 'FizzBuzz }
+               when: t3        { 'Fizz     }
+               when: t5        { 'Buzz     }
+               else:           { i         }           
        );
  
   i++;
@@ -97,7 +99,7 @@ fib2 @FCN [n]
          @IF (n <= 0) then:{ @RETURN a };
          
          // @RETURN @fibx b (a+b) (n-1);
-         @XCTL "fibx" right:[b (a+b) (n-1)];
+         @XCTL 'fibx right:[b (a+b) (n-1)];
       }
    );
    @RETURN @fibx 0 1 n;  
@@ -123,13 +125,13 @@ i = -1;
     @RETURN ( @(                         // @ sigil causes expression output to be treated as a verb
                  @FCN [x]
                  { 
-                   @RETURN ( @f ( @FCN [y] { @RETURN (@(@x x) y); } ) );
+                   @RETURN ( @f ( @FCN [y] { @RETURN (@( @x x ) y); } ) );
                  }
                )
                (                         // This is the argument for the above function
                  @FCN [x] 
                  {
-                   @RETURN ( @f ( @FCN [y] { @RETURN (@(@x x) y); } ) );
+                   @RETURN ( @f ( @FCN [y] { @RETURN (@( @x x ) y); } ) );
                  }
                )
             );
@@ -162,7 +164,7 @@ i = -1;
 
 @LOOP while:(i <= 20)
 {
-  @SAY  i "factorial =" ( @(@y_comb fact_gen) i );  
+  @SAY  i "factorial =" ( @( @y_comb fact_gen ) i );  
   i++; 
 };
 
