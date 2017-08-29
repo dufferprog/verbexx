@@ -30,7 +30,7 @@ like an operator ("+", "-", etc.) needs to be passed to another verb as a parame
   * No file I/O (except very limited I/O to/from stdout/stdin)
   * No fancy general-purpose container structures, iterators, move semantics, etc.
   * No advanced string functions, string interpolation, formatted output, etc.
-  * No internationalization and locales, etc.
+  * No internationalization and locales, No proper Unicode support (combining characters) etc.
   * No communications or web support -- HTML, sockets, etc.
   * No foreign function APIs 
   * No elaborate type system or type inference, enumerations, etc.
@@ -40,10 +40,10 @@ like an operator ("+", "-", etc.) needs to be passed to another verb as a parame
   * No debuggers, IDEs, etc.
 
 ## Sample verbexx code
-#### Hello world 
+#### Hello world (Rosetta Code version)
 
 ```
-@OUT "Hello, World!";
+@STDOUT "Hello world!";
 ```
 
 #### Fizzbuzz 
