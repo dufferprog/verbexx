@@ -1,0 +1,1 @@
+nmake /nologo /fE:\Data01\program\verbexx\mk\verbexx_base.mk 
