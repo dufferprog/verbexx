@@ -1,0 +1,52 @@
+//////////////////////////////////////////////////////////
+//
+//  Sample to compute fibonacci numbers 
+//
+//////////////////////////////////////////////////////////
+
+
+// Using simple recursion
+// ----------------------
+
+fib1 @FCN [n] 
+{
+  @IF (n <= 0) then: { @RETURN 0; }; 
+  @IF (n == 1) then: { @RETURN 1; };
+
+  @RETURN ( (@fib1 (n-1)) + (@fib1 (n-2)) ); 
+};
+
+
+@VAR i value:-1;
+@LOOP while:(i <= 16)
+{
+  @SAY "@fib1<" i "> = " (@fib1 i);
+  i++;
+};
+
+
+// Using manual tail call (@XCTL verb)
+// ----------------------
+
+fib2 @FCN [n]
+{
+   @VAR fibx value:
+   (
+      @FCN [a b n] 
+      {
+         @IF (n <= 0) then:{ @RETURN a };
+         
+         // @RETURN @fibx b (a+b) (n-1);
+         @XCTL 'fibx right:[b (a+b) (n-1)];
+      }
+   );
+   @RETURN @fibx 0 1 n;  
+};
+
+
+i = -1; 
+@LOOP while:(i <= 90)
+{
+  @SAY "@fib2" i " = " (@fib2 i);
+  i++;
+};
