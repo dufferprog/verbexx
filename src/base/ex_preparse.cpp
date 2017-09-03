@@ -129,11 +129,16 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////""
 
-void pre_parse_C::reuse() try
+void pre_parse_C::reuse(bool refresh) try
 {
     M__(M_out(L"Pre_parse_C::reuse() -- called");)
 
-    // leave token stream open
+
+    // leave token stream open, but do optional refresh()
+
+    if (refresh)
+       m_token_stream.refresh();
+
 
     // leave pre_parse_C symbol_table intact for reuse
 
@@ -1784,24 +1789,56 @@ uint64_t pre_parse_C::errors(      ) const try { return m_error_ct + m_token_str
 
 // subset of token_string_C configuration functions (other setings are required by pre-parse)
 
-void pre_parse_C::set_quiet_mode(              bool     tf           ) try { return m_token_stream.set_quiet_mode(                           tf  );      }  M_endf
-void pre_parse_C::set_suppress_echo(           bool     tf           ) try { return m_token_stream.set_suppress_echo(                        tf  );      }  M_endf
-void pre_parse_C::set_combine_strings(         bool     tf           ) try { return m_token_stream.set_combine_strings(                      tf  );      }  M_endf
-void pre_parse_C::set_always_attach_plus_minus(bool     tf           ) try { return m_token_stream.set_always_attach_plus_minus(             tf  );      }  M_endf
-void pre_parse_C::set_never_attach_plus_minus( bool     tf           ) try { return m_token_stream.set_never_attach_plus_minus(              tf  );      }  M_endf
-void pre_parse_C::set_allow_leading_op_sigils( bool     tf           ) try { return m_token_stream.set_allow_leading_op_sigils(              tf  );      }  M_endf
-void pre_parse_C::set_allow_trailing_op_sigils(bool     tf           ) try { return m_token_stream.set_allow_trailing_op_sigils(             tf  );      }  M_endf
-void pre_parse_C::set_allow_leading_id_sigils( bool     tf           ) try { return m_token_stream.set_allow_leading_id_sigils(              tf  );      }  M_endf
-void pre_parse_C::set_allow_trailing_id_sigils(bool     tf           ) try { return m_token_stream.set_allow_trailing_id_sigils(             tf  );      }  M_endf
-void pre_parse_C::set_allow_paren_sigils(      bool     tf           ) try { return m_token_stream.set_allow_paren_sigils(                   tf  );      }  M_endf
+void pre_parse_C::set_quiet_mode(                      bool     tf           ) try { return m_token_stream.set_quiet_mode(                           tf  );      }  M_endf
+void pre_parse_C::set_suppress_echo(                   bool     tf           ) try { return m_token_stream.set_suppress_echo(                        tf  );      }  M_endf
+void pre_parse_C::set_combine_strings(                 bool     tf           ) try { return m_token_stream.set_combine_strings(                      tf  );      }  M_endf
+void pre_parse_C::set_always_attach_plus_minus(        bool     tf           ) try { return m_token_stream.set_always_attach_plus_minus(             tf  );      }  M_endf
+void pre_parse_C::set_never_attach_plus_minus(         bool     tf           ) try { return m_token_stream.set_never_attach_plus_minus(              tf  );      }  M_endf
+void pre_parse_C::set_allow_leading_op_sigils(         bool     tf           ) try { return m_token_stream.set_allow_leading_op_sigils(              tf  );      }  M_endf
+void pre_parse_C::set_allow_trailing_op_sigils(        bool     tf           ) try { return m_token_stream.set_allow_trailing_op_sigils(             tf  );      }  M_endf
+void pre_parse_C::set_allow_leading_id_sigils(         bool     tf           ) try { return m_token_stream.set_allow_leading_id_sigils(              tf  );      }  M_endf
+void pre_parse_C::set_allow_trailing_id_sigils(        bool     tf           ) try { return m_token_stream.set_allow_trailing_id_sigils(             tf  );      }  M_endf
+void pre_parse_C::set_allow_paren_sigils(              bool     tf           ) try { return m_token_stream.set_allow_paren_sigils(                   tf  );      }  M_endf
+void pre_parse_C::set_allow_attached_paren(            bool     tf           ) try { return m_token_stream.set_allow_attached_paren(                 tf  );      }  M_endf
+                                                       
+void pre_parse_C::set_digraph_char(                    char32_t ch32         ) try { return m_token_stream.set_digraph_char(                         ch32);      }  M_endf
+void pre_parse_C::set_vanishing_separator_char(        char32_t ch32         ) try { return m_token_stream.set_vanishing_separator_char(             ch32);      }  M_endf  
+void pre_parse_C::set_line_continuation_char(          char32_t ch32         ) try { return m_token_stream.set_line_continuation_char(               ch32);      }  M_endf
+void pre_parse_C::set_always_sign_char(                char32_t ch32         ) try { return m_token_stream.set_always_sign_char(                     ch32);      }  M_endf
 
-void pre_parse_C::set_digraph_char(            char32_t ch32         ) try { return m_token_stream.set_digraph_char(                         ch32);      }  M_endf
-void pre_parse_C::set_string_escape_char1(     char32_t ch32         ) try { return m_token_stream.set_string_escape_char1(                  ch32);      }  M_endf
-void pre_parse_C::set_string_escape_char2(     char32_t ch32         ) try { return m_token_stream.set_string_escape_char2(                  ch32);      }  M_endf
-void pre_parse_C::set_line_continuation_char(  char32_t ch32         ) try { return m_token_stream.set_line_continuation_char(               ch32);      }  M_endf
-void pre_parse_C::set_line_comment_char(       char32_t ch32         ) try { return m_token_stream.set_line_comment_char(                    ch32);      }  M_endf
-void pre_parse_C::set_echoed_line_comment_char(char32_t ch32         ) try { return m_token_stream.set_echoed_line_comment_char(             ch32);      }  M_endf
-void pre_parse_C::set_vanishing_separator_char(char32_t ch32         ) try { return m_token_stream.set_vanishing_separator_char(             ch32);      }  M_endf                                                                                   
+void pre_parse_C::set_type1_string_start_char(         char32_t ch32         ) try { return m_token_stream.set_type1_string_start_char(              ch32);      }  M_endf
+void pre_parse_C::set_type2_string_start_char(         char32_t ch32         ) try { return m_token_stream.set_type2_string_start_char(              ch32);      }  M_endf
+void pre_parse_C::set_type1_string_end_char(           char32_t ch32         ) try { return m_token_stream.set_type1_string_end_char(                ch32);      }  M_endf
+void pre_parse_C::set_type2_string_end_char(           char32_t ch32         ) try { return m_token_stream.set_type2_string_end_char(                ch32);      }  M_endf
+void pre_parse_C::set_type1_string_escape_char(        char32_t ch32         ) try { return m_token_stream.set_type1_string_escape_char(             ch32);      }  M_endf
+void pre_parse_C::set_type2_string_escape_char(        char32_t ch32         ) try { return m_token_stream.set_type2_string_escape_char(             ch32);      }  M_endf
+void pre_parse_C::set_raw_string_prefix_char(          char32_t ch32         ) try { return m_token_stream.set_raw_string_prefix_char(               ch32);      }  M_endf
+void pre_parse_C::set_multiline_string_prefix_char(    char32_t ch32         ) try { return m_token_stream.set_multiline_string_prefix_char(         ch32);      }  M_endf
+void pre_parse_C::set_word_string_start_char(          char32_t ch32         ) try { return m_token_stream.set_word_string_start_char(               ch32);      }  M_endf
+ 
+void pre_parse_C::set_unechoed_line_comment_char(      char32_t ch32         ) try { return m_token_stream.set_unechoed_line_comment_char(           ch32);      }  M_endf
+void pre_parse_C::set_echoed_line_comment_char(        char32_t ch32         ) try { return m_token_stream.set_echoed_line_comment_char(             ch32);      }  M_endf
+                                                       
+void pre_parse_C::set_comment_1st_char(                char32_t ch32         ) try { return m_token_stream.set_comment_1st_char(                     ch32);      }  M_endf       
+void pre_parse_C::set_unechoed_line_comment_2nd_char(  char32_t ch32         ) try { return m_token_stream.set_unechoed_line_comment_2nd_char(       ch32);      }  M_endf       
+void pre_parse_C::set_echoed_line_comment_2nd_char(    char32_t ch32         ) try { return m_token_stream.set_echoed_line_comment_2nd_char(         ch32);      }  M_endf       
+void pre_parse_C::set_suppress_eol_comment_2nd_char(   char32_t ch32         ) try { return m_token_stream.set_suppress_eol_comment_2nd_char(        ch32);      }  M_endf       
+void pre_parse_C::set_eof_comment_2nd_char(            char32_t ch32         ) try { return m_token_stream.set_eof_comment_2nd_char(                 ch32);      }  M_endf       
+void pre_parse_C::set_retained_line_comment_2nd_char(  char32_t ch32         ) try { return m_token_stream.set_retained_line_comment_2nd_char(       ch32);      }  M_endf       
+                                                                                           
+void pre_parse_C::set_block_comment_2nd_char(          char32_t ch32         ) try { return m_token_stream.set_block_comment_2nd_char(               ch32);      }  M_endf       
+void pre_parse_C::set_block_comment_3rd_char(          char32_t ch32         ) try { return m_token_stream.set_block_comment_3rd_char(               ch32);      }  M_endf       
+void pre_parse_C::set_block_comment_4th_char(          char32_t ch32         ) try { return m_token_stream.set_block_comment_4th_char(               ch32);      }  M_endf       
+void pre_parse_C::set_nest_comment_2nd_char(           char32_t ch32         ) try { return m_token_stream.set_nest_comment_2nd_char(                ch32);      }  M_endf       
+void pre_parse_C::set_nest_comment_3rd_char(           char32_t ch32         ) try { return m_token_stream.set_nest_comment_3rd_char(                ch32);      }  M_endf       
+void pre_parse_C::set_nest_comment_4th_char(           char32_t ch32         ) try { return m_token_stream.set_nest_comment_4th_char(                ch32);      }  M_endf       
+void pre_parse_C::set_retained_block_comment_2nd_char( char32_t ch32         ) try { return m_token_stream.set_retained_block_comment_2nd_char(      ch32);      }  M_endf       
+void pre_parse_C::set_retained_block_comment_3rd_char( char32_t ch32         ) try { return m_token_stream.set_retained_block_comment_3rd_char(      ch32);      }  M_endf       
+void pre_parse_C::set_retained_block_comment_4th_char( char32_t ch32         ) try { return m_token_stream.set_retained_block_comment_4th_char(      ch32);      }  M_endf        
+                                                                                                                                                     
+
+
+
 
 
 ///// ----------------------------------------------------------------------------------------------------------------                                                                                                                      

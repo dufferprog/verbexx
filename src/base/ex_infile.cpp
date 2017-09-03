@@ -1201,7 +1201,7 @@ int instring_C::fetch_char(in_char_S & in_char) try
     }
     
     M_out_emsg(L"infile_C::fetch_char() called when no valid char could be fetched/returned -- file =\"%s\"") %  m_in_name;
-    out_char(in_char, char_E:: error);  
+    out_char(in_char, char_E::error);  
     return -1;                                       // should not happen 
 }
 M_endf

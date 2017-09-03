@@ -129,7 +129,7 @@ M_endf
 
 void display_vexpr(const a_vexpr_S& vexpr, const std::wstring& ws, const std::wstring& mod, bool suppress_nesting, const std::wstring& nest) try
 {
-    std::wstring type_s  {L"verb missing "}; 
+    std::wstring type_s  {L"no verb   "}; 
      
 
     // set up type and location strings for main verb in this token
@@ -138,11 +138,11 @@ void display_vexpr(const a_vexpr_S& vexpr, const std::wstring& ws, const std::ws
 
     if (mod == L"") 
     {          
-        M_out(L"%s %svexpr -- %-15s name=%s %77t -- parms:   %125t -- loc = %s -- main verb loc = %s" ) % ws % nest %      type_s % verb_name(vexpr) % vexpr_loc_str(vexpr) % verb_loc_str(vexpr);
+        M_out(L"%s %sexpression -- %-15s name=%s %77t -- parms:   %125t -- loc = %s -- main verb loc = %s" ) % ws % nest %      type_s % verb_name(vexpr) % vexpr_loc_str(vexpr) % verb_loc_str(vexpr);
     }
     else
     {
-        M_out(L"%s %s%svexpr -- %-15s name=%s %77t -- parms: %125t -- loc = %s -- main verb loc = %s") % ws % nest % mod % type_s % verb_name(vexpr) % vexpr_loc_str(vexpr) % verb_loc_str(vexpr);
+        M_out(L"%s %s%sexpression -- %-15s name=%s %77t -- parms: %125t -- loc = %s -- main verb loc = %s") % ws % nest % mod % type_s % verb_name(vexpr) % vexpr_loc_str(vexpr) % verb_loc_str(vexpr);
     }
 
     display_vlist(vexpr.lparms, ws, mod + L"(L )", suppress_nesting, nest + L".");
@@ -165,11 +165,11 @@ void display_vexpr(const e_vexpr_S& eval_vexpr, const std::wstring& ws, const st
 
     if (mod == L"") 
     {          
-        M_out(L"%s %svexpr -- %-15s name=%s %77t -- parms:   %125t -- loc = %s -- main verb loc = %s" ) % ws % nest %      type_s % verb_name(eval_vexpr) % vexpr_loc_str(eval_vexpr) % verb_loc_str(eval_vexpr);
+        M_out(L"%s %sexpression -- %-15s name=%s %77t -- parms:   %125t -- loc = %s -- main verb loc = %s" ) % ws % nest %      type_s % verb_name(eval_vexpr) % vexpr_loc_str(eval_vexpr) % verb_loc_str(eval_vexpr);
     }
     else
     {
-        M_out(L"%s %s%svexpr -- %-15s name=%s %77t -- parms: %125t -- loc = %s -- main verb loc = %s") % ws % nest % mod % type_s % verb_name(eval_vexpr) % vexpr_loc_str(eval_vexpr) % verb_loc_str(eval_vexpr);
+        M_out(L"%s %s%sexpression -- %-15s name=%s %77t -- parms: %125t -- loc = %s -- main verb loc = %s") % ws % nest % mod % type_s % verb_name(eval_vexpr) % vexpr_loc_str(eval_vexpr) % verb_loc_str(eval_vexpr);
     }
 
     display_vlist(eval_vexpr.lparms, ws, mod + L"(L )", suppress_nesting, nest + L".");
@@ -203,14 +203,15 @@ void display_vlist(const vlist_S& vlist, const std::wstring& ws, const std::wstr
 
     if (vlist.val_mixed      ) flags += L"val_mixed "      ; 
     if (vlist.val_slist      ) flags += L"val_slist "      ;
-    if (vlist.val_vexpr       ) flags += L"val_vexpr "       ;
+    if (vlist.val_vexpr      ) flags += L"val_vexpr "      ;
     if (vlist.val_vlist      ) flags += L"val_vlist "      ; 
     if (vlist.val_verbdef    ) flags += L"val_verbdef "    ; 
     if (vlist.val_typdef     ) flags += L"val_typdef "     ; 
     if (vlist.val_array      ) flags += L"val_array "      ;
     if (vlist.val_structure  ) flags += L"val_structure "  ;
     if (vlist.val_ref        ) flags += L"val_ref "        ; 
-    if (vlist.val_empty      ) flags += L"val_empty "      ;
+    if (vlist.val_unit       ) flags += L"val_unit "       ;
+    if (vlist.val_boolean    ) flags += L"val_boolean "    ;
     if (vlist.val_int8       ) flags += L"val_int8 "       ;
     if (vlist.val_int16      ) flags += L"val_int16 "      ;
     if (vlist.val_int32      ) flags += L"val_int32 "      ;
@@ -288,7 +289,8 @@ void display_value(const value_S& value, const std::wstring& ws, const std::wstr
 
     std ::wstring ix = std::to_wstring(value.token_ix1) + L":" + std::to_wstring(value.token_ix2); 
 
-         if (value.ty == type_E::empty       ) flags += L"empty "       ; 
+         if (value.ty == type_E::none        ) flags += L"none"         ; 
+    else if (value.ty == type_E::no_value    ) flags += L"no_value "    ;
     else if (value.ty == type_E::identifier  ) flags += L"identifier "  ;
     else if (value.ty == type_E::verbname    ) flags += L"verbname "    ;
     else if (value.ty == type_E::keyname     ) flags += L"keyname "     ;
@@ -300,6 +302,8 @@ void display_value(const value_S& value, const std::wstring& ws, const std::wstr
     else if (value.ty == type_E::ref         ) flags += L"ref <"        + fmt_ptr(value.ref_sp.get()     ) + L"> "  ;
     else if (value.ty == type_E::array       ) flags += L"array <"      + fmt_ptr(value.buffer_sp.get()  ) + L"> "  ;
     else if (value.ty == type_E::structure   ) flags += L"structure <"  + fmt_ptr(value.buffer_sp.get()  ) + L"> "  ;
+    else if (value.ty == type_E::unit        ) flags += L"unit "        ;
+    else if (value.ty == type_E::boolean     ) flags += L"boolean "     ;
     else if (value.ty == type_E::int8        ) flags += L"int8 "        ; 
     else if (value.ty == type_E::int16       ) flags += L"int16 "       ; 
     else if (value.ty == type_E::int32       ) flags += L"int32 "       ; 
@@ -321,7 +325,9 @@ void display_value(const value_S& value, const std::wstring& ws, const std::wstr
     // display value of data for this value
     // ------------------------------------
 
-    if      (value.ty == type_E::int8    )                                                                                                 
+    if      (value.ty == type_E::boolean )                                                                                                 
+        M_out(L"%s %s%s %|80t|-- boolean    = %d    %|125t| -- addr=%S  flags = <%s>   ix=%s -- %s")         % ws % nest % mod % value.boolean    % fmt_ptr(&value) % flags % ix % value_loc_str(value); 
+    else if (value.ty == type_E::int8    )                                                                                                 
         M_out(L"%s %s%s %|80t|-- int8       = %d    %|125t| -- addr=%S  flags = <%s>   ix=%s -- %s")         % ws % nest % mod % value.int8       % fmt_ptr(&value) % flags % ix % value_loc_str(value); 
                                                                                                                                           
     else if (value.ty == type_E::int16   )                                                                                                 
@@ -402,7 +408,7 @@ void display_value(const value_S& value, const std::wstring& ws, const std::wstr
         M_out(L"%s %s%s %|80t|-- nested typedef %|125t| -- addr=%S  flags = <%s>   ix=%s -- %s")             % ws % nest % mod                    % fmt_ptr(&value) % flags % ix % value_loc_str(value);
 
         if (suppress_nesting)
-            M_out(L"%s %s%s -- %|80t|-- nested typedef -- display suppressed")                                  % ws % nest % mod;
+            M_out(L"%s %s%s -- %|80t|-- nested typedef -- display suppressed")                               % ws % nest % mod;
         else
             display_typdef(L"", *(value.typdef_sp), L"" );                                           // empty type name, typedef_S, nest string (empty)  
     }
@@ -412,17 +418,17 @@ void display_value(const value_S& value, const std::wstring& ws, const std::wstr
         M_out(L"%s %s%s %|80t|-- nested ref %|125t| -- addr=%S  flags = <%s>   ix=%s -- %s")                 % ws % nest % mod                    % fmt_ptr(&value) % flags % ix % value_loc_str(value);
 
         if (suppress_nesting)
-            M_out(L"%s %s%s -- %|80t| nested ref -- display suppressed")                                      % ws % nest % mod;
+            M_out(L"%s %s%s -- %|80t| nested ref -- display suppressed")                                     % ws % nest % mod;
         else
             display_ref(*(value.ref_sp));                                                           
     }
   
     else if (value.ty == type_E::array)
     { 
-        M_out(L"%s %s%s %|80t|-- nested array %|125t| -- addr=%S  flags = <%s>   ix=%s -- %s")               % ws % nest % mod                    % fmt_ptr(&value) % flags % ix % value_loc_str(value);
+        M_out(L"%s %s%s %|80t|-- nested array %|125t| -- addr=%S  flags = <%s>   ix=%s -- %s")              % ws % nest % mod                    % fmt_ptr(&value) % flags % ix % value_loc_str(value);
 
         if (suppress_nesting)
-            M_out(L"%s %s%s -- %|80t| nested typedef/buffer for array -- display suppressed")                 % ws % nest % mod;
+            M_out(L"%s %s%s -- %|80t| nested typedef/buffer for array -- display suppressed")               % ws % nest % mod;
         else
         {
             display_typdef(L"array typedef", *(value.typdef_sp),      L"    " );                     // typedef_S, nest string (empty)      
@@ -432,10 +438,10 @@ void display_value(const value_S& value, const std::wstring& ws, const std::wstr
 
     else if (value.ty == type_E::structure)
     { 
-        M_out(L"%s %s%s %|80t|-- nested structure %|125t| -- addr=%S  flags = <%s>   ix=%s -- %s")              % ws % nest % mod                    % fmt_ptr(&value) % flags % ix % value_loc_str(value);
+        M_out(L"%s %s%s %|80t|-- nested structure %|125t| -- addr=%S  flags = <%s>   ix=%s -- %s")           % ws % nest % mod                    % fmt_ptr(&value) % flags % ix % value_loc_str(value);
 
         if (suppress_nesting)
-            M_out(L"%s %s%s %|80t|-- nested typedef/buffer for structure -- display suppressed")       % ws % nest % mod;
+            M_out(L"%s %s%s %|80t|-- nested typedef/buffer for structure -- display suppressed")             % ws % nest % mod;
         else
         {
             display_typdef(L"structure typedef", *(value.typdef_sp),      L"    " );                 // typedef_S, nest string (empty)      
@@ -443,14 +449,20 @@ void display_value(const value_S& value, const std::wstring& ws, const std::wstr
         }                                                                                     
     }
    
-    else if (value.ty == type_E::empty) 
-        M_out(L"%s %s%s %|80t|-- empty %|125t| -- addr=%S  flags = <%s>   ix=%s -- %s")                      % ws % nest % mod                    % fmt_ptr(&value) % flags % ix % value_loc_str(value);  
+    else if (value.ty == type_E::unit) 
+        M_out(L"%s %s%s %|80t|-- unit     %|125t| -- addr=%S  flags = <%s>   ix=%s -- %s")                    % ws % nest % mod                    % fmt_ptr(&value) % flags % ix % value_loc_str(value);  
+    
+    else if (value.ty == type_E::no_value) 
+        M_out(L"%s %s%s %|80t|-- no_value %|125t| -- addr=%S  flags = <%s>   ix=%s -- %s")                    % ws % nest % mod                    % fmt_ptr(&value) % flags % ix % value_loc_str(value); 
+
+    else if (value.ty == type_E::none) 
+        M_out(L"%s %s%s %|80t|-- none     %|125t| -- addr=%S  flags = <%s>   ix=%s -- %s")                    % ws % nest % mod                    % fmt_ptr(&value) % flags % ix % value_loc_str(value); 
 
     else if (value.ty == type_E::error) 
-        M_out(L"%s %s%s %|80t|-- error %|125t| -- addr=%S  flags = <%s>   ix=%s -- %s")                      % ws % nest % mod                    % fmt_ptr(&value) % flags % ix % value_loc_str(value);  
+        M_out(L"%s %s%s %|80t|-- error    %|125t| -- addr=%S  flags = <%s>   ix=%s -- %s")                    % ws % nest % mod                    % fmt_ptr(&value) % flags % ix % value_loc_str(value);  
    
     else if (value.ty == type_E::special) 
-        M_out(L"%s %s%s %|80t|-- special %|125t| -- addr=%S  flags = <%s>   ix=%s -- %s")                    % ws % nest % mod                    % fmt_ptr(&value) % flags % ix % value_loc_str(value);  
+        M_out(L"%s %s%s %|80t|-- special  %|125t| -- addr=%S  flags = <%s>   ix=%s -- %s")                    % ws % nest % mod                    % fmt_ptr(&value) % flags % ix % value_loc_str(value);  
 
     else
         M_out(L"%s %s%s %|80t|-- ??unknown value type(%d)?? %|125t| -- addr=%S  flags = <%s>   ix=%s -- %s") % ws % nest % mod % (int)(value.ty)  % fmt_ptr(&value) % flags % ix % value_loc_str(value);  
@@ -521,7 +533,8 @@ static std::wstring str_parmtype(const parmtype_S& parmtype) try
     if (parmtype.no_eval_vexpr         )   parm_flags += L"no_eval_vexpr  "   ;
     if (parmtype.no_eval_vlist         )   parm_flags += L"no_eval_vlist  "   ;
     if (parmtype.anything_ok           )   parm_flags += L"anything_ok    "   ;
-    if (parmtype.empty_ok              )   parm_flags += L"empty_ok       "   ; 
+    if (parmtype.nval_ok               )   parm_flags += L"nval_ok        "   ; 
+    if (parmtype.unit_ok               )   parm_flags += L"unit_ok        "   ; 
     if (parmtype.int8_ok               )   parm_flags += L"int8_ok        "   ; 
     if (parmtype.int16_ok              )   parm_flags += L"int16_ok       "   ; 
     if (parmtype.int32_ok              )   parm_flags += L"int32_ok       "   ; 
@@ -2034,9 +2047,9 @@ bool is_global_identifier_mutable(                   const std::wstring& ident) 
 
 static int get_identifier(symtab_S& symtab, const std::wstring& ident, value_S& value) try
 {
-    if (!is_identifier_defined(symtab, ident))              // return with R/C = -1 and empty value, if identifier is not there 
+    if (!is_identifier_defined(symtab, ident))              // return with R/C = -1 and unit value, if identifier is not there 
     {
-        value = value_S {}; 
+        value = unit_val(); 
         return -1;
     }
     else                                                    // identifier is found -- might be verb or variable/constant
@@ -2099,7 +2112,7 @@ int get_identifier(frame_S& frame, const std::wstring& ident, value_S& value) tr
 
     if (rc != 0)                     // variable not found in any symbol table
     {
-        value = value_S { };         // pass back empty value
+        value = unit_val();          // pass back unit value
         return -1;                   // failure r/c
     }
     else                             // symbol table found with identifier
@@ -2332,7 +2345,7 @@ M_endf
 
 static int get_verb(symtab_S& symtab, const std::wstring& verbname, verbdef_S& verbdef) try
 {
-    if (!is_identifier_defined(symtab, verbname))           // return with R/C = -1 and empty value, if verb is not there 
+    if (!is_identifier_defined(symtab, verbname))           // return with R/C = -1 and empty verbdef, if verb is not there 
     {
         verbdef = verbdef_S { };
         return -1;                   
@@ -2463,7 +2476,7 @@ int get_verb(frame_S& frame, const std::wstring& verbname, symval_S& symval) try
 
     if (rc != 0)                                   // identifier not found in any symbol table
     {                                             
-        symval = symval_S { };                     // pass back empty verbdef_S   
+        symval = symval_S { };                     // pass back empty symval_S   
         return -1;                                 // failure r/c
     }                                             
     else                                           // symbol table found with verb
@@ -2647,7 +2660,7 @@ M_endf
 
 static int get_typdef(symtab_S& symtab, const std::wstring& typdef_name, typdef_S& typdef) try
 {
-    if (!is_identifier_defined(symtab, typdef_name))           // return with R/C = -1 and empty value, if typdef is not there 
+    if (!is_identifier_defined(symtab, typdef_name))           // return with R/C = -1 and empty typedef_S, if typdef is not there 
     {
         typdef = typdef_S { };
         return -1;                   

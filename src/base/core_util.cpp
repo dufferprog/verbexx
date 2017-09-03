@@ -1683,6 +1683,66 @@ M_endf
 //╚═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 
 
+
+// ------------
+// bool version 
+// ------------
+
+M_CORE_IMPEXP
+std::wstring fmt_str(const std::wstring& fmt, bool v) try 
+{
+    wchar_t buf1[FMT_STR_SIZE_1 + 1] { }; 
+
+    std::wstring v_str { v ? L"<TRUE>" : L"<FALSE>" };
+
+    auto c = swprintf(buf1, FMT_STR_SIZE_1, fmt.c_str(), v_str); 
+
+    if (c >= FMT_STR_SIZE_1)
+    {
+        wchar_t buf2[FMT_STR_SIZE_2 + 1] { };
+        (void)swprintf(buf2, FMT_STR_SIZE_2, fmt.c_str(), v_str);
+        return std::wstring {buf2};
+    }
+
+    return std::wstring {buf1}; 
+}
+M_endf
+
+
+// ------------
+// bool version (no format string) -- substitute for std::to_wstring(), but for bool values  
+// ------------
+
+M_CORE_IMPEXP
+std::wstring fmt_str(bool v) try 
+{
+    wchar_t buf1[FMT_STR_SIZE_1 + 1] { }; 
+
+    std::wstring v_str { v ? L"<TRUE>" : L"<FALSE>" };
+
+    auto c = swprintf(buf1, FMT_STR_SIZE_1, L"%s", v_str.c_str()); 
+
+    if (c >= FMT_STR_SIZE_1)
+    {
+        wchar_t buf2[FMT_STR_SIZE_2 + 1] { };
+        (void)swprintf(buf2, FMT_STR_SIZE_2, L"%s", v_str.c_str());
+        return std::wstring {buf2};
+    }
+
+    return std::wstring {buf1}; 
+}
+M_endf
+
+
+
+
+
+
+
+
+
+
+
 // --------------
 // int8_t version 
 // --------------
@@ -3854,7 +3914,16 @@ void handle_exception()
     }
     catch(const std::runtime_error& re)
     {
-        M_out_lk_emsg(L"std::runtime_error caught -- .what() = \"%s\""     ) % to_wstring(re.what()); 
+        M_cout_lock();
+        M_out_emsg1(L"@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@");
+        M_out_emsg0(L"@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@");
+        M_out_emsg0(L"@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@");
+        M_out_emsg0(L"@#@#@");
+        M_out_emsg0(L"@#@#@  std::runtime_error caught -- .what() = \"%s\"") % to_wstring(re.what());
+        M_out_emsg0(L"@#@#@");
+        M_out_emsg0(L"@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@");
+        M_out_emsg0(L"@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@");
+        M_out_emsg2(L"@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@");
     }
     
     
@@ -3916,7 +3985,16 @@ void handle_exception()
     }
     catch(const std::exception& ex)
     {
-        M_out_lk_emsg(L"std::exception caught -- what() = \"%s\""         ) % to_wstring(ex.what()); 
+        M_cout_lock(); 
+        M_out_emsg1(L"@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@");
+        M_out_emsg0(L"@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@");
+        M_out_emsg0(L"@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@");
+        M_out_emsg0(L"@#@#@");
+        M_out_emsg0(L"@#@#@  std::exception caught -- what() = \"%s\""            ) % to_wstring(ex.what()); 
+        M_out_emsg0(L"@#@#@");
+        M_out_emsg0(L"@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@");
+        M_out_emsg0(L"@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@");
+        M_out_emsg2(L"@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@");
     }
 
 
@@ -3982,8 +4060,8 @@ void handle_terminate()
 M_CORE_IMPEXP
 void handle_unexpected()
 {
-    M_out_lk_emsg(L"handle_unexpected(): invoked -- ending with exit(4)");
-    exit(4);
+    M_out_lk_emsg(L"handle_unexpected(): invoked -- ending with exit(5)");
+    exit(5);
 }
 
 
@@ -4023,37 +4101,53 @@ M_CORE_IMPEXP
 void handle_signal(int sig)  
 {
     wchar_t msg[100] {}; 
+   
 
-    std::wstring ws {L"signal " + std::to_wstring(sig) + L" received"};
-    write_note_stdout(ws); 
+    // pause for 1 second, to allow any pending output to come out, before exit(), etc.
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::cout.flush();
+    fflush(NULL);
     
+
+    // put out message and exit()
+
     if (sig == SIGINT)
     {
-        write_note_stdout(L"SIGINT received (cancel)");
-        swprintf(msg, (sizeof msg)/(sizeof msg[0]) - 1, L"SIGINT received (cancel)");
-        throw_runtime_error(msg); 
+        write_note_stdout(L"SIGINT received (cancel)  -- ending with exit(2)");
+        std::cout.flush();
+        fflush(NULL);
+        exit(2);                // exit causes trouble (hangs) sometimes
     }
 
     if (sig == SIGTERM)
     {
-        write_note_stdout(L"SIGTERM received -- ending with exit(2)");
-        exit(2); 
+        write_note_stdout(L"SIGTERM received -- ending with _exit(3)");
+        std::cout.flush();
+        fflush(NULL);
+        _exit(3);                // exit causes trouble (hangs) sometimes
     }
     
     if (sig == SIGABRT)
     {
-        write_note_stdout(L"SIGABRT received -- ending with _exit(3)");
+        write_note_stdout(L"SIGABRT received -- ending with _exit(4)");
+        std::cout.flush();
         fflush(NULL); 
-        _exit(3);                // exit causes trouble (hangs) sometimes
+        _exit(4);                // exit causes trouble (hangs) sometimes
     }
  
 
     // signals, like SIGFPE, SIGILL, SIGSEGV, get here
+    
+    std::wstring ws {L"signal " + std::to_wstring(sig) + L" received"};     write_note_stdout(ws); 
+
+    std::cout.flush();
+    fflush(NULL);
 
     swprintf(msg, (sizeof msg)/(sizeof msg[0]) - 1, L"Signal %d received (error)", sig);
     throw_runtime_error(msg);    
 }
-}
+}   // extern "C"
 
 
 ////_____________________________________________________________________________________________________________________

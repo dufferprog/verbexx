@@ -36,8 +36,29 @@
 
 namespace static_N
 {
-static cache_S id_cache { }; 
+static cache_S  id_cache             { };       // cached location ID strings (BUG -- ??????? need to make sure this doesn't get too large ?????????)
+
+static uint64_t last_char_source_id  {0};       // saved to provide good location info for next END token
+static uint32_t last_char_lineno     {0};       // saved to provide good location info for next END token
+static size_t   last_char_linepos    {0};       // saved to provide good location info for next END token
+
+static uint64_t raw_token_count      {0};       // raw token counter 
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////
+////
+////    
+////       Global functions to get counters 
+////     
+////
+////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+uint64_t get_raw_token_count(void     ) {return static_N::raw_token_count;       }
 
 
 
@@ -84,8 +105,31 @@ M_endf
 
 uint64_t add_cached_id(const std::wstring& ws) try
 {
-    uint64_t id = (static_N::id_cache.string_ct)++;     // capture 0-based ID = count before incrementing
+    // see if caller's source string is already the last one in the cache
 
+    auto string_ct = static_N::id_cache.string_ct; 
+
+    if (string_ct > 0)
+    {
+        std::wstring last_ws = static_N::id_cache.strings.at(string_ct-1);
+
+        if (ws == last_ws) 
+            return string_ct-1;        // just reuse last source string ID
+    }
+
+
+
+    // ???????????????????? make sure cache is not already at max size -- if so do special processing  ?????????????????????
+    // ???????????????????? make sure cache is not already at max size -- if so do special processing  ?????????????????????
+    // ???????????????????? make sure cache is not already at max size -- if so do special processing  ?????????????????????
+    // ???????????????????? make sure cache is not already at max size -- if so do special processing  ?????????????????????
+    // ???????????????????? make sure cache is not already at max size -- if so do special processing  ?????????????????????
+
+
+    // caller's string is not last one in cache -- need to add new one
+
+    uint64_t id = (static_N::id_cache.string_ct)++;     // capture 0-based ID = count before incrementing
+    
     static_N::id_cache.strings.push_back(ws);           // add caller's ID string to cache
 
     if (static_N::id_cache.strings.size() != static_N::id_cache.string_ct)
@@ -318,59 +362,63 @@ std::wstring token_C::type_str() const try
 
     // regular case
                                                                
-    ident =  (type == token_E::none               ) ?           L"NONE                 "   :
-             (type == token_E::error              ) ?           L"ERROR                "   :
-             (type == token_E::eof                ) ?           L"EOF                  "   :
-             (type == token_E::end                ) ?           L"END                  "   :
-             (type == token_E::eol                ) ?           L"EOL                  "   :
-             (type == token_E::unsupported        ) ?           L"<><>unsupported<><>  "   :
-             (type == token_E::invalid            ) ?           L"invalid              "   :
-             (type == token_E::whitespace         ) ?           L"whitespace           "   :
-             (type == token_E::line_comment       ) ?           L"line_comment         "   :
-             (type == token_E::block_comment      ) ?           L"block_comment        "   :
-             (type == token_E::nestable_comment   ) ?           L"nestable_comment     "   :
-             (type == token_E::full_stop          ) ?           L"full_stop            "   :
-             (type == token_E::comma              ) ?           L"comma                "   :
-             (type == token_E::semicolon          ) ?           L"semicolon            "   :
-             (type == token_E::colon              ) ?           L"colon                "   :
-             (type == token_E::special_char       ) ?           L"special_char         "   :
-             (type == token_E::misc_char          ) ?           L"misc_char            "   :
-             (type == token_E::punctuation_char   ) ?           L"punctuation_char     "   :
-             (type == token_E::accent_char        ) ?           L"accent_char          "   :
-             (type == token_E::open_paren         ) ?           L"open_paren           "   :
-             (type == token_E::close_paren        ) ?           L"close_paren          "   :
-             (type == token_E::open_bracket       ) ?           L"open_bracket         "   :
-             (type == token_E::close_bracket      ) ?           L"close_bracket        "   :
-             (type == token_E::open_brace         ) ?           L"open_brace           "   :
-             (type == token_E::close_brace        ) ?           L"close_brace          "   :
-             (type == token_E::open_angle_bracket ) ?           L"open_angle_bracket   "   :
-             (type == token_E::close_angle_bracket) ?           L"close_angle_bracket  "   :
-             (type == token_E::open_shell_bracket ) ?           L"open_shell_bracket   "   :
-             (type == token_E::close_shell_bracket) ?           L"close_shell_bracket  "   :
-             (type == token_E::open_quill_bracket ) ?           L"open_quill_bracket   "   :
-             (type == token_E::close_quill_bracket) ?           L"close_quill_bracket  "   :
-             (type == token_E::open_dot_bracket   ) ?           L"open_dot_bracket     "   :
-             (type == token_E::close_dot_bracket  ) ?           L"close_dot_bracket    "   :
-             (type == token_E::open_misc_bracket  ) ?           L"open_misc_bracket    "   :
-             (type == token_E::close_misc_bracket ) ?           L"close_misc_bracket   "   :
-             (type == token_E::number             ) ?           L"number               "   :
-             (type == token_E::int8               ) ?           L"int8                 "   :
-             (type == token_E::uint8              ) ?           L"uint8                "   :
-             (type == token_E::int16              ) ?           L"int16                "   :
-             (type == token_E::uint16             ) ?           L"uint16               "   :
-             (type == token_E::int32              ) ?           L"int32                "   :
-             (type == token_E::uint32             ) ?           L"uint32               "   :
-             (type == token_E::int64              ) ?           L"int64                "   :
-             (type == token_E::uint64             ) ?           L"uint64               "   :
-             (type == token_E::float32            ) ?           L"float32              "   :
-             (type == token_E::float64            ) ?           L"float64              "   :
-             (type == token_E::identifier         ) ?           L"identifier           "   :
-             (type == token_E::numeric_identifier ) ?           L"numeric_identifier   "   :
-             (type == token_E::extended_identifier) ?           L"extended_identifier  "   :
-             (type == token_E::oper               ) ?           L"operator             "   :
-             (type == token_E::string             ) ?           L"string               "   :
-             (type == token_E::vanishing_separator) ?           L"vanishing separator  "   :
-                                                                L"???????????          "   ;
+    ident =  (type == token_E::none                        ) ?           L"NONE                   "   :
+             (type == token_E::error                       ) ?           L"ERROR                  "   :
+             (type == token_E::eof                         ) ?           L"EOF                    "   :
+             (type == token_E::end                         ) ?           L"END                    "   :
+             (type == token_E::eol                         ) ?           L"EOL                    "   :
+             (type == token_E::unsupported                 ) ?           L"<><>unsupported<><>    "   :
+             (type == token_E::invalid                     ) ?           L"invalid                "   :
+             (type == token_E::whitespace                  ) ?           L"whitespace             "   :
+             (type == token_E::line_comment                ) ?           L"line_comment           "   :
+             (type == token_E::block_comment               ) ?           L"block_comment          "   :
+             (type == token_E::retained_line_comment       ) ?           L"retained_line_comment  "   :
+             (type == token_E::retained_block_comment      ) ?           L"retained_block_comment "   :
+             (type == token_E::nestable_comment            ) ?           L"nestable_comment       "   :
+             (type == token_E::full_stop                   ) ?           L"full_stop              "   :
+             (type == token_E::comma                       ) ?           L"comma                  "   :
+             (type == token_E::semicolon                   ) ?           L"semicolon              "   :
+             (type == token_E::colon                       ) ?           L"colon                  "   :
+             (type == token_E::special_char                ) ?           L"special_char           "   :
+             (type == token_E::misc_char                   ) ?           L"misc_char              "   :
+             (type == token_E::punctuation_char            ) ?           L"punctuation_char       "   :
+             (type == token_E::accent_char                 ) ?           L"accent_char            "   :
+             (type == token_E::open_paren                  ) ?           L"open_paren             "   :
+             (type == token_E::close_paren                 ) ?           L"close_paren            "   :
+             (type == token_E::open_bracket                ) ?           L"open_bracket           "   :
+             (type == token_E::close_bracket               ) ?           L"close_bracket          "   :
+             (type == token_E::open_brace                  ) ?           L"open_brace             "   :
+             (type == token_E::close_brace                 ) ?           L"close_brace            "   :
+             (type == token_E::open_angle_bracket          ) ?           L"open_angle_bracket     "   :
+             (type == token_E::close_angle_bracket         ) ?           L"close_angle_bracket    "   :
+             (type == token_E::open_shell_bracket          ) ?           L"open_shell_bracket     "   :
+             (type == token_E::close_shell_bracket         ) ?           L"close_shell_bracket    "   :
+             (type == token_E::open_quill_bracket          ) ?           L"open_quill_bracket     "   :
+             (type == token_E::close_quill_bracket         ) ?           L"close_quill_bracket    "   :
+             (type == token_E::open_dot_bracket            ) ?           L"open_dot_bracket       "   :
+             (type == token_E::close_dot_bracket           ) ?           L"close_dot_bracket      "   :
+             (type == token_E::open_misc_bracket           ) ?           L"open_misc_bracket      "   :
+             (type == token_E::close_misc_bracket          ) ?           L"close_misc_bracket     "   :
+             (type == token_E::number                      ) ?           L"number                 "   :
+             (type == token_E::unit                        ) ?           L"unit                   "   :
+             (type == token_E::boolean                     ) ?           L"boolean                "   :
+             (type == token_E::int8                        ) ?           L"int8                   "   :
+             (type == token_E::uint8                       ) ?           L"uint8                  "   :
+             (type == token_E::int16                       ) ?           L"int16                  "   :
+             (type == token_E::uint16                      ) ?           L"uint16                 "   :
+             (type == token_E::int32                       ) ?           L"int32                  "   :
+             (type == token_E::uint32                      ) ?           L"uint32                 "   :
+             (type == token_E::int64                       ) ?           L"int64                  "   :
+             (type == token_E::uint64                      ) ?           L"uint64                 "   :
+             (type == token_E::float32                     ) ?           L"float32                "   :
+             (type == token_E::float64                     ) ?           L"float64                "   :
+             (type == token_E::identifier                  ) ?           L"identifier             "   :
+             (type == token_E::numeric_identifier          ) ?           L"numeric_identifier     "   :
+             (type == token_E::extended_identifier         ) ?           L"extended_identifier    "   :
+             (type == token_E::oper                        ) ?           L"operator               "   :
+             (type == token_E::string                      ) ?           L"string                 "   :
+             (type == token_E::vanishing_separator         ) ?           L"vanishing separator    "   :
+                                                                         L"???????????            "   ;
 
     return ident; 
 }
@@ -388,16 +436,19 @@ M_endf
 
 void token_C::display(const std::wstring& ws, bool show_orig_str) const try
 {
-    std::wstring val {}; 
+    std::wstring val  {                                          };
+    std::wstring ostr { orig_str + (attached_paren ? L"(" : L"") };
 
-    if      (type == token_E::uint8)      val = L"   value=" + std::to_wstring(uint8 ); 
-    else if (type == token_E::uint16)     val = L"   value=" + std::to_wstring(uint16);   
-    else if (type == token_E::uint32)     val = L"   value=" + std::to_wstring(uint32);   
-    else if (type == token_E::uint64)     val = L"   value=" + std::to_wstring(uint64); 
-    else if (type == token_E::int8)       val = L"   value=" + std::to_wstring( int8 );  
-    else if (type == token_E::int16)      val = L"   value=" + std::to_wstring( int16);  
-    else if (type == token_E::int32)      val = L"   value=" + std::to_wstring( int32);  
-    else if (type == token_E::int64)      val = L"   value=" + std::to_wstring( int64); 
+    if      (type == token_E::uint8   )  val = std::wstring { L"   value=" } + std::to_wstring(uint8     ); 
+    else if (type == token_E::uint16  )  val = std::wstring { L"   value=" } + std::to_wstring(uint16    );   
+    else if (type == token_E::uint32  )  val = std::wstring { L"   value=" } + std::to_wstring(uint32    );   
+    else if (type == token_E::uint64  )  val = std::wstring { L"   value=" } + std::to_wstring(uint64    ); 
+    else if (type == token_E::int8    )  val = std::wstring { L"   value=" } + std::to_wstring( int8     );  
+    else if (type == token_E::int16   )  val = std::wstring { L"   value=" } + std::to_wstring( int16    );  
+    else if (type == token_E::int32   )  val = std::wstring { L"   value=" } + std::to_wstring( int32    );  
+    else if (type == token_E::int64   )  val = std::wstring { L"   value=" } + std::to_wstring( int64    ); 
+    else if (type == token_E::boolean )  val = std::wstring { L"   value=" } + std::to_wstring(boolean   ); 
+    else if (type == token_E::unit    )  val = std::wstring { L"   value=" } + std::wstring { L"<UNIT>"  };
 
     else if (type == token_E::float64) 
     {
@@ -420,8 +471,8 @@ void token_C::display(const std::wstring& ws, bool show_orig_str) const try
         val = buf;     
     }
 
-    //       ws        ty  uty ty_str id1                 id2                 filename1          str  str  val
-    M_out( L"%s: type=%02d/%02d:%-24s pos1=%04d:%05d:%03d pos2=%04d:%05d:%03d source1=«%s» %|160t| token=«%s»|«%s» %|235t| %s")
+    //       ws        ty  uty ty_str id1                 id2                      filename1              str    str        val
+    M_out( L"%s: type=%02d/%02d:%-24s pos1=%04d:%05d:%03d pos2=%04d:%05d:%03d source1=«%s» %|160t| token= «%s»  «%s» %|235t| %s")
          % ws
          % (int)(type)
          % (int)(utype)
@@ -429,11 +480,11 @@ void token_C::display(const std::wstring& ws, bool show_orig_str) const try
          % source_id1 % lineno1 % linepos1
          % source_id2 % lineno2 % linepos2 
          % M_wsl(get_cached_id(source_id1), 55)
-         % M_wsl(show_orig_str ? orig_str : str, 32)
-         % M_wsl(show_orig_str ? str : orig_str, 32)
+         % M_wsl(show_orig_str ? ostr :  str, 32)
+         % M_wsl(show_orig_str ?  str : ostr, 32)
          % val
          ; 
-
+                    
     return; 
 }
 M_endf
@@ -858,13 +909,33 @@ void token_stream_C::close() try
     m_attach_mode = true; 
     m_error_seen  = false; 
 
-    // note: all configuration settings and statistics are left as-is 
+    // note: all configuration settings and statistics are left as-is, so token stream can be reused 
 
     return;
 }
 M_endf
 
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//public:
+//
+//
+// refresh() -- refresh token stream for reuse (after error, etc.)  
+// =========
+//
+//          
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void token_stream_C::refresh() try   
+{
+    // just do close() to get rid of everything, but keep counters, etc.
+
+    close(); 
+  
+    return;
+}
+M_endf
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1045,7 +1116,7 @@ void token_stream_C::close_all_instreams() try
         if (in_stream_p->infile_p != nullptr)
             delete in_stream_p->infile_p;                 // free up infile_C structure 
 
-        delete  in_stream_p;                              // delete instream _C structure that wll be removed from stack 
+        delete  in_stream_p;                              // delete instream_C structure that wll be removed from stack 
 
         m_instream_stack.pop();                           // move to next queued instream_C structure
 
@@ -1053,7 +1124,7 @@ void token_stream_C::close_all_instreams() try
 
     m_char_stream_p = nullptr;                            // no valid char_stream anymore
 
-    // leave current filename set (although invalid) for error messages
+    // leave current filename set (although invalid) for final error messages -- capture 
 
     return; 
 }
@@ -1119,7 +1190,7 @@ void token_stream_C::close_current_instream() try
 
     if (m_instream_stack.empty())                                   // that was last/only file or string?
     {                                                              
-        m_char_stream_p = nullptr;                                    // clear out file pointer to prevent more I/O
+        m_char_stream_p = nullptr;                                  // clear out file pointer to prevent more I/O
         m_in_filename = std::wstring{};                             // no valid filename now
         m_source_id   = 0;                                         
     }                                                              
@@ -1170,20 +1241,31 @@ int token_stream_C::get_char(in_char_S& ch) try
 
     if (m_char_stream_p != nullptr)
     {
-        return m_char_stream_p->get_char(ch); 
+        auto rc = m_char_stream_p->get_char(ch);
+
+        // save away char location, for use later when char_E::end is passed back (after stream closure)
+
+        static_N::last_char_source_id = ch.source_id;
+        static_N::last_char_lineno    = ch.lineno; 
+        static_N::last_char_linepos   = ch.linepos; 
+
+        return rc; 
     }
-    else                                 // all char streams must be ended now 
-    {                                    // pass back manufactured "end" character
-        ch = in_char_S {};               // blank out all fields first (clears out filename string)    
-        ch.classs   = char_E::end;       // set everything to end 
-        ch.family   = char_E::end; 
-        ch.type     = char_E::end; 
-        ch.subtype  = char_E::end;
-        ch.ch32     = 0; 
-        ch.wch1     = 0; 
-        ch.wch2     = 0; 
-        ch.lineno   = 0; 
-        ch.linepos  = 0; 
+    else                                                    // all char streams must be ended now 
+    {                                                       // pass back manufactured "end" character
+        ch = in_char_S {};                                  // blank out all fields first (clears out filename string)    
+        ch.classs    = char_E::end;                         // set everything to end 
+        ch.family    = char_E::end; 
+        ch.type      = char_E::end; 
+        ch.subtype   = char_E::end;
+        ch.ch32      = 0; 
+        ch.wch1      = 0; 
+        ch.wch2      = 0; 
+        ch.source_id = static_N::last_char_source_id ;      // used saved values from when stream was valid
+        ch.lineno    = static_N::last_char_lineno    ;      // used saved values from when stream was valid
+        ch.linepos   = static_N::last_char_linepos +1;      // used saved values from when stream was valid
+
+        M__(M_out(L"token_stream_C::get_char() -- char_stream_p is NULL -- passing back ch.subtype = char_E::end");)
     }
 
     return 0;
@@ -1209,20 +1291,31 @@ int token_stream_C::peek_char(in_char_S& ch, size_t n) try
 
     if (m_char_stream_p != nullptr)
     {
-        return m_char_stream_p->peek_char(ch, n); 
+        auto rc =  m_char_stream_p->peek_char(ch, n); 
+
+        // save away char location, for use later when char_E::end is passed back (after stream closure)
+
+        static_N::last_char_source_id = ch.source_id;
+        static_N::last_char_lineno    = ch.lineno; 
+        static_N::last_char_linepos   = ch.linepos; 
+
+        return rc;  
     }
-    else                                 // all char streams must be ended now 
-    {                                    // pass back manufactured "end" character
-        ch = in_char_S {};               // blank out all fields first (clears out filename string)    
-        ch.classs   = char_E::end;       // set everything to end 
-        ch.family   = char_E::end; 
-        ch.type     = char_E::end; 
-        ch.subtype  = char_E::end;
-        ch.ch32     = 0; 
-        ch.wch1     = 0; 
-        ch.wch2     = 0; 
-        ch.lineno   = 0; 
-        ch.linepos  = 0; 
+    else                                                  // all char streams must be ended now 
+    {                                                     // pass back manufactured "end" character
+        ch = in_char_S {};                                // blank out all fields first (clears out filename string)    
+        ch.classs    = char_E::end;                       // set everything to end 
+        ch.family    = char_E::end; 
+        ch.type      = char_E::end; 
+        ch.subtype   = char_E::end;
+        ch.ch32      = 0; 
+        ch.wch1      = 0; 
+        ch.wch2      = 0; 
+        ch.source_id = static_N::last_char_source_id ;     // used saved values from when stream was valid
+        ch.lineno    = static_N::last_char_lineno    ;     // used saved values from when stream was valid
+        ch.linepos   = static_N::last_char_linepos +1;     // used saved values from when stream was valid
+
+        M__(M_out(L"token_stream_C::peek_char() -- char_stream_p is NULL -- passing back ch.subtype = char_E::end");)
     }
 
     return 0;
@@ -1494,40 +1587,71 @@ M_endf
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                                                              
-void token_stream_C::set_quiet_mode(              bool     tf                    ) try { m_quiet_mode               = tf  ; return; }  M_endf
-void token_stream_C::set_suppress_echo(           bool     tf                    ) try { m_suppress_echo            = tf  ; return; }  M_endf
-void token_stream_C::set_eol_is_whitespace(       bool     tf                    ) try { m_eol_is_whitespace        = tf  ; return; }  M_endf
-void token_stream_C::set_eof_is_whitespace(       bool     tf                    ) try { m_eof_is_whitespace        = tf  ; return; }  M_endf
-void token_stream_C::set_comment_is_whitespace(   bool     tf                    ) try { m_comment_is_whitespace    = tf  ; return; }  M_endf
-void token_stream_C::set_combine_whitespace(      bool     tf                    ) try { m_combine_whitespace       = tf  ; return; }  M_endf
-void token_stream_C::set_combine_strings(         bool     tf                    ) try { m_combine_strings          = tf  ; return; }  M_endf
-void token_stream_C::set_skip_whitespace(         bool     tf                    ) try { m_skip_whitespace          = tf  ; return; }  M_endf
-void token_stream_C::set_allow_num_identifier(    bool     tf                    ) try { m_allow_num_identifier     = tf  ; return; }  M_endf
-void token_stream_C::set_allow_extd_identifier(   bool     tf                    ) try { m_allow_extd_identifier    = tf  ; return; }  M_endf
-void token_stream_C::set_report_extd_identifier(  bool     tf                    ) try { m_report_extd_identifier   = tf  ; return; }  M_endf
-void token_stream_C::set_preserve_sigils(         bool     tf                    ) try { m_preserve_sigils          = tf  ; return; }  M_endf
-void token_stream_C::set_always_attach_plus_minus(bool     tf                    ) try { m_always_attach_plus_minus = tf  ; return; }  M_endf 
-void token_stream_C::set_never_attach_plus_minus( bool     tf                    ) try { m_never_attach_plus_minus  = tf  ; return; }  M_endf
-void token_stream_C::set_allow_leading_id_sigils( bool     tf                    ) try { m_allow_leading_id_sigils  = tf  ; return; }  M_endf
-void token_stream_C::set_allow_trailing_id_sigils(bool     tf                    ) try { m_allow_trailing_id_sigils = tf  ; return; }  M_endf
-void token_stream_C::set_allow_leading_op_sigils( bool     tf                    ) try { m_allow_leading_op_sigils  = tf  ; return; }  M_endf
-void token_stream_C::set_allow_trailing_op_sigils(bool     tf                    ) try { m_allow_trailing_op_sigils = tf  ; return; }  M_endf
-void token_stream_C::set_allow_paren_sigils(      bool     tf                    ) try { m_allow_paren_sigils       = tf  ; return; }  M_endf
-                                                                                
-void token_stream_C::set_digraph_char(            char32_t ch32                  ) try { m_digraph_char             = ch32; return; }  M_endf
-void token_stream_C::set_string_escape_char1(     char32_t ch32                  ) try { m_string_escape_ch1        = ch32; return; }  M_endf
-void token_stream_C::set_string_escape_char2(     char32_t ch32                  ) try { m_string_escape_ch2        = ch32; return; }  M_endf
-void token_stream_C::set_line_continuation_char(  char32_t ch32                  ) try { m_line_continuation_ch     = ch32; return; }  M_endf
-void token_stream_C::set_line_comment_char(       char32_t ch32                  ) try { m_line_comment_ch          = ch32; return; }  M_endf
-void token_stream_C::set_echoed_line_comment_char(char32_t ch32                  ) try { m_echoed_line_comment_ch   = ch32; return; }  M_endf
-void token_stream_C::set_vanishing_separator_char(char32_t ch32                  ) try { m_vanishing_separator_ch   = ch32; return; }  M_endf
+void token_stream_C::set_quiet_mode(                      bool     tf                    ) try { m_quiet_mode                     = tf  ; return; }  M_endf
+void token_stream_C::set_suppress_echo(                   bool     tf                    ) try { m_suppress_echo                  = tf  ; return; }  M_endf
+void token_stream_C::set_eol_is_whitespace(               bool     tf                    ) try { m_eol_is_whitespace              = tf  ; return; }  M_endf
+void token_stream_C::set_eof_is_whitespace(               bool     tf                    ) try { m_eof_is_whitespace              = tf  ; return; }  M_endf
+void token_stream_C::set_comment_is_whitespace(           bool     tf                    ) try { m_comment_is_whitespace          = tf  ; return; }  M_endf
+void token_stream_C::set_combine_whitespace(              bool     tf                    ) try { m_combine_whitespace             = tf  ; return; }  M_endf
+void token_stream_C::set_combine_strings(                 bool     tf                    ) try { m_combine_strings                = tf  ; return; }  M_endf
+void token_stream_C::set_skip_whitespace(                 bool     tf                    ) try { m_skip_whitespace                = tf  ; return; }  M_endf
+void token_stream_C::set_allow_num_identifier(            bool     tf                    ) try { m_allow_num_identifier           = tf  ; return; }  M_endf
+void token_stream_C::set_allow_extd_identifier(           bool     tf                    ) try { m_allow_extd_identifier          = tf  ; return; }  M_endf
+void token_stream_C::set_report_extd_identifier(          bool     tf                    ) try { m_report_extd_identifier         = tf  ; return; }  M_endf
+void token_stream_C::set_preserve_sigils(                 bool     tf                    ) try { m_preserve_sigils                = tf  ; return; }  M_endf
+void token_stream_C::set_always_attach_plus_minus(        bool     tf                    ) try { m_always_attach_plus_minus       = tf  ; return; }  M_endf 
+void token_stream_C::set_never_attach_plus_minus(         bool     tf                    ) try { m_never_attach_plus_minus        = tf  ; return; }  M_endf
+void token_stream_C::set_allow_leading_id_sigils(         bool     tf                    ) try { m_allow_leading_id_sigils        = tf  ; return; }  M_endf
+void token_stream_C::set_allow_trailing_id_sigils(        bool     tf                    ) try { m_allow_trailing_id_sigils       = tf  ; return; }  M_endf
+void token_stream_C::set_allow_leading_op_sigils(         bool     tf                    ) try { m_allow_leading_op_sigils        = tf  ; return; }  M_endf
+void token_stream_C::set_allow_trailing_op_sigils(        bool     tf                    ) try { m_allow_trailing_op_sigils       = tf  ; return; }  M_endf
+void token_stream_C::set_allow_paren_sigils(              bool     tf                    ) try { m_allow_paren_sigils             = tf  ; return; }  M_endf
+void token_stream_C::set_allow_attached_paren(            bool     tf                    ) try { m_allow_attached_paren           = tf  ; return; }  M_endf
+                                 
+
+// functions to set configurable characters
+
+void token_stream_C::set_digraph_char(                    char32_t ch32                  ) try { m_digraph_char                   = ch32; return; }  M_endf
+void token_stream_C::set_vanishing_separator_char(        char32_t ch32                  ) try { m_vanishing_separator_ch         = ch32; return; }  M_endf
+void token_stream_C::set_line_continuation_char(          char32_t ch32                  ) try { m_line_continuation_ch           = ch32; return; }  M_endf
+void token_stream_C::set_always_sign_char(                char32_t ch32                  ) try { m_always_sign_ch                 = ch32; return; }  M_endf
+
+void token_stream_C::set_type1_string_start_char(         char32_t ch32                  ) try { m_type1_string_start_ch          = ch32; return; }  M_endf
+void token_stream_C::set_type2_string_start_char(         char32_t ch32                  ) try { m_type2_string_start_ch          = ch32; return; }  M_endf
+void token_stream_C::set_type1_string_end_char(           char32_t ch32                  ) try { m_type1_string_end_ch            = ch32; return; }  M_endf
+void token_stream_C::set_type2_string_end_char(           char32_t ch32                  ) try { m_type2_string_end_ch            = ch32; return; }  M_endf
+void token_stream_C::set_type1_string_escape_char(        char32_t ch32                  ) try { m_type1_string_escape_ch         = ch32; return; }  M_endf
+void token_stream_C::set_type2_string_escape_char(        char32_t ch32                  ) try { m_type1_string_escape_ch         = ch32; return; }  M_endf
+void token_stream_C::set_raw_string_prefix_char(          char32_t ch32                  ) try { m_raw_string_prefix_ch           = ch32; return; }  M_endf
+void token_stream_C::set_multiline_string_prefix_char(    char32_t ch32                  ) try { m_multiline_string_prefix_ch     = ch32; return; }  M_endf
+void token_stream_C::set_word_string_start_char(          char32_t ch32                  ) try { m_word_string_start_ch           = ch32; return; }  M_endf
+
+void token_stream_C::set_unechoed_line_comment_char(      char32_t ch32                  ) try { m_unechoed_line_comment_ch       = ch32; return; }  M_endf
+void token_stream_C::set_echoed_line_comment_char(        char32_t ch32                  ) try { m_echoed_line_comment_ch         = ch32; return; }  M_endf
+
+void token_stream_C::set_comment_1st_char(                char32_t ch32                  ) try { m_comment_1st_ch                 = ch32; return; }  M_endf      
+void token_stream_C::set_unechoed_line_comment_2nd_char(  char32_t ch32                  ) try { m_unechoed_line_comment_2nd_ch   = ch32; return; }  M_endf      
+void token_stream_C::set_echoed_line_comment_2nd_char(    char32_t ch32                  ) try { m_echoed_line_comment_2nd_ch     = ch32; return; }  M_endf      
+void token_stream_C::set_suppress_eol_comment_2nd_char(   char32_t ch32                  ) try { m_suppress_eol_comment_2nd_ch    = ch32; return; }  M_endf      
+void token_stream_C::set_eof_comment_2nd_char(            char32_t ch32                  ) try { m_eof_comment_2nd_ch             = ch32; return; }  M_endf      
+void token_stream_C::set_retained_line_comment_2nd_char(  char32_t ch32                  ) try { m_retained_line_comment_2nd_ch   = ch32; return; }  M_endf      
+                                                                                                                                  
+void token_stream_C::set_block_comment_2nd_char(          char32_t ch32                  ) try { m_block_comment_2nd_ch           = ch32; return; }  M_endf      
+void token_stream_C::set_block_comment_3rd_char(          char32_t ch32                  ) try { m_block_comment_3rd_ch           = ch32; return; }  M_endf      
+void token_stream_C::set_block_comment_4th_char(          char32_t ch32                  ) try { m_block_comment_4th_ch           = ch32; return; }  M_endf      
+void token_stream_C::set_nest_comment_2nd_char(           char32_t ch32                  ) try { m_nest_comment_2nd_ch            = ch32; return; }  M_endf      
+void token_stream_C::set_nest_comment_3rd_char(           char32_t ch32                  ) try { m_nest_comment_3rd_ch            = ch32; return; }  M_endf      
+void token_stream_C::set_nest_comment_4th_char(           char32_t ch32                  ) try { m_nest_comment_4th_ch            = ch32; return; }  M_endf      
+void token_stream_C::set_retained_block_comment_2nd_char( char32_t ch32                  ) try { m_retained_block_comment_2nd_ch  = ch32; return; }  M_endf      
+void token_stream_C::set_retained_block_comment_3rd_char( char32_t ch32                  ) try { m_retained_block_comment_3rd_ch  = ch32; return; }  M_endf      
+void token_stream_C::set_retained_block_comment_4th_char( char32_t ch32                  ) try { m_retained_block_comment_4th_ch  = ch32; return; }  M_endf 
                                                                                                                           
-void token_stream_C::set_leading_sigils(          const std::vector<char32_t>& ls) try { m_leading_sigils           = ls  ; return; }  M_endf
-void token_stream_C::set_leading_ident_sigils(    const std::vector<char32_t>& ls) try { m_leading_ident_sigils     = ls  ; return; }  M_endf
-void token_stream_C::set_trailing_ident_sigils(   const std::vector<char32_t>& ts) try { m_trailing_ident_sigils    = ts  ; return; }  M_endf
-void token_stream_C::set_leading_oper_sigils(     const std::vector<char32_t>& ls) try { m_leading_oper_sigils      = ls  ; return; }  M_endf
-void token_stream_C::set_trailing_oper_sigils(    const std::vector<char32_t>& ts) try { m_trailing_oper_sigils     = ts  ; return; }  M_endf
-void token_stream_C::set_paren_sigils(            const std::vector<char32_t>&  s) try { m_paren_sigils             =  s  ; return; }  M_endf
+void token_stream_C::set_leading_sigils(          const std::vector<char32_t>& ls        ) try { m_leading_sigils           = ls  ;       return; }  M_endf
+void token_stream_C::set_leading_ident_sigils(    const std::vector<char32_t>& ls        ) try { m_leading_ident_sigils     = ls  ;       return; }  M_endf
+void token_stream_C::set_trailing_ident_sigils(   const std::vector<char32_t>& ts        ) try { m_trailing_ident_sigils    = ts  ;       return; }  M_endf
+void token_stream_C::set_leading_oper_sigils(     const std::vector<char32_t>& ls        ) try { m_leading_oper_sigils      = ls  ;       return; }  M_endf
+void token_stream_C::set_trailing_oper_sigils(    const std::vector<char32_t>& ts        ) try { m_trailing_oper_sigils     = ts  ;       return; }  M_endf
+void token_stream_C::set_paren_sigils(            const std::vector<char32_t>&  s        ) try { m_paren_sigils             =  s  ;       return; }  M_endf
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1556,11 +1680,11 @@ int token_stream_C::get_integer_value(token_C& token, int int_length, bool un_si
     int rc {0}; 
       
 
-    // handle signed integers  (regular minus sign (not macron) must be present at beginning, if number is negative)
+    // handle signed integers  (regular minus sign (not any alternate sign char, like the always_sign char) must be present at beginning, if number is negative) -- note that boolean and unit must be unsigned 
     // ----------------------
 
     if (!un_signed)                                           // signed integer?       
-    {       
+    {   
         if (int_length == 8)                                  // int8_t value? 
         {
             rc = to_int8(token.str, token.int8, base);        // convert value into int8_t field 
@@ -1600,12 +1724,66 @@ int token_stream_C::get_integer_value(token_C& token, int int_length, bool un_si
     }
 
 
-    // handle unsigned integers
+    // handle unsigned integers  
     // ------------------------
     
     else                                                      // must be unsigned integer - no sign, and U or u seen 
     {
-        if (int_length == 8)                                  // uint8_t value? 
+        ///////////////// process unit values ///////////////////////
+
+        if (int_length == 0)                                  // unit value? 
+        {
+            uint64_t local_uint64 { 0 };                      // local workarea for conversion
+
+            rc = to_uint64(token.str, local_uint64, base);    // convert value into uint8_t field 
+
+            if (rc == 0) 
+            {
+                if (local_uint64 == 0)
+                    token.type = token_E::unit; 
+                else                                          // value is not 0
+                    invalid_token(token, L"Cannot obtain value for unit literal -- integer value must be 0"); 
+            }
+            else                                              // not a valid uint8_t
+            {
+                invalid_token(token, L"Cannot obtain value for boolean literal"); 
+            }
+        }
+
+        ///////////////// process boolean values ///////////////////////
+
+        else if (int_length == 1)                             // boolean value? 
+        {
+            uint64_t local_uint64 { 0 };                      // local workarea for conversion
+
+            rc = to_uint64(token.str, local_uint64, base);    // convert value into uint8_t field 
+
+            if (rc == 0) 
+            {
+                if      (local_uint64 == 0)
+                {
+                    token.type = token_E::boolean;
+                    token.boolean = false; 
+                }
+                else if (local_uint64 == 1)
+                {
+                    token.type = token_E::boolean;
+                    token.boolean = true; 
+                }
+                else                                            // value is not 0 or 1
+                {
+                    invalid_token(token, L"Cannot obtain value for boolean literal -- integer value must be 0 or 1"); 
+                }
+            }
+            else                                                // not a valid uint8_t
+            {
+                invalid_token(token, L"Cannot obtain value for boolean literal"); 
+            }
+        }
+
+        //////////////////////////////////////////////////////////////////////////////   
+
+        else if (int_length == 8)                                  // uint8_t value? 
         {
             rc = to_uint8(token.str, token.uint8, base);      // convert value into uint8_t field 
 
@@ -2018,11 +2196,11 @@ int token_stream_C::operator_token(token_C& token, bool leading_sigil_present) t
 
     // handle any leading sigil character -- if flag is on, 1st char is known to be sigil, and 2nd one is known to be alpha, currency, or separator 
 
-    if (leading_sigil_present)                                   // add sigil to token (or just the original token), as requested 
-    {   
-        M__(M_out(L"operator_token() -- adding leading sigil");)
-        get_char(ch);                                            // 1st one is known to be sigil character 
-        add_leading_sigil(token , ch);                           // add leading sigil to token
+    if (leading_sigil_present)                                          // add sigil to token (or just the original token), as requested 
+    {                                                                     
+        M__(M_out(L"operator_token() -- adding leading sigil");)          
+        get_char(ch);                                                   // 1st one is known to be sigil character 
+        add_leading_sigil(token , ch);                                  // add leading sigil to token
     }
 
 
@@ -2031,28 +2209,32 @@ int token_stream_C::operator_token(token_C& token, bool leading_sigil_present) t
 
    for(;;)
    {
-       get_char(ch);                                                     // 1st one is known to be an operator char
+       get_char(ch);                                                    // 1st one is known to be an operator char
         
 
        // check for any comments starting in the middle of the apparent operator token -- these end the operator token immediately  
 
-       if (ch.ch32 == const_N::ch_comment_1st)                          // "/" -- might be start of comment
+       if (ch.ch32 == m_comment_1st_ch)                                 // "/" -- might be start of comment
        {
            in_char_S ch1 {}; 
-           peek_char(ch1);                                              // look at char following the solidus   
+           peek_char(ch1);                                              // look at char following the 1st comment char = solidus?   
                                             
            if (
-               (ch1.ch32 == const_N::ch_line_comment_2nd         )      // "//" -- must be start of line           comment
-               || 
-               (ch1.ch32 == const_N::ch_echoed_line_comment_2nd  )      // "/!" -- must be start of echoed line    comment
-               ||                                               
-               (ch1.ch32 == const_N::ch_block_comment_2nd        )      // "/*" -- must be start of block          comment
-               ||                                               
-               (ch1.ch32 == const_N::ch_suppress_eol_comment_2nd )      // "/^" -- must be start of suppress eol   comment
-               ||                                               
-               (ch1.ch32 == const_N::ch_nest_comment_2nd         )      // "/<" -- must be start of nestable block comment
-               ||                                               
-               (ch1.ch32 == const_N::ch_eof_comment_2nd          )      // "/~" -- must be start of EOF            comment
+               (ch1.ch32 == m_unechoed_line_comment_2nd_ch  )           // "//" -- must be start of line           comment
+               ||                                                     
+               (ch1.ch32 == m_echoed_line_comment_2nd_ch    )           // "/!" -- must be start of echoed line    comment
+               ||                                                     
+               (ch1.ch32 == m_eof_comment_2nd_ch            )           // "/~" -- must be start of EOF            comment
+               ||                                           
+               (ch1.ch32 == m_retained_line_comment_2nd_ch  )           // "/#" -- must be start of retained line  comment
+               ||                                           
+               (ch1.ch32 == m_block_comment_2nd_ch          )           // "/*" -- must be start of block          comment
+               ||                                                     
+               (ch1.ch32 == m_suppress_eol_comment_2nd_ch   )           // "/^" -- must be start of suppress eol   comment
+               ||                                                     
+               (ch1.ch32 == m_nest_comment_2nd_ch           )           // "/<" -- must be start of nestable block comment
+               ||                                                     
+               (ch1.ch32 == m_retained_block_comment_2nd_ch )           // "/{" -- must be start of retained block comment
               )                                                 
            {
                 M__(M_out(L"operator_token() -- comment starting while gathering operator token");)
@@ -2318,6 +2500,14 @@ int token_stream_C::identifier_token(token_C& token, bool leading_sigil_present)
             }
             else    // not a trailing sigil -- usual token ending -- put character back, etc.
             {
+                // set attached_paren flag, if this identifier token ended because of an adjacent parenthesis (no intervening whitespace)
+
+                if ( (m_allow_attached_paren) && (ch.subtype == char_E::open_paren1) )
+                {
+                    M__(M_out(L"identifier_token() -- attached parenthesis");) 
+                    token.attached_paren = true; 
+                }
+
                 rc = past_end_token(token, ch);  
             }
 
@@ -2336,7 +2526,7 @@ M_endf
 //  line_comment() -- gather up line comment token   (preserve EOL or consume it based on input parm) -- echo it, if required
 //  --------------
 //
-//      "//" ,  "\\" ,  "℗" ,  or  "®"  has been peek()ed before this routine is called, but not consumed              
+//      "//" ,  has been peek()ed before this routine is called, but not consumed              
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   
@@ -2351,7 +2541,7 @@ int token_stream_C::line_comment(token_C& token, bool no_eol, bool echo, size_t 
 
     for(;;)   // loop until EOL, EOF, or error stops the line comment
     {
-        get_char(ch);                                   // first 1 or 2 can be "®"   "℗"   "//"  or  "\\"    (defaults)
+        get_char(ch);                                   // first 1 or 2 can be   "//"  or      (defaults)
             
         if (
             (ch.subtype == char_E::error)
@@ -2395,6 +2585,58 @@ int token_stream_C::line_comment(token_C& token, bool no_eol, bool echo, size_t 
 M_endf
 
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//  retained_line_comment() -- gather up retained line comment token   
+//  -----------------------
+//
+//      "/#" ,  has been peek()ed before this routine is called, but not consumed
+//
+//      note: digraph processing is not disabled in retained line comments, which are passed back up to the parser for processing
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+int token_stream_C::retained_line_comment(token_C& token) try       
+{
+    int         rc { 0 }; 
+    in_char_S   ch {   }; 
+    int         ct { 0 };
+
+    start_token(token, token_E::retained_line_comment); 
+
+    for(;;)   // loop until EOL, EOF, or error stops the retained line comment
+    {
+        get_char(ch);                                   // first 1 or 2 can be   "/#"  (defaults)
+            
+        if (
+            (ch.subtype == char_E::error)
+            ||
+            (ch.subtype == char_E::eof  )            
+           )
+        {
+            rc = past_end_token(token, ch);             // went past end of token                  
+            break;                                      
+        }                                               
+        else if (ch.subtype == char_E::eol  )           
+        {                                               
+            break;                                      // stop accumulating retained line comment in either case
+        }                                               
+        else                                            
+        {   
+            ct++;                                       // increment valid char counter
+
+            if (ct > 2)                                 // don't include 1st two chars ("/#") in output token
+               addto_token(token, ch);                  // add char to to output token 
+            else                                        // 1st two chars
+               addto_orig_token(token, ch);             // always add characters to to original token (for error messages), but nt the output token
+        }           
+    } 
+   
+    return rc; 
+}
+M_endf
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -2485,10 +2727,10 @@ int token_stream_C::block_comment(token_C& token) try
     {
         get_char(ch);      
                
-        if (ch.ch32 == const_N::ch_block_comment_3rd)             // "*" found -- might be end of comment 
+        if (ch.ch32 == m_block_comment_3rd_ch)                    // "*" found -- might be end of comment 
         {
             peek_char(ch1);                                       // look at character following the "*"
-            if (ch1.ch32 == const_N::ch_block_comment_4th)        // "*/" ends the comment 
+            if (ch1.ch32 == m_block_comment_4th_ch)               // "*/" ends the comment 
             {
                 addto_orig_token(token, ch);                      // add the "*" to end of original comment string 
                 addto_orig_token(token, ch1);                     // add the "/" to end of original comment string
@@ -2537,8 +2779,8 @@ M_endf
 int token_stream_C::nestable_comment(token_C& token)  try     
 {
     int              rc    {0}; 
-    in_char_S        ch    {}; 
-    in_char_S        ch1   {};
+    in_char_S        ch    { }; 
+    in_char_S        ch1   { };
     uint64_t    nest_level {0};        
 
     m_char_stream_p->set_process_digraphs(false);        // suppress digraph processing in comments
@@ -2548,20 +2790,20 @@ int token_stream_C::nestable_comment(token_C& token)  try
 
     //  consume initial "/<"  before starting   
 
-    get_char(ch);                                         // known to be "<"
-    get_char(ch1);                                        // known to be "*"
-    addto_orig_token(token, ch);                          // add the initial "<" to start of original comment string 
-    addto_orig_token(token, ch1);                         // add the initial "*" to start of original comment string
+    get_char(ch);                                         // known to be "/"      (default)
+    get_char(ch1);                                        // known to be "<"      (default)
+    addto_orig_token(token, ch);                          // add the initial "/" to start of original comment string 
+    addto_orig_token(token, ch1);                         // add the initial "<" to start of original comment string
     nest_level = 1;
                 
-    for(;;)   // loop until ">/" at proper nest level,  EOF, or error stops the line comment -- note "/<>/" is smallest nestable comment
+    for(;;)   // loop until ">/" at proper nest level,  EOF, or error stops the nestable block comment -- note "/<>/" is smallest nestable comment
     {
         get_char(ch);      
           
-        if (ch.ch32 == const_N::ch_comment_1st)           // "/" found -- might be start of inner nested comment 
+        if (ch.ch32 == m_comment_1st_ch)                  // "/" found -- might be start of inner nested comment 
         {                                              
             peek_char(ch1);                            
-            if (ch1.ch32 == const_N::ch_nest_comment_2nd) // "/<"found -- increment nest level
+            if (ch1.ch32 == m_nest_comment_2nd_ch)        // "/<"found -- increment nest level
             {                                          
                 addto_orig_token(token, ch);              // add the "/" to end of original comment string 
                 addto_orig_token(token, ch1);             // add the "/<" to end of original comment string
@@ -2573,10 +2815,10 @@ int token_stream_C::nestable_comment(token_C& token)  try
                 addto_orig_token(token, ch);              // add "/" to original comment string
             }                                          
         }                                              
-        else if (ch.ch32 == const_N::ch_nest_comment_3rd) // ">" found -- might be end of comment 
+        else if (ch.ch32 == m_nest_comment_3rd_ch)        // ">" found -- might be end of comment 
         {
             peek_char(ch1);                               // look at character following the ">"
-            if (ch1.ch32 == const_N::ch_nest_comment_4th) // ">/" ends the nested comment 
+            if (ch1.ch32 == m_nest_comment_4th_ch)        // ">/" ends the nested comment 
             {
                 addto_orig_token(token, ch);              // add the ">" to end of original comment string 
                 addto_orig_token(token, ch1);             // add the "/" to end of original comment string
@@ -2604,7 +2846,7 @@ int token_stream_C::nestable_comment(token_C& token)  try
         }                                                
         else                                             // not error, EOF, or "/" or ">" -- just keep adding to token 
         {                                                
-            addto_orig_token(token, ch);                 // add char to to original token string only
+            addto_orig_token(token, ch);                 // add char to original token string only
         }                                                
     }
     
@@ -2613,6 +2855,104 @@ int token_stream_C::nestable_comment(token_C& token)  try
     return rc; 
 }
 M_endf
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//  retained_block_comment() -- gather up (nestable) retained block comment token     
+//  ------------------------
+//
+//      note: digraph processing is not turned off in retained comments, that are passed up to the parser for processing
+//              
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+int token_stream_C::retained_block_comment(token_C& token)  try     
+{
+    int              rc    {0}; 
+    in_char_S        ch    { }; 
+    in_char_S        ch1   { };
+    uint64_t    nest_level {0};        
+
+    
+    start_token(token, token_E::retained_block_comment); 
+
+
+    //  consume initial "/{"  before starting   
+
+    get_char(ch);                                            // known to be "/"   (default)
+    get_char(ch1);                                           // known to be "{"   (default)
+    addto_orig_token(token, ch);                             // add the initial "/" to start of original comment string 
+    addto_orig_token(token, ch1);                            // add the initial "{" to start of original comment string
+    nest_level = 1;
+                
+    for(;;)   // loop until "}/" at proper nest level,  EOF, or error stops the retained block comment -- note "/{}/" is smallest retained block comment
+    {
+        get_char(ch);      
+          
+        if (ch.ch32 == m_comment_1st_ch)                      // "/" found -- might be start of inner nested comment 
+        {                                              
+            peek_char(ch1);                            
+            if (ch1.ch32 == m_retained_block_comment_2nd_ch)  // "/{" found -- increment nest level
+            {                                          
+                addto_token(token, ch);                       // add the "/" to end of retained comment string 
+                addto_token(token, ch1);                      // add the "/{" to end of retained comment string
+                discard_char();                               // discard the peek()ed "{"   ( "/" was consumed earlier)
+                ++nest_level;                                 
+            }                                                 
+            else                                              // not "/{" -- not start of nested comment
+            {                                                 
+                addto_orig_token(token, ch);                  // add "/" to original comment string
+            }                                                 
+        }                                                     
+        else if (ch.ch32 == m_retained_block_comment_3rd_ch)  // "}" found -- might be end of comment 
+        {                                                     
+            peek_char(ch1);                                   // look at character following the ">"
+            if (ch1.ch32 == m_retained_block_comment_4th_ch)  // "}/" ends the nested comment 
+            {   
+                --nest_level;                                 // reduce nest level by one
+                discard_char();                               // discard the peek()ed "/"   
+
+                if (nest_level > 0)                           // looking at nested "}/ --  not looking at final "}/" 
+                {
+                    addto_token(token, ch);                   // add the "{" to end of original comment string 
+                    addto_token(token, ch1);                  // add the "/" to end of original comment string
+                }
+                else                                          // This "}/" matched outermost "/{", block comment is done , otherwise keep going 
+                {
+                    addto_orig_token(token, ch);              // add the "}" to end of original comment string, but not output token 
+                    addto_orig_token(token, ch1);             // add the "/" to end of original comment string, but not output token
+                    break;                                    // end the for(;;) loop
+                }
+            }                                                 
+            else                                              // not ">/" -- not end of comment
+            {                                                 
+                addto_token(token, ch);                       // add ">" to output retained comment string
+            }                                                 
+        }
+        else if (ch.subtype == char_E::eof)
+        {
+            invalid_token(token, L"Retained block comment (with pre-processor data) was still open when end-of-file was reached");
+            past_end_token(token, ch);                        // EOF is past end of token, so put it back
+            break;                                            // end the for(;;) loop
+        }                                                    
+        else if (ch.subtype == char_E::error)               
+        {                                                   
+            rc = past_end_token(token, ch);                   // put back error indication for next time -- comment token type replaced with "error"
+            break;                                            // end the for(;;) loop 
+        }                                                     
+        else                                                  // not error, EOF, or "/" or ">" -- just keep adding to token 
+        {                                                     
+            addto_token(token, ch);                           // add char to retained  token string only
+        }                                                
+    }
+        
+    return rc; 
+}
+M_endf
+ 
 
 
 
@@ -3051,7 +3391,7 @@ int token_stream_C::numeric_literal(token_C& token) try
     bool need_trail_0 { false }; 
     bool alpha_seen   { false };
     bool sign_seen    { false };
-    bool macron_seen  { false };
+    bool always_seen  { false };
     bool u_seen       { false };
     bool s_seen       { false };
     bool e_seen       { false };
@@ -3105,12 +3445,12 @@ int token_stream_C::numeric_literal(token_C& token) try
         }
 
 
-        //   Process "+" or "-" or macron -- may be sign (if at start of literal) -- for + or -,  get here only if +- attachment is allowed 
-        //   ------------------------------------------------------------------------------------------------------------------------------
+        //   Process "+" or "-" or always_sign char -- may be sign (if at start of literal) -- for + or -,  get here only if +- attachment is allowed 
+        //   ----------------------------------------------------------------------------------------------------------------------------------------
 
         else if ( 
                  (
-                  (ch.subtype == char_E::macron)
+                  (ch.subtype == char_E::f_always_sign)
                   ||
                   (ch.subtype == char_E::hyphen_minus)
                   ||
@@ -3126,10 +3466,10 @@ int token_stream_C::numeric_literal(token_C& token) try
             {
                 addto_token(token, ch);         // add the minus sign to text for later conversion
             }
-            if (ch.subtype == char_E::macron)
+            if (ch.subtype == char_E::f_always_sign)
             {
-                macron_seen = true;             // indicate that sign was macron, not minus 
-                addto_orig_token(token, ch);    // add the macron token.orig_str only -- token.str should still be empty at this point
+                always_seen = true;             // indicate that always_sign char was seen, not minus 
+                addto_orig_token(token, ch);    // add the always_minus char to token.orig_str only -- token.str should still be empty at this point
                 token.str = L"-" + token.str;   // regular minus char should now be at front of token.str, rather than the macro at start of token.orig_str
             }
             else
@@ -3175,7 +3515,7 @@ int token_stream_C::numeric_literal(token_C& token) try
                   )
                 )
         {    
-            // valid S/s or U/u -- posibly followed by valid length specification -- 8  16  32  or   64
+            // valid S/s or U/u -- posibly followed by valid length specification -- 0  1  8  16  32  or   64
 
             addto_orig_token(token, ch);      // don't put the U/u or S/s into the number -- just into original token string
             
@@ -3185,20 +3525,34 @@ int token_stream_C::numeric_literal(token_C& token) try
                 s_seen = true; 
         
           
-            // check for optional length specifier following the S/s or U/u -- must be 8 16 32 or 64 only  -- anything else if not a length specifier
+            // check for optional length specifier following the S/s or U/u -- must be 0 1 8 16 32 or 64 only  -- anything else if not a length specifier
 
-            peek_char(ch1);                                // look at character after S/s or U/u -- must be 8, 1, 3, or 6, if it's a length specifier
-
-            if (ch1.ch32 == utf32_N::DIGIT_EIGHT)            // U8/S8 -- byte-length integer -- 8 marks the end of integer literal 
-            {
-                int_length = 8;                            // indicate byte-length integer literal 
-                get_char(ch1);                             // consume the 8 character before leaving
-                addto_orig_token(token, ch1);              // add the 8 to original token only                          
-                break;                                     // the 8 digit ends to integer literal token
+            peek_char(ch1);                                                 // look at character after S/s or U/u -- must be 8, 1, 3, or 6, if it's a length specifier
+                                                                         
+            if (ch1.ch32 == utf32_N::DIGIT_EIGHT)                           // U8/S8 -- byte-length integer -- 8 marks the end of integer literal 
+            {                                                            
+                int_length = 8;                                             // indicate byte-length integer literal 
+                get_char(ch1);                                              // consume the 8 character before leaving
+                addto_orig_token(token, ch1);                               // add the 8 to original token only                          
+                break;                                                      // the 8 digit ends the integer literal token
+            }                                                            
+            if (ch1.ch32 == utf32_N::DIGIT_ZERO)                            // U0 -- byte-length integer -- 0 marks the end of unit literal 
+            {                                                            
+                if (u_seen)                                                 // only U0 is valid
+                {                                                        
+                    int_length = 0;                                         // indicate 0-length unit literal 
+                    get_char(ch1);                                          // consume the 0 character before leaving
+                    addto_orig_token(token, ch1);                           // add the 0 to original token only                          
+                    break;                                                  // the 0 digit ends the integer literal token
+                }                                                        
+                else                                                        // S0 is not valid
+                {                                                        
+                    break;                                                  // S ends the integer (unit) literal 
+                }
             }
             else if ( (ch1.ch32 == utf32_N::DIGIT_ONE) || (ch1.ch32 == utf32_N::DIGIT_THREE) || (ch1.ch32 == utf32_N::DIGIT_SIX) )
             {
-                peek_char(ch2, 2);                         // look at character after 1, 3, or 6
+                peek_char(ch2, 2);                                          // look at character after 1, 3, or 6
             
                 if (
                      ( (ch1.ch32 == utf32_N::DIGIT_ONE  ) && (ch2.ch32 == utf32_N::DIGIT_SIX)  )      //   S16 or U16 ? 
@@ -3208,35 +3562,52 @@ int token_stream_C::numeric_literal(token_C& token) try
                      ( (ch1.ch32 == utf32_N::DIGIT_SIX  ) && (ch2.ch32 == utf32_N::DIGIT_FOUR) )      //   S64 or U64 ?
                     )
                 {
-                    get_char(ch1);                     // consume the 1, 3, or 6  
-                    get_char(ch2);                     // consume the 6, 2, or 4
-                    addto_orig_token(token, ch1);      // add the 1st digit to the original token only
-                    addto_orig_token(token, ch2);      // add the 2nd digit to the original token only
+                    get_char(ch1);                                          // consume the 1, 3, or 6  
+                    get_char(ch2);                                          // consume the 6, 2, or 4
+                    addto_orig_token(token, ch1);                           // add the 1st digit to the original token only
+                    addto_orig_token(token, ch2);                           // add the 2nd digit to the original token only
 
                     if      (ch1.ch32 == utf32_N::DIGIT_ONE  )  int_length = 16;     // 1x must be 16 -- set length to 16 bits 
                     else if (ch1.ch32 == utf32_N::DIGIT_THREE)  int_length = 32;     // 3x must be 32 -- set length to 32 bits
                     else                                        int_length = 64;     //    must be 64 -- set length to 64 bits  
 
-                    break;                             // 2nd digit ends the integer literal
-                }
-                else                                   // 1st and 2nd chars after S/s are not 16, 32, or 64 
-                {
-                    break;                             // S/s or U/u ends the integer literal 
-                }  
-            }
-            else                                       // 1st char not 8 -or- 2nd char not 1, 3, or 6 -- can't be start of length specifier
-            {
-                break;                                 // S/s or U/u ends the integer literal  
-            }
-
-            // shouldn't get here
-        }                                              // process S/s or U/u
+                    break;                                                  // 2nd digit ends the integer literal
+                }                                                          
+                else                                                        // 1st and 2nd chars after S/s or U/u are not 16, 32, or 64, but 1st char after U/u could still be 1 (boolean)  
+                {                                                          
+                    if (u_seen)                                             // only u1/U1 allowed for booleans -- not s1/S1
+                    {                                     
+                         if (ch1.ch32 == utf32_N::DIGIT_ONE)                // U1 or u1 -- is a boolean (2nd digit is not 6, os we don't have u16 or U16) following digits are ignored 
+                         {
+                             int_length = 1;                                // indicate 1-bit length boolean literal 
+                             get_char(ch1);                                 // consume the 1 character before leaving
+                             addto_orig_token(token, ch1);                  // add the 1 to original token only                          
+                             break;                                         // the 1 digit ends the integer literal token                        
+                         }  
+                         else                                               // 3 or 6, but not 32 or 64 -- not a boolean 
+                         {
+                             break;                                         // U/u S/s end the integer literal -- not a boolean 
+                         }
+                    }                                     
+                    else                                                    // S/s -- not a boolean 
+                    {                                                                           
+                        break;                                              // S/s ends the integer literal -- not valid boolean literal 
+                    }                                                      
+                }                                                          
+            }                                                              
+            else                                                             // 1st char not 0, 8, 1, 3, or 6 -- can't be start of length specifier
+            {                                                              
+                break;                                                       // S/s or U/u ends the integer literal  
+            }                                                              
+                                                                           
+            // shouldn't get here                                          
+        }                                                                    // process S/s or U/u
 
 
         //   Process "E" or "e"  -- maybe start of exponent, or start of next token, or part of a numeric identifier  (no need to check for u_seen or s_seen -- since those end the number) 
         //   -------------------------------------------------------------------------------------------------------
 
-        else if (                               // check for E or e -- special meaning only valid if no alpha seen yet
+        else if (                                                            // check for E or e -- special meaning only valid if no alpha seen yet
                  ( (ch.ch32 == const_N::ch_exponent_lower) || (ch.ch32 == const_N::ch_exponent_upper) )
                  &&
                  (!alpha_seen)
@@ -3369,7 +3740,7 @@ int token_stream_C::numeric_literal(token_C& token) try
 
 
     // ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
-    // ??????????????? need to add checks to see what follows the numeric literal -- error if alpha char or numeric digit, separator char (underscore), negative sign (macron) or dot.  (+- are always OK) 
+    // ??????????????? need to add checks to see what follows the numeric literal -- error if alpha char or numeric digit, separator char (underscore), negative sign (always_sign) or dot.  (+- are always OK) 
     // need to flush through these characters to include them in the error token and error message
 
 
@@ -3405,7 +3776,7 @@ int token_stream_C::numeric_literal(token_C& token) try
         }
         else                                                       // no dot and no alpha -- must be signed or unsigned integer
         {
-            // process signed/usigned 8-bit, 16-bit, 32-bit, or 64-bit integer literal
+            // process signed/usigned number  0-bit (unit), 1-bit (boolean), 8-bit, 16-bit, 32-bit, or 64-bit integer literal
 
             rc = get_integer_value(token, int_length, u_seen, 10);                    
         }
@@ -3424,6 +3795,7 @@ M_endf
 //  -----------------------
 //
 //    note: when called, 1st 2 chars are known to be: 0X 0x 0B 0b 0O or 0o
+//    note: based integers are not recognized as boolean or unit values
 //
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3577,7 +3949,7 @@ int token_stream_C::based_numeric_literal(token_C& token) try
 
 
     // ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
-    // ??????????????? need to add checks to see what follows the numeric literal -- error if alpha char or numeric digit, separator char (underscore), negative sign (macron) or dot.  (+- are always OK) 
+    // ??????????????? need to add checks to see what follows the numeric literal -- error if alpha char or numeric digit, separator char (underscore), negative sign (always_sign) or dot.  (+- are always OK) 
     // need to flush through these characters to include them in the error token and error message
 
 
@@ -3662,10 +4034,14 @@ int token_stream_C::fetch_raw_token(token_C& token) try
 
     //  update ch_subtype if this is one of the variable-purpose chars -or- a leading sigil
 
-    if       (ch.ch32 == m_line_continuation_ch    )   ch_subtype = char_E::f_continuation       ;  
-    else if  (ch.ch32 == m_line_comment_ch         )   ch_subtype = char_E::f_line_comment       ;
-    else if  (ch.ch32 == m_echoed_line_comment_ch  )   ch_subtype = char_E::f_echoed_line_comment;
-    else if  (ch.ch32 == m_vanishing_separator_ch  )   ch_subtype = char_E::f_vanishing_separator;
+    if       (ch.ch32 == m_line_continuation_ch     )   ch_subtype = char_E::f_continuation         ;
+    else if  (ch.ch32 == m_vanishing_separator_ch   )   ch_subtype = char_E::f_vanishing_separator  ;
+    else if  (ch.ch32 == m_always_sign_ch           )   ch_subtype = char_E::f_always_sign          ;
+    else if  (ch.ch32 == m_unechoed_line_comment_ch )   ch_subtype = char_E::f_line_comment         ;
+    else if  (ch.ch32 == m_echoed_line_comment_ch   )   ch_subtype = char_E::f_echoed_line_comment  ;
+    else if  (ch.ch32 == m_comment_1st_ch           )   ch_subtype = char_E::f_comment_1st          ;
+    else if  (ch.ch32 == m_type1_string_start_ch    )   ch_subtype = char_E::f_type1_string_start   ;
+    else if  (ch.ch32 == m_type2_string_start_ch    )   ch_subtype = char_E::f_type2_string_start   ;
   
     else if  ( std::find(m_leading_sigils.begin(), m_leading_sigils.end(), ch.ch32) != m_leading_sigils.end() )
        ch_subtype = char_E::f_leading_sigil; 
@@ -3687,11 +4063,13 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                 break;
            
        
-            // handle END character at start of new token (all files are closed now)
-            // ---------------------------------------------------------------------
+            // handle END character at start of new token (all files are closed now) or else this is END of a parsed string
+            // ------------------------------------------------------------------------------------------------------------
        
             case char_E::end : 
+                M__(M_out(L"fetch_raw_token() -- char_E::end seen");)
                 one_char_token(token, token_E::end, ch);
+                M__(M_out(L"fetch_raw_token() -- ch.source_id = %d   ch.lineno=%d   ch.linepos=%d") % ch.source_id % ch.lineno % ch.linepos; )
                 break;
        
        
@@ -3894,30 +4272,42 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                 break; 
                          
        
-            //  -----------------------------------------------------------------------------------------------------------------------------------------------------------
-            //  solidus -- can be line_comment ( // ), echoed line comment ( /!), block_comment ( /* ),  EOF comment ( /~ ), nestable comment ( /< ),  or start of operator
-            //  -----------------------------------------------------------------------------------------------------------------------------------------------------------
+            //  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            //  1st comment char -- can be start of line_comment ( // ), echoed line comment ( /!), block_comment ( /* ),  EOF comment ( /~ ), nestable comment ( /< ),  or start of operator
+            //  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
        
-            case char_E::solidus :
+            case char_E::f_comment_1st :
             {
                 in_char_S ch1 {}; 
                 peek_char(ch1, 2);                                            // look at char following the "/" -- 2nd oldest one -- leave it in the char stream                     
                 
-                if      (ch1.ch32 == const_N::ch_line_comment_2nd         )   // "//" starts a line comment 
-                    line_comment(token, false, false, 2);                     //      do not suppress EOL after comment -- do not echo, introducer length = 2 
-                else if (ch1.ch32 == const_N::ch_echoed_line_comment_2nd  )   // "/!" starts an echoed line comment 
-                    line_comment(token, false, true, 2);                      //      do not suppress EOL after comment -- do echo,     introducer length = 2 
-                else if (ch1.ch32 == const_N::ch_suppress_eol_comment_2nd )   // "/!" starts an echoed line comment 
-                    line_comment(token, true, false, 2);                      //      do     suppress EOL after comment -- do not echo, introducer length = 2 
-                else if (ch1.ch32 == const_N::ch_block_comment_2nd        )   // "/*" starts a block comment -- ends with "*/" or with error or EOF (not valid)
-                    block_comment(token);
-                else if (ch1.ch32 == const_N::ch_nest_comment_2nd         )   // "/<" starts a nestable block comment  
-                    nestable_comment(token);                                
-                else if (ch1.ch32 == const_N::ch_eof_comment_2nd          )   // "/~" starts an EOF comment -- ends with EOF
-                    eof_comment(token);
-                else                                                          // not "//", "/*", "/~", or "/!" -- start an operator token 
+                if      (ch1.ch32 == m_unechoed_line_comment_2nd_ch  )          // "//" starts a line comment 
+                    line_comment(token, false, false, 2);                       //      do not suppress EOL after comment -- do not echo, introducer length = 2 
+                                                                              
+                else if (ch1.ch32 == m_echoed_line_comment_2nd_ch    )          //      (support is not not activated)
+                    line_comment(token, false, true, 2);                        //      do not suppress EOL after comment -- do echo,     introducer length = 2 
+                                                                              
+                else if (ch1.ch32 == m_suppress_eol_comment_2nd_ch   )          //      (support is not not activated) 
+                    line_comment(token, true, false, 2);                        //      do     suppress EOL after comment -- do not echo, introducer length = 2 
+                                                                     
+                else if (ch1.ch32 == m_eof_comment_2nd_ch            )          // "/~" starts an EOF comment -- ends with EOF
+                    eof_comment(token);                                                              
+                                                                     
+                else if (ch1.ch32 == m_retained_line_comment_2nd_ch  )          // "/#" starts a retained line comment -- ends with EOL
+                    retained_line_comment(token);                         
+                                                                     
+                else if (ch1.ch32 == m_block_comment_2nd_ch          )          // "/*" starts a block comment -- ends with "*/" or with error or EOF (not valid)
+                    block_comment(token);                                     
+                                                                              
+                else if (ch1.ch32 == m_nest_comment_2nd_ch           )          // "/<" starts a nestable block comment  
+                    nestable_comment(token);                                         
+              
+                else if (ch1.ch32 == m_retained_block_comment_2nd_ch )          // "/{" starts a retained block comment  
+                    retained_block_comment(token);                                                             
+              
+                else                                                            // not "//", "/*", "/<", "/#", "/{  or "/~" -- must be start of start an operator token 
                 {
-                    operator_token(token);   
+                    operator_token(token);                                      // this assumes the comment starting character is a valid operator character, like "/" 
                 }
                 break;          
             }
@@ -3956,16 +4346,16 @@ int token_stream_C::fetch_raw_token(token_C& token) try
             }
        
        
-            //  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-            //  macron, plus or hyphen_minus -- possible Numeric literal starting with sign -- maybe follwed by digit or one dot then digit (-1 , +.2 OK, -_3 ,  +._4 not allowed, for example) 
-            //  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            //  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            //  always_minus, plus or hyphen_minus -- possible Numeric literal starting with sign -- maybe follwed by digit or one dot then digit (-1 , +.2 OK, -_3 ,  +._4 not allowed, for example) 
+            //  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
        
-            case char_E::plus         : 
-            case char_E::hyphen_minus :
-            case char_E::macron       :
+            case char_E::plus                   : 
+            case char_E::hyphen_minus           :
+            case char_E::f_always_sign          :
             {
                  if  ( 
-                      (ch.subtype == char_E::macron)                              // macron unconditionally attaches (used as minus sign)
+                      (ch.subtype == char_E::f_always_sign)                       // always_minus unconditionally attaches (used as minus sign)
                       ||                                                         
                       (                                                           // must be + or -  -- need to check to see if these get attached to numeric literals 
                        ( !m_never_attach_plus_minus                     )         // only if +- attachment to numeric literals is allowedis allowed
@@ -3975,8 +4365,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                      )   
                  {
                      in_char_S ch1 {}; 
-                     peek_char(ch1, 2);                                           // look at character following the plus/minus sign or macron
-                                                                               
+                     peek_char(ch1, 2);                                           // look at character following the plus/minus sign or always_sign char                                                                                  
                                                                                
                      if (ch1.subtype == char_E::digit)                            // is it -1  +1, etc. ?
                      {                                                         
@@ -3992,12 +4381,17 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                          else                                                     // "-."  but not followed by number -- go gather up the "-" as an operator token  
                              operator_token(token);                            
                      }                                                         
-                     else                                                         // "-"    but not followed by dot or digit -- assume + or - starts an operator string, or macron is an accent char token  
+                     else                                                         // "-"    but not followed by dot or digit -- assume + or - starts an operator string, or always_sign char is an accent char token (for ecample)  
                      {
-                         if (ch.subtype == char_E::macron)                        // distinguish between macron and plus/minus
-                             one_char_token(token, token_E::accent_char, ch);     // unattached macron is passed back as accent_char token
+                         if (ch.subtype == char_E::f_always_sign)                 // distinguish between always_minus and plus/minus
+                         {
+                             ch_subtype = ch_orig_subtype;                        // on 2nd loop pass, no special interpretation for this character -- use default handling
+                             continue;                                            // go back and look at this char again
+                         }
                          else                                                     // this plus or minus must be start of a new operator token
-                             operator_token(token); 
+                         {
+                             operator_token(token);                               // start accumulating operator token (like "+" "--", etc.)
+                         }
                          break; 
                      }
                  }
@@ -4010,37 +4404,35 @@ int token_stream_C::fetch_raw_token(token_C& token) try
             
             
             //  -------------------------------------------
-            //  single quote -- start of single-word string  
+            //  single quote -- start of single-word string  (not configurable)
             //  -------------------------------------------
            
-            case char_E::both_quote1 :
-                word_string(token);                                               // ending delimiter is same as starting delimiter
+            case char_E::both_quote1 :                                            // hard-coded single quotes
+                word_string(token);                                               // ending delimiter is first whitespace after the single quote
                 break;
-            
-                
+ 
        
             //  ---------------------------------------------
             //  open double quotes -- start of escaped string  
             //  ---------------------------------------------
            
-            case char_E::both_quote2 :
-            case char_E::open_angle_quote2 :
+            case char_E::f_type1_string_start :
+            case char_E::f_type2_string_start :
        
-                switch (ch.ch32)
+                if (ch.ch32 == m_type1_string_start_ch)
                 {
-                case utf32_N::QUOTATION_MARK                             :                                                          // "                                                                     
-                    escaped_string(token, utf32_N::QUOTATION_MARK                                , m_string_escape_ch1, false);     // ending delim = "                                 ,   1st escape_char, NL in string is error   
-                    break; 
-                case utf32_N::LEFT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK  :                                                          // «                                                                     
-                    escaped_string(token, utf32_N::RIGHT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK    , m_string_escape_ch2, false);     // ending delim = »                                 ,   2nd escape_char, NL in string is error   
-                    break; 
-                default:
-                    M_out_emsg(L"Internal error -- Unexpected open (double) quote codepoint (%08X) at line=%u column=%u in file = \"%s\"") % (uint32_t)(ch.ch32) % ch.lineno % ch.linepos % m_in_filename; 
-                    ++m_error_ct;
+                    escaped_string(token, m_type1_string_end_ch, m_type1_string_escape_ch, false);     // ending delim = ",   1st escape_char, NL in string is error   
                     break; 
                 }
-       
-                break;
+                else if (ch.ch32 == m_type2_string_start_ch)
+                {
+                    escaped_string(token, m_type2_string_end_ch, m_type2_string_escape_ch, false);     // ending delim = »,   2nd escape_char, NL in string is error   
+                    break; 
+                }
+
+                M_out_emsg(L"Internal error -- Unexpected open (double) quote codepoint (%08X) at line=%u column=%u in file = \"%s\"") % (uint32_t)(ch.ch32) % ch.lineno % ch.linepos % m_in_filename; 
+                ++m_error_ct;
+                break; 
        
        
             //  ---------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -4064,25 +4456,25 @@ int token_stream_C::fetch_raw_token(token_C& token) try
             case char_E::alpha4     :
             case char_E::underscore :
                
-                M__(M_out(L"fetch_raw_token() -- ch.ch32 = %08X     const_N::ch_raw_string_prefix = %08X") % (uint32_t)(ch.ch32) %  (uint32_t)(const_N::ch_raw_string_prefix); )
+                M__(M_out(L"fetch_raw_token() -- ch.ch32 = %08X     m_raw_string_prefix_ch = %08X") % (uint32_t)(ch.ch32) %  (uint32_t)(m_raw_string_prefix_ch); )
 
                 if  (
-                     (ch.ch32 == const_N::ch_raw_string_prefix      )                                                                            //    R ?
-                     ||                                                                                                                          
-                     (ch.ch32 == const_N::ch_multiline_string_prefix)                                                                            //    M ? 
-                    )                                                                                                                            
-                {                                                                                                                                
-                    in_char_S ch1 {};                                                                                                            
-                    peek_char(ch1, 2);                                                                                                           // look at char following the raw string prefix char, to check for quotes -- 2nd oldest one -- leave it in the char stream  
+                     (ch.ch32 == m_raw_string_prefix_ch      )                                                                  //    R ?
+                     ||                                                                                                 
+                     (ch.ch32 == m_multiline_string_prefix_ch)                                                                  //    M ? 
+                    )                                                                                                      
+                {                                                                                                          
+                    in_char_S ch1 {};                                                                                      
+                    peek_char(ch1, 2);                                                                                          // look at char following the raw string prefix char, to check for quotes -- 2nd oldest one -- leave it in the char stream  
                 
                     M__(M_out(L"fetch_raw_token() -- modified string  -- ch1.subtype = %08X      char_E::open_quote2 = %08X") % (uint32_t)(ch1.subtype) % (uint32_t)(char_E::both_quote2); )
 
                     // see if next char is start of a string
 
                     if (
-                        (ch1.subtype == char_E::both_quote2       )
+                        (ch1.ch32 == m_type1_string_start_ch)
                         ||
-                        (ch1.subtype == char_E::open_angle_quote2 )
+                        (ch1.ch32 == m_type2_string_start_ch)
                        )
                     {
                         // -------------------------------------------------
@@ -4090,32 +4482,31 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                         // -------------------------------------------------    
 
                         in_char_S ch0 {};   
-                        get_char(ch0);                                                                                                           // consume modified string prefix char, which simple_string()/escaped_string() does not expect to see
-                        addto_orig_token(token, ch0);                                                                                            // add the modified string prefix char to original token text for error messages only   
+                        get_char(ch0);                                                                                          // consume modified string prefix char, which simple_string()/escaped_string() does not expect to see
+                        addto_orig_token(token, ch0);                                                                           // add the modified string prefix char to original token text for error messages only   
 
                         M__(M_out(L"fetch_raw_token() -- modified string  -- ch1.ch32 = %08X") % (uint32_t)(ch1.ch32); )
 
-                        switch (ch1.ch32)
+                        if (ch1.ch32 == m_type1_string_start_ch)
                         {
-                        case utf32_N::QUOTATION_MARK                             :                                                               // "   
-                            if (ch.ch32 == const_N::ch_raw_string_prefix)
-                                simple_string( token, utf32_N::QUOTATION_MARK                                                             );     // ending delim = " 
+                            if (ch.ch32 == m_raw_string_prefix_ch)
+                                simple_string( token, m_type1_string_end_ch                                   );            // ending delim = " 
                             else
-                                escaped_string(token, utf32_N::QUOTATION_MARK                                , m_string_escape_ch1, true  );     // ending delim = " ,   1st escape_char, include any NLs in string  
+                                escaped_string(token, m_type1_string_end_ch , m_type1_string_escape_ch, true  );            // ending delim = " ,   1st escape_char, include any NLs in string  
                             break;  
-                        case utf32_N::LEFT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK  :                                                               // «   
-                            if (ch.ch32 == const_N::ch_raw_string_prefix)
-                                simple_string( token, utf32_N::RIGHT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK                                 );     // ending delim = » 
+                        }
+                        else if (ch1.ch32 == m_type2_string_start_ch)
+                        {
+                            if (ch.ch32 == m_raw_string_prefix_ch)
+                                simple_string( token, m_type2_string_end_ch                                   );            // ending delim = » 
                             else
-                                escaped_string(token, utf32_N::RIGHT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK    , m_string_escape_ch2, true  );     // ending delim = » ,   2nd escape_char, include any NLs in string   
-                            break;                                                                    
-                        default:
-                            M_out_emsg(L"Internal error -- Unexpected open (double) quote codepoint (%08X) following raw string prefix char at line=%u column=%u in file = \"%s\"") % (uint32_t)(ch1.ch32) % ch1.lineno % ch1.linepos % m_in_filename; 
-                            ++m_error_ct;
-                            break; 
-                        }  
-                
-                        break;
+                                escaped_string(token, m_type2_string_end_ch , m_type2_string_escape_ch, true  );            // ending delim = » ,   2nd escape_char, include any NLs in string   
+                            break;  
+                        }
+
+                        M_out_emsg(L"Internal error -- Unexpected open (double) quote codepoint (%08X) following raw string prefix char at line=%u column=%u in file = \"%s\"") % (uint32_t)(ch1.ch32) % ch1.lineno % ch1.linepos % m_in_filename; 
+                        ++m_error_ct;
+                        break; 
                     }
                 }
 
@@ -4162,25 +4553,48 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                 {
                     M__(M_out(L"fetch_raw_token() -- leading operator sigil found");)
 
-                    // handle sigil followed by comment
+                    // handle sigil followed by comment      
 
-                    if (ch1.ch32 == const_N::ch_comment_1st)                     // this is solidus, which is a valid operator character
+                    if (                                                         // check for single-char comment starter
+                        (ch1.ch32 == m_echoed_line_comment_ch)
+                        ||
+                        (ch1.ch32 == m_unechoed_line_comment_ch)
+                        )
+                    {
+                            // this is sigil followed immediately by comment -- treat as isolated sigil 
+
+                            M__(M_out(L"fetch_raw_token() -- dangling sigil found before comment -- restarting loop with default interpretation");)
+
+                            ch_subtype = ch_orig_subtype;                        // treat this character as non-sigil
+                            continue;                         
+                    }
+
+
+                    // check for two-character comment starter
+
+                    if (ch1.ch32 == m_comment_1st_ch)                            // 1st comment char can be solidus, which is a valid operator character, too
                     {
                         in_char_S ch2 {}; 
                         peek_char(ch2, 3);                                       // look at char following the solidus (may indicate start of comment) -- leave it in the char stream  
 
                         if (
-                            ( ch2.ch32 == const_N::ch_line_comment_2nd         )
-                            ||
-                            ( ch2.ch32 == const_N::ch_echoed_line_comment_2nd  )
-                            ||
-                            ( ch2.ch32 == const_N::ch_suppress_eol_comment_2nd )
-                            ||
-                            ( ch2.ch32 == const_N::ch_block_comment_2nd        )
-                            ||
-                            ( ch2.ch32 == const_N::ch_nest_comment_2nd         )
-                            ||         
-                            ( ch2.ch32 == const_N::ch_eof_comment_2nd          )
+                            ( ch2.ch32 == m_unechoed_line_comment_2nd_ch  )
+                            ||                                            
+                            ( ch2.ch32 == m_echoed_line_comment_2nd_ch    )
+                            ||                                            
+                            ( ch2.ch32 == m_suppress_eol_comment_2nd_ch   )
+                            ||                                            
+                            ( ch2.ch32 == m_eof_comment_2nd_ch            )
+                            ||                                                                  
+                            ( ch2.ch32 == m_retained_line_comment_2nd_ch  )
+                            ||                                            
+                            ( ch2.ch32 == m_block_comment_2nd_ch          )
+                            ||                                            
+                            ( ch2.ch32 == m_nest_comment_2nd_ch           )
+                            ||                                            
+                            ( ch2.ch32 == m_eof_comment_2nd_ch            )
+                            ||                                           
+                            ( ch2.ch32 == m_retained_block_comment_2nd_ch )
                            )
                         {
                             // this is sigil followed immediately by comment -- treat as isolated sigil 
@@ -4375,6 +4789,11 @@ int token_stream_C::fetch_raw_token(token_C& token) try
         return -1;
     }
     
+
+    // accumulate raw token count
+
+    static_N::raw_token_count++; 
+
     return 0; 
 }
 M_endf

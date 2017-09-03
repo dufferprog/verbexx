@@ -26,6 +26,7 @@
 #include "h__common.h"
 
 #include "h_ex_interface.h"
+#include "h_ex_lex.h"
 #include "h_ex_parse.h"
 #include "h_ex_verb.h"
 
@@ -50,33 +51,34 @@ std::wstring type_str(type_E kind) try
 {
     switch (kind)
     {
-    case type_E::none        : return std::wstring { L"none"                      };      break;
-    case type_E::special     : return std::wstring { L"special"                   };      break;
-    case type_E::error       : return std::wstring { L"error"                     };      break;
-    case type_E::empty       : return std::wstring { L"empty"                     };      break;
-    case type_E::int8        : return std::wstring { L"int8"                      };      break;    
-    case type_E::int16       : return std::wstring { L"int16"                     };      break;
-    case type_E::int32       : return std::wstring { L"int32"                     };      break;
-    case type_E::int64       : return std::wstring { L"int64"                     };      break;
-    case type_E::uint8       : return std::wstring { L"uint8"                     };      break;
-    case type_E::uint16      : return std::wstring { L"uint16"                    };      break;
-    case type_E::uint32      : return std::wstring { L"uint32"                    };      break;
-    case type_E::uint64      : return std::wstring { L"uint64"                    };      break;
-    case type_E::float32     : return std::wstring { L"float32"                   };      break;
-    case type_E::float64     : return std::wstring { L"float64"                   };      break;
-    case type_E::array       : return std::wstring { L"array"                     };      break;
-    case type_E::structure   : return std::wstring { L"structure"                 };      break;
-    case type_E::string      : return std::wstring { L"string"                    };      break;
-    case type_E::identifier  : return std::wstring { L"identifier"                };      break;
-    case type_E::verbname    : return std::wstring { L"verbname"                  };      break;
-    case type_E::keyname     : return std::wstring { L"keyname"                   };      break;
-    case type_E::typdef      : return std::wstring { L"typedef"                   };      break;
-    case type_E::ref         : return std::wstring { L"ref"                       };      break;
-    case type_E::vlist       : return std::wstring { L"vlist"                     };      break;
-    case type_E::vexpr       : return std::wstring { L"expression"                };      break;
-    case type_E::slist       : return std::wstring { L"slist"                     };      break;
-    case type_E::verbdef     : return std::wstring { L"verbdef"                   };      break; 
-    default                  : return std::wstring { L"???-Unknown_type_E::-???"  };      break; 
+        case type_E::none        : return std::wstring { L"none"                      };      break;
+        case type_E::no_value    : return std::wstring { L"no_value"                  };      break;
+        case type_E::special     : return std::wstring { L"special"                   };      break;
+        case type_E::error       : return std::wstring { L"error"                     };      break;
+        case type_E::unit        : return std::wstring { L"unit"                      };      break;
+        case type_E::int8        : return std::wstring { L"int8"                      };      break;    
+        case type_E::int16       : return std::wstring { L"int16"                     };      break;
+        case type_E::int32       : return std::wstring { L"int32"                     };      break;
+        case type_E::int64       : return std::wstring { L"int64"                     };      break;
+        case type_E::uint8       : return std::wstring { L"uint8"                     };      break;
+        case type_E::uint16      : return std::wstring { L"uint16"                    };      break;
+        case type_E::uint32      : return std::wstring { L"uint32"                    };      break;
+        case type_E::uint64      : return std::wstring { L"uint64"                    };      break;
+        case type_E::float32     : return std::wstring { L"float32"                   };      break;
+        case type_E::float64     : return std::wstring { L"float64"                   };      break;
+        case type_E::array       : return std::wstring { L"array"                     };      break;
+        case type_E::structure   : return std::wstring { L"structure"                 };      break;
+        case type_E::string      : return std::wstring { L"string"                    };      break;
+        case type_E::identifier  : return std::wstring { L"identifier"                };      break;
+        case type_E::verbname    : return std::wstring { L"verbname"                  };      break;
+        case type_E::keyname     : return std::wstring { L"keyname"                   };      break;
+        case type_E::typdef      : return std::wstring { L"typedef"                   };      break;
+        case type_E::ref         : return std::wstring { L"ref"                       };      break;
+        case type_E::vlist       : return std::wstring { L"vlist"                     };      break;
+        case type_E::vexpr       : return std::wstring { L"expression"                };      break;
+        case type_E::slist       : return std::wstring { L"slist"                     };      break;
+        case type_E::verbdef     : return std::wstring { L"verbdef"                   };      break; 
+        default                  : return std::wstring { L"???-Unknown_type_E::-???"  };      break; 
     }
 }
 M_endf
@@ -168,7 +170,7 @@ std::wstring str_value(const value_S& value, bool debug, bool debugx, bool nest)
     std::wstring fmt_uint64 { };
 
 
-    // set format strings based on debugx or not
+    // set format strings based on debugx or not (debugx not supported for floating point values)
 
     if (debugx)
     {
@@ -199,8 +201,8 @@ std::wstring str_value(const value_S& value, bool debug, bool debugx, bool nest)
     if       (value.ty == type_E::string)
     {
         str    = value.string; 
-        str_d1 = L"«"; 
-        str_d2 = L"»";
+        str_d1 = std::wstring { const_N::chws_string_start }; 
+        str_d2 = std::wstring { const_N::chws_string_end   };
     }
     else if  (value.ty == type_E::int8)
     {   
@@ -209,55 +211,66 @@ std::wstring str_value(const value_S& value, bool debug, bool debugx, bool nest)
         else
             str = fmt_str(fmt_int8, (int16_t )(value.int8 ));
 
-        str_d2  = L"_s8"; 
+        str_d2  = std::wstring {L"_"} + std::wstring {const_N::chws_signed_lower} + std::wstring {L"8"}; 
     }
     else if  (value.ty == type_E::int16)
     {
-        str    = fmt_str(fmt_int16, value.int16);
-        str_d2 = L"_s16";
+        str     = fmt_str(fmt_int16, value.int16);
+        str_d2  = std::wstring {L"_"} + std::wstring {const_N::chws_signed_lower} + std::wstring {L"16"}; 
     }
     else if  (value.ty == type_E::int32)
     {
-        str    = fmt_str(fmt_int32, value.int32);
-        str_d2 = L"_s32";
+        str     = fmt_str(fmt_int32, value.int32);
+        str_d2  = std::wstring {L"_"} + std::wstring {const_N::chws_signed_lower} + std::wstring {L"32"};
     }
     else if  (value.ty == type_E::int64)
     {
-        str    = fmt_str(fmt_int64, value.int64);
-        str_d2 = L"_s64";
+        str     = fmt_str(fmt_int64, value.int64);
+        str_d2  = std::wstring {L"_"} + std::wstring {const_N::chws_signed_lower} + std::wstring {L"64"};
+    }
+    else if  (value.ty == type_E::unit)
+    {
+        str     = L"0"  ; 
+        str_d2  = std::wstring {L"_"} + std::wstring {const_N::chws_unsigned_lower} + std::wstring {L"0"};
+    }
+    else if  (value.ty == type_E::boolean)
+    {
+        if (value.boolean)
+            str  = L"1"; 
+        else
+            str  = L"0"; 
+        
+        str_d2  = std::wstring {L"_"} + std::wstring {const_N::chws_unsigned_lower} + std::wstring {L"1"};
     }
     else if  (value.ty == type_E::uint8)
     {
-        str    = fmt_str(fmt_uint8, (uint16_t)(value.uint8)); 
-        str_d2 = L"_u8";
+        str     = fmt_str(fmt_uint8, (uint16_t)(value.uint8)); 
+        str_d2  = std::wstring {L"_"} + std::wstring {const_N::chws_unsigned_lower} + std::wstring {L"8"};
     }
     else if  (value.ty == type_E::uint16)
     {
         str    = fmt_str(fmt_uint16, value.uint16); 
-        str_d2 = L"_u16";
+        str_d2 = std::wstring {L"_"} + std::wstring {const_N::chws_unsigned_lower} + std::wstring {L"16"};
     }
     else if  (value.ty == type_E::uint32)
     {
-        str = fmt_str(fmt_uint32, value.uint32); 
-        str_d2 = L"_u32";
+        str    = fmt_str(fmt_uint32, value.uint32); 
+        str_d2 = std::wstring {L"_"} + std::wstring {const_N::chws_unsigned_lower} + std::wstring {L"32"};
     }
     else if  (value.ty == type_E::uint64)
     {
-        str = fmt_str(fmt_uint64, value.uint64); 
-        str_d2 = L"_u64";
+        str    = fmt_str(fmt_uint64, value.uint64); 
+        str_d2 = std::wstring {L"_"} + std::wstring {const_N::chws_unsigned_lower} + std::wstring {L"64"};
     }
     else if  (value.ty == type_E::float32)
     {
-        str = fmt_str(L"%#.9g", (float64_T)(value.float32));
+        str    = fmt_str(L"%#.9g", (float64_T)(value.float32));
+        str_d2 = std::wstring {L"_"} + std::wstring {const_N::chws_float_lower} + std::wstring {L"32"};;
     }
     else if  (value.ty == type_E::float64)
     {
-        str = fmt_str(L"%#.18g", value.float64);
-    }
-    else if  (value.ty == type_E::empty)
-    {
-        str    = L""; 
-        str_d1 = L"°";              // char_E::DEGREE_SIGN       ch_empty_value
+        str    = fmt_str(L"%#.18g", value.float64);
+        str_d2 = std::wstring {L"_"} + std::wstring {const_N::chws_float_lower} + std::wstring {L"64"};
     }
     else if  (value.ty == type_E::slist) 
     {
@@ -308,6 +321,11 @@ std::wstring str_value(const value_S& value, bool debug, bool debugx, bool nest)
     {
         str    = value.string;
         str_d1 = L"keyname:"; 
+    }
+    else if  (value.ty == type_E::none)
+    {
+        str    = L"uninitialized value";
+        str_d1 = L"none:"; 
     }
     else  
     {
@@ -457,9 +475,9 @@ M_endf
 /////////////////////  simple, hard-coded true/false results  ////////////////////////////////////////////
 
 
-results_S  true_results(       ) {return to_results(type_val( (bool_T)1  ));} 
-results_S false_results(       ) {return to_results(type_val( (bool_T)0  ));} 
-results_S    tf_results(bool tf) {return to_results(type_val( (bool_T)tf ));} 
+results_S  true_results(       ) {return to_results(type_val( true  ));} 
+results_S false_results(       ) {return to_results(type_val( false ));} 
+results_S    tf_results(bool tf) {return to_results(type_val( tf    ));} 
 
 
 
@@ -469,17 +487,18 @@ results_S    tf_results(bool tf) {return to_results(type_val( (bool_T)tf ));}
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   empty_results() -- return empty results_S 
+////   unit_results() -- return unit results_S 
 ////                   
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////""
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-results_S empty_results() try
+results_S unit_results() try
 {
     results_S results { };
+    results.ty = type_E::unit; 
     return results; 
 }
 M_endf
@@ -493,13 +512,13 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   error_results() -- return empty results_S with just the error/special flag set
+////   error_results() -- return error results_S with the error and special flags set
 ////                   
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////""
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 results_S error_results() try
 {
@@ -513,6 +532,29 @@ results_S error_results() try
 M_endf
 
 
+
+
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   no_results() -- return zero result_S values 
+////                   
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+results_S no_results() try
+{
+    results_S results { };                    // leave type = none
+    results.multiple_results = true; 
+    return results; 
+}
+M_endf
 
 ////_________________________________________________________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
@@ -530,12 +572,45 @@ M_endf
 
 
 // individual value-creating functions
+// -----------------------------------
 
-value_S empty_val( int64_t ix1, int64_t ix2) try
+
+value_S unit_val( int64_t ix1, int64_t ix2) try
 {
     value_S value {}; 
 
-    value.ty            = type_E::empty; 
+    value.ty            = type_E::unit; 
+    value.token_ix1     = ix1;
+    value.token_ix2     = ix2;
+
+    return value; 
+}
+M_endf
+
+
+///////////////////////////////////////
+
+value_S nval_val( int64_t ix1, int64_t ix2) try
+{
+    value_S value {}; 
+
+    value.ty            = type_E::no_value;    // only for keywords without values 
+    value.token_ix1     = ix1;
+    value.token_ix2     = ix2;
+
+    return value; 
+}
+M_endf
+
+
+///////////////////////////////////////
+
+value_S boolean_val(bool v, int64_t ix1, int64_t ix2) try
+{
+    value_S value {}; 
+
+    value.ty            = type_E::boolean; 
+    value.boolean       = v; 
     value.token_ix1     = ix1;
     value.token_ix2     = ix2;
 
@@ -891,6 +966,22 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+
+value_S type_val(bool v, int64_t ix1, int64_t ix2) try
+{
+    value_S value {}; 
+
+    value.ty            = type_E::boolean; 
+    value.boolean       = v; 
+    value.token_ix1     = ix1;
+    value.token_ix2     = ix2;
+
+    return value; 
+}
+M_endf
+
+//////////////////////////////////////////////////////////////////
+
 value_S type_val(int8_t v, int64_t ix1, int64_t ix2) try
 {
     value_S value {}; 
@@ -1199,6 +1290,29 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 
+/////////////  is_value_boolean() ///////////////////// 
+
+bool is_value_boolean(const value_S& value) try
+{
+    M__(M_out(L"is_value_boolean() -- value.ty = %d") % (int)(value.ty); )
+
+    if (value.ty == type_E::boolean)
+    {
+        M__(M_out(L"is_value_boolean() -- return TRUE"); )
+        return true;
+    }
+    else
+    {
+        M__(M_out(L"is_value_boolean() -- return FALSE"); )
+        return false; 
+    }
+}
+M_endf
+  
+
+
+
+
 /////////////  is_value_integer() ///////////////////// 
 
 bool is_value_integer(const value_S& value) try
@@ -1309,7 +1423,8 @@ M_endf
 bool is_value_comparable(const value_S& value) try
 {
     if (
-        (value.ty == type_E::empty )  ||
+        (value.ty == type_E::unit  )  ||
+        (value.ty == type_E::boolean) ||
         (value.ty == type_E::string)  ||
         (value.ty == type_E::int8  )  ||
         (value.ty == type_E::int16 )  ||
@@ -1335,21 +1450,23 @@ M_endf
 bool is_value_false(const value_S& value) try
 {
     if (
-        ( (value.ty == type_E::int8  )  &&  ( value.int8   == 0) )
-        ||                            
-        ( (value.ty == type_E::int16 )  &&  ( value.int16  == 0) )
-        ||                           
-        ( (value.ty == type_E::int32 )  &&  ( value.int32  == 0) )
-        ||                             
-        ( (value.ty == type_E::int64 )  &&  ( value.int64  == 0) )
-        ||                            
-        ( (value.ty == type_E::uint8 )  &&  ( value.uint8  == 0) )
-        ||                                               
-        ( (value.ty == type_E::uint16)  &&  ( value.uint16 == 0) )
-        ||                            
-        ( (value.ty == type_E::uint32)  &&  ( value.uint32 == 0) )
-        ||                            
-        ( (value.ty == type_E::uint64)  &&  ( value.uint64 == 0) )
+        ( (value.ty == type_E::boolean)  &&  ( value.boolean == false) )
+        ||
+        ( (value.ty == type_E::int8   )  &&  ( value.int8    == 0    ) )
+        ||                                                           
+        ( (value.ty == type_E::int16  )  &&  ( value.int16   == 0    ) )
+        ||                                                           
+        ( (value.ty == type_E::int32  )  &&  ( value.int32   == 0    ) )
+        ||                                                           
+        ( (value.ty == type_E::int64  )  &&  ( value.int64   == 0    ) )
+        ||                                                           
+        ( (value.ty == type_E::uint8  )  &&  ( value.uint8   == 0    ) )
+        ||                                                           
+        ( (value.ty == type_E::uint16 )  &&  ( value.uint16  == 0    ) )
+        ||                                                           
+        ( (value.ty == type_E::uint32 )  &&  ( value.uint32  == 0    ) )
+        ||                                                           
+        ( (value.ty == type_E::uint64 )  &&  ( value.uint64  == 0    ) )
        )
         return true;
     else
@@ -1363,22 +1480,24 @@ M_endf
 bool is_value_true(const value_S& value) try
 {
     if (
-        ( (value.ty == type_E::int8  )  &&  ( value.int8   != 0) )
-        ||                            
-        ( (value.ty == type_E::int16 )  &&  ( value.int16  != 0) )
-        ||                           
-        ( (value.ty == type_E::int32 )  &&  ( value.int32  != 0) )
-        ||                             
-        ( (value.ty == type_E::int64 )  &&  ( value.int64  != 0) )
-        ||                            
-        ( (value.ty == type_E::uint8 )  &&  ( value.uint8  != 0) )
-        ||                                               
-        ( (value.ty == type_E::uint16)  &&  ( value.uint16 != 0) )
-        ||                            
-        ( (value.ty == type_E::uint32)  &&  ( value.uint32 != 0) )
-        ||                            
-        ( (value.ty == type_E::uint64)  &&  ( value.uint64 != 0) )
-       )
+        ( (value.ty == type_E::boolean)  &&  ( value.boolean == true ) )
+        ||
+        ( (value.ty == type_E::int8   )  &&  ( value.int8   != 0     ) )
+        ||                                                           
+        ( (value.ty == type_E::int16  )  &&  ( value.int16  != 0     ) )
+        ||                                                           
+        ( (value.ty == type_E::int32  )  &&  ( value.int32  != 0     ) )
+        ||                                                           
+        ( (value.ty == type_E::int64  )  &&  ( value.int64  != 0     ) )
+        ||                                                           
+        ( (value.ty == type_E::uint8  )  &&  ( value.uint8  != 0     ) )
+        ||                                                           
+        ( (value.ty == type_E::uint16 )  &&  ( value.uint16 != 0     ) )
+        ||                                                           
+        ( (value.ty == type_E::uint32 )  &&  ( value.uint32 != 0     ) )
+        ||                                                           
+        ( (value.ty == type_E::uint64 )  &&  ( value.uint64 != 0     ) )
+       )                                                             
         return true;
     else
         return false; 
@@ -1393,7 +1512,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   is_same_class() -- return true if both value type belong to same "class" (int, float, empty, string only) 
+////   is_same_class() -- return true if both value type belong to same "class" (int, float, unit, string only) 
 ////
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -1404,10 +1523,11 @@ M_endf
 bool is_same_class(const value_S& value1, const value_S& value2) try
 {
     if ( (value1.ty == type_E::string     ) && (value2.ty == type_E::string ) ) return true;
-    if ( (value1.ty == type_E::empty      ) && (value2.ty == type_E::empty  ) ) return true; 
+    if ( (value1.ty == type_E::boolean    ) && (value2.ty == type_E::boolean) ) return true; 
+    if ( (value1.ty == type_E::unit       ) && (value2.ty == type_E::unit   ) ) return true; 
 
-    if ( is_value_integer(value1) && is_value_integer(value2) )               return true;
-    if ( is_value_float(  value1) && is_value_float(  value2) )               return true;
+    if ( is_value_integer(value1) && is_value_integer(value2) )                 return true;
+    if ( is_value_float(  value1) && is_value_float(  value2) )                 return true;
 
     return false; 
 }
@@ -1435,7 +1555,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   set_vlist_value() -- put shared_ptr to passed-in vlist_S into caller's (empty) value_S structure 
+////   set_vlist_value() -- put shared_ptr to passed-in vlist_S into caller's (uninitilized) value_S structure 
 ////                        (allocates new vlist_S and copies passed-in vlist_S into it)
 ////
 ////
@@ -1448,12 +1568,12 @@ void set_vlist_value(value_S& val, const vlist_S& vlist, bool move_ok) try
 {
     // make sure value is not already set
 
-    if (val.ty != type_E::empty)
+    if (val.ty != type_E::none)
     {
-        M_out_emsg1(L"set_vlist_value(): passed-in value is not empty: ");
-        display_value(val, L"non-empty value");
+        M_out_emsg1(L"set_vlist_value(): passed-in value is already set: ");
+        display_value(val, L"already-set value");
         M_out_emsgz();
-        M_throw("set_vlist_value(): passed-in value is not empty")
+        M_throw("set_vlist_value(): passed-in value is already set")
     }
 
 
@@ -1490,7 +1610,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   set_vexpr_value() -- put shared_ptr to passed-in a_vexpr_S into caller's (empty) value_S structure 
+////   set_vexpr_value() -- put shared_ptr to passed-in a_vexpr_S into caller's (uninitialized) value_S structure 
 ////                        (allocates new a_vexpr_S and copies passed-in a_vexpr_S into it)
 ////
 ////
@@ -1503,12 +1623,12 @@ void set_vexpr_value(value_S& val, const a_vexpr_S& vexpr, bool move_ok) try
 {
     // make sure value is not already set
 
-    if (val.ty != type_E::empty)
+    if (val.ty != type_E::none)
     {
-        M_out_emsg1(L"set_vexpr_value(): passed-in value is not empty, as required: ");
-        display_value(val, L"non-empty (bad) value");
+        M_out_emsg1(L"set_vexpr_value(): passed-in value is already set: ");
+        display_value(val, L"already-set value");
         M_out_emsgz();
-        M_throw("set_vexpr_value(): passed-in value is not empty, as requried")
+        M_throw("set_vexpr_value(): passed-in value is already set")
     }
 
 
@@ -1546,7 +1666,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   set_slist_value() -- put shared_ptr to passed-in slist_S into caller's (empty) value_S structure 
+////   set_slist_value() -- put shared_ptr to passed-in slist_S into caller's (uninitialized) value_S structure 
 ////                        (allocates new slist_S and copies passed-in slist_S into it)
 ////
 ////
@@ -1559,12 +1679,12 @@ void set_slist_value(value_S& val, const slist_S& slist, bool move_ok) try
 {
     // make sure value is not already set
 
-    if (val.ty != type_E::empty)
+    if (val.ty != type_E::none)
     {
-        M_out_emsg1(L"set_slist_value(): passed-in value is not empty: ");
-        display_value(val, L"non-empty value");
+        M_out_emsg1(L"set_slist_value(): passed-in value is already set: ");
+        display_value(val, L"already-set value");
         M_out_emsgz();
-        M_throw("set_slist_value(): passed-in value is not empty")
+        M_throw("set_slist_value(): passed-in value is already set")
     }
 
 
@@ -1600,7 +1720,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   set_verbdef_value() -- put shared_ptr to passed-in verbdef_S into caller's (empty) value_S structure 
+////   set_verbdef_value() -- put shared_ptr to passed-in verbdef_S into caller's (uninitialized) value_S structure 
 ////                          (allocates new verbdef_S and copies passed-in verbdef_S into it)
 ////
 ////
@@ -1613,12 +1733,12 @@ void set_verbdef_value(value_S& val, const verbdef_S& verbdef, bool move_ok) try
 {
     // make sure value is not already set
 
-    if (val.ty != type_E::empty)
+    if (val.ty != type_E::none)
     {
-        M_out_emsg1(L"set_verbdef_value(): passed-in value is not empty: ");
-        display_value(val, L"non-empty value");
+        M_out_emsg1(L"set_verbdef_value(): passed-in value is already set: ");
+        display_value(val, L"already-set value");
         M_out_emsgz();
-        M_throw("set_verbdef_value(): passed-in value is not empty")
+        M_throw("set_verbdef_value(): passed-in value is already set")
     }
 
 
@@ -1655,7 +1775,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   set_typdef_value() -- put shared_ptr to passed-in typdef_S into caller's (empty) value_S structure 
+////   set_typdef_value() -- put shared_ptr to passed-in typdef_S into caller's (uninitialized) value_S structure 
 ////                         (allocates new typdef_S and copies passed-in typdef_S into it)
 ////
 ////
@@ -1668,12 +1788,12 @@ void set_typdef_value(value_S& val, const typdef_S& ty, bool move_ok) try
 {
     // make sure value is not already set
 
-    if (val.ty != type_E::empty)
+    if (val.ty != type_E::none)
     {
-        M_out_emsg1(L"set_typdef_value(): passed-in value is not empty: ");
-        display_value(val, L"non-empty value");
+        M_out_emsg1(L"set_typdef_value(): passed-in value is already set: ");
+        display_value(val, L"already-set value");
         M_out_emsgz();
-        M_throw("set_typdef_value(): passed-in value is not empty")
+        M_throw("set_typdef_value(): passed-in value is already set")
     }
 
 
@@ -1708,7 +1828,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   set_ref_value() -- put shared_ptr to passed-in ref_S into caller's (empty) value_S structure 
+////   set_ref_value() -- put shared_ptr to passed-in ref_S into caller's (uninitialized) value_S structure 
 ////                      (allocates new ref_S and copies passed-in ref_S into it)
 ////
 ////
@@ -1721,12 +1841,12 @@ void set_ref_value(value_S& val, const ref_S& ref, bool move_ok) try
 {
     // make sure value is not already set
 
-    if (val.ty != type_E::empty)
+    if (val.ty != type_E::none)
     {
-        M_out_emsg1(L"set_ref_value(): passed-in value is not empty: ");
-        display_value(val, L"non-empty value");
+        M_out_emsg1(L"set_ref_value(): passed-in value is already set: ");
+        display_value(val, L"already-set value");
         M_out_emsgz();
-        M_throw("set_ref_value(): passed-in value is not empty")
+        M_throw("set_ref_value(): passed-in value is already set")
     }
 
 
@@ -1764,7 +1884,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   set_buffer_value() -- put shared_ptrs to passed-in buf8_T and typdef_S into caller's (empty) value_S structure 
+////   set_buffer_value() -- put shared_ptrs to passed-in buf8_T and typdef_S into caller's (uninitialized) value_S structure 
 ////                         (allocates new buf8_T and typdef_S, then copies passed-in buf8_T and typdef_S into it)
 ////
 ////
@@ -1777,12 +1897,12 @@ void set_buffer_value(value_S& val, const buf8_T& buffer, const typdef_S& ty, bo
 {
     // make sure value is not already set
 
-    if (val.ty != type_E::empty)
+    if (val.ty != type_E::none)
     {
-        M_out_emsg1(L"set_buffer_value(): passed-in value is not empty: ");
-        display_value(val, L"non-empty value");
+        M_out_emsg1(L"set_buffer_value(): passed-in value is already set: ");
+        display_value(val, L"already-set value");
         M_out_emsgz();
-        M_throw("set_buffer_value(): passed-in value is not empty")
+        M_throw("set_buffer_value(): passed-in value is already set")
     }
 
 
@@ -2443,33 +2563,35 @@ bool is_type_valid(type_E kind) try
 {
     switch (kind)
     {
-    case type_E::none        : return true ;      break;
-    case type_E::special     : return true ;      break;
-    case type_E::error       : return true ;      break;
-    case type_E::empty       : return true ;      break;
-    case type_E::int8        : return true ;      break;    
-    case type_E::int16       : return true ;      break;
-    case type_E::int32       : return true ;      break;
-    case type_E::int64       : return true ;      break;
-    case type_E::uint8       : return true ;      break;
-    case type_E::uint16      : return true ;      break;
-    case type_E::uint32      : return true ;      break;
-    case type_E::uint64      : return true ;      break;
-    case type_E::float32     : return true ;      break;
-    case type_E::float64     : return true ;      break;
-    case type_E::array       : return true ;      break;
-    case type_E::structure   : return true ;      break;
-    case type_E::string      : return true ;      break;
-    case type_E::identifier  : return true ;      break;
-    case type_E::verbname    : return true ;      break;
-    case type_E::keyname     : return true ;      break;
-    case type_E::typdef      : return true ;      break;
-    case type_E::ref         : return true ;      break;
-    case type_E::vlist       : return true ;      break;
-    case type_E::vexpr       : return true ;      break;
-    case type_E::slist       : return true ;      break;
-    case type_E::verbdef     : return true ;      break; 
-    default                  : return false;      break; 
+        case type_E::none        : return true ;      break;
+        case type_E::no_value    : return true ;      break;
+        case type_E::special     : return true ;      break;
+        case type_E::error       : return true ;      break;
+        case type_E::unit        : return true ;      break;
+        case type_E::boolean     : return true ;      break;
+        case type_E::int8        : return true ;      break;    
+        case type_E::int16       : return true ;      break;
+        case type_E::int32       : return true ;      break;
+        case type_E::int64       : return true ;      break;
+        case type_E::uint8       : return true ;      break;
+        case type_E::uint16      : return true ;      break;
+        case type_E::uint32      : return true ;      break;
+        case type_E::uint64      : return true ;      break;
+        case type_E::float32     : return true ;      break;
+        case type_E::float64     : return true ;      break;
+        case type_E::array       : return true ;      break;
+        case type_E::structure   : return true ;      break;
+        case type_E::string      : return true ;      break;
+        case type_E::identifier  : return true ;      break;
+        case type_E::verbname    : return true ;      break;
+        case type_E::keyname     : return true ;      break;
+        case type_E::typdef      : return true ;      break;
+        case type_E::ref         : return true ;      break;
+        case type_E::vlist       : return true ;      break;
+        case type_E::vexpr       : return true ;      break;
+        case type_E::slist       : return true ;      break;
+        case type_E::verbdef     : return true ;      break; 
+        default                  : return false;      break; 
     }  
 }
 M_endf
@@ -2479,17 +2601,18 @@ bool is_type_atomic(type_E kind) try
 {
     switch (kind)
     {
-    case type_E::int8        : return true ;      break;    
-    case type_E::int16       : return true ;      break;
-    case type_E::int32       : return true ;      break;
-    case type_E::int64       : return true ;      break;
-    case type_E::uint8       : return true ;      break;
-    case type_E::uint16      : return true ;      break;
-    case type_E::uint32      : return true ;      break;
-    case type_E::uint64      : return true ;      break;
-    case type_E::float32     : return true ;      break;
-    case type_E::float64     : return true ;      break;
-    default                  : return false;      break;
+        case type_E::boolean     : return true ;      break; 
+        case type_E::int8        : return true ;      break;    
+        case type_E::int16       : return true ;      break;
+        case type_E::int32       : return true ;      break;
+        case type_E::int64       : return true ;      break;
+        case type_E::uint8       : return true ;      break;
+        case type_E::uint16      : return true ;      break;
+        case type_E::uint32      : return true ;      break;
+        case type_E::uint64      : return true ;      break;
+        case type_E::float32     : return true ;      break;
+        case type_E::float64     : return true ;      break;
+        default                  : return false;      break;
     }  
 }
 M_endf
@@ -2499,9 +2622,9 @@ bool is_type_aggregate(type_E kind) try
 {
     switch (kind)
     {
-    case type_E::array       : return true ;      break;
-    case type_E::structure   : return true ;      break;
-    default                  : return false;      break; 
+       case type_E::array       : return true ;      break;
+       case type_E::structure   : return true ;      break;
+       default                  : return false;      break; 
     }  
 }
 M_endf
@@ -2593,7 +2716,7 @@ bool typdefs_are_same(const typdef_S& t1, const typdef_S& t2) try
     // structure typdefs -- need same fieldefs in same order in both typdefs for them to be same -- field names don't matter -- just the data layout
     // =================    ------------------------------------------------------------------------------------------------------------------------
 
-    if (t1.kind == type_E::structure)                                        // t1.kind = t2.kind here
+    if (t1.kind == type_E::structure)                                     // t1.kind = t2.kind here
     {         
         if ( t1.fdefs.size() != t2.fdefs.size() )
             return false;                                                 // structure typdefs are not same, if number of fields is different  
@@ -2640,16 +2763,17 @@ size_t atomic_type_size(type_E kind) try
 {
     switch (kind)
     {
-    case type_E::int8        : return sizeof (int8_t   );      break;    
-    case type_E::int16       : return sizeof (int16_t  );      break;
-    case type_E::int32       : return sizeof (int32_t  );      break;
-    case type_E::int64       : return sizeof (int64_t  );      break;
-    case type_E::uint8       : return sizeof (uint8_t  );      break;
-    case type_E::uint16      : return sizeof (uint16_t );      break;
-    case type_E::uint32      : return sizeof (uint32_t );      break;
-    case type_E::uint64      : return sizeof (uint64_t );      break;
-    case type_E::float32     : return sizeof (float32_T);      break;
-    case type_E::float64     : return sizeof (float64_T);      break;
+        case type_E::boolean     : return sizeof (bool     );      break;  
+        case type_E::int8        : return sizeof (int8_t   );      break;    
+        case type_E::int16       : return sizeof (int16_t  );      break;
+        case type_E::int32       : return sizeof (int32_t  );      break;
+        case type_E::int64       : return sizeof (int64_t  );      break;
+        case type_E::uint8       : return sizeof (uint8_t  );      break;
+        case type_E::uint16      : return sizeof (uint16_t );      break;
+        case type_E::uint32      : return sizeof (uint32_t );      break;
+        case type_E::uint64      : return sizeof (uint64_t );      break;
+        case type_E::float32     : return sizeof (float32_T);      break;
+        case type_E::float64     : return sizeof (float64_T);      break;
     default                  : return (size_t)0         ;      break;              // non-atomic type -- just return 0
     }
 }  

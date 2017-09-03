@@ -28,6 +28,24 @@
 #include "h_ex_lex.h"
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//       local static items
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+namespace static_N
+{
+static uint64_t character_count      {0};       // number of characters passed up from input reader to tokenizer 
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//       global functions to access statistrical counters 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+uint64_t get_character_count(void     ) {return static_N::character_count;       }
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -94,7 +112,7 @@ static const char_E subtype_table[256]
     char_E::comma,                    // 2C -- ,
     char_E::hyphen_minus,             // 2D -- -
     char_E::full_stop,                // 2E -- .
-    char_E::solidus,                  // 2F -- /
+    char_E::oper1,                    // 2F -- /
     char_E::digit,                    // 30 -- 0
     char_E::digit,                    // 31 -- 1
     char_E::digit,                    // 32 -- 2
@@ -139,7 +157,7 @@ static const char_E subtype_table[256]
     char_E::alpha1,                   // 59 -- Y
     char_E::alpha1,                   // 5A -- Z
     char_E::open_bracket1,            // 5B -- [
-    char_E::backslash,                // 5C -- \ 
+    char_E::oper1,                    // 5C -- \ 
     char_E::close_bracket1,           // 5D -- ]
     char_E::oper1,                    // 5E -- ^
     char_E::underscore,               // 5F -- _
@@ -222,7 +240,7 @@ static const char_E subtype_table[256]
     char_E::oper2,                    // AC -- ¬  not sign
     char_E::unsupported,              // AD --    soft hyphen 
     char_E::misc,                     // AE -- ®  registered trademark
-    char_E::macron,                   // AF -- ¯  macron 
+    char_E::accent2,                  // AF -- ¯  macron 
     char_E::misc,                     // B0 --    degree
     char_E::oper2,                    // B1 --    plus/minus
     char_E::oper2,                    // B2 --    2 superscript
@@ -490,9 +508,6 @@ static const std::unordered_map<char_E, char_E>  type_map
 , { char_E::colon                 , char_E::punct                         }
 , { char_E::hyphen_minus          , char_E::oper                          } 
 , { char_E::plus                  , char_E::oper                          } 
-, { char_E::solidus               , char_E::oper                          } 
-, { char_E::backslash             , char_E::oper                          }
-, { char_E::macron                , char_E::accent                        }
 , { char_E::digit                 , char_E::num                           }
 , { char_E::alpha1                , char_E::alpha                         }
 , { char_E::alpha2                , char_E::alpha                         }
@@ -634,7 +649,6 @@ static const std::unordered_map<char_E, std::wstring>  type_str_map
 , { char_E::colon                 , L"colon                   "   }
 , { char_E::hyphen_minus          , L"hyphen_minus            "   }
 , { char_E::plus                  , L"plus                    "   }
-, { char_E::solidus               , L"solidus                 "   }
 , { char_E::digit                 , L"digit                   "   }
 , { char_E::alpha1                , L"alpha1                  "   }
 , { char_E::alpha2                , L"alpha2                  "   }
@@ -1231,42 +1245,39 @@ int char_stream_C::get_source_char(in_char_S& in_char)  try
         
         switch (in_char.ch32)
         {
-        case utf32_N::HYPHEN_MINUS              :        in_char.ch32 = utf32_N::MACRON                                      ;   break;       //        `-   replaced with ¯       -- minus sign always attached to numbers
-        case utf32_N::APOSTROPHE                :        in_char.ch32 = utf32_N::ACUTE_ACCENT                                ;   break;       //        `'   replaced with ´       -- escape char in type-2 strings
-        case utf32_N::LESS_THAN_SIGN            :        in_char.ch32 = utf32_N::LEFT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK   ;   break;       //        `<   replaced with «       -- start  char in type-2 strings
-        case utf32_N::GREATER_THAN_SIGN         :        in_char.ch32 = utf32_N::RIGHT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK  ;   break;       //        `>   replaced with »       -- end    char in type-2 strings
-        case utf32_N::DIGIT_ZERO                :        in_char.ch32 = utf32_N::DEGREE_SIGN                                 ;   break;       //        `0   replaced with °       -- empty value
-        case utf32_N::TILDE                     :        in_char.ch32 = utf32_N::TILDE                                       ;   break;       //        `~   replaced with ¬       -- used in ¬= etc.
-                                                                                                                             
-        case utf32_N::LATIN_SMALL_LETTER_C      :        in_char.ch32 = utf32_N::CENT_SIGN                                   ;   break;       //        `c   replaced with ¢       -- for use in strings
-        case utf32_N::DIGIT_FOUR                :        in_char.ch32 = utf32_N::VULGAR_FRACTION_ONE_QUARTER                 ;   break;       //        `4   replaced with ¼       -- for use in strings
-        case utf32_N::DIGIT_TWO                 :        in_char.ch32 = utf32_N::VULGAR_FRACTION_ONE_HALF                    ;   break;       //        `2   replaced with ½       -- for use in strings
-        case utf32_N::DIGIT_THREE               :        in_char.ch32 = utf32_N::VULGAR_FRACTION_THREE_QUARTERS              ;   break;       //        `3   replaced with ¾       -- for use in strings
+            case utf32_N::APOSTROPHE                :        in_char.ch32 = utf32_N::ACUTE_ACCENT                                ;   break;       //        `'   replaced with ´       -- escape char in type-2 strings
+            case utf32_N::LESS_THAN_SIGN            :        in_char.ch32 = utf32_N::LEFT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK   ;   break;       //        `<   replaced with «       -- start  char in type-2 strings
+            case utf32_N::GREATER_THAN_SIGN         :        in_char.ch32 = utf32_N::RIGHT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK  ;   break;       //        `>   replaced with »       -- end    char in type-2 strings
+            case utf32_N::TILDE                     :        in_char.ch32 = utf32_N::NOT_SIGN                                    ;   break;       //        `~   replaced with ¬       -- used in ¬= etc.
+                                                                                                                                 
+            case utf32_N::LATIN_SMALL_LETTER_C      :        in_char.ch32 = utf32_N::CENT_SIGN                                   ;   break;       //        `c   replaced with ¢       -- for use in strings
+            case utf32_N::DIGIT_FOUR                :        in_char.ch32 = utf32_N::VULGAR_FRACTION_ONE_QUARTER                 ;   break;       //        `4   replaced with ¼       -- for use in strings
+            case utf32_N::DIGIT_TWO                 :        in_char.ch32 = utf32_N::VULGAR_FRACTION_ONE_HALF                    ;   break;       //        `2   replaced with ½       -- for use in strings
+            case utf32_N::DIGIT_THREE               :        in_char.ch32 = utf32_N::VULGAR_FRACTION_THREE_QUARTERS              ;   break;       //        `3   replaced with ¾       -- for use in strings
      
         
 
-        // handle error cases -- unexpected data following digraph character (or another digraph char)
-        // -------------------------------------------------------------------------------------------
-
-        default : 
-
-            if (in_char.ch32 != m_digraph_char)                 // just map 2nd digraph char to itself
-            {
-                if (in_char.classs != char_E::normal)
+            // handle error cases -- unexpected data following digraph character (or another digraph char)
+            // -------------------------------------------------------------------------------------------
+           
+            default :             
+                if (in_char.ch32 != m_digraph_char)                 // just map 2nd digraph char to itself
                 {
-                    M_out_emsg(L"char_stream_C::get_source_char() --  end-of-line, end-of_input, or I/O error (in_char_S.classs=%d) seen right after digraph character ('%c') -- source=(%d) = «%S»   lineno=%d linepos=%d")
-                    % (int)(in_char.classs) % (wchar_t)(in_char.ch32_digraph) % in_char.source_id % get_cached_id(in_char.source_id) % in_char.lineno % in_char.linepos; 
+                    if (in_char.classs != char_E::normal)
+                    {
+                        M_out_emsg(L"char_stream_C::get_source_char() --  end-of-line, end-of_input, or I/O error (in_char_S.classs=%d) seen right after digraph character ('%c') -- source=(%d) = «%S»   lineno=%d linepos=%d")
+                        % (int)(in_char.classs) % (wchar_t)(in_char.ch32_digraph) % in_char.source_id % get_cached_id(in_char.source_id) % in_char.lineno % in_char.linepos; 
+                    }
+                    else
+                    {
+                        M_out_emsg(L"char_stream_C::get_source_char() --  unsupported char '%c' following digraph char ('%c') -- source_id=(%d) = «%S»    lineno=%d linepos=%d")
+                        % (wchar_t)(in_char.ch32) % (wchar_t)(in_char.ch32_digraph) % in_char.source_id % get_cached_id(in_char.source_id) % in_char.lineno % in_char.linepos;
+                    }
+           
+                    in_char.classs = char_E::error;    // pass back error char
+                    rc = -1; 
+                    break; 
                 }
-                else
-                {
-                    M_out_emsg(L"char_stream_C::get_source_char() --  unsupported char '%c' following digraph char ('%c') -- source_id=(%d) = «%S»    lineno=%d linepos=%d")
-                    % (wchar_t)(in_char.ch32) % (wchar_t)(in_char.ch32_digraph) % in_char.source_id % get_cached_id(in_char.source_id) % in_char.lineno % in_char.linepos;
-                }
-
-                in_char.classs = char_E::error;    // pass back error char
-                rc = -1; 
-                break; 
-            }
         }   
 
 
@@ -1314,8 +1325,8 @@ int char_stream_C::get_char(in_char_S& in_char)  try               // get (and c
     if (!m_char_stack.empty())
     {
         M__(M_out(L"char_stream_C::get_char() -- returning top char from stack");)
-        in_char = m_char_stack.front();                          // get oldest in_char on stack -- subtype should have been filled in before it was put back earlier  
-        m_char_stack.pop_front();                                // remove oldest in_char on stack  
+        in_char = m_char_stack.front();                            // get oldest in_char on stack -- subtype should have been filled in before it was put back earlier  
+        m_char_stack.pop_front();                                  // remove oldest in_char on stack  
         return 0; 
     }
  
@@ -1323,6 +1334,7 @@ int char_stream_C::get_char(in_char_S& in_char)  try               // get (and c
     // putback queue is empty -- need to go out to file/string to get next char
     // ------------------------------------------------------------------------
  
+    static_N::character_count++;                                   // accumulate static character count
     return get_source_char(in_char); 
 }
 M_endf

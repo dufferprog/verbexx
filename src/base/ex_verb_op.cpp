@@ -60,7 +60,7 @@ int set_lvalue(frame_S& frame, const value_S& lvalue, const value_S& rvalue, boo
     if (lvalue.ty == type_E::ref)
         return set_via_reference(lvalue, rvalue, unshare);                // reference lvalue -- update referred-to value/buffer, etc. from rvalue
     else                                                                  // assume type is ident (or at least has variable name to be updated)
-        return update_var(frame, lvalue.string, rvalue, false, unshare);  // variable lvalue ffrom rvalue -- update by name 
+        return update_var(frame, lvalue.string, rvalue, false, unshare);  // variable lvalue from rvalue -- update by name 
 }
 M_endf
 
@@ -71,7 +71,7 @@ int get_lvalue(frame_S& frame, const value_S& lvalue, value_S& rvalue) try
     if (lvalue.ty == type_E::ref)
         return dereference_value(rvalue, lvalue);                        // dereference lvalue -- rvalue gets referred-to value
     else                                                                 // assume type is ident (or at least has variable name to be updated)
-        return get_identifier(frame, lvalue.string, rvalue);             // should be defined based on earlier checking -- will get empty value, if not defined  
+        return get_identifier(frame, lvalue.string, rvalue);             // should be defined based on earlier checking -- will get unit value, if not defined  
 }
 M_endf  
 
@@ -102,12 +102,12 @@ int verb_left_assign(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& ve
 
         if (i < rsize)                                                                                                 // value is available for setting this variable/reference
             src = set_lvalue(frame, vexpr.lparms.values.at(i), vexpr.rparms.values.at(i),  unshare_rc == 0);           // fails if undefined, or const 
-        else                                                                                                           // no value available for this variable/reference -- just set to empty value
-            src = set_lvalue(frame, vexpr.lparms.values.at(i), value_S { }             ,  unshare_rc == 0);            // fails if undefined, or const -- this will always fail for buffer-type references  
+        else                                                                                                           // no value available for this variable/reference -- just set to unit value
+            src = set_lvalue(frame, vexpr.lparms.values.at(i), unit_val()               ,  unshare_rc == 0);           // fails if undefined, or const -- this will always fail for buffer-type references  
                                                                                                                      
         if (src != 0)                                                                                                  // did set_lvalue() fail?
         {                                                                                                            
-            results =  error_results();                                                                                // pass back empty results with error 
+            results =  error_results();                                                                                // pass back error resultsr 
             return -1;                                                                                                 // return with error
         } 
     }
@@ -159,12 +159,12 @@ int verb_right_assign(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& v
 
         if (i < rsize)                                                                                                 // value is available for setting this variable/reference
             src = set_lvalue(frame, vexpr.rparms.values.at(i), vexpr.lparms.values.at(i),  unshare_rc == 0);           // fails if undefined, or const 
-        else                                                                                                           // no value available for this variable/reference -- just set to empty value
-            src = set_lvalue(frame, vexpr.rparms.values.at(i), value_S { }             ,  unshare_rc == 0);            // fails if undefined, or const -- this will always fail for buffer-type references  
+        else                                                                                                           // no value available for this variable/reference -- just set to unit value
+            src = set_lvalue(frame, vexpr.rparms.values.at(i), unit_val()               ,  unshare_rc == 0);           // fails if undefined, or const -- this will always fail for buffer-type references  
                                                                                                                      
         if (src != 0)                                                                                                  // did set_lvalue() fail?
         {                                                                                                            
-            results =  error_results();                                                                                // pass back empty results with error 
+            results =  error_results();                                                                                // pass back error results 
             return -1;                                                                                                 // return with error
         } 
     }
@@ -251,10 +251,10 @@ static int incr_decr(frame_S& frame, const e_vexpr_S& vexpr, results_S& results,
 
         value_S val {}; 
 
-        auto grc = get_lvalue(frame, vexpr.lparms.values.at(0), val);                         // should be defined based on earlier checking -- will get empty value, if not defined
+        auto grc = get_lvalue(frame, vexpr.lparms.values.at(0), val);                         // should be defined based on earlier checking -- will get unit value, if not defined
         if (grc != 0)                                                                         // did get_lvalue() fail?
         {                                                                               
-            results =  error_results();                                                       // pass back empty results with error 
+            results =  error_results();                                                       // pass back error results 
             return -1;                                                                        // return with error
         } 
         
@@ -262,7 +262,7 @@ static int incr_decr(frame_S& frame, const e_vexpr_S& vexpr, results_S& results,
         {
             M_out_emsg1(L"incr_decr() -- verb= %s (postfix), variable= %s has a non-integer value -- cannot %s") %verb_name(vexpr) % vexpr.lparms.values.at(0).string % opws;
             msgend_loc(vexpr.lparms.values.at(0), vexpr);
-            results = error_results();     // pass back empty value with error flag 
+            results = error_results();                                                        // pass back error value 
             rc = -1; 
         }
         else
@@ -275,7 +275,7 @@ static int incr_decr(frame_S& frame, const e_vexpr_S& vexpr, results_S& results,
             auto src = set_lvalue(frame, vexpr.lparms.values.at(0), val); 
             if (src != 0)                                                                     // did set_lvalue() fail?
             {                                                                               
-                results =  error_results();                                                   // pass back empty results with error 
+                results =  error_results();                                                   // pass back error results 
                 return -1;                                                                    // return with error
             } 
         }    
@@ -289,10 +289,10 @@ static int incr_decr(frame_S& frame, const e_vexpr_S& vexpr, results_S& results,
 
         value_S val {}; 
 
-        auto grc = get_lvalue(frame, vexpr.rparms.values.at(0), val);                          // should be defined based on earlier checking -- will get empty value, if not defined
+        auto grc = get_lvalue(frame, vexpr.rparms.values.at(0), val);                         // should be defined based on earlier checking -- will get unit value, if not defined
         if (grc != 0)                                                                         // did get_lvalue() fail?
         {                                                                               
-            results =  error_results();                                                       // pass back empty results with error 
+            results =  error_results();                                                       // pass back error results 
             return -1;                                                                        // return with error
         } 
         
@@ -300,7 +300,7 @@ static int incr_decr(frame_S& frame, const e_vexpr_S& vexpr, results_S& results,
         {
             M_out_emsg1(L"incr_decr() -- verb= %s (prefix), variable= %s has a non-integer value -- cannot %s") %verb_name(vexpr) % vexpr.rparms.values.at(0).string % opws;
             msgend_loc(vexpr.rparms.values.at(0), vexpr);
-            results = error_results();     // pass back empty value with error flag 
+            results = error_results();     // pass back error value 
             rc = -1; 
         }
         else
@@ -313,7 +313,7 @@ static int incr_decr(frame_S& frame, const e_vexpr_S& vexpr, results_S& results,
             auto src = set_lvalue(frame, vexpr.rparms.values.at(0), val);
             if (src != 0)                                                                     // did set_lvalue() fail?
             {                                                                               
-                results =  error_results();                                                   // pass back empty results with error 
+                results =  error_results();                                                   // pass back error results 
                 return -1;                                                                    // return with error
             } 
         }   
@@ -389,7 +389,7 @@ static int get_eq_values(frame_S &frame, const e_vexpr_S& vexpr, value_S& lvalue
         msg_loc(value0, L"value1");
         msg_loc(value2, L"value2");
         msgend_loc(vexpr);
-        results = error_results();                      // pass back empty value with error flag 
+        results = error_results();                      // pass back error value 
         return -1; 
     }
     else                                                // exact match not required -- make sure substituted variable is in same class as right-side parm 
@@ -403,7 +403,7 @@ static int get_eq_values(frame_S &frame, const e_vexpr_S& vexpr, value_S& lvalue
         msg_loc(value0, L"value1");                     // location before substitution
         msg_loc(value2, L"value2");
         msgend_loc(vexpr);
-        results = error_results();                      // pass back empty value with error flag 
+        results = error_results();                      // pass back error value 
         return -1; 
     }  
 }
@@ -1088,7 +1088,7 @@ static int verb_compare_check(const e_vexpr_S& vexpr, results_S& results)
      msg_loc(vexpr.lparms.values.at(0), L" left value");  
      msg_loc(vexpr.rparms.values.at(0), L"right value"); 
      msgend_loc(vexpr);
-     results = error_results();     // pass back empty value with error flag  (ready for caller to pass back) 
+     results = error_results();     // pass back error value  (ready for caller to pass back) 
      return -1;
 }
 
@@ -1100,8 +1100,8 @@ static int verb_compare_check(const e_vexpr_S& vexpr, results_S& results)
     auto crc =  verb_compare_check(vexpr, results);                                                              \
     if (crc != 0) return crc;                        /* if error, error results have been set up already   */    \
                                                                                                                  \
-    if (v1.ty == type_E::empty)                                                                                  \
-        vr = type_val((bool_T)tf);                   /* both values empty -- return true/false (passed in) */    \
+    if (v1.ty == type_E::unit)                                                                                   \
+        vr = type_val(tf);                           /* both values unit -- return true/false (passed in) */     \
     else if (v1.ty == type_E::string)                                                                            \
         vr = type_val( f(v1.string , v2.string) );                                                               \
     else if (is_value_float(v1))                                                                                 \
@@ -1118,7 +1118,7 @@ static int verb_compare_check(const e_vexpr_S& vexpr, results_S& results)
 //---------------------------------------------------------------------------------
 
 template<typename T1, typename T2> inline
-bool_T verb__eq(T1 x, T2 y) {return (bool_T)(x == y);}
+bool verb__eq(T1 x, T2 y) {return (x == y);}
 
 
 int verb_eq(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
@@ -1140,7 +1140,7 @@ M_endf
 //---------------------------------------------------------------------------------
 
 template<typename T1, typename T2> inline
-bool_T verb__ne(T1 x, T2 y) {return (bool_T)(x != y);}
+bool verb__ne(T1 x, T2 y) {return (x != y);}
 
 
 int verb_ne(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
@@ -1162,7 +1162,7 @@ M_endf
 //---------------------------------------------------------------------------------
 
 template<typename T1, typename T2> inline
-bool_T verb__lt(T1 x, T2 y) {return (bool_T)(x < y);}
+bool verb__lt(T1 x, T2 y) {return (x < y);}
 
 
 int verb_lt(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
@@ -1184,7 +1184,7 @@ M_endf
 //---------------------------------------------------------------------------------
 
 template<typename T1, typename T2> inline
-bool_T verb__gt(T1 x, T2 y) {return (bool_T)(x > y);}
+bool verb__gt(T1 x, T2 y) {return (x > y);}
 
 
 int verb_gt(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
@@ -1206,7 +1206,7 @@ M_endf
 //---------------------------------------------------------------------------------
 
 template<typename T1, typename T2> inline
-bool_T verb__le(T1 x, T2 y) {return (bool_T)(x <= y);}
+bool verb__le(T1 x, T2 y) {return (x <= y);}
 
 
 int verb_le(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
@@ -1228,7 +1228,7 @@ M_endf
 //---------------------------------------------------------------------------------
 
 template<typename T1, typename T2> inline
-bool_T verb__ge(T1 x, T2 y) {return (bool_T)(x >= y);}
+bool verb__ge(T1 x, T2 y) {return (x >= y);}
 
 
 int verb_ge(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
@@ -1289,10 +1289,11 @@ int verb_and(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, r
 
     // look at left-side parm -- output = false, if left side is false
 
-    M_verb_unary_f_integer(tf, verb__is_true, vexpr.lparms.values.at(0))  
+    M_verb_unary_f_intbool(tf, verb__is_true, vexpr.lparms.values.at(0)) 
+   
     if (!tf)
     {
-        value = type_val((bool_T)0); 
+        value = type_val(false);
     }
     else
     {
@@ -1301,11 +1302,8 @@ int verb_and(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, r
         results_S right_results { }; 
         M_eval_cond(vexpr.rparms.values.at(0), L"verb= " + verb_name(vexpr) + L" right parm", right_results)  
     
-        M_verb_unary_f_integer(tf, verb__is_true, right_results) 
-        if (tf)
-            value = type_val((bool_T)1); 
-        else
-            value = type_val((bool_T)0);     
+        M_verb_unary_f_intbool(tf, verb__is_true, right_results) 
+        value = type_val(tf);        
     }
 
     results = to_results(value);         // output results = results of operation
@@ -1332,10 +1330,10 @@ int verb_or(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, re
   
     // check left side parm -- output is true, if left side is true
 
-    M_verb_unary_f_integer(tf, verb__is_true, vexpr.lparms.values.at(0)) 
+    M_verb_unary_f_intbool(tf, verb__is_true, vexpr.lparms.values.at(0)) 
     if (tf)
     {
-        value = type_val((bool_T)1); 
+        value = type_val(true); 
     }
     else
     {
@@ -1344,11 +1342,8 @@ int verb_or(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, re
         results_S right_results { }; 
         M_eval_cond(vexpr.rparms.values.at(0), L"verb= " + verb_name(vexpr) + L" right parm", right_results)  
     
-        M_verb_unary_f_integer(tf, verb__is_true, right_results) 
-        if (tf)
-            value = type_val((bool_T)1); 
-        else
-            value = type_val((bool_T)0);     
+        M_verb_unary_f_intbool(tf, verb__is_true, right_results)
+        value = type_val(tf); 
     }
 
     results = to_results(value);         // output results = results of operation
@@ -1362,7 +1357,7 @@ M_endf
 //---------------------------------------------------------------------------------
 
 template<typename T1, typename T2>  inline
-bool_T verb__xor(T1 x, T2 y) {return (bool_T)( (!x) != (!y) );}
+bool verb__xor(T1 x, T2 y) {return ( (!x) != (!y) );}
  
 /////// without lazy evaluation
 
@@ -1385,7 +1380,7 @@ M_endf
 //---------------------------------------------------------------------------------
 
 template<typename T>  inline
-bool_T verb__not(T x) {return (bool_T)(!x);}
+bool verb__not(T x) {return (!x);}
 
 
 int verb_not(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
@@ -1395,7 +1390,7 @@ int verb_not(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, r
     // already known that there is one right int64 positional parm  
     M__(M_out(L"verb_not() called");) 
 
-    M_verb_unary_fval_integer(value, verb__not, vexpr.rparms.values.at(0)) 
+    M_verb_unary_fval_intbool(value, verb__not, vexpr.rparms.values.at(0)) 
     results = to_results(value);         
     return 0;
 }

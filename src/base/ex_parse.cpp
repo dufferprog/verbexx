@@ -132,8 +132,9 @@ uint64_t parse_setup(pre_parse_C& pp, frame_S& frame) try
     std::vector<char32_t> trailing_ident_sigils  { const_N::ch_sigil_keyword                                                                               };       //  trailing keyword sigils              (for identifiers)
     std::vector<char32_t> paren_sigils           { const_N::ch_sigil_verb,   const_N::ch_sigil_keyword                                                     };       //  leading/trailing verb sigil          (for parenthesis)
                                                                                                                                                            
-    pp.set_combine_strings(        false                 );                                                                                                         //  don't combine adjacent strings separated by whitespace    
-                                                                                                                                                                  
+    pp.set_combine_strings(        false                );                                                                                                          // don't combine adjacent strings separated by whitespace    
+    pp.set_allow_attached_paren(   true                 );                                                                                                          // allow attached parens to identifier tokens
+
     pp.set_leading_sigils(         leading_sigils       );                                                                                                          // add combined list of leading sigils          (in addition to any pre-parser sigils)
     pp.set_leading_ident_sigils(   leading_ident_sigils );                                                                                                          // add list of leading sigils  for identifiers  (in addition to any pre-parser sigils)
     pp.set_trailing_ident_sigils( trailing_ident_sigils );                                                                                                          // add list of trailing sigils for identifiers  (in addition to any pre-parser sigils)
@@ -250,7 +251,9 @@ uint64_t process_input(pre_parse_C& pp, frame_S& frame) try
     auto grc = get_unnested_slist(frame, pp, slist); 
     count_error(pp.errors()); 
 
-    M_out(L"pre-process and parse phases complete: %50t elapsed_time = %.6f seconds") % M_elapsed_time(t1); 
+    auto et1 = M_elapsed_time(t1); 
+
+    //M_out(L"pre-process and parse phases complete: %50t elapsed_time = %.6f seconds") % M_elapsed_time(t1); 
     M__(display_slist(slist, L"main slist", L"", true, false);)
 
 
@@ -267,12 +270,16 @@ uint64_t process_input(pre_parse_C& pp, frame_S& frame) try
             M_out_emsg(L"main slist evaluation ended with R/C = %d") % erc; 
         }        
 
-        auto et = M_elapsed_time(t2);
+        auto et2 = M_elapsed_time(t2);
 
-        M_out( L"evaluation phase complete: verb calls = %d %50t elapsed_time = %.6f seconds -- verbs/sec = %.1f" ) 
-               % frame.verb_eval_ct % et % (((float64_T)(frame.verb_eval_ct))/et);
-        M_out( L"                         : %50t total stack frames = %d, max stack depth = %d" ) 
-               % get_frame_serial() % get_frame_max_depth(); 
+        M_out( L" "                                                                                   ) ;
+        M_out( L"-----------------------------------------------------------------------------------" ) ;
+        M_out( L"                : characters=%d  tokens=%d"                                          )  % get_character_count()   % get_raw_token_count() ;
+        M_out( L"                : slists=%d  statements=%d  verbs=%d  values=%d"                     )  % get_eval_slist_count()  % get_eval_statement_count() % get_eval_verb_count() % get_eval_value_count() ;
+        M_out( L"                : stack frames = %d, max stack depth = %d"                           )  % get_eval_frame_serial() % get_eval_frame_max_depth() ;
+        M_out( L"parse      phase: elapsed_time = %.6f seconds"                                       )  % et1 ; 
+        M_out( L"evaluation phase: elapsed_time = %.6f seconds   verbs/sec = %.1f"                    )  % et2                     % (((float64_T)(get_eval_verb_count()))/et2) ;
+        M_out( L"-----------------------------------------------------------------------------------" ) ;
     }
     else
     {
@@ -301,7 +308,7 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-int parse_string(pre_parse_C& pp, frame_S& frame, slist_S& out_slist, const std::wstring& in_string, const std::wstring& in_name) try
+int parse_string(pre_parse_C& pp, frame_S& frame, slist_S& out_slist, const std::wstring& in_string, const std::wstring& in_name, bool refresh) try
 {
     M__(M_out(L"parse_string() -- called");)
 
@@ -309,13 +316,13 @@ int parse_string(pre_parse_C& pp, frame_S& frame, slist_S& out_slist, const std:
     // attach passed-in string to pre_parse_C -- if error, return empty slist_S and error r/c
     // --------------------------------------------------------------------------------------
 
-    pp.reuse();                       // prepare pre_parse_C for reuse 
+    pp.reuse();                       // prepare pre_parse_C for reuse  
 
     auto arc = pp.attach_string(in_string, in_name);
 
     if (arc != 0)
     {
-        M_out_emsg(L"parse_string() -- error trying to attach passed-in string -- empty slist_S is being returned");
+        M_out_emsg(L"parse_string() -- error trying to attach passed-in string -- empty slist is being returned");
 
         out_slist = slist_S { };      // return empty slist
         return -1;                    // error r/c
@@ -335,7 +342,10 @@ int parse_string(pre_parse_C& pp, frame_S& frame, slist_S& out_slist, const std:
 
     if (grc != 1)
     {
-        M_out_emsg(L"parse_string() -- error r/c = %d during parsing of passed-in string -- empty slist_S is being returned") % grc;
+        M_out_emsg(L"parse_string() -- error r/c = %d during parsing of passed-in string -- empty slist is being returned") % grc;
+
+        if (refresh)                  // if refresh option, clean out preparse-C and instream_C, etc. after the error
+            pp.reuse(true); 
 
         out_slist = slist_S { };      // return empty slist
         return -1;                    // error r/c
@@ -396,10 +406,11 @@ M_endf
 ////   peek_token() -- get next token from pre-parser -- check for error, end
 ////
 ////
-////      r/c = -1 -- error token   -- error message -- no token passewd back
-////      r/c = 0  -- normal token  -- token passed back
-////      r/c = 1  -- END token     -- error message if end_expected parm = false, token passsed back (may be empty 
-////                                   except for user type field, if pre-parser passed back no token)
+////      r/c = -1 -- error token             -- error message -- no token passed back
+////      r/c = 0  -- normal token            -- token passed back
+////      r/c = 1  -- END token (expected)    -- END token passed back
+////      r/c = 1  -- END token (unexpected)  -- error message, END token passsed back (may be empty 
+////                                             except for user type field, if pre-parser passed back no token)
 ////
 ////_____________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
@@ -449,13 +460,18 @@ static int peek_token(pre_parse_C& pp, token_C& tok, bool end_not_expected) try
         if (end_not_expected)     // caller was not expecting END
         {
             count_error();
-            M_out_emsg1(L"peek_token(): unexpected END token (end of input) from pre-parser was seen"); 
+            M_out_emsg1(L"peek_token(): unexpected END token (end of input) was seen"); 
             token.display();
-            M_out_emsg2(L"END halts all expression processing immediately");
-        }        
+            M_out_emsg2(L"unexpected END halts all parsing immediately");
 
-        tok = token;            // pass back token (may be empty except for user type)
-        return 1;
+            tok = token;            // pass back token (may be empty except for user type)
+            return 1;
+        } 
+        else
+        {
+            tok = token;            // pass back token (may be empty except for user type)
+            return 1;
+        }
     }
 
 
@@ -470,22 +486,29 @@ static int peek_token(pre_parse_C& pp, token_C& tok, bool end_not_expected) try
 
         if ( (token.type == token_E::identifier) || (token.type == token_E::extended_identifier) )
         {
-            token.utype2 = tok_u2_E::identifier;    // "plain identifier" 
+            if ( (token.type == token_E::identifier) && (token.attached_paren) )
+                token.utype2 = tok_u2_E::verbname;      // this identifier is being used as a verb
+            else
+                token.utype2 = tok_u2_E::identifier;    // "plain identifier"  (not being used as a verb)
         }
 
 
         // check operator tokens with no sigils -- verbname
 
-        else if (token.type == token_E::oper)      // operators are verbs
+        else if (token.type == token_E::oper)          // operators are verbs
         {
-            token.utype2 = tok_u2_E::verbname;     // verb to be invoked
+            token.utype2 = tok_u2_E::verbname;         // verb to be invoked
         }
 
 
-        // check for value-type or literal  tokens -- expect only:      10000,      -10000,      1.2345,    "abcd efg",      -or-     °    ( empty value)
+        // check for value-type or literal  tokens -- expect only:      10000,      -10000,      1.2345,    "abcd efg",      -or-     °    ( unit value)      ?????????????????????????????????????
 
         else if (
                  (token.type == token_E::string          )
+                 ||
+                 (token.type == token_E::unit            ) 
+                 ||
+                 (token.type == token_E::boolean         ) 
                  ||
                  (token.type == token_E::uint8           ) 
                  ||
@@ -506,8 +529,6 @@ static int peek_token(pre_parse_C& pp, token_C& tok, bool end_not_expected) try
                  (token.type == token_E::float64         ) 
                  ||
                  (token.type == token_E::float32         ) 
-                 ||
-                 ( (token.type == token_E::misc_char) && (token.only_char == const_N::ch_empty_value) )    // empty value char
                 )
         {
             token.utype2 = tok_u2_E::value;
@@ -780,12 +801,43 @@ static int get_slist(frame_S& frame, pre_parse_C& pp, slist_S& slist, bool end_b
         // do peek() to check for ending token
 
         token_C token {}; 
+        M__(M_out(L"get_slist() calling peek_token");)
         auto prc = peek_token(pp, token, !end_expected);
         M__(M_out(L"get_slist() -- peek token r/c=%d") % prc;) 
         M__(token.display(L"get_slist() -- after peek_token()");) 
 
-        if (prc != 0) return prc;           // return immediately, if error or END -- pass back whatever has been accumulated so far in slist 
-        
+
+        // handle expected/unexpected END and other errors from peek token
+
+        if (prc != 0) 
+        {
+            if (rc != 0)
+            {
+                M_out_emsg1(L"get_slist(): slist parsing ending with failure, after prior error/ unexpected END token was detected");
+                M_out_emsg2(L"           : empty slist is being returned rather than an incomplete one");
+                slist = slist_S { };              // pass back empty slist, rather than incomplete one 
+                return rc; 
+            }
+
+            if (prc == 1)    // END -- expected or not
+            {
+                if (!end_expected)
+                {
+                    M_out_emsg1(L"get_slist(): unexpected END of input seen while parsing nested slist -- possible missing closing brace");
+                    M_out_emsg2(L"           : empty slist is being returned rather than an incomplete one");
+                    slist = slist_S { };         // pass back empty slist, rather than incomplete one                   
+                }   
+            }
+            else             // token processing error
+            {
+                M_out_emsg1(L"get_slist(): unexpected token error seen while parsing nested slist");
+                M_out_emsg2(L"           : empty slist is being returned rather than an incomplete one");
+                slist = slist_S { };            // pass back empty slist, rather than incomplete one          
+            } 
+
+            return prc;                         // return immediately, if error or END -- pass back whatever has been accumulated so far in slist (if no prior error was seen)
+        }
+
 
         if (token.utype2 == tok_u2_E::close_brace)
         {
@@ -795,10 +847,17 @@ static int get_slist(frame_S& frame, pre_parse_C& pp, slist_S& slist, bool end_b
                 vexpr_add_token(dummy_vexpr, token);
 
                 discard_token(pp);           // consume ending brace
+
+                if (rc != 0)
+                {
+                   M_out_emsg(L"get_slist(): slist parsing ending with failure, after error was detected -- empty slist is being returned rather than an incomplete one"); 
+                }
+
+
                 M__(M_out(L"<=================== get_slist() returning after closing brace -- r/c=%d") % rc;)
                 return rc;                   // return with whatever has been accumulated so far      
             }
-            else                             // brace is unexpected
+            else                             // closing brace is unexpected (unnested slist)
             {
                 count_error(); 
                 M_out_emsg1(L"get_slist(): unexpected closing brace found in unnested slist"); 
@@ -861,7 +920,7 @@ static int get_slist(frame_S& frame, pre_parse_C& pp, slist_S& slist, bool end_b
     }   //   end of main loop 
         //   ================
 
-    M__(M_out(L"<=================== get_slist() returning ???????????? -- r/c=%d") % rc;)
+    M_y(M_out(L"<=================== get_slist() returning ???????????? -- r/c=%d") % rc;)
     return rc;   // shouldn't get here
 }
 M_endf
@@ -886,11 +945,11 @@ M_endf
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-//        V   V     CCCC      A      L         L    
-//        V   V    C         A A     L         L    
-//        V   V    C        A   A    L         L    
-//         V V     C        AAAAA    L         L    
-//          V       CCCC    A   A    LLLLL     LLLLL
+//        V   V    EEEEE   X   X    PPPP     RRRR 
+//        V   V    E        X X     P   P    R   R
+//        V   V    EEEE      X      PPPP     RRRR
+//         V V     E        X X     P        R  R
+//          V      EEEEE   X   X    P        R   R
 //
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////   
@@ -1030,9 +1089,9 @@ void vexpr_set_verb(frame_S& frame, a_vexpr_S& vexpr, const token_C& token, cons
 M_endf
 
 
-///////////////////////////////////////
+////////////////////////////////////////
 // version with passed-in verb sub-vexpr  (evaluation of this must yield a string later on, or else a run-time error occurs)  
-///////////////////////////////////////
+////////////////////////////////////////
 
 void vexpr_set_verb(frame_S& frame, a_vexpr_S& vexpr, const a_vexpr_S& verb_vexpr, bool move_ok) try
 {  
@@ -1122,7 +1181,7 @@ M_endf
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// initial open angle bracket must be consumed already -- this routine consumes matching close angle bracket  
+// initial open verb bracket must be consumed already -- this routine consumes matching close verb bracket  
 
 static int get_nested_verbname_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr) try
 {
@@ -1133,7 +1192,7 @@ M_endf
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// initial open dot bracket must be consumed already -- this routine consumes matching close dot bracket  
+// initial open keyword bracket must be consumed already -- this routine consumes matching close keyword bracket  
 
 static int get_nested_kwname_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr) try
 {
@@ -1215,10 +1274,14 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
         // look at next token -- end immediately (perhaps with empty vexpr), if error or unexpected end 
 
         token_C token {}; 
+        M__(M_out(L"get_vexpr() calling peek_token");)
         auto prc = peek_token(pp, token, !end_expected);
 
         if ( (prc < 0) || (prc > 1) )
         {
+            M_out_emsg1(L"get_vexpr(): unexpected input error while processing expression"); 
+            display_vexpr(vexpr, L"error token");
+            M_out_emsg2(L"empty expression is being substituted");
             vexpr = a_vexpr_S {};                                                       // pass back empty vexpr 
             return prc;                                                                 // leave unexpected token unconsumed for next time
         }                                                                           
@@ -1227,8 +1290,9 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
         {                                                                           
             if (!end_expected)                                                          // END not expected?
             {
-                M_out_emsg(L"get_vexpr(): unexpected END of input reached while processing nested expression"); 
-                display_vexpr(vexpr, L"unexpected");
+                M_out_emsg1(L"get_vexpr(): unexpected END of input reached while processing nested expression -- possible missing close parenthesis"); 
+                display_vexpr(vexpr, L"unexpected END");
+                M_out_emsg2(L"empty expression is being substituted");
                 vexpr = a_vexpr_S {};                                                   // pass back empty vexpr if end if not expected (i.e. nested vexpr) 
                 return -1;                                                              // return error if end is not expected
             }                                                                      
@@ -1238,7 +1302,7 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
                 {
                      M_out_emsg1(L"get_vexpr(): END of input reached -- expression was flushed after first error"); 
                      display_vexpr(vexpr, L"flushed");
-                     M_out_emsg2(L"vexpr is ignored");
+                     M_out_emsg2(L"empty expression is being substituted");
                      vexpr = a_vexpr_S {};                                              // pass back empty vexpr 
                      return 2;                                                          // indicate bad vexpr 
                 }
@@ -1254,7 +1318,7 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
                         count_error(); 
                         M_out_emsg1(L"get_vexpr(): END of input reached,  but no verb was present following the left-side keyword parm(s)");  
                         display_vexpr(vexpr, L"no-verb");
-                        M_out_emsg2(L"vexpr is ignored");
+                        M_out_emsg2(L"empty expression is being substituted");
                         vexpr = a_vexpr_S {};                                           // pass back empty vexpr
                         return 2;                                                       // indicate bad vexpr
                     }                  
@@ -1300,7 +1364,7 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
                 {
                      M_out_emsg1(L"get_vexpr(): expression was flushed after first error"); 
                      display_vexpr(vexpr, L"flushed");
-                     M_out_emsg2(L"vexpr is ignored");
+                     M_out_emsg2(L"empty expression is being substituted");
                      vexpr = a_vexpr_S {};                                              // pass back empty vexpr 
                      return 2;                                                          // indicate bad vexpr 
                 }
@@ -1330,7 +1394,33 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
                 M__(M_out(L"get_vexpr() -- normal return due to close paren/bracket -- verb present");)
                 return  (error_count > 0) ? 2 : 0;                                      // return normally, or indicate bad vexpr 
             }
-             
+     
+
+            // check for mismatched close paren or close verbname/keyname bracket
+            
+            if  (
+                  ( end_by_paren             && ((token.utype2 == tok_u2_E::close_verbname_bracket) || (token.utype2 == tok_u2_E::close_keyname_bracket ))  )    // ()@  or ():  is not valid                                            )
+                  ||
+                  ( end_by_verbname_bracket  && (token.utype2 == tok_u2_E::close_keyname_bracket)                                                           )    // @():         is not valid
+                  ||
+                  ( end_by_keyname_bracket   && (token.utype2 == tok_u2_E::close_verbname_bracket)                                                          )    // :()@         is not valid
+                )
+            {
+                M__(M_out(L"get_(nested)_vexpr(): mismatched ending parenthesis/bracket seen");) 
+
+                vexpr_add_token(vexpr, token);                                          // add to token list for this vexpr -- for error message only  
+
+                if (!priority_recursion)                                                // leave ending token for upper-level get_vexpr() call, if priority recursion is active
+                    discard_token(pp);                                                  // get rid of closing parenthesis (if not priority recursion)
+
+                count_error(); 
+                M_out_emsg1(L"get_vexpr(): starting and ending parenthesis types do not match for this expression"); 
+                display_vexpr(vexpr, L"mismatched");
+                M_out_emsg2(L"empty expression is being substituted"); 
+                vexpr = a_vexpr_S {};                                                   // pass back empty vexpr
+                return 2;                                                               // indicate bad vexpr   
+            }                                                                
+ 
 
             // check for unexpected (ending) semicolon
 
@@ -1342,9 +1432,9 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
                     discard_token(pp);                                                  // consume the semicolon, since this must be top level vexpr within braces
             
                 count_error(); 
-                M_out_emsg1(L"get_vexpr(): semicolon reached before closing parenthesis (or verbname/keyname bracket) for expression was seen"); 
+                M_out_emsg1(L"get_vexpr(): semicolon reached before the closing parenthesis (or verbname/keyname bracket) for the expression was seen"); 
                 display_vexpr(vexpr, L"incomplete");
-                M_out_emsg2(L"expression is ignored"); 
+                M_out_emsg2(L"empty expression is being substituted"); 
                 vexpr = a_vexpr_S {};                                                   // pass back empty vexpr
                 return 2;                                                               // indicate bad vexpr
             }                                                                          
@@ -1359,25 +1449,25 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
                 count_error(); 
                 M_out_emsg1(L"get_vexpr(): closing brace reached before closing parenthesis (or verbname/keyname bracket) for expression was seen"); 
                 display_vexpr(vexpr, L"incomplete");
-                M_out_emsg2(L"expression is ignored");            
+                M_out_emsg2(L"empty expression is being substituted");          
                 vexpr = a_vexpr_S {};                                                   // pass back empty vexpr
                 return 2;                                                               // indicate bad vexpr
             }
 
 
-            // check for unexpected (ending) close paren, if this is a verb-type or keyword-type vexpr
+            // check for unexpected (ending) close paren, if this is a verb-type or keyword-type vexpr (this is now allowed -- see above) 
 
-            if ( (end_by_verbname_bracket || end_by_keyname_bracket) && (token.utype2 == tok_u2_E::close_paren) )  // closing paren while in verb sub-vexpr?-- must be end of whole (outer) vexpr, without missing close verbname/keyname bracket
-            {                                               
-                vexpr_add_token(vexpr, token);                                          // add to token list for this vexpr  -- for error message only
-                                                                                        // don't consume closing paren, since this must be a sub-vexpr and caller needs the close paren to exit properly           
-                count_error(); 
-                M_out_emsg1(L"get_vexpr(): closing paren reached before closing verbname/keyname bracket for verb-type or keyword-type expression was seen"); 
-                display_vexpr(vexpr, L"incomplete");
-                M_out_emsg2(L"vexpr is ignored");            
-                vexpr = a_vexpr_S {};                                                   // pass back empty vexpr
-                return 2;                                                               // indicate bad vexpr
-            }   
+ //         if ( (end_by_verbname_bracket || end_by_keyname_bracket) && (token.utype2 == tok_u2_E::close_paren) )  // closing paren while in verb sub-vexpr?-- must be end of whole (outer) vexpr, without missing close verbname/keyname bracket
+ //         {                                               
+ //             vexpr_add_token(vexpr, token);                                         // add to token list for this vexpr  -- for error message only
+ //                                                                                    // don't consume closing paren, since this must be a sub-vexpr and caller needs the close paren to exit properly           
+ //             count_error(); 
+ //             M_out_emsg1(L"get_vexpr(): closing paren reached before closing verbname/keyname bracket for verb-type or keyword-type expression was seen"); 
+ //             display_vexpr(vexpr, L"incomplete");
+ //             M_out_emsg2(L"empty expression is being substituted");           
+ //             vexpr = a_vexpr_S {};                                                   // pass back empty vexpr
+ //             return 2;                                                               // indicate bad vexpr
+ //         }   
         }         // -----------------------------------------------------------------
         else      // not in paren or verbname/keyname bracket mode -- not nested vexpr 
                   // -----------------------------------------------------------------
@@ -1393,7 +1483,7 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
                 {
                      M_out_emsg1(L"get_vexpr(): expression was flushed after first error"); 
                      display_vexpr(vexpr, L"flushed");
-                     M_out_emsg2(L"expression is ignored");
+                     M_out_emsg2(L"empty expression is being substituted");
                      vexpr = a_vexpr_S {};                                              // pass back empty vexpr 
                      return 2;                                                          // indicate bad vexpr 
                 }                                                                      
@@ -1409,7 +1499,7 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
                         count_error(); 
                         M_out_emsg1(L"get_vexpr(): semicolon reached,  but no verb was present following the left-side keyword/positional parms"); 
                         display_vexpr(vexpr, L"no-verb");
-                        M_out_emsg2(L"vexpr is ignored");
+                        M_out_emsg2(L"empty expression is being substituted");
                         vexpr = a_vexpr_S {};                                           // pass back empty vexpr
                         return 2;                                                       // indicate bad vexpr
                     }
@@ -1427,7 +1517,7 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
                 {
                      M_out_emsg1(L"get_vexpr(): expression was flushed after first error"); 
                      display_vexpr(vexpr, L"flushed");
-                     M_out_emsg2(L"vexpr is ignored");
+                     M_out_emsg2(L"empty expression is being substituted");
                      vexpr = a_vexpr_S {};                                              // pass back empty vexpr 
                      return 2;                                                          // indicate bad vexpr 
                 }
@@ -1443,9 +1533,9 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
                     else                                                                // not just posiotional value(s) -- has keywords -- incomplete vexpr -- error
                     {
                         count_error(); 
-                        M_out_emsg1(L"get_vexpr(): closing brace reached,  but no verb was present following the left-side keyword/positional parms"); 
+                        M_out_emsg1(L"get_vexpr(): closing brace reached,  but no verb was present following the left-side keyword parms"); 
                         display_vexpr(vexpr, L"no-verb");
-                        M_out_emsg2(L"vexpr is ignored");
+                        M_out_emsg2(L"empty expression is being substituted");
                         vexpr = a_vexpr_S {};                                           // pass back empty vexpr
                         return 2;                                                       // indicate bad vexpr
                     }
@@ -1489,16 +1579,24 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
         if ( (token.utype2 == tok_u2_E::verbname) ||  (token.utype2 == tok_u2_E::open_verbname_bracket) )
         {
             // get priority of verb (if known at parse time) -- some verbs are undefined at this point -- use default priority (0) for these
+            // use special high priority if this verb was indicated by an attached parenthesis -- this works right, only if all vlists have full comma punctuation, and only when unary/binary operators are used without commas 
 
-            int       priority    {0}; 
-            verbdef_S verbdef     { };
+            int       priority    { verb_priority_default };                            // start with default verb priority     ????????????????? where is this used ????????????????
+            verbdef_S verbdef     { };                                                  // temporary verbdef to be filled in
 
             if (token.utype2 == tok_u2_E::verbname)                                     // can get real priority only for simple verbdef vexprs
-            {                                                   
-                auto gvrc = get_verb(frame, token.str, verbdef); 
+            {   
+                auto gvrc = get_verb(frame, token.str, verbdef);                        // look up verb name in symtab and extract verbdef info to local copy 
 
                 if (gvrc == 0)
                     priority = verbdef.priority;                                        // can use real priority only if verb is pre-defined (built-in) or defined at the time of this parser invocation
+
+
+                if (token.attached_paren)                                               // this verb indicated by attached paren -- example   verb(a, b, c)
+                {
+                    priority         = verb_priority_attached_paren;                    // use special high priority for verbs indicated by attached parenthesis 
+                    verbdef.priority = priority;                                        // override usual priority for this verb
+                }
             }
 
 
@@ -1712,7 +1810,8 @@ void set_vlist_flags(vlist_S& vlist) try
 {
     // first, reset all current flags
 
-    vlist.val_empty           = false; 
+    vlist.val_unit            = false; 
+    vlist.val_boolean         = false; 
     vlist.val_int8            = false;
     vlist.val_int16           = false;
     vlist.val_int32           = false;
@@ -1747,7 +1846,8 @@ void set_vlist_flags(vlist_S& vlist) try
 
     for (const value_S& value : vlist.values)
     {
-             if (value.ty == type_E::empty        ) vlist.val_empty       = true; 
+             if (value.ty == type_E::unit         ) vlist.val_unit        = true; 
+        else if (value.ty == type_E::boolean      ) vlist.val_boolean     = true;
         else if (value.ty == type_E::int8         ) vlist.val_int8        = true; 
         else if (value.ty == type_E::int16        ) vlist.val_int16       = true; 
         else if (value.ty == type_E::int32        ) vlist.val_int32       = true; 
@@ -1798,7 +1898,8 @@ void set_vlist_flags(vlist_S& vlist) try
 
     int type_ct {0}; 
   
-    if (vlist.val_empty        ) type_ct++;
+    if (vlist.val_unit         ) type_ct++;
+    if (vlist.val_boolean      ) type_ct++;
     if (vlist.val_int8         ) type_ct++;
     if (vlist.val_int16        ) type_ct++;
     if (vlist.val_int32        ) type_ct++;
@@ -2047,15 +2148,24 @@ static int get_vlist(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_S&
         // look at next token -- end immediately (perhaps with empty vexpr), if error -- END is expected here 
 
         token_C token; 
+        M__(M_out(L"get_vlist() calling peek_token");)
         auto prc = peek_token(pp, token, false);
 
         if (token_ix1 == -1) token_ix1 = static_N::token_ix;                   // capture starting token index on first pass only  
 
         if ((prc < 0))
         {
+            M_out_emsg1(L"get_vlist(): Input token error while parsing un-nested vlist"); 
+            token.display(L"bad-token", true);
+            vlist.token_ix1 = std::min(static_N::token_ix, token_ix1);         // capture starting token index for vlist -- for error message
+            vlist.token_ix2 = std::max(static_N::token_ix, token_ix1);         // capture ending token index for vlist   -- for error message 
+            display_vlist(vlist, L"incomplete vlist");
+            M_out_emsg2(L"Passing back empty vlist in place of incomplete vlist");
+            
             vlist = vlist_S {};
             vlist.token_ix1 = std::min(static_N::token_ix, token_ix1);         // capture starting token index for vlist
             vlist.token_ix2 = std::max(static_N::token_ix, token_ix1);         // capture ending token index for vlist
+            
             return prc;                                                        // leave unexpected token unconsumed for next time
         }           
 
@@ -2203,10 +2313,36 @@ static int get_nested_vlist(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, v
         // look at next token -- end immediately (perhaps with empty vexpr), if error or unexpected end 
 
         token_C token; 
-        auto prc = peek_token(pp, token, true);  // END is not expected here
+
+        M__(M_out(L"get_nested_vlist() calling peek_token");)
+        auto prc = peek_token(pp, token, true);  // END is not expected here   
+
+
+        // complain about unexpected END or error tokens
 
         if (prc != 0) 
         {
+            if (prc == 1)
+            {
+                M_out_emsg1(L"get_vlist(): Unexpected END of input seen while parsing nested vlist -- possible missing closing bracket"); 
+                token.display(L"unexpected END", true);
+                vlist.token_ix1 = token_ix1;                                       // capture starting token index for vlist -- for error message
+                vlist.token_ix2 = static_N::token_ix;                              // capture ending token index for vlist   -- for error message 
+                display_vlist(vlist, L"incomplete vlist");
+                M_out_emsg2(L"Passing back empty vlist in place of incomplete vlist");
+            }
+            else
+            {  
+                M_out_emsg1(L"get_vlist(): Input token error while parsing nested vlist"); 
+                token.display(L"bad-token", true);
+                vlist.token_ix1 = token_ix1;                                       // capture starting token index for vlist -- for error message
+                vlist.token_ix2 = static_N::token_ix;                              // capture ending token index for vlist   -- for error message 
+                display_vlist(vlist, L"incomplete vlist");
+                M_out_emsg2(L"Passing back empty vlist in place of incomplete vlist");
+            }
+                                                       
+            // pass back empty vlist with best guess for starting and ending token index
+ 
             vlist = vlist_S {};                  //  return empty vlist 
             vlist.token_ix1 = token_ix1;         //  set starting token index
             vlist.token_ix2 = static_N::token_ix;//  set ending token index
@@ -2315,7 +2451,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   set_atom_token() -- put passed-in atom value (from token) into caller's (empty) value_S structure 
+////   set_atom_token() -- put passed-in atom value (from token) into caller's value_S structure 
 ////
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -2327,13 +2463,13 @@ static void set_atom_token(value_S& value, const token_C& token, int64_t ix) try
 {
     // make sure value is not already set
 
-    if (value.ty != type_E::empty)
+    if (value.ty != type_E::none)
     {
-        M_out_emsg1(L"set_atom(): passed-in value is not empty: ");
-        display_value(value, L"non-empty value");
+        M_out_emsg1(L"set_atom(): passed-in value_S has already been set: ");
+        display_value(value, L"already-set value");
         token.display(); 
         M_out_emsgz();
-        M_throw("set_atom(): passed-in value is not empty")
+        M_throw("set_atom(): passed-in value_S has already been set")
     }
     
 
@@ -2345,7 +2481,16 @@ static void set_atom_token(value_S& value, const token_C& token, int64_t ix) try
 
     // set proper flags and value, based on caller's token
 
-    if      (token.type == token_E::int8 )
+    if      (token.type == token_E::unit)
+    {
+        value.ty        = type_E::unit; 
+    } 
+    else if (token.type == token_E::boolean)
+    {
+        value.boolean   = token.boolean; 
+        value.ty        = type_E::boolean; 
+    }   
+    else if (token.type == token_E::int8)
     {
         value.int8      = token.int8; 
         value.ty        = type_E::int8; 
@@ -2414,10 +2559,6 @@ static void set_atom_token(value_S& value, const token_C& token, int64_t ix) try
     {
         value.string    = token.str;  
         value.ty        = type_E::keyname;
-    }
-    else if ( (token.type == token_E::misc_char) && (token.only_char == const_N::ch_empty_value) )    // empty value char
-    {
-        value.ty        = type_E::empty;
     }
     else
     {
@@ -2533,7 +2674,8 @@ void add_positional_value(vlist_S& vlist, const value_S& value, bool update_toke
     else if (value.ty == type_E::array      ) vlist.val_array       = true;
     else if (value.ty == type_E::structure  ) vlist.val_structure   = true;
     else if (value.ty == type_E::ref        ) vlist.val_ref         = true;
-    else if (value.ty == type_E::empty      ) vlist.val_empty       = true;
+    else if (value.ty == type_E::unit       ) vlist.val_unit        = true;
+    else if (value.ty == type_E::boolean    ) vlist.val_boolean     = true;
 
     else     // should not get here
     {       
@@ -2566,7 +2708,8 @@ void add_positional_value(vlist_S& vlist, const value_S& value, bool update_toke
     if (vlist.val_array        ) type_ct++;
     if (vlist.val_structure    ) type_ct++;
     if (vlist.val_ref          ) type_ct++;
-    if (vlist.val_empty        ) type_ct++;
+    if (vlist.val_unit         ) type_ct++;
+    if (vlist.val_boolean      ) type_ct++;
     
     if (type_ct > 1) 
         vlist.val_mixed = true; 
@@ -2602,6 +2745,7 @@ static int get_keyword(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_
     // get next token in stream, and check for end or errors -- should be the keyword itself -- end not expected
 
     token_C kw_token; 
+    M__(M_out(L"get_keyword() calling peek_token");)
     auto prc = peek_token(pp, kw_token, true);
     if (prc != 0) return -1;
     int64_t kw_token_ix = static_N::token_ix;                         // starting index for keyword token 
@@ -2675,12 +2819,12 @@ static int get_keyword(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_
     //   open paren                   -- value for this keyword is an vexpr (expression with verbs) 
     //   open bracket                 -- value for this keyword is a vlist (with 0-N values)
     //   open brace                   -- value for this keyword is an slist (with 0-N vexprs)
-    //   END                          -- value for this keyword is empty (don't consume token)
-    //   another keyword              -- value for this keyword is empty (don't consume token)
-    //   another open_keyname_bracket -- value for this keyword is empty (don't consume token)
-    //   close bracket                -- value for this keyword is empty (don't consume token)
-    //   verb, option                 -- value for this keyword is empty (don't consume token)
-    //   enything else                -- value for this keyword is empty (don't consume token)
+    //   END                          -- value for this keyword is nval (don't consume token)
+    //   another keyword              -- value for this keyword is nval (don't consume token)
+    //   another open_keyname_bracket -- value for this keyword is nval (don't consume token)
+    //   close bracket                -- value for this keyword is nval (don't consume token)
+    //   verb, option                 -- value for this keyword is nval (don't consume token)
+    //   enything else                -- value for this keyword is nval (don't consume token)
     //
     //
 
@@ -2690,6 +2834,7 @@ static int get_keyword(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_
     // get next token from token stream  
 
     token_C value_token; 
+    M__(M_out(L"get_keyword() calling peek_token");)
     prc = peek_token(pp, value_token, false);
     if (prc < 0) return prc;                                         // exit if error only -- continue processing if END -- will be passed to get_atom_vlist(), which will create empty vlist  
     
@@ -2772,14 +2917,15 @@ static int get_keyword(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_
         kw_value.kw_token_ix = kw_token_ix;                          // save away keyword  value token starting index
     }                                                              
                                                                    
-    // handle empty (no) keyword value                             
+    // handle keyword with no following value                             
                                                                    
     else                                                             // any other token
     {
-        // no value for this keyword -- empty value_S will be added down below
+        // no value for this keyword -- nval value_S will be added down below
         // stopping token is not consumed (or added to passed-in vexpr token-list) 
       
-        kw_value.kw_token_ix = kw_token_ix;                          // save away keyword token index in empty value_S
+        kw_value = nval_val();
+        kw_value.kw_token_ix = kw_token_ix;                          // save away keyword token index in value_S
     }   
 
 

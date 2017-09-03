@@ -62,7 +62,8 @@ void add_predefined_typdefs() try
     def_global_typdef(L"FLOAT64_T"    , make_atomic_typdef(type_E::float64    ), true);
     def_global_typdef(L"FLOAT_T"      , make_atomic_typdef(type_E::float64    ), true);
                                                                               
-    def_global_typdef(L"EMPTY_T"      , make_atomic_typdef(type_E::empty      ), true);
+    def_global_typdef(L"UNIT_T"       , make_atomic_typdef(type_E::unit       ), true);
+    def_global_typdef(L"BOOL_T"       , make_atomic_typdef(type_E::boolean    ), true);
     def_global_typdef(L"STRING_T"     , make_atomic_typdef(type_E::string     ), true);
     def_global_typdef(L"VERBNAME_T"   , make_atomic_typdef(type_E::verbname   ), true);
     def_global_typdef(L"KEYNAME_T"    , make_atomic_typdef(type_E::keyname    ), true);
@@ -103,7 +104,7 @@ void add_predefined_verbs() try
 
     // =============================================================================================================================================================
     //
-    // ident @FCN ident [v1 v2 v3 ...] {slist};          // simplified version of @VERB
+    // ident @FN ident [v1 v2 v3 ...] {slist};          // simplified version of @VERB
     //
     //             -- no keywords
     //             -- no left-side parms
@@ -114,14 +115,14 @@ void add_predefined_verbs() try
     //  sample invocations:
     //  ------------------
     //
-    //   verb1 @FCN [a b c]  dynamic_scope: °           // define named function
+    //   verb1 @FN [a b c]  dynamic_scope: °           // define named function
     //   {
     //       @SAY      «verb1 called»;
     //       @RETURN   a a b b c c;
     //   }
     //
     //
-    //   a = @FCN [a b c]                              // anonymous function
+    //   a = @FN [a b c]                              // anonymous function
     //       {
     //           @SAY      «verb1 called»;
     //           @RETURN   a a b b c c;
@@ -143,17 +144,17 @@ void add_predefined_verbs() try
 
         M_vt_slist_right_pos(                      vt                                                         )   // required
 
-        M_vt_empty_optional_right_kw (             vt, L"global"                                              )
-        M_vt_empty_optional_right_kw (             vt, L"local"                                               )
-        M_vt_empty_optional_right_kw (             vt, L"export"                                              )
-        M_vt_empty_optional_right_kw (             vt, L"dynamic_scope"                                       )
-        M_vt_empty_optional_right_kw (             vt, L"lexical_scope"                                       )
-        M_vt_empty_optional_right_kw (             vt, L"block_scope"                                         )
+        M_vt_nval_optional_right_kw (              vt, L"global"                                              )
+        M_vt_nval_optional_right_kw (              vt, L"local"                                               )
+        M_vt_nval_optional_right_kw (              vt, L"export"                                              )
+        M_vt_nval_optional_right_kw (              vt, L"dynamic_scope"                                       )
+        M_vt_nval_optional_right_kw (              vt, L"lexical_scope"                                       )
+        M_vt_nval_optional_right_kw (              vt, L"block_scope"                                         )
       
         M_vt_right_conflict_pair(                  vt, L"global", L"local"                                    )
         M_vt_right_conflict_3way(                  vt, L"dynamic_scope", L"lexical_scope", L"block_scope"     )
 
-        M_vt_add(L"FCN",                           vt, verb_fcn                                               )
+        M_vt_add(L"FN",                            vt, verb_fn                                                )
     }   
 
 
@@ -225,7 +226,7 @@ void add_predefined_verbs() try
         M_vt_anyfix(                               vt, 0, -1, 0, -1)   
 
 
-        // [int64:  float64:  empty: ...etc....   ] -- positional parm description, with nested vlist  (int64: float64: ... are one or more accepted types for this positional parm)
+        // [int64:  float64:  unit: ...etc....   ] -- positional parm description, with nested vlist  (int64: float64: ... are one or more accepted types for this positional parm)
         //      note: can't declare types, limits, etc., for parms inside of any nested vlists 
         //      note: can't declare match sets, conflict sets, or choice sets for keywords
         //      note: there can be multiple occurrences of these positional parm descriptions on both sides 
@@ -233,31 +234,31 @@ void add_predefined_verbs() try
         { 
             M_vt_nested_plist(                         pl, 0, 0                                               )
                                                                                                             
-            M_vt_empty_optional_nest_kw(               pl, L"empty"                                           )
-            M_vt_empty_optional_nest_kw(               pl, L"int8"                                            )
-            M_vt_empty_optional_nest_kw(               pl, L"int16"                                           )
-            M_vt_empty_optional_nest_kw(               pl, L"int32"                                           )
-            M_vt_empty_optional_nest_kw(               pl, L"int64"                                           )
-            M_vt_empty_optional_nest_kw(               pl, L"uint8"                                           )
-            M_vt_empty_optional_nest_kw(               pl, L"uint16"                                          )
-            M_vt_empty_optional_nest_kw(               pl, L"uint32"                                          )
-            M_vt_empty_optional_nest_kw(               pl, L"uint64"                                          )
-            M_vt_empty_optional_nest_kw(               pl, L"float32"                                         )
-            M_vt_empty_optional_nest_kw(               pl, L"float64"                                         )
-            M_vt_empty_optional_nest_kw(               pl, L"string"                                          )
-            M_vt_empty_optional_nest_kw(               pl, L"raw_ident"                                       )
-            M_vt_empty_optional_nest_kw(               pl, L"var_ident"                                       )
-            M_vt_empty_optional_nest_kw(               pl, L"const_ident"                                     )
-            M_vt_empty_optional_nest_kw(               pl, L"undef_ident"                                     )
-            M_vt_empty_optional_nest_kw(               pl, L"vlist"                                           )
-            M_vt_empty_optional_nest_kw(               pl, L"expression"                                      )
-            M_vt_empty_optional_nest_kw(               pl, L"slist"                                           )
-            M_vt_empty_optional_nest_kw(               pl, L"verbdef"                                         )
-            M_vt_empty_optional_nest_kw(               pl, L"typedef"                                         )
-            M_vt_empty_optional_nest_kw(               pl, L"ref"                                             )
-            M_vt_empty_optional_nest_kw(               pl, L"no_eval_ident"                                   )  
-            M_vt_empty_optional_nest_kw(               pl, L"no_eval_expression"                              )
-            M_vt_empty_optional_nest_kw(               pl, L"no_eval_vlist"                                   ) 
+            M_vt_nval_optional_nest_kw(                pl, L"unit"                                            )
+            M_vt_nval_optional_nest_kw(                pl, L"int8"                                            )
+            M_vt_nval_optional_nest_kw(                pl, L"int16"                                           )
+            M_vt_nval_optional_nest_kw(                pl, L"int32"                                           )
+            M_vt_nval_optional_nest_kw(                pl, L"int64"                                           )
+            M_vt_nval_optional_nest_kw(                pl, L"uint8"                                           )
+            M_vt_nval_optional_nest_kw(                pl, L"uint16"                                          )
+            M_vt_nval_optional_nest_kw(                pl, L"uint32"                                          )
+            M_vt_nval_optional_nest_kw(                pl, L"uint64"                                          )
+            M_vt_nval_optional_nest_kw(                pl, L"float32"                                         )
+            M_vt_nval_optional_nest_kw(                pl, L"float64"                                         )
+            M_vt_nval_optional_nest_kw(                pl, L"string"                                          )
+            M_vt_nval_optional_nest_kw(                pl, L"raw_ident"                                       )
+            M_vt_nval_optional_nest_kw(                pl, L"var_ident"                                       )
+            M_vt_nval_optional_nest_kw(                pl, L"const_ident"                                     )
+            M_vt_nval_optional_nest_kw(                pl, L"undef_ident"                                     )
+            M_vt_nval_optional_nest_kw(                pl, L"vlist"                                           )
+            M_vt_nval_optional_nest_kw(                pl, L"expression"                                      )
+            M_vt_nval_optional_nest_kw(                pl, L"slist"                                           )
+            M_vt_nval_optional_nest_kw(                pl, L"verbdef"                                         )
+            M_vt_nval_optional_nest_kw(                pl, L"typedef"                                         )
+            M_vt_nval_optional_nest_kw(                pl, L"ref"                                             )
+            M_vt_nval_optional_nest_kw(                pl, L"no_eval_ident"                                   )  
+            M_vt_nval_optional_nest_kw(                pl, L"no_eval_expression"                              )
+            M_vt_nval_optional_nest_kw(                pl, L"no_eval_vlist"                                   ) 
             M_vt_float64_optional_nest_kw(             pl, L"float_min"                                       )
             M_vt_float64_optional_nest_kw(             pl, L"float_max"                                       )
             M_vt_int64_optional_nest_kw(               pl, L"int_min"                                         )
@@ -266,20 +267,20 @@ void add_predefined_verbs() try
             M_vt_nest_match_pair(                      pl, L"float_min", L"float_max"                         )   
             M_vt_nest_match_pair(                      pl, L"int_min"  , L"int_max"                           ) 
                                                                                                             
-            M_vt_vlist_left_pos(                   vt, pl                                                     )   // [ empty: int64: ... ] [ slist: int64: ... ] ...   allowed on left  side
-            M_vt_vlist_right_pos(                  vt, pl                                                     )   // [ empty: int64: ... ] [ slist: int64: ... ] ...   allowed on right side
+            M_vt_vlist_left_pos(                   vt, pl                                                     )   // [ unit: int64: ... ] [ slist: int64: ... ] ...   allowed on left  side
+            M_vt_vlist_right_pos(                  vt, pl                                                     )   // [ unit: int64: ... ] [ slist: int64: ... ] ...   allowed on right side
         }                                                                                                   
                                                                                                             
         // unnested keyword parms -- left-side and right-side                                               
                                                                                                             
         M_vt_string_optional_right_kw(             vt, L"name"                                                )
         M_vt_slist_required_right_kw(              vt, L"block"                                               ) 
-        M_vt_empty_optional_right_kw (             vt, L"global"                                              )
-        M_vt_empty_optional_right_kw (             vt, L"local"                                               )
-        M_vt_empty_optional_right_kw (             vt, L"export"                                              )
-        M_vt_empty_optional_right_kw (             vt, L"dynamic_scope"                                       )
-        M_vt_empty_optional_right_kw (             vt, L"lexical_scope"                                       )
-        M_vt_empty_optional_right_kw (             vt, L"block_scope"                                         )
+        M_vt_nval_optional_right_kw (              vt, L"global"                                              )
+        M_vt_nval_optional_right_kw (              vt, L"local"                                               )
+        M_vt_nval_optional_right_kw (              vt, L"export"                                              )
+        M_vt_nval_optional_right_kw (              vt, L"dynamic_scope"                                       )
+        M_vt_nval_optional_right_kw (              vt, L"lexical_scope"                                       )
+        M_vt_nval_optional_right_kw (              vt, L"block_scope"                                         )
                                                                                                             
         M_vt_int64rc_optional_right_kw(            vt, L"min", 0, M_int64_max                                 )                
         M_vt_int64rc_optional_right_kw(            vt, L"max",-1, M_int64_max                                 ) 
@@ -292,7 +293,7 @@ void add_predefined_verbs() try
         M_vt_right_conflict_3way(                  vt, L"dynamic_scope", L"lexical_scope", L"block_scope"     )
 
 
-        // key: ["kw-name" kw_min: nnn   kw_max: nnn   int64:  float64:  empty: ...etc....   ] -- keyword parm, with nested vlist  (kw_name required, int64: float64: are one or more accepted types for this keyword)
+        // key: ["kw-name" kw_min: nnn   kw_max: nnn   int64:  float64:  unit: ...etc....   ] -- keyword parm, with nested vlist  (kw_name required, int64: float64: are one or more accepted types for this keyword)
         //      note: can't declare types, limits, etc., for parms inside of any nested vlists  
         //      note: there can be multiple occurrences of these keyword parm descriptions on both sides 
 
@@ -301,32 +302,32 @@ void add_predefined_verbs() try
             M_vt_raw_ident_nest_pos(                   pl                                                     )    // keyword name (as "raw"identifier)
             M_vt_int64rc_optional_nest_kw(             pl, L"kw_min", 0 , std::numeric_limits<int64_t>::max() )    // ???
             M_vt_int64rc_optional_nest_kw(             pl, L"kw_max", -1, std::numeric_limits<int64_t>::max() )    // ???
-            M_vt_empty_optional_nest_kw(               pl, L"empty"                                           )
-            M_vt_empty_optional_nest_kw(               pl, L"int8"                                            )
-            M_vt_empty_optional_nest_kw(               pl, L"int16"                                           )
-            M_vt_empty_optional_nest_kw(               pl, L"int32"                                           )
-            M_vt_empty_optional_nest_kw(               pl, L"int64"                                           )
-            M_vt_empty_optional_nest_kw(               pl, L"uint8"                                           )
-            M_vt_empty_optional_nest_kw(               pl, L"uint16"                                          )
-            M_vt_empty_optional_nest_kw(               pl, L"uint32"                                          )
-            M_vt_empty_optional_nest_kw(               pl, L"uint64"                                          )
-            M_vt_empty_optional_nest_kw(               pl, L"float32"                                         )
-            M_vt_empty_optional_nest_kw(               pl, L"float64"                                         )
-            M_vt_empty_optional_nest_kw(               pl, L"string"                                          )
-            M_vt_empty_optional_nest_kw(               pl, L"var_ident"                                       )
-            M_vt_empty_optional_nest_kw(               pl, L"const_ident"                                     )
-            M_vt_empty_optional_nest_kw(               pl, L"undef_ident"                                     )
-            M_vt_empty_optional_nest_kw(               pl, L"vlist"                                           )
-            M_vt_empty_optional_nest_kw(               pl, L"expression"                                      )
-            M_vt_empty_optional_nest_kw(               pl, L"slist"                                           )
-            M_vt_empty_optional_nest_kw(               pl, L"verbdef"                                         ) 
-            M_vt_empty_optional_nest_kw(               pl, L"typedef"                                         ) 
-            M_vt_empty_optional_nest_kw(               pl, L"array"                                           ) 
-            M_vt_empty_optional_nest_kw(               pl, L"struct"                                          ) 
-            M_vt_empty_optional_nest_kw(               pl, L"ref"                                             ) 
-            M_vt_empty_optional_nest_kw(               pl, L"no_eval_ident"                                   )  
-            M_vt_empty_optional_nest_kw(               pl, L"no_eval_expression"                              )
-            M_vt_empty_optional_nest_kw(               pl, L"no_eval_vlist"                                   ) 
+            M_vt_nval_optional_nest_kw(                pl, L"unit"                                            )
+            M_vt_nval_optional_nest_kw(                pl, L"int8"                                            )
+            M_vt_nval_optional_nest_kw(                pl, L"int16"                                           )
+            M_vt_nval_optional_nest_kw(                pl, L"int32"                                           )
+            M_vt_nval_optional_nest_kw(                pl, L"int64"                                           )
+            M_vt_nval_optional_nest_kw(                pl, L"uint8"                                           )
+            M_vt_nval_optional_nest_kw(                pl, L"uint16"                                          )
+            M_vt_nval_optional_nest_kw(                pl, L"uint32"                                          )
+            M_vt_nval_optional_nest_kw(                pl, L"uint64"                                          )
+            M_vt_nval_optional_nest_kw(                pl, L"float32"                                         )
+            M_vt_nval_optional_nest_kw(                pl, L"float64"                                         )
+            M_vt_nval_optional_nest_kw(                pl, L"string"                                          )
+            M_vt_nval_optional_nest_kw(                pl, L"var_ident"                                       )
+            M_vt_nval_optional_nest_kw(                pl, L"const_ident"                                     )
+            M_vt_nval_optional_nest_kw(                pl, L"undef_ident"                                     )
+            M_vt_nval_optional_nest_kw(                pl, L"vlist"                                           )
+            M_vt_nval_optional_nest_kw(                pl, L"expression"                                      )
+            M_vt_nval_optional_nest_kw(                pl, L"slist"                                           )
+            M_vt_nval_optional_nest_kw(                pl, L"verbdef"                                         ) 
+            M_vt_nval_optional_nest_kw(                pl, L"typedef"                                         ) 
+            M_vt_nval_optional_nest_kw(                pl, L"array"                                           ) 
+            M_vt_nval_optional_nest_kw(                pl, L"struct"                                          ) 
+            M_vt_nval_optional_nest_kw(                pl, L"ref"                                             ) 
+            M_vt_nval_optional_nest_kw(                pl, L"no_eval_ident"                                   )  
+            M_vt_nval_optional_nest_kw(                pl, L"no_eval_expression"                              )
+            M_vt_nval_optional_nest_kw(                pl, L"no_eval_vlist"                                   ) 
             M_vt_float64_optional_nest_kw(             pl, L"float_min"                                       )
             M_vt_float64_optional_nest_kw(             pl, L"float_max"                                       )
             M_vt_int64_optional_nest_kw(               pl, L"int_min"                                         )
@@ -367,8 +368,8 @@ void add_predefined_verbs() try
     {
         M_vt_nary_prefix(                 vt                        )
         M_vt_string_right_pos(            vt                        ) 
-        M_vt_empty_optional_right_kw (    vt, L"global"             )
-        M_vt_empty_optional_right_kw (    vt, L"local"              )
+        M_vt_nval_optional_right_kw (     vt, L"global"             )
+        M_vt_nval_optional_right_kw (     vt, L"local"              )
         M_vt_right_conflict_pair(         vt, L"global", L"local"   )
         M_vt_add(L"UNVERB",               vt, verb_unverb           )
     }   
@@ -376,17 +377,19 @@ void add_predefined_verbs() try
 
 
 
-    // ===============================================================
-    // @PARSE "string"   name:"name of string -- for debugging" 
-    // ===============================================================
+    // ================================================================================================
+    // @PARSE "string"   name:"name of string -- for debugging"  continue: -or- end: (if parsing error)
+    // ================================================================================================
    
     {
-        M_vt_unary_prefix(            vt              )  
-        M_vt_string_optional_right_kw(vt, L"name"     )                      // optional name:debug_name 
-                                                            
-        M_vt_string_right_pos(        vt              )                      // verb name -- required
-
-        M_vt_add(L"PARSE",            vt, verb_parse)
+        M_vt_unary_prefix(                  vt                        )  
+        M_vt_string_optional_right_kw(      vt, L"name"               )                      // optional name:debug_name -- appears in error messages
+        M_vt_nval_optional_right_kw(        vt, L"continue"           )                      // optional continue:   continue running, if parsing error
+        M_vt_nval_optional_right_kw(        vt, L"end"                )                      // optional end:        end run,          if parsing error    (default)
+        M_vt_right_conflict_pair(           vt, L"continue", L"end"   )
+                                                                  
+        M_vt_string_right_pos(              vt                        )                      // string to be parsed 
+        M_vt_add(L"PARSE",                  vt, verb_parse            )
     }   
 
 
@@ -397,13 +400,13 @@ void add_predefined_verbs() try
     // =========================================
    
     {
-        M_vt_unary_prefix(            vt              )  
-        M_vt_vlist0_optional_right_kw(vt, L"left"     )
-        M_vt_vlist0_optional_right_kw(vt, L"right"    )
-                                                      
-        M_vt_string_right_pos(        vt              )                      // verb name -- required
-
-        M_vt_add(L"CALL",             vt, verb_call   )
+        M_vt_unary_prefix(                  vt              )  
+        M_vt_vlist0_optional_right_kw(      vt, L"left"     )
+        M_vt_vlist0_optional_right_kw(      vt, L"right"    )
+                                                            
+        M_vt_string_right_pos(              vt              )                      // verb name -- required
+                                            
+        M_vt_add(L"CALL",                   vt, verb_call   )
     }   
      
 
@@ -432,7 +435,7 @@ void add_predefined_verbs() try
    
     {
         M_vt_unary_prefix(            vt              )  
-        M_vt_empty_optional_right_kw( vt, L"capture"  )                      // optional capture:   (to capture shell command outpout 
+        M_vt_nval_optional_right_kw(  vt, L"capture"  )                      // optional capture:   (to capture shell command outpout 
                                                             
         M_vt_string_right_pos(        vt              )                      // shell command string -- required
 
@@ -549,13 +552,18 @@ void add_predefined_verbs() try
 
     
     // =====================================
-    // @DO {slist}
+    // @DO {slist}   continue:
     // =====================================
 
     {
-        M_vt_unary_prefix(   vt         )
-        M_vt_slist_right_pos(vt         ) 
-        M_vt_add(L"DO",      vt, verb_do)
+        M_vt_unary_prefix(                  vt                        )
+        M_vt_slist_right_pos(               vt                        ) 
+
+        M_vt_nval_optional_right_kw(        vt, L"continue"           )                      // optional continue:   continue running, if parsing error
+        M_vt_nval_optional_right_kw(        vt, L"end"                )                      // optional end:        end run,          if parsing error    (default)
+        M_vt_right_conflict_pair(           vt, L"continue", L"end"   )
+
+        M_vt_add(L"DO",                     vt, verb_do               )
     }
  
 
@@ -637,6 +645,7 @@ void add_predefined_verbs() try
 
             kp.no_eval_ident  = true;
             kp.no_eval_vexpr  = true;
+            kp.boolean_ok     = true; 
             kp.int8_ok        = true; 
             kp.int16_ok       = true;
             kp.int32_ok       = true;
@@ -691,11 +700,11 @@ void add_predefined_verbs() try
     {
         M_vt_nary_prefix(                 vt                        )                                                                     
         M_vt_assigntype_optional_right_kw(vt, L"value"              )
-        M_vt_empty_optional_right_kw (    vt, L"global"             )
-        M_vt_empty_optional_right_kw (    vt, L"local"              )
-        M_vt_empty_optional_right_kw (    vt, L"export"             )
-        M_vt_empty_optional_right_kw (    vt, L"share"              )
-        M_vt_empty_optional_right_kw (    vt, L"unshare"            )
+        M_vt_nval_optional_right_kw (     vt, L"global"             )
+        M_vt_nval_optional_right_kw (     vt, L"local"              )
+        M_vt_nval_optional_right_kw (     vt, L"export"             )
+        M_vt_nval_optional_right_kw (     vt, L"share"              )
+        M_vt_nval_optional_right_kw (     vt, L"unshare"            )
 
         M_vt_right_conflict_pair(         vt, L"global", L"local"   )
         M_vt_right_conflict_pair(         vt, L"share" , L"unshare" ) 
@@ -713,11 +722,11 @@ void add_predefined_verbs() try
     {
         M_vt_unary_prefix(                vt                        )                                                                      
         M_vt_assigntype_optional_right_kw(vt, L"value"              )
-        M_vt_empty_optional_right_kw (    vt, L"global"             )
-        M_vt_empty_optional_right_kw (    vt, L"local"              )
-        M_vt_empty_optional_right_kw (    vt, L"export"             )
-        M_vt_empty_optional_right_kw (    vt, L"share"              )
-        M_vt_empty_optional_right_kw (    vt, L"unshare"            )
+        M_vt_nval_optional_right_kw (     vt, L"global"             )
+        M_vt_nval_optional_right_kw (     vt, L"local"              )
+        M_vt_nval_optional_right_kw (     vt, L"export"             )
+        M_vt_nval_optional_right_kw (     vt, L"share"              )
+        M_vt_nval_optional_right_kw (     vt, L"unshare"            )
 
         M_vt_right_conflict_pair(         vt, L"global", L"local"   )
         M_vt_right_conflict_pair(         vt, L"share" , L"unshare" ) 
@@ -735,8 +744,8 @@ void add_predefined_verbs() try
     {
         M_vt_unary_prefix(                vt                        )
  
-        M_vt_empty_optional_right_kw (    vt, L"share"              )
-        M_vt_empty_optional_right_kw (    vt, L"unshare"            )
+        M_vt_nval_optional_right_kw (     vt, L"share"              )
+        M_vt_nval_optional_right_kw (     vt, L"unshare"            )
         M_vt_right_conflict_pair(         vt, L"share" , L"unshare" )  
 
         M_vt_any_ident_right_pos(         vt                        )
@@ -744,6 +753,16 @@ void add_predefined_verbs() try
         M_vt_add(L"NOEVAL"  ,             vt, verb_noeval           )
     }  
 
+
+    // ===========================
+    // @EVAL value value value ...
+    // ===========================
+
+    {
+        M_vt_nary_prefix(                 vt                        )      
+        M_vt_any_right_pos(               vt                        )      
+        M_vt_add(L"EVAL",                 vt, verb_eval             );        
+    }
 
     // ======================
     // @UNSHARE value 
@@ -777,8 +796,8 @@ void add_predefined_verbs() try
     {
         M_vt_nary_prefix(                 vt                        )
         M_vt_any_ident_right_pos(         vt                        )    
-        M_vt_empty_optional_right_kw(     vt, L"global"             ) 
-        M_vt_empty_optional_right_kw(     vt, L"local"              )
+        M_vt_nval_optional_right_kw(      vt, L"global"             ) 
+        M_vt_nval_optional_right_kw(      vt, L"local"              )
         M_vt_right_conflict_pair(         vt, L"global", L"local"   )
         M_vt_add(L"UNVAR",                vt, verb_unvar            )
     }   
@@ -790,8 +809,8 @@ void add_predefined_verbs() try
     
     {                                      /* 1 or more vars */
         M_vt_anyfix(                      vt, 1, -1, 0, -1          )  
-        M_vt_empty_optional_right_kw (    vt, L"share"              )
-        M_vt_empty_optional_right_kw (    vt, L"unshare"            )
+        M_vt_nval_optional_right_kw (     vt, L"share"              )
+        M_vt_nval_optional_right_kw (     vt, L"unshare"            )
         M_vt_right_conflict_pair(         vt, L"share" , L"unshare" ) 
 
         M_vt_lvalue_left_pos(             vt                        )
@@ -806,8 +825,8 @@ void add_predefined_verbs() try
     {                                     /* 1 or more vars */
         M_vt_anyfix(                      vt, 0, -1, 1, -1          ) 
 
-        M_vt_empty_optional_right_kw (    vt, L"share"              )
-        M_vt_empty_optional_right_kw (    vt, L"unshare"            )
+        M_vt_nval_optional_right_kw (     vt, L"share"              )
+        M_vt_nval_optional_right_kw (     vt, L"unshare"            )
         M_vt_right_conflict_pair(         vt, L"share" , L"unshare" ) 
 
         M_vt_lvalue_right_pos(            vt                        )
@@ -1204,6 +1223,8 @@ void add_predefined_verbs() try
     //  @TYPE name:typedef_name 
     //        global:
     //        export:
+    //       // unit:
+    //       // bool:
     //        int8:
     //        uint8:
     //        int16:
@@ -1226,18 +1247,20 @@ void add_predefined_verbs() try
         M_vt_nofix(                       vt                                                                             )     
                                                                                                                            
         M_vt_any_ident_optional_right_kw( vt, L"name"                                                                    )           // has to be tested later, since definnition can be in local or global scope
-        M_vt_empty_optional_right_kw (    vt, L"global"                                                                  )           // default is local -- ignored if name: is not present
-        M_vt_empty_optional_right_kw (    vt, L"export"                                                                  )           // default is don't export -- ignored if global: (or name: is not present)
-        M_vt_empty_optional_right_kw (    vt, L"int8"                                                                    )
-        M_vt_empty_optional_right_kw (    vt, L"uint8"                                                                   )
-        M_vt_empty_optional_right_kw (    vt, L"int16"                                                                   )
-        M_vt_empty_optional_right_kw (    vt, L"uint16"                                                                  )
-        M_vt_empty_optional_right_kw (    vt, L"int32"                                                                   )
-        M_vt_empty_optional_right_kw (    vt, L"uint32"                                                                  )
-        M_vt_empty_optional_right_kw (    vt, L"int64"                                                                   )
-        M_vt_empty_optional_right_kw (    vt, L"uint64"                                                                  )
-        M_vt_empty_optional_right_kw (    vt, L"float32"                                                                 )
-        M_vt_empty_optional_right_kw (    vt, L"float64"                                                                 )
+        M_vt_nval_optional_right_kw (     vt, L"global"                                                                  )           // default is local -- ignored if name: is not present
+        M_vt_nval_optional_right_kw (     vt, L"export"                                                                  )           // default is don't export -- ignored if global: (or name: is not present)
+        M_vt_nval_optional_right_kw (     vt, L"unit"                                                                    )
+        M_vt_nval_optional_right_kw (     vt, L"bool"                                                                    )
+        M_vt_nval_optional_right_kw (     vt, L"int8"                                                                    )
+        M_vt_nval_optional_right_kw (     vt, L"uint8"                                                                   )
+        M_vt_nval_optional_right_kw (     vt, L"int16"                                                                   )
+        M_vt_nval_optional_right_kw (     vt, L"uint16"                                                                  )
+        M_vt_nval_optional_right_kw (     vt, L"int32"                                                                   )
+        M_vt_nval_optional_right_kw (     vt, L"uint32"                                                                  )
+        M_vt_nval_optional_right_kw (     vt, L"int64"                                                                   )
+        M_vt_nval_optional_right_kw (     vt, L"uint64"                                                                  )
+        M_vt_nval_optional_right_kw (     vt, L"float32"                                                                 )
+        M_vt_nval_optional_right_kw (     vt, L"float64"                                                                 )
 
         // array:[ n_elements element_type_t ] 
 
@@ -1267,8 +1290,8 @@ void add_predefined_verbs() try
                 M_vt_typdef_nest_pos(                           pln                                                      )           // 2nd nested positional parm is field type -- typdef
                 M_vt_int64rc_optional_nest_kw(                  pln, L"offset", 0, std::numeric_limits<int64_t>::max()   )           // optional offset:nnnn keyword  (offset must not be negative)
                 M_vt_int64_optional_nest_kw(                    pln, L"skip"                                             )           // optional skip:nnnn   keyword  (skip can be positive or negative)
-                M_vt_empty_optional_nest_kw(                    pln, L"same"                                             )           // optional same        keyword  
-                M_vt_empty_optional_nest_kw(                    pln, L"high"                                             )           // optional high        keyword 
+                M_vt_nval_optional_nest_kw(                     pln, L"same"                                             )           // optional same        keyword  
+                M_vt_nval_optional_nest_kw(                     pln, L"high"                                             )           // optional high        keyword 
                 M_vt_nest_conflict_3way(                        pln, L"offset", L"same", L"high"                         )           // cannot have offset: high: and same: for same field
 
                 M_vt_vlist_nest_pos(                        pl, pln                                                      )  
@@ -1278,6 +1301,8 @@ void add_predefined_verbs() try
 
         {
           M_vt_conflict_set(                 cs                                  )
+          M_vt_add_conflict_kw(              cs, L"unit"                         ) 
+          M_vt_add_conflict_kw(              cs, L"bool"                         ) 
           M_vt_add_conflict_kw(              cs, L"int8"                         ) 
           M_vt_add_conflict_kw(              cs, L"uint8"                        ) 
           M_vt_add_conflict_kw(              cs, L"int16"                        ) 
@@ -1303,9 +1328,10 @@ void add_predefined_verbs() try
     // ==================================================== 
 
     {
-        M_vt_unary_prefix(      vt           )
-        M_vt_compare_right_pos( vt           )  
+        M_vt_unary_prefix(      vt                    )
+        M_vt_compare_right_pos( vt                    )  
 
+        M_vt_add(L"TO_BOOL"     , vt, verb_to_bool    )
         M_vt_add(L"TO_INT8"     , vt, verb_to_int8    )
         M_vt_add(L"TO_INT16"    , vt, verb_to_int16   )
         M_vt_add(L"TO_INT32"    , vt, verb_to_int32   )
@@ -1333,7 +1359,8 @@ void add_predefined_verbs() try
 
         {
             M_vt_pos_parm(       pt       )            // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  compare types + vlist  
-            pt.empty_ok   = true;
+            pt.unit_ok    = true;
+            pt.boolean_ok = true;
             pt.int8_ok    = true;
             pt.int16_ok   = true;
             pt.int32_ok   = true;
@@ -1367,6 +1394,7 @@ void add_predefined_verbs() try
             M_vt_add_r_pos(     vt, pt             )
         }
 
+        M_vt_add(L"IS_BOOL"      , vt, verb_is_bool       )
         M_vt_add(L"IS_INT8"      , vt, verb_is_int8       )
         M_vt_add(L"IS_INT16"     , vt, verb_is_int16      )
         M_vt_add(L"IS_INT32"     , vt, verb_is_int32      )
@@ -1388,7 +1416,7 @@ void add_predefined_verbs() try
         M_vt_add(L"IS_STRING"    , vt, verb_is_string     )
         M_vt_add(L"IS_VLIST"     , vt, verb_is_vlist      )
         M_vt_add(L"IS_SLIST"     , vt, verb_is_slist      )
-        M_vt_add(L"IS_EMPTY"     , vt, verb_is_empty      ) 
+        M_vt_add(L"IS_UNIT"      , vt, verb_is_unit       ) 
      }
 
      ////////////////////////////////////////////////////////////
@@ -1412,9 +1440,9 @@ void add_predefined_verbs() try
     {
         M_vt_unary_prefix(            vt                             )
         M_vt_any_ident_right_pos(     vt                             )
-        M_vt_empty_optional_right_kw (vt, L"local"                   )
-        M_vt_empty_optional_right_kw (vt, L"global"                  )
-        M_vt_empty_optional_right_kw (vt, L"all"                     ) 
+        M_vt_nval_optional_right_kw ( vt, L"local"                   )
+        M_vt_nval_optional_right_kw ( vt, L"global"                  )
+        M_vt_nval_optional_right_kw ( vt, L"all"                     ) 
         M_vt_right_conflict_3way(     vt, L"local", L"global", L"all") 
 
         M_vt_add(L"IS_VAR"     , vt, verb_is_var   ) 
@@ -1508,9 +1536,9 @@ void add_predefined_verbs() try
         M_vt_nofix(        vt)
 
         M_vt_string_optional_right_kw(    vt, L"key"              )
-        M_vt_empty_optional_right_kw(     vt, L"allkeys"          )
-        M_vt_empty_optional_right_kw(     vt, L"right"            )
-        M_vt_empty_optional_right_kw(     vt, L"left"             )  
+        M_vt_nval_optional_right_kw(      vt, L"allkeys"          )
+        M_vt_nval_optional_right_kw(      vt, L"right"            )
+        M_vt_nval_optional_right_kw(      vt, L"left"             )  
         M_vt_right_conflict_pair(         vt, L"left", L"right"   )
         M_vt_right_conflict_pair(         vt, L"key" , L"allkeys" ) 
         
@@ -1525,8 +1553,8 @@ void add_predefined_verbs() try
     {
         M_vt_nofix(        vt)
 
-        M_vt_empty_optional_right_kw(     vt, L"right"          )
-        M_vt_empty_optional_right_kw(     vt, L"left"           )  
+        M_vt_nval_optional_right_kw(      vt, L"right"          )
+        M_vt_nval_optional_right_kw(      vt, L"left"           )  
         M_vt_right_conflict_pair(         vt, L"left", L"right" )
         
         M_vt_add(L"ARGS", vt, verb_args)
@@ -1545,10 +1573,10 @@ void add_predefined_verbs() try
     {
         M_vt_unary_prefix(                vt                                         ) 
         M_vt_int64rc_right_pos(           vt, 0, std::numeric_limits<int64_t>::max() )    // range = 0 to N
-        M_vt_empty_optional_right_kw(     vt, L"allkeys"                             )
+        M_vt_nval_optional_right_kw(      vt, L"allkeys"                             )
         M_vt_string_optional_right_kw(    vt, L"key"                                 )
-        M_vt_empty_optional_right_kw(     vt, L"right"                               )
-        M_vt_empty_optional_right_kw(     vt, L"left"                                )  
+        M_vt_nval_optional_right_kw(      vt, L"right"                               )
+        M_vt_nval_optional_right_kw(      vt, L"left"                                )  
         M_vt_right_conflict_pair(         vt, L"left", L"right"                      ) 
         M_vt_right_conflict_pair(         vt, L"key" , L"allkeys"                    )  
 
@@ -1587,7 +1615,7 @@ void add_predefined_verbs() try
         M_vt_binary_infix(                vt                     )
         M_vt_int64rc_right_pos(           vt, 0, M_int64_max     )  // right-side integer -- range = 0 to N
         M_vt_string_optional_right_kw(    vt, L"key"             )
-        M_vt_empty_optional_right_kw(     vt, L"allkeys"         )
+        M_vt_nval_optional_right_kw(      vt, L"allkeys"         )
         M_vt_right_conflict_pair(         vt, L"key" , L"allkeys") 
 
         M_vt_vlist0_left_pos(             vt                     ) 
@@ -1607,7 +1635,7 @@ void add_predefined_verbs() try
         M_vt_unary_prefix(                vt                       )
         M_vt_vlist0_right_pos(            vt                       )
         M_vt_string_optional_right_kw(    vt, L"key"               )
-        M_vt_empty_optional_right_kw(     vt, L"allkeys"           )
+        M_vt_nval_optional_right_kw(      vt, L"allkeys"           )
         M_vt_right_conflict_pair(         vt, L"key" , L"allkeys"  )  
 
         M_vt_add(L"VL_CT",                vt, verb_vl_ct           )
@@ -1640,17 +1668,17 @@ void add_predefined_verbs() try
 
     {
         M_vt_nofix(vt) 
-        M_vt_empty_optional_right_kw( vt, L"locale"              )
-        M_vt_empty_optional_right_kw( vt, L"numerics"            )
-        M_vt_empty_optional_right_kw( vt, L"stack"               )
-        M_vt_empty_optional_right_kw( vt, L"all_vars"            )
-        M_vt_empty_optional_right_kw( vt, L"builtin_verbs"       )
-        M_vt_empty_optional_right_kw( vt, L"added_verbs"         )
-        M_vt_empty_optional_right_kw( vt, L"all_verbs"           )
-        M_vt_empty_optional_right_kw( vt, L"builtin_types"       )
-        M_vt_empty_optional_right_kw( vt, L"added_types"         )
-        M_vt_empty_optional_right_kw( vt, L"all_types"           )
-        M_vt_empty_optional_right_kw( vt, L"id_cache"            )
+        M_vt_nval_optional_right_kw( vt, L"locale"              )
+        M_vt_nval_optional_right_kw( vt, L"numerics"            )
+        M_vt_nval_optional_right_kw( vt, L"stack"               )
+        M_vt_nval_optional_right_kw( vt, L"all_vars"            )
+        M_vt_nval_optional_right_kw( vt, L"builtin_verbs"       )
+        M_vt_nval_optional_right_kw( vt, L"added_verbs"         )
+        M_vt_nval_optional_right_kw( vt, L"all_verbs"           )
+        M_vt_nval_optional_right_kw( vt, L"builtin_types"       )
+        M_vt_nval_optional_right_kw( vt, L"added_types"         )
+        M_vt_nval_optional_right_kw( vt, L"all_types"           )
+        M_vt_nval_optional_right_kw( vt, L"id_cache"            )
 
 
         // vars:  ['v1 'v2 'v3 'v4 ...] -- display specified variables
@@ -1677,15 +1705,25 @@ void add_predefined_verbs() try
 
     {
         M_vt_nary_prefix(             vt                        )      
-        M_vt_any_right_pos(           vt                        )     // string parms only -- verb names 
-        M_vt_empty_optional_right_kw( vt, L"debug"              )
-        M_vt_empty_optional_right_kw( vt, L"debugx"             )
+        M_vt_any_right_pos(           vt                        )      
+        M_vt_nval_optional_right_kw(  vt, L"debug"              )
+        M_vt_nval_optional_right_kw(  vt, L"debugx"             )
         M_vt_right_conflict_pair(     vt, L"debug" , L"debugx"  ) 
 
-        M_vt_add(L"SAY",              vt, verb_say              );
-        M_vt_add(L"STR",              vt, verb_str              );
+        M_vt_add(L"STR",              vt, verb_str              );        
     }
-    
+
+    {
+        M_vt_nary_prefix(             vt                        )      
+        M_vt_any_right_pos(           vt                        )     
+        M_vt_nval_optional_right_kw(  vt, L"debug"              )
+        M_vt_nval_optional_right_kw(  vt, L"debugx"             )
+        M_vt_right_conflict_pair(     vt, L"debug" , L"debugx"  ) 
+        M_vt_nval_optional_right_kw(  vt, L"no_nl"              )
+
+        M_vt_add(L"SAY",              vt, verb_say              );       
+    }
+
 
     // ==========================
     // @STDIN  (no parms)
@@ -1721,11 +1759,11 @@ void add_predefined_verbs() try
 
     {
         M_vt_nofix(vt) 
-        M_vt_empty_optional_right_kw( vt, L"no_verbs"              )
-        M_vt_empty_optional_right_kw( vt, L"few_verbs"             )
-        M_vt_empty_optional_right_kw( vt, L"some_verbs"            )
-        M_vt_empty_optional_right_kw( vt, L"most_verbs"            )
-        M_vt_empty_optional_right_kw( vt, L"all_verbs"             )   
+        M_vt_nval_optional_right_kw(  vt, L"no_verbs"              )
+        M_vt_nval_optional_right_kw(  vt, L"few_verbs"             )
+        M_vt_nval_optional_right_kw(  vt, L"some_verbs"            )
+        M_vt_nval_optional_right_kw(  vt, L"most_verbs"            )
+        M_vt_nval_optional_right_kw(  vt, L"all_verbs"             )   
 
         M_vt_right_conflict_5way(     vt, L"no_verbs" , L"few_verbs",  L"some_verbs" , L"most_verbs", L"all_verbs")  
 

@@ -38,6 +38,7 @@
 ////     @CONST
 ////     @UNVAR
 ////     @NOEVAL
+////     @EVAL
 ////     @UNSHARE
 ////     @EXPORT
 ////     @UNEXPORT
@@ -58,8 +59,9 @@
 ////     @VL_CT
 ////     @STR
 ////     @SAY
-////     @OUT
-////     @IN
+////     @STDOUT
+////     @STDERR
+////     @STDIN
 ////    
 ////     @DISPLAY numerics:
 ////              locale: 
@@ -118,7 +120,7 @@
 ////                   
 ////
 ////   r/c =  0 -- OK    -- condition evaluated to an integer -- value of condition is in results.int64
-////   r/c = -1 -- error -- caller should return with empty results and r/c = -1
+////   r/c = -1 -- error -- caller should return with unit results and r/c = -1
 ////   r/c =  1 -- special exit condition occurred during evaluation -- caller return with results and r/c = 0  
 ////
 ////
@@ -145,7 +147,7 @@ int eval_cond(frame_S& frame, const value_S& value, const e_vexpr_S& vexpr, cons
     {
         M_out_emsg1(L"eval_cond() -- cannot evaluate value for condition (%s) -- verb=%s execution ends immediately") % ws % verb_name(vexpr); 
         msgend_loc(cond_results, vexpr);
-        results = error_results();     // pass back empty value with error flag 
+        results = error_results();     // pass back error results 
         return -1; 
     }
 
@@ -159,21 +161,21 @@ int eval_cond(frame_S& frame, const value_S& value, const e_vexpr_S& vexpr, cons
     }
         
 
-    // return with error, if cond results are not integer 
+    // return with error, if cond results are not integer or boolean 
     
     M__(display_value(cond_results, L"cond_results");)
    
-    if (!is_value_integer(cond_results))
+    if ( !is_value_integer(cond_results) && !(is_value_boolean(cond_results)) )
     {
         M_out_emsg1(L"eval_cond() -- evaluated value for %s keyword is not integer -- verb=%s execution ends immediately") % ws % verb_name(vexpr); 
         display_value(cond_results, L"bad " + ws + L" value");
         msgend_loc(cond_results, vexpr);
-        results = error_results();     // pass back empty value with error flag  
+        results = error_results();     // pass back error results  
         return -1; 
     }
 
 
-    //  cond_results is an integer value -- return normally 
+    //  cond_results is an integer or boolean value -- return normally 
 
     results = cond_results; 
     return 0; 
@@ -210,8 +212,8 @@ int verb_var(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, r
 
     // fetch keyword values 
 
-    value_S value_value  { };                                              // value ot be assigned -- will be empty if value: keyword not present 
-    auto value_rc   = get_right_keyword(vexpr, L"value" , value_value );   // key_value will be empty, if value: keyword is not present 
+    value_S value_value  { };                                              // value to be assigned -- will be unit if value: keyword not present 
+    auto value_rc   = get_right_keyword(vexpr, L"value" , value_value );   // key_value will be unit, if value: keyword is not present 
     auto global_rc  = get_right_keyword(vexpr, L"global"              );   // rc = -1, if global:  keyword is not present
     auto export_rc  = get_right_keyword(vexpr, L"export"              );   // rc = -1, if export:  keyword is not present  (assumed if this is a global variable) 
     auto unshare_rc = get_right_keyword(vexpr, L"unshare"             );   // rc = -1, if unshare: keyword is not present  
@@ -277,9 +279,24 @@ int verb_var(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, r
     // return normally, or with error
 
     if (rc == 0)  
-        results = to_results(value_value);                             // output results = value assigned to new variable(s)
+    {
+        // pass back variables -- not the values -- set up single results (1 variable present) or multiple results (0 or more than 1 variable present) 
+        // -------------------------------------------------------------------------------------------------------------------------------------------
+      
+        if (vexpr.rparms.values.size() == 1)                                                                               // just one variable to be assigned
+        {
+            results = to_results(vexpr.rparms.values.at(0));                                                               // output value = single variable
+        }
+        else                                                                                                               // 0 or more than 1 value -- need to pass back multiple results
+        {
+            vlist_S vlist { };                                                                                             // clean results vlist -- no global:, value: keywords, etc. 
+            vlist.values = vexpr.rparms.values;                                                                            // copy over just the right-side positional parms = all values to be assigned   
+            results = to_results(vlist_val(vlist));                                                                        // convert vlist to results
+            results.multiple_results = true;                                                                               // pass back vlist as multiple results
+        }
+    }
     else
-        results = error_results();                                     // output results = empty, with error flag
+        results = error_results();                                     // output results = error
 
     return rc; 
 }
@@ -303,12 +320,12 @@ int verb_const(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef,
     std::wstring var_name { vexpr.rparms.values.at(0).string };           // get name of variable being defined 
 
 
-    // add new constant with value set to "empty" or value from value: keyword
+    // add new constant with value set to "unit" or value from value: keyword
 
 
     // fetch keyword values 
 
-    value_S value_value  { };                                              // value to be assigned -- should not be empty -- value: keyword is required 
+    value_S value_value  { };                                              // value to be assigned -- should get/set -- value: keyword is required 
     auto value_rc   = get_right_keyword(vexpr, L"value" , value_value );   // value: keyword should be present 
     auto global_rc  = get_right_keyword(vexpr, L"global"              );   // rc = -1, if global:  keyword is not present
     auto export_rc  = get_right_keyword(vexpr, L"export"              );   // rc = -1, if export:  keyword is not present  (always assumed, if this is global constant)
@@ -372,7 +389,7 @@ int verb_const(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef,
     if (rc == 0)
         results = to_results(value_value);               // output results = value assigned to new constant
     else
-        results = error_results();                       // output results = empty, with error flag          
+        results = error_results();                       // output results = error          
 
     return rc; 
 }
@@ -396,7 +413,7 @@ int verb_unvar(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef,
 
     // fetch global: keyword 
 
-    value_S global_value { };                                             // not looked at -- should be empty 
+    value_S global_value { };                                             // not looked at 
     auto global_rc = get_right_keyword(vexpr, L"global", global_value);   // rc = -1, if global: keyword is not present
 
 
@@ -481,7 +498,7 @@ int verb_unvar(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef,
                     if (rc != 0)
                     {
                         //count_error(); already counted in def_local_var()
-                        M_out_emsg1(L"verb_unvar() -- unexpected eror from undef_local_var() -- unable to undefine local variable = %s") % var.string;
+                        M_out_emsg1(L"verb_unvar() -- unexpected error from undef_local_var() -- unable to undefine local variable = %s") % var.string;
                         msgend_loc(var, vexpr);
                         rc = -1;  
                     } 
@@ -494,9 +511,9 @@ int verb_unvar(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef,
     // return normally, or with error
 
     if (rc == 0)  
-        results = results_S { };                                       // output results = empty
+        results = no_results();                                        // output results = none
     else
-        results = error_results();                                     // output results = empty, with error flag
+        results = error_results();                                     // output results = error
 
     return rc; 
 }
@@ -529,10 +546,30 @@ int verb_noeval(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef
     }
 
 
-    results.suppress_eval_once = true;                       // suppress evaluation on return from this verb
+    results.suppress_eval_once = true;                        // suppress evaluation on return from this verb
     return 0 ; 
 }
 M_endf
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//    @EVAL -- return (already) evaluated input parms
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int verb_eval(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
+{
+    // already known that there are 1-N right-side positional parms of any type 
+
+    M__(M_out(L"verb_eval() called");)
+
+    results = to_results(vlist_val(vexpr.rparms));                                              // place input vlist in results (should have been evaluated before verb_eval() was called) 
+    results.multiple_results = true;                                                            // indicate that mutiple results are being returned
+    return 0;
+}
+M_endf
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -544,7 +581,7 @@ M_endf
 int verb_unshare(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
 {
     // already known that there is one positional assignable type parm
-    M__(M_out(L"verb_noeval() called");)
+    M__(M_out(L"verb_unshare() called");)
 
     value_S value {vexpr.rparms.values.at(0)};      // just copy 1st positional parm value to local var -- nested vexprs are still shared
     unshare_value(value);
@@ -619,9 +656,9 @@ int verb_export(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef
     // return normally, or with error
 
     if (rc == 0)  
-        results = results_S {};                                        // output results = empty
+        results = no_results();                                        // output results = none
     else
-        results = error_results();                                     // output results = empty, with error flag
+        results = error_results();                                     // output results = error
 
     return rc; 
 }
@@ -644,9 +681,9 @@ int verb_unexport(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbd
     // return normally, or with error
 
     if (rc == 0)  
-        results = results_S {};                                        // output results = empty
+        results = no_results();                                         // output results = none
     else
-        results = error_results();                                     // output results = empty, with error flag
+        results = error_results();                                      // output results = error
 
     return rc; 
 }
@@ -792,22 +829,23 @@ int verb_type(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, 
 
      // known: no more than one of the following keywords is present:
 
-     value_S empty_value  { };
-     value_S array_value  { };            // value should be a vlist with two positional parms
-     value_S struct_value { };            // value should be a vlist with 1-N nested vlist values 
+     value_S array_value     { };            // value should be a vlist with two positional parms
+     value_S struct_value    { };            // value should be a vlist with 1-N nested vlist values 
 
-     auto     int8_rc = get_right_keyword(vexpr, L"int8"     ,  empty_value);    
-     auto    uint8_rc = get_right_keyword(vexpr, L"uint8"    ,  empty_value);  
-     auto    int16_rc = get_right_keyword(vexpr, L"int16"    ,  empty_value);    
-     auto   uint16_rc = get_right_keyword(vexpr, L"uint16"   ,  empty_value); 
-     auto    int32_rc = get_right_keyword(vexpr, L"int32"    ,  empty_value);    
-     auto   uint32_rc = get_right_keyword(vexpr, L"uint32"   ,  empty_value); 
-     auto    int64_rc = get_right_keyword(vexpr, L"int64"    ,  empty_value);    
-     auto   uint64_rc = get_right_keyword(vexpr, L"uint64"   ,  empty_value); 
-     auto  float32_rc = get_right_keyword(vexpr, L"float32"  ,  empty_value);    
-     auto  float64_rc = get_right_keyword(vexpr, L"float64"  ,  empty_value); 
-     auto    array_rc = get_right_keyword(vexpr, L"array"    ,  array_value);
-     auto   struct_rc = get_right_keyword(vexpr, L"struct"   , struct_value);
+     auto     unit_rc = get_right_keyword(vexpr, L"unit"                      );  
+     auto     bool_rc = get_right_keyword(vexpr, L"bool"                      );  
+     auto     int8_rc = get_right_keyword(vexpr, L"int8"                      );    
+     auto    uint8_rc = get_right_keyword(vexpr, L"uint8"                     );  
+     auto    int16_rc = get_right_keyword(vexpr, L"int16"                     );    
+     auto   uint16_rc = get_right_keyword(vexpr, L"uint16"                    ); 
+     auto    int32_rc = get_right_keyword(vexpr, L"int32"                     );    
+     auto   uint32_rc = get_right_keyword(vexpr, L"uint32"                    ); 
+     auto    int64_rc = get_right_keyword(vexpr, L"int64"                     );    
+     auto   uint64_rc = get_right_keyword(vexpr, L"uint64"                    ); 
+     auto  float32_rc = get_right_keyword(vexpr, L"float32"                   );    
+     auto  float64_rc = get_right_keyword(vexpr, L"float64"                   ); 
+     auto    array_rc = get_right_keyword(vexpr, L"array"    ,     array_value);
+     auto   struct_rc = get_right_keyword(vexpr, L"struct"   ,    struct_value);
 
 
      // set up typdef_S based on input parms
@@ -816,8 +854,10 @@ int verb_type(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, 
      typdef_S typdef { };              // typdef to be filled in 
 
 
-         // (note: only one of these should have r/c = 0, if none are present, default typdef will be produced)
+     // (note: only one of these should have r/c = 0, if none are present, default typdef will be produced)
 
+     if (    unit_rc == 0 )   make_atomic_typdef(type_E::unit    , typdef);
+     if (    bool_rc == 0 )   make_atomic_typdef(type_E::boolean , typdef);
      if (    int8_rc == 0 )   make_atomic_typdef(type_E::int8    , typdef);
      if (   uint8_rc == 0 )   make_atomic_typdef(type_E::uint8   , typdef);
      if (   int16_rc == 0 )   make_atomic_typdef(type_E::int16   , typdef);
@@ -924,14 +964,14 @@ int verb_type(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, 
               fieldparm.fieldname = M_get_nest_pos_string(  *(elem.vlist_sp), 0);               // 1st positional parm (0) is fieldname
               fieldparm.typdef_p  = M_get_nest_pos_typdef_p(*(elem.vlist_sp), 1);               // 2nd positional parm (0) is typdef_S for this field
 
-              value_S offset_value { };
-              value_S skip_value   { };
-              value_S empty_valye  { };
+              value_S offset_value    { };
+              value_S skip_value      { };
+              value_S unwanted_value  { };
 
-              auto offset_rc = get_vlist_keyword(*(elem.vlist_sp), L"offset", offset_value );   // get offset:nnnn   (if present)
-              auto skip_rc   = get_vlist_keyword(*(elem.vlist_sp), L"skip"  , skip_value   );   // get skip:nnnn     (if present)  
-              auto same_rc   = get_vlist_keyword(*(elem.vlist_sp), L"same"  , empty_value  );   // get same:         (if present)
-              auto high_rc   = get_vlist_keyword(*(elem.vlist_sp), L"high"  , empty_value  );   // get high:         (if present)
+              auto offset_rc = get_vlist_keyword(*(elem.vlist_sp), L"offset", offset_value    );   // get offset:nnnn   (if present)
+              auto skip_rc   = get_vlist_keyword(*(elem.vlist_sp), L"skip"  , skip_value      );   // get skip:nnnn     (if present)  
+              auto same_rc   = get_vlist_keyword(*(elem.vlist_sp), L"same"  , unwanted_value  );   // get same:         (if present)
+              auto high_rc   = get_vlist_keyword(*(elem.vlist_sp), L"high"  , unwanted_value  );   // get high:         (if present)
 
               if (offset_rc == 0)
               {
@@ -1060,6 +1100,7 @@ M_endf
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+template<typename T>      bool verb__to_bool(   T x) {return (     bool)x;}
 template<typename T>    int8_t verb__to_int8(   T x) {return (   int8_t)x;}
 template<typename T>   int16_t verb__to_int16(  T x) {return (  int16_t)x;}
 template<typename T>   int32_t verb__to_int32(  T x) {return (  int32_t)x;}
@@ -1073,21 +1114,49 @@ template<typename T> float64_T verb__to_float64(T x) {return (float64_T)x;}
 
 
 //---------------------------------------------------------------------------------
+//   @TO_BOOL xxx
+//---------------------------------------------------------------------------------
+
+int verb_to_bool(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
+{
+    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
+    M__(M_out(L"verb_to_bool() called");)
+          
+    value_S in_val  {vexpr.rparms.values.at(0)};
+    value_S out_val {                         };
+
+
+    // convert input value to boolean true/false value
+
+    if (is_value_true(in_val))
+        out_val = boolean_val(true , in_val.token_ix1, in_val.token_ix1);
+    else
+        out_val = boolean_val(false, in_val.token_ix1, in_val.token_ix1);
+        
+
+    results = to_results(out_val);
+    return 0; 
+}
+M_endf
+
+
+
+//---------------------------------------------------------------------------------
 //   @TO_INT8 xxx
 //---------------------------------------------------------------------------------
 
 int verb_to_int8(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
 {
-    // already known that there is one right-side positional parm -- type should be empty, int, float, or string 
+    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
     M__(M_out(L"verb_to_int8() called");)
           
     value_S in_val  {vexpr.rparms.values.at(0)};
-    value_S out_val {                        };
+    value_S out_val {                         };
 
 
-    // convert empty value to 0
+    // convert unit value to 0
 
-    if (in_val.ty == type_E::empty)
+    if (in_val.ty == type_E::unit)
     {
         out_val = int8_val(0, in_val.token_ix1, in_val.token_ix1);
     }
@@ -1133,16 +1202,16 @@ M_endf
 
 int verb_to_int16(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
 {
-    // already known that there is one right-side positional parm -- type should be empty, int, float, or string 
+    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
     M__(M_out(L"verb_to_int16() called");)
           
     value_S in_val  {vexpr.rparms.values.at(0)};
     value_S out_val {                         };
 
 
-    // convert empty value to 0
+    // convert unit value to 0
 
-    if (in_val.ty == type_E::empty)
+    if (in_val.ty == type_E::unit)
     {
         out_val = int16_val(0, in_val.token_ix1, in_val.token_ix1);
     }
@@ -1188,16 +1257,16 @@ M_endf
 
 int verb_to_int32(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
 {
-    // already known that there is one right-side positional parm -- type should be empty, int, float, or string 
+    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
     M__(M_out(L"verb_to_int32() called");)
           
     value_S in_val  {vexpr.rparms.values.at(0)};
     value_S out_val {                         };
 
 
-    // convert empty value to 0
+    // convert unit value to 0
 
-    if (in_val.ty == type_E::empty)
+    if (in_val.ty == type_E::unit)
     {
         out_val = int32_val(0, in_val.token_ix1, in_val.token_ix1);
     }
@@ -1242,16 +1311,16 @@ M_endf
 
 int verb_to_int64(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
 {
-    // already known that there is one right-side positional parm -- type should be empty, int, float, or string 
+    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
     M__(M_out(L"verb_to_int64() called");)
           
     value_S in_val  {vexpr.rparms.values.at(0)};
     value_S out_val {                         };
 
 
-    // convert empty value to 0
+    // convert unit value to 0
 
-    if (in_val.ty == type_E::empty)
+    if (in_val.ty == type_E::unit)
     {
         out_val = int64_val(0, in_val.token_ix1, in_val.token_ix1);
     }
@@ -1297,16 +1366,16 @@ M_endf
 
 int verb_to_uint8(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
 {
-    // already known that there is one right-side positional parm -- type should be empty, int, float, or string 
+    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
     M__(M_out(L"verb_to_uint8() called");)
           
     value_S in_val  {vexpr.rparms.values.at(0)};
     value_S out_val {                         };
 
 
-    // convert empty value to 0
+    // convert unit value to 0
 
-    if (in_val.ty == type_E::empty)
+    if (in_val.ty == type_E::unit)
     {
         out_val = uint8_val(0, in_val.token_ix1, in_val.token_ix1);
     }
@@ -1352,16 +1421,16 @@ M_endf
 
 int verb_to_uint16(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
 {
-    // already known that there is one right-side positional parm -- type should be empty, int, float, or string 
+    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
     M__(M_out(L"verb_to_uint16() called");)
           
     value_S in_val  {vexpr.rparms.values.at(0)};
     value_S out_val {                         };
 
 
-    // convert empty value to 0
+    // convert unit value to 0
 
-    if (in_val.ty == type_E::empty)
+    if (in_val.ty == type_E::unit)
     {
         out_val = uint16_val(0, in_val.token_ix1, in_val.token_ix1);
     }
@@ -1409,16 +1478,16 @@ M_endf
 
 int verb_to_uint32(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
 {
-    // already known that there is one right-side positional parm -- type should be empty, int, float, or string 
+    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
     M__(M_out(L"verb_to_uint32() called");)
           
     value_S in_val  {vexpr.rparms.values.at(0)};
     value_S out_val {                         };
 
 
-    // convert empty value to 0
+    // convert unit value to 0
 
-    if (in_val.ty == type_E::empty)
+    if (in_val.ty == type_E::unit)
     {
         out_val = uint32_val(0, in_val.token_ix1, in_val.token_ix1);
     }
@@ -1464,16 +1533,16 @@ M_endf
 
 int verb_to_uint64(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
 {
-    // already known that there is one right-side positional parm -- type should be empty, int, float, or string 
+    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
     M__(M_out(L"verb_to_uint64() called");)
           
     value_S in_val  {vexpr.rparms.values.at(0)};
     value_S out_val {                         };
 
 
-    // convert empty value to 0
+    // convert unit value to 0
 
-    if (in_val.ty == type_E::empty)
+    if (in_val.ty == type_E::unit)
     {
         out_val = uint64_val(0, in_val.token_ix1, in_val.token_ix1);
     }
@@ -1519,16 +1588,16 @@ M_endf
 
 int verb_to_float32(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
 {
-    // already known that there is one right-side positional parm -- type should be empty, int, float, or string 
+    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
     M__(M_out(L"verb_to_float32() called");)
           
     value_S in_val  {vexpr.rparms.values.at(0)};
     value_S out_val {                         };
 
 
-    // convert empty value to 0
+    // convert unit value to 0
 
-    if (in_val.ty == type_E::empty)
+    if (in_val.ty == type_E::unit)
     {
         out_val = float32_val(0.0, in_val.token_ix1, in_val.token_ix1);
     }
@@ -1574,16 +1643,16 @@ M_endf
 
 int verb_to_float64(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
 {
-    // already known that there is one right-side positional parm -- type should be empty, int, float, or string 
+    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
     M__(M_out(L"verb_to_float64() called");)
           
     value_S in_val  {vexpr.rparms.values.at(0)};
     value_S out_val {                         };
 
 
-    // convert empty value to 0
+    // convert unit value to 0
 
-    if (in_val.ty == type_E::empty)
+    if (in_val.ty == type_E::unit)
     {
         out_val = float64_val(0.0, in_val.token_ix1, in_val.token_ix1);
     }
@@ -1629,7 +1698,7 @@ M_endf
 
 int verb_to_str(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
 {
-    // already known that there is one right-side positional parm -- type should be empty, int, float, string, or vlist  
+    // already known that there is one right-side positional parm -- type should be unit, int, float, string, or vlist  
     M__(M_out(L"verb_to_str() called");)
      
     results = to_results(string_val( str_value(vexpr.rparms.values.at(0), false, false, true) ));   
@@ -1662,7 +1731,7 @@ int verb_to_ident(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbd
         M_out_emsg1(L"verb_to_ident() -- error occurred when converting from string = «%s» to identifier") % id_str; 
         msgend_loc(vexpr.rparms.values.at(0), vexpr); 
   
-        results = error_results();    // return empty results with error flag
+        results = error_results();    // return error results
         return -1;                    // failure r/c
     }
 
@@ -1681,6 +1750,28 @@ M_endf
 //    @IS_XXXXX type testing verbs
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+//---------------------------------------------------------------------------------
+//   @IS_BOOL xxx
+//---------------------------------------------------------------------------------
+
+int verb_is_bool(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
+{
+    // already known that there is one right-side positional parm of any type
+    M__(M_out(L"verb_is_bool() called");)
+          
+    if (vexpr.rparms.values.at(0).ty == type_E::boolean)
+        results = true_results();
+    else
+        results = false_results();
+
+    return 0; 
+}
+M_endf
+
+
 
 
 //---------------------------------------------------------------------------------
@@ -2051,15 +2142,15 @@ M_endf
 
 
 //---------------------------------------------------------------------------------
-//   @IS_EMPTY xxxx
+//   @IS_UNIT xxxx
 //---------------------------------------------------------------------------------
 
-int verb_is_empty(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
+int verb_is_unit(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
 {
     // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_empty() called");)
+    M__(M_out(L"verb_is_unit() called");)
           
-    if (vexpr.rparms.values.at(0).ty == type_E::empty)
+    if (vexpr.rparms.values.at(0).ty == type_E::unit)
         results = true_results();
     else
         results = false_results();
@@ -2139,8 +2230,8 @@ int verb_is_def(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef
 
     // see if global: or local: are defined -- only one of these (or neither) should be defined
 
-    value_S global_val {};                                                                    // should be empty
-    value_S local_val  {};                                                                    // should be empty
+    value_S global_val { };                                                                   
+    value_S local_val  { };                                                                   
     auto grc = get_right_keyword(vexpr, L"global" , global_val );                             // get value of global: keyword -- if not present, R/C is -1 
     auto lrc = get_right_keyword(vexpr, L"local"  , local_val  );                             // get value of local:  keyword -- if not present, R/C is -1 
 
@@ -2170,8 +2261,8 @@ int verb_is_var(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef
 
     // see if global: or local: are defined -- only one of these (or neither) should be defined
 
-    value_S global_val {};                                                                    // should be empty
-    value_S local_val  {};                                                                    // should be empty
+    value_S global_val { };                                                                   
+    value_S local_val  { };                                                                   
     auto grc = get_right_keyword(vexpr, L"global" , global_val );                             // get value of global: keyword -- if not present, R/C is -1 
     auto lrc = get_right_keyword(vexpr, L"local"  , local_val  );                             // get value of local:  keyword -- if not present, R/C is -1 
 
@@ -2205,8 +2296,8 @@ int verb_is_const(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbd
 
     // see if global: or local: are defined -- only one of these (or neither) should be defined
 
-    value_S global_val {};                                                                    // should be empty
-    value_S local_val  {};                                                                    // should be empty
+    value_S global_val { };                                                                   
+    value_S local_val  { };                                                                   
     auto grc = get_right_keyword(vexpr, L"global" , global_val );                             // get value of global: keyword -- if not present, R/C is -1 
     auto lrc = get_right_keyword(vexpr, L"local"  , local_val  );                             // get value of local:  keyword -- if not present, R/C is -1 
 
@@ -2767,7 +2858,7 @@ M_endf
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//    @GETENV "envar_name" -- get setting for envronment variable "envar_name" (if any -- empty results if not set)
+//    @GETENV "envar_name" -- get setting for envronment variable "envar_name" (if any -- unit results if not set)
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2784,7 +2875,7 @@ int verb_getenv(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef
     }
     else
     {
-        results = results_S { }; 
+        results = unit_results(); 
         return 0;
     }
     // should not get here
@@ -2837,11 +2928,11 @@ static int assign_vlist(frame_S& frame, const e_vexpr_S& vexpr, const vlist_S& v
 { 
     M__(M_out(L"assign_vlist() -- called -- rest.string = %s    (rest.ty == type_E::identifier) = %d") % rest.string % (rest.ty == type_E::identifier);) 
 
-    bool        rest_valid      {rest.ty == type_E::identifier};    // rest is valid if it contains variable name as the value string                                                                                                                                 
+    bool        rest_valid      {rest.ty == type_E::identifier};   // rest is valid if it contains variable name as the value string                                                                                                                                 
     auto        var_ct       =  vars_vlist.value_ct;               // number of variable names in vars_vlist;     
     auto        value_ct     =  values_vlist.value_ct;             // number of values to assign to variables in values_vlist; 
     
-    value_S     empty_val       {};                                // empty value for pre-defining variables, as required     
+    value_S     unit_value      { unit_val() };                    // unit value for pre-defining variables, as required     
     vlist_S     rest_vlist      {};                                // vlist to be assigned to rest (if rest_valid)  
    
 
@@ -2863,7 +2954,7 @@ static int assign_vlist(frame_S& frame, const e_vexpr_S& vexpr, const vlist_S& v
     
             if ( (define_vars) &&  (!is_local_identifier_defined(frame, var_name) ) ) // need to define local variable before assignment? 
             {
-                auto src = def_local_var(frame, var_name, empty_val);                 // define local var with empty value
+                auto src = def_local_var(frame, var_name, unit_value);                // define local var with unit value
                 if (src != 0)
                 {
                     count_error(); 
@@ -2899,7 +2990,7 @@ static int assign_vlist(frame_S& frame, const e_vexpr_S& vexpr, const vlist_S& v
                     return -1;             
                 } 
             }
-            else    // variable exists, but has no corresponding value  -- assign empty value to this variable (if not just defined above)
+            else    // variable exists, but has no corresponding value  -- assign unit value to this variable (if not just defined above)
             {
                 if (!just_defined)
                 {
@@ -2911,11 +3002,11 @@ static int assign_vlist(frame_S& frame, const e_vexpr_S& vexpr, const vlist_S& v
                         return -1;         
                     }  
 
-                    auto arc = update_local_var(frame, var_name, empty_val, make_const);
+                    auto arc = update_local_var(frame, var_name, unit_value, make_const);
                     if (arc != 0)
                     {
                         count_error(); 
-                        M_out_emsg1(L"assign_vlist() -- unexpected error from update_local_var(,%s,) -- (empty value)") % var_name; 
+                        M_out_emsg1(L"assign_vlist() -- unexpected error from update_local_var(,%s,) -- (unit value)") % var_name; 
                         msgend_loc(vars_vlist.values.at(i), vexpr);
                         return -1;             
                     } 
@@ -3001,10 +3092,10 @@ int verb_arg_assign(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& ver
 
     if  ((vexpr.lparms.value_ct > 0) || (vexpr.lparms.kw_ct > 0) ) 
     {
-        value_S key_val {}; 
-        value_S rest_val {}; 
-        auto krc = get_left_keyword(vexpr, L"key" , key_val );                                     // get value of key: keyword -- if not defined, value will be empty, and R/C -1 
-        auto lrc = get_left_keyword(vexpr, L"rest", rest_val);                                     // get value of rest: keyword -- if not defined, value will be empty, and R/C -1
+        value_S key_val  { }; 
+        value_S rest_val { }; 
+        auto krc = get_left_keyword(vexpr, L"key" , key_val );                                     // get value of key: keyword  -- if not defined, value will be unit, and R/C -1 
+        auto lrc = get_left_keyword(vexpr, L"rest", rest_val);                                     // get value of rest: keyword -- if not defined, value will be unit, and R/C -1
 
         M__(M_out(L"verb_arg_assign() -- left-side rest: = %s    key: = %s") % rest_val.string % key_val.string;)
 
@@ -3041,10 +3132,10 @@ int verb_arg_assign(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& ver
 
     if  ((vexpr.rparms.value_ct > 0) || (vexpr.rparms.kw_ct > 0) ) 
     {
-        value_S key_val {}; 
-        value_S rest_val {}; 
-        auto krc = get_right_keyword(vexpr, L"key" , key_val );                                     // get value of key: keyword -- if not defined, value will be empty, and R/C -1 
-        auto lrc = get_right_keyword(vexpr, L"rest", rest_val);                                     // get value of rest: keyword -- if not defined, value will be empty, and R/C -1
+        value_S key_val  { }; 
+        value_S rest_val { }; 
+        auto krc = get_right_keyword(vexpr, L"key" , key_val );                                     // get value of key: keyword  -- if not defined, value will be unit, and R/C -1 
+        auto lrc = get_right_keyword(vexpr, L"rest", rest_val);                                     // get value of rest: keyword -- if not defined, value will be unit, and R/C -1
 
         M__(M_out(L"verb_arg_assign() -- right-side rest: = %s    key: = %s") % rest_val.string % key_val.string;)
 
@@ -3078,7 +3169,7 @@ int verb_arg_assign(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& ver
 
     // no error -- return normally
                
-    results = results_S {};      // return empty results
+    results = unit_results();                   // return unit results
     return 0; 
 }
 M_endf
@@ -3210,7 +3301,7 @@ int verb_arg(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, r
     //  also -- an optional right: or left: keyword, and an optional key: string keyword or allkeys: keyword (both allkeys: and key: cannot both be present   
 
     M__(M_out(L"verb_arg() called");)
-    value_S arg_value { };                                  // empty value, in case n-th parm does not exist
+    value_S arg_value { unit_val() };                                                     // unit value, in case n-th parm does not exist
 
 
     // get positional parm number requested by caller -- 1st right parm should be present and be >= 0
@@ -3224,9 +3315,9 @@ int verb_arg(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, r
     value_S key_value       { };
     value_S allkeys_value   { };
 
-    auto left_rc     = get_right_keyword(vexpr, L"left"    ,  left_value    );      // r/c = -1, if left: keyword is not present -- if left: not present, right: must be 
-    auto key_rc      = get_right_keyword(vexpr, L"key"     ,  key_value     );      // r/c = -1, if key:     keyword is not present 
-    auto allkeys_rc  = get_right_keyword(vexpr, L"allkeys" ,  allkeys_value );      // r/c = -1, if allkeys: keyword is not present
+    auto left_rc     = get_right_keyword(vexpr, L"left"    ,  left_value    );              // r/c = -1, if left: keyword is not present -- if left: not present, right: must be 
+    auto key_rc      = get_right_keyword(vexpr, L"key"     ,  key_value     );              // r/c = -1, if key:     keyword is not present 
+    auto allkeys_rc  = get_right_keyword(vexpr, L"allkeys" ,  allkeys_value );              // r/c = -1, if allkeys: keyword is not present
      
 
     if  (key_rc == 0)                                                                       // key:"xxxx" present -- caller wants keyword "key_value.string" parm 
@@ -3234,27 +3325,27 @@ int verb_arg(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, r
         // get n-th occurrence of key:"string" keyword 
      
         if (left_rc == 0)                                                                   // caller wants n-th occurrence of keyword  in left-side vlist 
-            (void) get_vlist_keyword(frame.lparms, key_value.string, arg_value, parm_n);    // r/c=-1 and at_value is empty, if n-th occurrence of this keyword is not present
+            (void) get_vlist_keyword(frame.lparms, key_value.string, arg_value, parm_n);    // r/c=-1 and at_value is unit, if n-th occurrence of this keyword is not present
         else                                                                                // caller wants n-th occurrence of keyword  in left-side vlist
-            (void) get_vlist_keyword(frame.rparms, key_value.string, arg_value, parm_n);    // r/c=-1 and at_value is empty, if n-th occurrence of this keyword is not present                                                                                                
+            (void) get_vlist_keyword(frame.rparms, key_value.string, arg_value, parm_n);    // r/c=-1 and at_value is unit, if n-th occurrence of this keyword is not present                                                                                                
     }
     else if  (allkeys_rc == 0)                                                              // allkeys: present -- caller wants value for n-th keyword of any name 
     {
         // get n-th keyword in vlist -- with any keyword name
      
         if (left_rc == 0)                                                                   // caller wants value from n-th keyword  in left-side vlist 
-            (void) get_vlist_keyword(frame.lparms, arg_value, parm_n);                      // r/c=-1 and at_value is empty, if n-th occurrence of this keyword is not present
+            (void) get_vlist_keyword(frame.lparms, arg_value, parm_n);                      // r/c=-1 and at_value is unit, if n-th occurrence of this keyword is not present
         else                                                                                // caller wants value from n-th keyword  in left-side vlist
-            (void) get_vlist_keyword(frame.rparms, arg_value, parm_n);                      // r/c=-1 and at_value is empty, if n-th occurrence of this keyword is not present                                                                                                
+            (void) get_vlist_keyword(frame.rparms, arg_value, parm_n);                      // r/c=-1 and at_value is unity, if n-th occurrence of this keyword is not present                                                                                                
     }  
     else                                                                                    // neither key:"xxxx" nor allkeys: present -- caller wants positional parm
     {
         // get n-th positional parm on requested side 
      
         if (left_rc == 0)                                                                   // caller wants n-th positional value in left-side vlist     
-            (void)get_vlist_positional(frame.lparms, arg_value, parm_n);                    // r/c=-1 and at_value is empty, if n-th  parm not present  
+            (void)get_vlist_positional(frame.lparms, arg_value, parm_n);                    // r/c=-1 and at_value is unit, if n-th  parm not present  
         else                                                                                // caller wants n-th positional value in right-side vlist
-            (void)get_vlist_positional(frame.rparms, arg_value, parm_n);                    // r/c=-1 and at_value is empty, if n-th  parm not present
+            (void)get_vlist_positional(frame.rparms, arg_value, parm_n);                    // r/c=-1 and at_value is unit, if n-th  parm not present
     }
 
     results = to_results(arg_value);                        // return value from n-th left/right parm as output value
@@ -3282,10 +3373,10 @@ int verb_vl_assign(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verb
     // known that there are one or more variables (undefined, or defined and non-constant0 on left side, along with optional rest: keyword, also with a single undefined or defined non-constant variable
     // right-side is known to contain one mandatory vlist parm, and one optional key:"string" parm     
     
-    value_S key_val {}; 
-    value_S rest_val {}; 
-    auto krc = get_right_keyword(vexpr, L"key" , key_val );                                     // get value of key: keyword -- if not defined, value will be empty, and R/C -1 
-    auto lrc = get_left_keyword( vexpr, L"rest", rest_val);                                     // get value of rest: keyword -- if not defined, value will be empty, and R/C -1
+    value_S key_val  { }; 
+    value_S rest_val { }; 
+    auto krc = get_right_keyword(vexpr, L"key" , key_val );                                     // get value of key: keyword  -- if not defined, value will be unit, and R/C -1 
+    auto lrc = get_left_keyword( vexpr, L"rest", rest_val);                                     // get value of rest: keyword -- if not defined, value will be unit, and R/C -1
 
     M__(M_out(L"verb_vl_assign() -- rest: = %s    key: = %s") % rest_val.string % key_val.string;)
 
@@ -3318,7 +3409,7 @@ int verb_vl_assign(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verb
 
     // no error -- return normally
                
-    results = results_S {};      // return empty results
+    results = unit_results();                       // return unit results
     return 0; 
 }
 M_endf
@@ -3340,7 +3431,7 @@ int verb_at(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, re
     //  also -- an optional key:"xxxx" keyword or allkeys: keyword (both allkeys: and key: cannot both be present  
 
     M__(M_out(L"verb_at() called");)
-    value_S at_value { };                                  // empty value, in case n-th value does not exist
+    value_S at_value { unit_val() };                                              // unit value, in case n-th value does not exist
 
 
     // get positional value or keyword occurrence number  
@@ -3360,11 +3451,11 @@ int verb_at(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, re
     // extract requested positional or keyword value
 
     if       (key_rc     == 0)                                                                                  // key:":xxxx" present? -- caller wants n-th keyword "xxxx" value in vlist 
-        (void)get_vlist_keyword(   *(vexpr.lparms.values.at(0).vlist_sp), key_value.string, at_value, value_n); // r/c=-1 and at_value is empty, if n-th occurrence of this keyword is not present 
+        (void)get_vlist_keyword(   *(vexpr.lparms.values.at(0).vlist_sp), key_value.string, at_value, value_n); // r/c=-1 and at_value is unit, if n-th occurrence of this keyword is not present 
     else if  (allkeys_rc == 0)                                                                                  // allkeys: present ? -- caller wants value from n-th keyword overall
-        (void)get_vlist_keyword(   *(vexpr.lparms.values.at(0).vlist_sp),                   at_value, value_n); // r/c=-1 and at_value is empty, if n-th keyword overall is not present 
+        (void)get_vlist_keyword(   *(vexpr.lparms.values.at(0).vlist_sp),                   at_value, value_n); // r/c=-1 and at_value is unit, if n-th keyword overall is not present 
     else                                                                                                        // neither allkey: nor key:"xxxx" -- caller wants n-th positional value
-        (void)get_vlist_positional(*(vexpr.lparms.values.at(0).vlist_sp),                   at_value, value_n); // r/c=-1 and at_value is empty, if n-th  parm not present  
+        (void)get_vlist_positional(*(vexpr.lparms.values.at(0).vlist_sp),                   at_value, value_n); // r/c=-1 and at_value is unit, if n-th  parm not present  
                                                                                                               
     
     results = to_results(at_value);                                                                             // return value from n-th value in vlist as output value
@@ -3388,7 +3479,7 @@ int verb_vl_ct(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef,
     // already known that there is one right-side positional int64 parm (0-N), and a left-side vlist positional parm.    
 
     M__(M_out(L"verb_vl_ct() called");)
-    value_S ct_value { };                                  // empty value, in case n-th value does not exist
+    value_S ct_value { unit_val() };                                                                            // unit value, in case n-th value does not exist
 
 
     // see if key:/allkeys: keywords are present on right side
@@ -3433,8 +3524,8 @@ M_endf
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//    @STR   value value value ...  :debug    
-//    @SAY   value value value ...  :debug
+//    @STR   value value value ...  debug:    
+//    @SAY   value value value ...  debug: no_nl:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -3466,9 +3557,9 @@ int verb_str(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, r
 
     // get debug: and debugx: keywords (if present)  
 
-    value_S empty_value  { };                                              // should be empty                                
-    auto debug_rc  = get_right_keyword(vexpr, L"debug" , empty_value);     // r/c = -1, if debug:  keyword is not present 
-    auto debugx_rc = get_right_keyword(vexpr, L"debugx", empty_value);     // r/c = -1, if debugx: keyword is not present 
+    value_S unwanted_value  { };                                              // don't need these keyword values                                
+    auto debug_rc  = get_right_keyword(vexpr, L"debug" , unwanted_value);     // r/c = -1, if debug:  keyword is not present 
+    auto debugx_rc = get_right_keyword(vexpr, L"debugx", unwanted_value);     // r/c = -1, if debugx: keyword is not present 
 
     // create string from right positional vlist (without debug: and debugx: keywords)
 
@@ -3491,16 +3582,22 @@ int verb_say(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, r
 
     // get debug: and debugx: keywords (if present)  
 
-    value_S empty_value  { };                                              // should be empty                                
-    auto debug_rc  = get_right_keyword(vexpr, L"debug" , empty_value);     // r/c = -1, if debug:  keyword is not present 
-    auto debugx_rc = get_right_keyword(vexpr, L"debugx", empty_value);     // r/c = -1, if debugx: keyword is not present
+    value_S unwanted_value  { };                                              // don't neeed these keyword values                                
+    auto debug_rc  = get_right_keyword(vexpr, L"debug" , unwanted_value);     // r/c = -1, if debug:  keyword is not present 
+    auto debugx_rc = get_right_keyword(vexpr, L"debugx", unwanted_value);     // r/c = -1, if debugx: keyword is not present
+    auto no_nl_rc  = get_right_keyword(vexpr, L"no_nl" , unwanted_value);     // r/c = -1, if no_nl:  keyword is not present
 
 
     // write out formatted string from right vlist (without debug: and debugx: keywords) 
 
-    ws = build_ws(vexpr.rparms, debug_rc == 0, debugx_rc == 0);            // format right vlist (without the debug: and debugx: keywords) in debug/non-debug mode   
-    write_stdout(ws + L"\n");                                              // put out formatted string 
-    results = to_results(string_val(ws));                                  // output value is the formatted string
+    ws = build_ws(vexpr.rparms, debug_rc == 0, debugx_rc == 0);               // format right vlist (without the debug: and debugx: keywords) in debug/non-debug mode  
+
+    if (no_nl_rc == 0)
+       write_stdout(ws);                                                      // put out formatted string without NL
+    else
+       write_stdout(ws + L"\n");                                              // put out formatted string with NL
+
+    results = to_results(string_val(ws));                                     // output value is the formatted string
     return 0;
 }
 M_endf
@@ -3516,8 +3613,8 @@ int verb_stdout(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef
     // already known there is one right positional string parameter 
     M__(M_out(L"verb_stdout() called");)
        
-    write_stdout(vexpr.rparms.values.at(0).string + L"\n");                 // put out passed-in string 
-    results = results_S{};                                                  // output value = empty
+    write_stdout(vexpr.rparms.values.at(0).string);                         // put out passed-in string   (no added nl)
+    results = no_results();                                                 // no output value
     return 0;
 }
 M_endf
@@ -3533,8 +3630,8 @@ int verb_stderr(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef
     // already known there is one right positional string parameter 
     M__(M_out(L"verb_stderr() called");)
        
-    write_stderr(vexpr.rparms.values.at(0).string + L"\n");                 // put out passed-in string 
-    results = results_S{};                                                  // output value = empty
+    write_stderr(vexpr.rparms.values.at(0).string);                         // put out passed-in string   (no added nl)
+    results = no_results();                                                 // no output value
     return 0;
 }
 M_endf
@@ -3556,11 +3653,11 @@ int verb_stdin(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef,
     auto rc = read_stdin(ws); 
             
 
-    // if input error, return empty value
+    // if input error, return unit value
 
     if (rc != 0)
     {
-        results = results_S{};                                                  // output value = empty
+        results = unit_results();                                              // output value = unit
         return 0;  
     }
 
@@ -3588,23 +3685,23 @@ int verb_display(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbde
 
     // get locale: and numerics: keywords (if present)  
 
-    value_S empty_value  { };                                                                   // should be empty  
+    value_S unwanted_value  { };                                                                   // don't need this vlue  
 
-    auto locale_rc           = get_right_keyword(vexpr, L"locale"           , empty_value);     // r/c = 0, if locale:             keyword is present 
-    auto numerics_rc         = get_right_keyword(vexpr, L"numerics"         , empty_value);     // r/c = 0, if numerics:           keyword is present
-    auto stack_rc            = get_right_keyword(vexpr, L"stack"            , empty_value);     // r/c = 0, if stack:              keyword is present
-    auto all_vars_rc         = get_right_keyword(vexpr, L"all_vars"         , empty_value);     // r/c = 0, if all_vars:           keyword is present
-    auto builtin_verbs_rc    = get_right_keyword(vexpr, L"builtin_verbs"    , empty_value);     // r/c = 0, if builtin_verbs:      keyword is present
-    auto added_verbs_rc      = get_right_keyword(vexpr, L"added_verbs"      , empty_value);     // r/c = 0, if added_verbs:        keyword is present
-    auto all_verbs_rc        = get_right_keyword(vexpr, L"all_verbs"        , empty_value);     // r/c = 0, if all_verbs:          keyword is present
-    auto builtin_types_rc    = get_right_keyword(vexpr, L"builtin_types"    , empty_value);     // r/c = 0, if builtin_types:      keyword is present
-    auto added_types_rc      = get_right_keyword(vexpr, L"added_types"      , empty_value);     // r/c = 0, if added_types:        keyword is present
-    auto all_types_rc        = get_right_keyword(vexpr, L"all_types"        , empty_value);     // r/c = 0, if all_types:          keyword is present
-    auto id_cache_rc         = get_right_keyword(vexpr, L"id_cache"         , empty_value);     // r/c = 0, if id_cache:           keyword is present
-
-    auto vars_rc             = get_right_keyword(vexpr, L"vars"             , empty_value);     // r/c = 0, if vars:[ ... ]        keyword is present
-    auto verbs_rc            = get_right_keyword(vexpr, L"verbs"            , empty_value);     // r/c = 0, if verbs:[ ... ]       keyword is present
-    auto types_rc            = get_right_keyword(vexpr, L"types"            , empty_value);     // r/c = 0, if types:[ ... ]       keyword is present
+    auto locale_rc           = get_right_keyword(vexpr, L"locale"           , unwanted_value);     // r/c = 0, if locale:             keyword is present 
+    auto numerics_rc         = get_right_keyword(vexpr, L"numerics"         , unwanted_value);     // r/c = 0, if numerics:           keyword is present
+    auto stack_rc            = get_right_keyword(vexpr, L"stack"            , unwanted_value);     // r/c = 0, if stack:              keyword is present
+    auto all_vars_rc         = get_right_keyword(vexpr, L"all_vars"         , unwanted_value);     // r/c = 0, if all_vars:           keyword is present
+    auto builtin_verbs_rc    = get_right_keyword(vexpr, L"builtin_verbs"    , unwanted_value);     // r/c = 0, if builtin_verbs:      keyword is present
+    auto added_verbs_rc      = get_right_keyword(vexpr, L"added_verbs"      , unwanted_value);     // r/c = 0, if added_verbs:        keyword is present
+    auto all_verbs_rc        = get_right_keyword(vexpr, L"all_verbs"        , unwanted_value);     // r/c = 0, if all_verbs:          keyword is present
+    auto builtin_types_rc    = get_right_keyword(vexpr, L"builtin_types"    , unwanted_value);     // r/c = 0, if builtin_types:      keyword is present
+    auto added_types_rc      = get_right_keyword(vexpr, L"added_types"      , unwanted_value);     // r/c = 0, if added_types:        keyword is present
+    auto all_types_rc        = get_right_keyword(vexpr, L"all_types"        , unwanted_value);     // r/c = 0, if all_types:          keyword is present
+    auto id_cache_rc         = get_right_keyword(vexpr, L"id_cache"         , unwanted_value);     // r/c = 0, if id_cache:           keyword is present
+                                                                             
+    auto vars_rc             = get_right_keyword(vexpr, L"vars"             , unwanted_value);     // r/c = 0, if vars:[ ... ]        keyword is present
+    auto verbs_rc            = get_right_keyword(vexpr, L"verbs"            , unwanted_value);     // r/c = 0, if verbs:[ ... ]       keyword is present
+    auto types_rc            = get_right_keyword(vexpr, L"types"            , unwanted_value);     // r/c = 0, if types:[ ... ]       keyword is present
 
   
     M_out(L"\n------------------------------------------------------------------------------------------------------------------------------------------");
@@ -3702,7 +3799,7 @@ int verb_display(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbde
 
     M_out(L"\n------------------------------------------------------------------------------------------------------------------------------------------\n");
 
-    results = results_S {};                  // output value = empty
+    results = no_results();                                        // output value = none
     return 0; 
 }
 M_endf  
@@ -3722,13 +3819,11 @@ int verb_debug(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef,
     //  handle log_verbs-oriented keywords
     //  ----------------------------------
 
-    value_S empty_value  { };  
-    // should be empty 
-    auto no_verbs_rc           = get_right_keyword(vexpr, L"no_verbs"          , empty_value);     // r/c = 0, if no_verbs:          keyword is present 
-    auto few_verbs_rc          = get_right_keyword(vexpr, L"few_verbs"         , empty_value);     // r/c = 0, if few_verbs:         keyword is present 
-    auto some_verbs_rc         = get_right_keyword(vexpr, L"some_verbs"        , empty_value);     // r/c = 0, if some_verbs:        keyword is present 
-    auto most_verbs_rc         = get_right_keyword(vexpr, L"most_verbs"        , empty_value);     // r/c = 0, if most_verbs:        keyword is present 
-    auto all_verbs_rc          = get_right_keyword(vexpr, L"all_verbs"         , empty_value);     // r/c = 0, if all_verbs:         keyword is present
+    auto no_verbs_rc           = get_right_keyword(vexpr, L"no_verbs"    );     // r/c = 0, if no_verbs:          keyword is present 
+    auto few_verbs_rc          = get_right_keyword(vexpr, L"few_verbs"   );     // r/c = 0, if few_verbs:         keyword is present 
+    auto some_verbs_rc         = get_right_keyword(vexpr, L"some_verbs"  );     // r/c = 0, if some_verbs:        keyword is present 
+    auto most_verbs_rc         = get_right_keyword(vexpr, L"most_verbs"  );     // r/c = 0, if most_verbs:        keyword is present 
+    auto all_verbs_rc          = get_right_keyword(vexpr, L"all_verbs"   );     // r/c = 0, if all_verbs:         keyword is present
                                             
     if (no_verbs_rc            == 0)      log_verbs(log_E::none ); 
     if (few_verbs_rc           == 0)      log_verbs(log_E::few  ); 
@@ -3739,7 +3834,7 @@ int verb_debug(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef,
 
     M__(M_out(L"verb_debug() -- log_verbs = %d )") % (int)log_verbs();)
 
-    results = results_S {};                  // output value = empty
+    results = no_results();                                                     // output value = none
     return 0; 
 }
 M_endf  

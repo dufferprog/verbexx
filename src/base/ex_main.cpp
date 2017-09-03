@@ -57,17 +57,17 @@ int ex_main(int argc, wchar_t *argv[]) try
     // set up for parsing and evaluation 
     // ---------------------------------
 
-    process_cmdline_default(argc, argv);                                  // setup ex processing based on command line parms
-
-    if (error_count() == 0)                                               // bypass parser setup, if any errors so far
-        parse_setup_default();                                            // setup for parsing
-  
-
-    // parse and evaluate the input token stream 
-    // -----------------------------------------
-  
-    if (error_count() == 0)                                               // bypass input file processing, if any errors so far
-        process_input_default();                                          // parse and execute the input token (should produce map, etc.)
+    process_cmdline_default(argc, argv);                                                   // setup ex processing based on command line parms
+                                                                                        
+    if (error_count() == 0)                                                                // bypass parser setup, if any errors so far
+        parse_setup_default();                                                             // setup for parsing
+                                                                                        
+                                                                                        
+    // parse and evaluate the input token stream                                        
+    // -----------------------------------------                                        
+                                                                                        
+    if (error_count() == 0)                                                                // bypass input file processing, if any errors so far
+        process_input_default();                                                           // parse input token stream and interpret the resulting AST  
 
 
     // put out summary messsage, and return from wmain()
