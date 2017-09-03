@@ -35,8 +35,8 @@ CFLAGS_CLR       = /Yu /EHa /MD /nologo /O2 /Zm256 /clr /I$(INC_DIR_CORE)       
 CFLAGS_PCH       = /Yc /EHa /MD         /O2 /Zm256      /I$(INC_DIR_CORE)                     /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_std.pch
 CFLAGS_PCHCLR    = /Yc /EHa /MD         /O2 /Zm256 /clr /I$(INC_DIR_CORE)                     /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_clr.pch   
 
-LFLAGS     = /STACK:100000000 /NOLOGO /LIBPATH:$(LIB_DIR)      
-LFLAGS_DLL = /STACK:100000000 /NOLOGO /LIBPATH:$(LIB_DIR) /DLL 
+LFLAGS     = /STACK:2000000000 /NOLOGO /LIBPATH:$(LIB_DIR)      
+LFLAGS_DLL = /STACK:2000000000 /NOLOGO /LIBPATH:$(LIB_DIR) /DLL 
 
 
 #####################################################################################################################
