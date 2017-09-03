@@ -1487,7 +1487,7 @@ M_CORE_IMPEXP  int GetEncoderClsid(const WCHAR*, CLSID*);
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///
 ///
-///    Utility functions in util.cpp
+///    Utility functions in core_util.cpp
 ///
 ///
 ///
@@ -1538,18 +1538,20 @@ M_CORE_IMPEXP  int             to_float32( const std::wstring&, float32_T&      
 M_CORE_IMPEXP  int             to_float64( const std::wstring&, float64_T&          );       
 
 M_CORE_IMPEXP  std::wstring    fmt_ptr(const void *                   ); 
-                        
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&t, int8_t   );
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&t, int16_t  );
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&t, int32_t  );
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&t, int64_t  );
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&t, uint8_t  );
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&t, uint16_t );
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&t, uint32_t );
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&t, uint64_t );
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&t, float32_T);
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&t, float64_T);
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&t, const std::wstring&);
+
+M_CORE_IMPEXP  std::wstring    fmt_str(                     bool     );  // substitute for std::to_wstring() for bool type
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, bool     );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int8_t   );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int16_t  );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int32_t  );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int64_t  );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, uint8_t  );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, uint16_t );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, uint32_t );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, uint64_t );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, float32_T);
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, float64_T);
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, const std::wstring&);
                                               
 M_CORE_IMPEXP std::wstring    deg_to_d_m_s(real_T, int32_t);
 

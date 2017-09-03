@@ -787,7 +787,7 @@
 //////// positional parms in right-side plist  /////////////////////////////
 
 #define            M_vt_any_right_pos(v        )            M_vt_any_x_pos( v,         r)
-#define          M_vt_empty_right_pos(v        )          M_vt_empty_x_pos( v,         r)
+#define          M_vt_unit_right_pos( v        )           M_vt_unit_x_pos( v,         r)
 #define          M_vt_int64_right_pos(v        )          M_vt_int64_x_pos( v,         r)
 #define        M_vt_int64rc_right_pos(v, lo, hi)        M_vt_int64rc_x_pos( v, lo, hi, r)
 #define        M_vt_float64_right_pos(v        )        M_vt_float64_x_pos( v,         r)
@@ -818,7 +818,7 @@
 //////// positional parms in left-side plist  ///////////////////////////////////////////////////////
 
 #define            M_vt_any_left_pos( v        )            M_vt_any_x_pos( v,         l)
-#define          M_vt_empty_left_pos( v        )          M_vt_empty_x_pos( v,         l)
+#define          M_vt_unit_left_pos(  v        )           M_vt_unit_x_pos( v,         l)
 #define          M_vt_int64_left_pos( v        )          M_vt_int64_x_pos( v,         l)
 #define        M_vt_int64rc_left_pos( v, lo, hi)        M_vt_int64rc_x_pos( v, lo, hi, l)
 #define        M_vt_float64_left_pos( v        )        M_vt_float64_x_pos( v,         l)
@@ -849,7 +849,7 @@
 //////// positional parms in nested plist /////////////////////////////////////////////////
 
 #define            M_vt_any_nest_pos(pl        )            M_vt_any_x_pos(pl,         nested)
-#define          M_vt_empty_nest_pos(pl        )          M_vt_empty_x_pos(pl,         nested)
+#define          M_vt_unit_nest_pos( pl        )           M_vt_unit_x_pos(pl,         nested)
 #define          M_vt_int64_nest_pos(pl        )          M_vt_int64_x_pos(pl,         nested)
 #define        M_vt_int64rc_nest_pos(pl, lo, hi)        M_vt_int64rc_x_pos(pl, lo, hi, nested)
 #define        M_vt_float64_nest_pos(pl        )        M_vt_float64_x_pos(pl,         nested)
@@ -890,12 +890,12 @@
 }
  
 
-// empty positional parm
+// unit positional parm
 
-#define M_vt_empty_x_pos(pl, x)        \
+#define M_vt_unit_x_pos(pl, x)         \
 {                                      \
     M_vt_pos_parm(pt)                  \
-    pt.empty_ok = true;                \
+    pt.unit_ok = true;                 \
     M_vt_add_x_pos(pl, pt, x);         \
 }
 
@@ -1163,7 +1163,7 @@
 #define M_vt_compare_x_pos(pl, x)      \
 {                                      \
     M_vt_pos_parm(pt)                  \
-    pt.empty_ok   = true;              \
+    pt.unit_ok    = true;              \
     pt.int8_ok    = true;              \
     pt.int16_ok   = true;              \
     pt.int32_ok   = true;              \
@@ -1184,7 +1184,7 @@
 #define M_vt_assigntype_x_pos(pl, x)         \
 {                                            \
     M_vt_pos_parm(pt)                        \
-    pt.empty_ok       = true;                \
+    pt.unit_ok        = true;                \
     pt.int8_ok        = true;                \
     pt.int16_ok       = true;                \
     pt.int32_ok       = true;                \
@@ -1234,7 +1234,7 @@
 //////// keywords in right-side plist  ///////////////////////////////////////////////////////
 
 #define            M_vt_any_optional_right_kw(  v, n)                   M_vt_any_multi_right_kw(  v, n,       0, 1)
-#define          M_vt_empty_optional_right_kw(  v, n)                 M_vt_empty_multi_right_kw(  v, n,       0, 1)
+#define           M_vt_nval_optional_right_kw(  v, n)                  M_vt_nval_multi_right_kw(  v, n,       0, 1)
 #define          M_vt_int64_optional_right_kw(  v, n)                 M_vt_int64_multi_right_kw(  v, n,       0, 1)
 #define        M_vt_int64rc_optional_right_kw(  v, n, x, y)         M_vt_int64rc_multi_right_kw(  v, n, x, y, 0, 1)
 #define        M_vt_float64_optional_right_kw(  v, n)               M_vt_float64_multi_right_kw(  v, n,       0, 1)
@@ -1264,8 +1264,8 @@
 
 //////// keywords in left-side plist  ///////////////////////////////////////////////////////
 
-#define            M_vt_any_optional_left_kw(  v, n)                    M_vt_empty_any_left_kw(   v, n,       0, 1)
-#define          M_vt_empty_optional_left_kw(  v, n)                  M_vt_empty_multi_left_kw(   v, n,       0, 1)
+#define            M_vt_any_optional_left_kw(  v, n)                    M_vt_any_multi_left_kw(   v, n,       0, 1)
+#define           M_vt_nval_optional_left_kw(  v, n)                   M_vt_nval_multi_left_kw(   v, n,       0, 1)
 #define          M_vt_int64_optional_left_kw(  v, n)                  M_vt_int64_multi_left_kw(   v, n,       0, 1)
 #define        M_vt_int64rc_optional_left_kw(  v, n, x, y)          M_vt_int64rc_multi_left_kw(   v, n, x, y, 0, 1)
 #define        M_vt_float64_optional_left_kw(  v, n)                M_vt_float64_multi_left_kw(   v, n,       0, 1)
@@ -1295,7 +1295,7 @@
 //////// keywords in nested plist /////////////////////////////////////////////////
 
 #define            M_vt_any_optional_nest_kw( pl, n)                   M_vt_any_multi_nest_kw(  pl, n,       0, 1)
-#define          M_vt_empty_optional_nest_kw( pl, n)                 M_vt_empty_multi_nest_kw(  pl, n,       0, 1)
+#define          M_vt_nval_optional_nest_kw(  pl, n)                  M_vt_nval_multi_nest_kw(  pl, n,       0, 1)
 #define          M_vt_int64_optional_nest_kw( pl, n)                 M_vt_int64_multi_nest_kw(  pl, n,       0, 1)
 #define        M_vt_int64rc_optional_nest_kw( pl, n, x, y)         M_vt_int64rc_multi_nest_kw(  pl, n, x, y, 0, 1)
 #define        M_vt_float64_optional_nest_kw( pl, n)               M_vt_float64_multi_nest_kw(  pl, n,       0, 1)
@@ -1330,7 +1330,7 @@
 //////// keywords in right-side plist  ///////////////////////////////////////////////////////
 
 #define             M_vt_any_required_right_kw(  v, n)                    M_vt_any_multi_right_kw(  v, n,       1, 1)
-#define           M_vt_empty_required_right_kw(  v, n)                  M_vt_empty_multi_right_kw(  v, n,       1, 1)
+#define            M_vt_nval_required_right_kw(  v, n)                   M_vt_nval_multi_right_kw(  v, n,       1, 1)
 #define           M_vt_int64_required_right_kw(  v, n)                  M_vt_int64_multi_right_kw(  v, n,       1, 1)
 #define         M_vt_int64rc_required_right_kw(  v, n, x, y)          M_vt_int64rc_multi_right_kw(  v, n, x, y, 1, 1)
 #define         M_vt_float64_required_right_kw(  v, n)                M_vt_float64_multi_right_kw(  v, n,       1, 1)
@@ -1361,7 +1361,7 @@
 //////// keywords in left-side plist  ///////////////////////////////////////////////////////
 
 #define            M_vt_any_required_left_kw(  v, n)                    M_vt_any_multi_left_kw(   v, n,       1, 1)
-#define          M_vt_empty_required_left_kw(  v, n)                  M_vt_empty_multi_left_kw(   v, n,       1, 1)
+#define           M_vt_nval_required_left_kw(  v, n)                   M_vt_nval_multi_left_kw(   v, n,       1, 1)
 #define          M_vt_int64_required_left_kw(  v, n)                  M_vt_int64_multi_left_kw(   v, n,       1, 1)
 #define        M_vt_int64rc_required_left_kw(  v, n, x, y)          M_vt_int64rc_multi_left_kw(   v, n, x, y, 1, 1)
 #define        M_vt_float64_required_left_kw(  v, n)                M_vt_float64_multi_left_kw(   v, n,       1, 1)
@@ -1392,7 +1392,7 @@
 //////// keywords in nested plist /////////////////////////////////////////////////
 
 #define            M_vt_any_required_nest_kw( pl, n)                    M_vt_any_multi_nest_kw(  pl, n,       1, 1)
-#define          M_vt_empty_required_nest_kw( pl, n)                  M_vt_empty_multi_nest_kw(  pl, n,       1, 1)
+#define           M_vt_nval_required_nest_kw( pl, n)                   M_vt_nval_multi_nest_kw(  pl, n,       1, 1)
 #define          M_vt_int64_required_nest_kw( pl, n)                  M_vt_int64_multi_nest_kw(  pl, n,       1, 1)
 #define        M_vt_int64rc_required_nest_kw( pl, n, x, y)          M_vt_int64rc_multi_nest_kw(  pl, n, x, y, 1, 1)
 #define        M_vt_float64_required_nest_kw( pl, n)                M_vt_float64_multi_nest_kw(  pl, n,       1, 1)
@@ -1428,7 +1428,7 @@
 //             right side multi-occurrence keywords ////////////////////////////////////////////////////////////////
 
 #define            M_vt_any_multi_right_kw(v, n,         c1, c2)             M_vt_any_multi_x_kw( v, n,         c1, c2, r)
-#define          M_vt_empty_multi_right_kw(v, n,         c1, c2)           M_vt_empty_multi_x_kw( v, n,         c1, c2, r)
+#define           M_vt_nval_multi_right_kw(v, n,         c1, c2)            M_vt_nval_multi_x_kw( v, n,         c1, c2, r)
 #define          M_vt_int64_multi_right_kw(v, n,         c1, c2)           M_vt_int64_multi_x_kw( v, n,         c1, c2, r)
 #define        M_vt_int64rc_multi_right_kw(v, n, lo, hi, c1, c2)         M_vt_int64rc_multi_x_kw( v, n, lo, hi, c1, c2, r)
 #define        M_vt_float64_multi_right_kw(v, n,         c1, c2)         M_vt_float64_multi_x_kw( v, n,         c1, c2, r)
@@ -1459,7 +1459,7 @@
 //          left side multi-occurrence keywords ////////////////////////////////////////////////////////////////////
 
 #define            M_vt_any_multi_left_kw( v, n,         c1, c2)             M_vt_any_multi_x_kw( v, n,         c1, c2, l) 
-#define          M_vt_empty_multi_left_kw( v, n,         c1, c2)           M_vt_empty_multi_x_kw( v, n,         c1, c2, l)
+#define           M_vt_nval_multi_left_kw( v, n,         c1, c2)            M_vt_nval_multi_x_kw( v, n,         c1, c2, l)
 #define          M_vt_int64_multi_left_kw( v, n,         c1, c2)           M_vt_int64_multi_x_kw( v, n,         c1, c2, l)
 #define        M_vt_int64rc_multi_left_kw( v, n, lo, hi, c1, c2)         M_vt_int64rc_multi_x_kw( v, n, lo, hi, c1, c2, l)
 #define        M_vt_float64_multi_left_kw( v, n,         c1, c2)         M_vt_float64_multi_x_kw( v, n,         c1, c2, l)
@@ -1489,7 +1489,7 @@
 //       nested multi-occurrence keywords //////////////////////////////////////////////////////////////////////////
 
 #define            M_vt_any_multi_nest_kw(pl, n,         c1, c2)             M_vt_any_multi_x_kw(pl, n,         c1, c2, nested)
-#define          M_vt_empty_multi_nest_kw(pl, n,         c1, c2)           M_vt_empty_multi_x_kw(pl, n,         c1, c2, nested)
+#define           M_vt_nval_multi_nest_kw(pl, n,         c1, c2)            M_vt_nval_multi_x_kw(pl, n,         c1, c2, nested)
 #define          M_vt_int64_multi_nest_kw(pl, n,         c1, c2)           M_vt_int64_multi_x_kw(pl, n,         c1, c2, nested)
 #define        M_vt_int64rc_multi_nest_kw(pl, n, lo, hi, c1, c2)         M_vt_int64rc_multi_x_kw(pl, n, lo, hi, c1, c2, nested)
 #define        M_vt_float64_multi_nest_kw(pl, n,         c1, c2)         M_vt_float64_multi_x_kw(pl, n,         c1, c2, nested)
@@ -1532,12 +1532,12 @@
 
 
 
-//  multi-occurrence empty keyword  
+//  multi-occurrence unit keyword  
 
-#define M_vt_empty_multi_x_kw(pl, n, c1, c2, x)  \
+#define M_vt_nval_multi_x_kw(pl, n, c1, c2, x)   \
 {                                                \
     M_vt_multi_kw_parm(pt, c1, c2)               \
-    pt.empty_ok = true;                          \
+    pt.nval_ok = true;                           \
     M_vt_add_x_kw(n, pl, pt, x);                 \
 }
 
@@ -1804,7 +1804,7 @@
 #define M_vt_compare_multi_x_kw(pl, n, c1, c2, x) \
 {                                                 \
     M_vt_multi_kw_parm(pt, c1, c2)                \
-    pt.empty_ok       = true;                     \
+    pt.unit_ok        = true;                     \
     pt.int8_ok        = true;                     \
     pt.int16_ok       = true;                     \
     pt.int32_ok       = true;                     \
@@ -1825,7 +1825,7 @@
 #define M_vt_assigntype_multi_x_kw(pl, n, c1, c2, x) \
 {                                                    \
     M_vt_multi_kw_parm(pt, c1, c2)                   \
-    pt.empty_ok       = true;                        \
+    pt.unit_ok        = true;                        \
     pt.int8_ok        = true;                        \
     pt.int16_ok       = true;                        \
     pt.int32_ok       = true;                        \

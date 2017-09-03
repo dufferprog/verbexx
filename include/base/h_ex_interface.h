@@ -41,14 +41,14 @@
 
 // i = vexpr  k = keyword name    f = field to set   v = value to set field to,  t = type to cast parm value to field value     
 //
-//         examples:      M_get_right_keyword_empty( vexpr, L"display", xparm.display, true   )
+//         examples:      M_get_right_keyword_nval(  vexpr, L"display", xparm.display, true   )
 //                        M_get_right_keyword_string(vexpr, L"name"   , xparm.name            )
 //                        M_get_right_keyword_int64( vexpr, L"width"  , xparm.width  , int32_t)
 //
 //
 //                        M_get_right_keyword_vlist(vexpr, L"filenames",  filenames_vl)
 
-#define M_get_right_keyword_empty(    i, k, f, v)   {if (i.rparms.eval_kws.count(k) > 0) f  =    (v                                                    );  }
+#define M_get_right_keyword_nval(     i, k, f, v)   {if (i.rparms.eval_kws.count(k) > 0) f  =    (v                                                    );  }
 #define M_get_right_keyword_string(   i, k, f   )   {if (i.rparms.eval_kws.count(k) > 0) f  =     i.rparms.eval_kws.find(k)->second.string              ;  }
 #define M_get_right_keyword_int64(    i, k, f, t)   {if (i.rparms.eval_kws.count(k) > 0) f  = (t)(i.rparms.eval_kws.find(k)->second.int64              );  }
 #define M_get_right_keyword_float64(  i, k, f, t)   {if (i.rparms.eval_kws.count(k) > 0) f  = (t)(i.rparms.eval_kws.find(k)->second.float64            );  }
@@ -64,7 +64,7 @@ if (l##_p != nullptr)                                           \
     l = *l##_p;   
 
 
-#define M_get_left_keyword_empty(     i, k, f, v)   {if (i.lparms.eval_kws.count(k) > 0) f  =    (v                                                    );  }
+#define M_get_left_keyword_nval(      i, k, f, v)   {if (i.lparms.eval_kws.count(k) > 0) f  =    (v                                                    );  }
 #define M_get_left_keyword_string(    i, k, f   )   {if (i.lparms.eval_kws.count(k) > 0) f  =     i.lparms.eval_kws.find(k)->second.string              ;  }
 #define M_get_left_keyword_int64(     i, k, f, t)   {if (i.lparms.eval_kws.count(k) > 0) f  = (t)(i.lparms.eval_kws.find(k)->second.int64              );  }
 #define M_get_left_keyword_float64(   i, k, f, t)   {if (i.lparms.eval_kws.count(k) > 0) f  = (t)(i.lparms.eval_kws.find(k)->second.float64            );  }
@@ -85,11 +85,11 @@ if (l##_p != nullptr)                                           \
 
 // l = vlist  k = keyword name    f = field to set   v = value to set field to,  t = type to cast parm value to field value
 //
-//         examples:      M_get_nest_keyword_empty( vlist, L"display", xparm.display, true   )
+//         examples:      M_get_nest_keyword_nval(  vlist, L"display", xparm.display, true   )
 //                        M_get_nest_keyword_string(vlist, L"name"   , xparm.name   ,        )
 //                        M_get_nest_keyword_int64( vlist, L"width"  , xparm.width  , int32_t)
 
-#define M_get_nest_keyword_empty(    l, k, f, v)   {if (l.eval_kws.count(k) > 0) f =    (v                                 );  }
+#define M_get_nest_keyword_nval(     l, k, f, v)   {if (l.eval_kws.count(k) > 0) f =    (v                                 );  }
 #define M_get_nest_keyword_string(   l, k, f   )   {if (l.eval_kws.count(k) > 0) f =     l.eval_kws.find(k)->second.string  ;  }
 #define M_get_nest_keyword_int64(    l, k, f, t)   {if (l.eval_kws.count(k) > 0) f = (t)(l.eval_kws.find(k)->second.int64  );  }
 #define M_get_nest_keyword_float64(  l, k, f, t)   {if (l.eval_kws.count(k) > 0) f = (t)(l.eval_kws.find(k)->second.float64);  }
@@ -154,9 +154,9 @@ if (v##_p != nullptr)                                           \
 //       Type-oriented MACROs for unary functions -- value input / field output
 //       ---------------------------------------------------------------------
 
- #define M_verb_unary_f_integer(r, f, v1)                                         \
+#define M_verb_unary_f_integer(r, f, v1)                                          \
 {                                                                                 \
-        if      (v1.ty == type_E::int8   ) r = f(v1.int8   );                     \
+             if (v1.ty == type_E::int8   ) r = f(v1.int8   );                     \
         else if (v1.ty == type_E::int16  ) r = f(v1.int16  );                     \
         else if (v1.ty == type_E::int32  ) r = f(v1.int32  );                     \
         else if (v1.ty == type_E::int64  ) r = f(v1.int64  );                     \
@@ -167,9 +167,23 @@ if (v##_p != nullptr)                                           \
         else M_throw("M_verb_unary_f_integer() -- unknown value type passed in"); \
 }
 
+#define M_verb_unary_f_intbool(r, f, v1)                                          \
+{                                                                                 \
+             if (v1.ty == type_E::boolean) r = f(v1.boolean);                     \
+        else if (v1.ty == type_E::int8   ) r = f(v1.int8   );                     \
+        else if (v1.ty == type_E::int16  ) r = f(v1.int16  );                     \
+        else if (v1.ty == type_E::int32  ) r = f(v1.int32  );                     \
+        else if (v1.ty == type_E::int64  ) r = f(v1.int64  );                     \
+        else if (v1.ty == type_E::uint8  ) r = f(v1.uint8  );                     \
+        else if (v1.ty == type_E::uint16 ) r = f(v1.uint16 );                     \
+        else if (v1.ty == type_E::uint32 ) r = f(v1.uint32 );                     \
+        else if (v1.ty == type_E::uint64 ) r = f(v1.uint64 );                     \
+        else M_throw("M_verb_unary_f_intbool() -- unknown value type passed in"); \
+}
+
 #define M_verb_unary_f_arith(r, f, v1)                                           \
 {                                                                                \
-        if      (v1.ty == type_E::int8   ) r = f(v1.int8   );                    \
+             if (v1.ty == type_E::int8   ) r = f(v1.int8   );                    \
         else if (v1.ty == type_E::int16  ) r = f(v1.int16  );                    \
         else if (v1.ty == type_E::int32  ) r = f(v1.int32  );                    \
         else if (v1.ty == type_E::int64  ) r = f(v1.int64  );                    \
@@ -184,7 +198,7 @@ if (v##_p != nullptr)                                           \
 
 #define M_verb_unary_f_compare(r, f, v1)                                           \
 {                                                                                  \
-        if      (v1.ty == type_E::int8   ) r = f(v1.int8   );                      \
+             if (v1.ty == type_E::int8   ) r = f(v1.int8   );                      \
         else if (v1.ty == type_E::int16  ) r = f(v1.int16  );                      \
         else if (v1.ty == type_E::int32  ) r = f(v1.int32  );                      \
         else if (v1.ty == type_E::int64  ) r = f(v1.int64  );                      \
@@ -194,8 +208,9 @@ if (v##_p != nullptr)                                           \
         else if (v1.ty == type_E::uint64 ) r = f(v1.uint64 );                      \
         else if (v1.ty == type_E::float32) r = f(v1.float32);                      \
         else if (v1.ty == type_E::float64) r = f(v1.float64);                      \
-        else if (v1.ty == type_E::string ) r = f(v1.string);                       \
-        else if (v1.ty == type_E::empty  ) r = f((uint8_t)0);                      \
+        else if (v1.ty == type_E::string ) r = f(v1.string );                      \
+        else if (v1.ty == type_E::boolean) r = f(v1.boolean);                      \
+        else if (v1.ty == type_E::unit   ) r = f((uint8_t)0);                      \
         else M_throw("M_verb_unary_f_compmare() -- unknown value type passed in"); \
 }
 
@@ -206,7 +221,7 @@ if (v##_p != nullptr)                                           \
 
 #define M_verb_unary_fval_integer(vr, f, v1)                                         \
 {                                                                                    \
-        if      (v1.ty == type_E::int8   ) vr = type_val( f(v1.int8   ));            \
+             if (v1.ty == type_E::int8   ) vr = type_val( f(v1.int8   ));            \
         else if (v1.ty == type_E::int16  ) vr = type_val( f(v1.int16  ));            \
         else if (v1.ty == type_E::int32  ) vr = type_val( f(v1.int32  ));            \
         else if (v1.ty == type_E::int64  ) vr = type_val( f(v1.int64  ));            \
@@ -214,13 +229,26 @@ if (v##_p != nullptr)                                           \
         else if (v1.ty == type_E::uint16 ) vr = type_val( f(v1.uint16 ));            \
         else if (v1.ty == type_E::uint32 ) vr = type_val( f(v1.uint32 ));            \
         else if (v1.ty == type_E::uint64 ) vr = type_val( f(v1.uint64 ));            \
-        else M_throw("M_verb_unary_fval_arith() -- unknown value type passed in");   \
+        else M_throw("M_verb_unary_fval_integer() -- unknown value type passed in"); \
 }
- 
+
+#define M_verb_unary_fval_intbool(vr, f, v1)                                         \
+{                                                                                    \
+             if (v1.ty == type_E::boolean) vr = type_val( f(v1.boolean));            \
+        else if (v1.ty == type_E::int8   ) vr = type_val( f(v1.int8   ));            \
+        else if (v1.ty == type_E::int16  ) vr = type_val( f(v1.int16  ));            \
+        else if (v1.ty == type_E::int32  ) vr = type_val( f(v1.int32  ));            \
+        else if (v1.ty == type_E::int64  ) vr = type_val( f(v1.int64  ));            \
+        else if (v1.ty == type_E::uint8  ) vr = type_val( f(v1.uint8  ));            \
+        else if (v1.ty == type_E::uint16 ) vr = type_val( f(v1.uint16 ));            \
+        else if (v1.ty == type_E::uint32 ) vr = type_val( f(v1.uint32 ));            \
+        else if (v1.ty == type_E::uint64 ) vr = type_val( f(v1.uint64 ));            \
+        else M_throw("M_verb_unary_fval_intbool() -- unknown value type passed in"); \
+}
 
 #define M_verb_unary_fval_arith(vr, f, v1)                                            \
 {                                                                                     \
-        if      (v1.ty == type_E::int8   ) vr = type_val( f(v1.int8   ));             \
+             if (v1.ty == type_E::int8   ) vr = type_val( f(v1.int8   ));             \
         else if (v1.ty == type_E::int16  ) vr = type_val( f(v1.int16  ));             \
         else if (v1.ty == type_E::int32  ) vr = type_val( f(v1.int32  ));             \
         else if (v1.ty == type_E::int64  ) vr = type_val( f(v1.int64  ));             \
@@ -235,7 +263,7 @@ if (v##_p != nullptr)                                           \
 
 #define M_verb_unary_fval_compare(vr, f, v1)                                          \
 {                                                                                     \
-        if      (v1.ty == type_E::int8   ) vr = type_val( f(v1.int8   ));             \
+             if (v1.ty == type_E::int8   ) vr = type_val( f(v1.int8   ));             \
         else if (v1.ty == type_E::int16  ) vr = type_val( f(v1.int16  ));             \
         else if (v1.ty == type_E::int32  ) vr = type_val( f(v1.int32  ));             \
         else if (v1.ty == type_E::int64  ) vr = type_val( f(v1.int64  ));             \
@@ -246,7 +274,8 @@ if (v##_p != nullptr)                                           \
         else if (v1.ty == type_E::float32) vr = type_val( f(v1.float32));             \
         else if (v1.ty == type_E::float64) vr = type_val( f(v1.float64));             \
         else if (v1.ty == type_E::string ) vr = type_val( f(v1.string ));             \
-        else if (v1.ty == type_E::empty  ) vr = empty_val(             );             \
+        else if (v1.ty == type_E::boolean) vr = type_val( f(v1.boolean));             \
+        else if (v1.ty == type_E::unit   ) vr = unit_val(              );             \
         else M_throw("M_verb_unary_fval_compare() -- unknown value type passed in");  \
 }
  
@@ -257,7 +286,7 @@ if (v##_p != nullptr)                                           \
 
 #define M_verb_unary_fvalix_integer(vr, f, v1, ix1, ix2)                                       \
 {                                                                                              \
-        if      (v1.ty == type_E::int8   ) vr = type_val( f(v1.int8   ), ix1, ix2);            \
+             if (v1.ty == type_E::int8   ) vr = type_val( f(v1.int8   ), ix1, ix2);            \
         else if (v1.ty == type_E::int16  ) vr = type_val( f(v1.int16  ), ix1, ix2);            \
         else if (v1.ty == type_E::int32  ) vr = type_val( f(v1.int32  ), ix1, ix2);            \
         else if (v1.ty == type_E::int64  ) vr = type_val( f(v1.int64  ), ix1, ix2);            \
@@ -265,13 +294,26 @@ if (v##_p != nullptr)                                           \
         else if (v1.ty == type_E::uint16 ) vr = type_val( f(v1.uint16 ), ix1, ix2);            \
         else if (v1.ty == type_E::uint32 ) vr = type_val( f(v1.uint32 ), ix1, ix2);            \
         else if (v1.ty == type_E::uint64 ) vr = type_val( f(v1.uint64 ), ix1, ix2);            \
-        else M_throw("M_verb_unary_fvalix_arith() -- unknown value type passed in");           \
+        else M_throw("M_verb_unary_fvalix_integer() -- unknown value type passed in");         \
 }
- 
+
+#define M_verb_unary_fvalix_intbool(vr, f, v1, ix1, ix2)                                       \
+{                                                                                              \
+             if (v1.ty == type_E::boolean) vr = type_val( f(v1.boolean), ix1, ix2);            \
+        else if (v1.ty == type_E::int8   ) vr = type_val( f(v1.int8   ), ix1, ix2);            \
+        else if (v1.ty == type_E::int16  ) vr = type_val( f(v1.int16  ), ix1, ix2);            \
+        else if (v1.ty == type_E::int32  ) vr = type_val( f(v1.int32  ), ix1, ix2);            \
+        else if (v1.ty == type_E::int64  ) vr = type_val( f(v1.int64  ), ix1, ix2);            \
+        else if (v1.ty == type_E::uint8  ) vr = type_val( f(v1.uint8  ), ix1, ix2);            \
+        else if (v1.ty == type_E::uint16 ) vr = type_val( f(v1.uint16 ), ix1, ix2);            \
+        else if (v1.ty == type_E::uint32 ) vr = type_val( f(v1.uint32 ), ix1, ix2);            \
+        else if (v1.ty == type_E::uint64 ) vr = type_val( f(v1.uint64 ), ix1, ix2);            \
+        else M_throw("M_verb_unary_fvalix_intbool() -- unknown value type passed in");         \
+}
 
 #define M_verb_unary_fvalix_arith(vr, f, v1, ix1, ix2)                                          \
 {                                                                                               \
-        if      (v1.ty == type_E::int8   ) vr = type_val( f(v1.int8   ), ix1, ix2);             \
+             if (v1.ty == type_E::int8   ) vr = type_val( f(v1.int8   ), ix1, ix2);             \
         else if (v1.ty == type_E::int16  ) vr = type_val( f(v1.int16  ), ix1, ix2);             \
         else if (v1.ty == type_E::int32  ) vr = type_val( f(v1.int32  ), ix1, ix2);             \
         else if (v1.ty == type_E::int64  ) vr = type_val( f(v1.int64  ), ix1, ix2);             \
@@ -286,7 +328,7 @@ if (v##_p != nullptr)                                           \
 
 #define M_verb_unary_fvalix_compare(vr, f, v1, ix1, ix2)                                        \
 {                                                                                               \
-        if      (v1.ty == type_E::int8   ) vr = type_val( f(v1.int8   ), ix1, ix2);             \
+             if (v1.ty == type_E::int8   ) vr = type_val( f(v1.int8   ), ix1, ix2);             \
         else if (v1.ty == type_E::int16  ) vr = type_val( f(v1.int16  ), ix1, ix2);             \
         else if (v1.ty == type_E::int32  ) vr = type_val( f(v1.int32  ), ix1, ix2);             \
         else if (v1.ty == type_E::int64  ) vr = type_val( f(v1.int64  ), ix1, ix2);             \
@@ -297,7 +339,8 @@ if (v##_p != nullptr)                                           \
         else if (v1.ty == type_E::float32) vr = type_val( f(v1.float32), ix1, ix2);             \
         else if (v1.ty == type_E::float64) vr = type_val( f(v1.float64), ix1, ix2);             \
         else if (v1.ty == type_E::string ) vr = type_val( f(v1.string ), ix1, ix2);             \
-        else if (v1.ty == type_E::empty  ) vr = empty_val(               ix1, ix2);             \
+        else if (v1.ty == type_E::boolean) vr = type_val( f(v1.boolean), ix1, ix2);             \
+        else if (v1.ty == type_E::unit   ) vr = unit_val(                ix1, ix2);             \
         else M_throw("M_verb_unary_fvalix_compare() -- unknown value type passed in");          \
 }
 
@@ -533,7 +576,8 @@ if (v##_p != nullptr)                                           \
         else if (v1.ty == type_E::float32) vr = type_val( f(v1.float32 , v2.float32) );    \
         else if (v1.ty == type_E::float64) vr = type_val( f(v1.float64 , v2.float64) );    \
         else if (v1.ty == type_E::string ) vr = type_val( f(v1.string  , v2.string ) );    \
-        else if (v1.ty == type_E::empty  ) vr = type_val( f(v1.int8    , v2.int8   ) );    \
+        else if (v1.ty == type_E::boolean) vr = type_val( f(v1.boolean , v2.string ) );    \
+        else if (v1.ty == type_E::unit   ) vr = type_val( f(v1.int8    , v2.int8   ) );    \
         else M_throw("M_verb_binary_fval_compare() -- unknown value type passed in");      \
 }
 
@@ -572,11 +616,13 @@ if (v##_p != nullptr)                                           \
 enum class type_E { none          // not valid for values -- default initialization value 
                   , special       // special results -- used in results_S only -- not valid in regular values 
                   , error         // appears in value_S::ty field when some function reports an error
-                  , empty         // no length associated with this type -- can appear in value_S::ty field, cannot appear in aggregate map types
+                  , unit          // no length associated with this type -- can appear in value_S::ty field, cannot appear in aggregate map types
+                  , boolean       // no length associated with this type -- can appear in value_S::ty field, cannot appear in aggregate map types
+                  , no_value      // indicates that this keyword does not have an associated value
 
                   // fixed-length (atomic) types  -- can appear in value_S::ty field and also as types of elements or fields in an aggregate type
 
-                  , int8          // 
+                  , int8          //     
                   , int16         // 
                   , int32         // 
                   , int64         // 
@@ -616,7 +662,7 @@ enum class type_E { none          // not valid for values -- default initializat
 struct typdef_S
 {
     type_E                                                  kind              {    };           // primary value type
-    size_t                                                  tsize             { 0  };           // will be 0 (not valid) for non-atomic types like none, special, error, empty, string, identifier, verbname, keyname, type, vlist. vexpr, slist, verbdef, etc.
+    size_t                                                  tsize             { 0  };           // will be 0 (not valid) for non-atomic types like none, special, error, unit, string, identifier, verbname, keyname, type, vlist. vexpr, slist, verbdef, etc.
                                                                                                 // non-0     (valid    ) only for atomic and aggregate types  
     uint64_t                                                acount            { 0  };           // if .kind = type_E::array, this is the number of elements in the array (1-N) -- fixed number
     std::shared_ptr<typdef_S>                               atype_sp          {    };           // if .kind = type_E::array, this is a pointer to the type of each element in the array
@@ -669,11 +715,12 @@ struct ref_S
 
 struct value_S
 {
-    type_E                        ty                            { type_E::empty };      // default initialize to empty value type   ??? should this be to new un_init value that will cause error on reference ???? 
+    type_E                        ty                            { type_E::none  };      // default initialize to value type = none (needs to be set)   
      
     union                                                                               // value -- only if numeric type
-    {                                                                              
-        int8_t      int8;                                                               // valid only if type is type_E::int8 
+    {  
+        bool        boolean;                                                            // valid only if type is type_E::boolean  
+        int8_t      int8;                                                               // valid only if type is type_E::int8  
         int16_t     int16;                                                              // valid only if type is type_E::int16 
         int32_t     int32;                                                              // valid only if type is type_E::int32 
         int64_t     int64;                                                              // valid only if type is type_E::int64 
@@ -730,17 +777,18 @@ struct vlist_S
     uint64_t                                  value_ct         { 0     };      // number of positional values    
     uint64_t                                  kw_ct            { 0     };      // number of literal-keywords present
                                          
-    bool                                      val_empty        { false };      // true = one or more positional values are empty
-    bool                                      val_int8         { false };      // true = one or more positional values are int8_t
-    bool                                      val_int16        { false };      // true = one or more positional values are int16_t
-    bool                                      val_int32        { false };      // true = one or more positional values are int32_t
-    bool                                      val_int64        { false };      // true = one or more positional values are int64_t
-    bool                                      val_uint8        { false };      // true = one or more positional values are uint8_t
-    bool                                      val_uint16       { false };      // true = one or more positional values are uint16_t
-    bool                                      val_uint32       { false };      // true = one or more positional values are uint32_t
-    bool                                      val_uint64       { false };      // true = one or more positional values are uint64_t
-    bool                                      val_float32      { false };      // true = one or more positional values are float32_t
-    bool                                      val_float64      { false };      // true = one or more positional values are float64_t
+    bool                                      val_unit         { false };      // true = one or more positional values are UNIT_T
+    bool                                      val_boolean      { false };      // true = one or more positional values are BOOL_T
+    bool                                      val_int8         { false };      // true = one or more positional values are INT8_T
+    bool                                      val_int16        { false };      // true = one or more positional values are INT16_T
+    bool                                      val_int32        { false };      // true = one or more positional values are INT32_T
+    bool                                      val_int64        { false };      // true = one or more positional values are INT64_T
+    bool                                      val_uint8        { false };      // true = one or more positional values are UINT8_T
+    bool                                      val_uint16       { false };      // true = one or more positional values are UINT16_T
+    bool                                      val_uint32       { false };      // true = one or more positional values are UINT32_T
+    bool                                      val_uint64       { false };      // true = one or more positional values are UINT64_T
+    bool                                      val_float32      { false };      // true = one or more positional values are FLOAT32_T
+    bool                                      val_float64      { false };      // true = one or more positional values are FLOAT64_T
     bool                                      val_string       { false };      // true = one or more positional values are std::wstring
     bool                                      val_identifier   { false };      // true = one or more positional values are identifier
     bool                                      val_vlist        { false };      // true = one or more positional values are vlist_S
@@ -918,18 +966,20 @@ struct parmtype_S
     bool                           check_local_env_only         { false };      // check only local  stack frame when doing identifier checks 
     bool                           check_global_env_only        { false };      // check only global stack frame when doing identifier checks 
     
-    bool                           empty_ok                     { false };      // ok for value to be empty
-    bool                           int8_ok                      { false };      // ok for value to be int8_t
-    bool                           int16_ok                     { false };      // ok for value to be int16_t
-    bool                           int32_ok                     { false };      // ok for value to be int32_t
-    bool                           int64_ok                     { false };      // ok for value to be int64_t
-    bool                           uint8_ok                     { false };      // ok for value to be uint8_t
-    bool                           uint16_ok                    { false };      // ok for value to be uint16_t
-    bool                           uint32_ok                    { false };      // ok for value to be uint32_t
-    bool                           uint64_ok                    { false };      // ok for value to be uint64_t
-    bool                           float32_ok                   { false };      // ok for value to be float32_t
-    bool                           float64_ok                   { false };      // ok for value to be float64_t
-    bool                           string_ok                    { false };      // ok for value to be string
+    bool                           nval_ok                      { false };      // ok for keyword to have no following value
+    bool                           boolean_ok                   { false };      // ok for value to be BOOL_T
+    bool                           unit_ok                      { false };      // ok for value to be UNIT_T
+    bool                           int8_ok                      { false };      // ok for value to be INT8_T
+    bool                           int16_ok                     { false };      // ok for value to be INT16_T
+    bool                           int32_ok                     { false };      // ok for value to be INT32_T
+    bool                           int64_ok                     { false };      // ok for value to be INT64_T
+    bool                           uint8_ok                     { false };      // ok for value to be UINT8_T
+    bool                           uint16_ok                    { false };      // ok for value to be UINT16_T
+    bool                           uint32_ok                    { false };      // ok for value to be UINT32_T
+    bool                           uint64_ok                    { false };      // ok for value to be UINT64_T
+    bool                           float32_ok                   { false };      // ok for value to be FLOAT32_T
+    bool                           float64_ok                   { false };      // ok for value to be FLOAT64_T
+    bool                           string_ok                    { false };      // ok for value to be STRING_T
     bool                           verbname_ok                  { false };      // ok for value to be verbname  
     bool                           raw_ident_ok                 { false };      // ok for vlue to be  any (raw/unevaluated) identifier (defined, or undefined)
     bool                           var_ident_ok                 { false };      // ok for value to be defined variable identifier  (not a constant)

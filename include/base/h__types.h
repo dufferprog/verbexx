@@ -29,7 +29,6 @@ typedef float      real32_T;
 typedef double     real64_T;
 typedef float      float32_T;     // simulated  inttypes.h  type
 typedef double     float64_T;     // simulated  inttypes.h  type
-typedef uint8_t    bool_T;        // default type for boolean during parsing and evaluation 
 
 
 // function types

@@ -50,25 +50,28 @@
 // verb priorities -- static constants
 /////////////////////////////////////////////////////////////////////////////
 
-static const int verb_priority_select      {  120 };  
-static const int verb_priority_subscript   {  120 };  
 
-static const int verb_priority_increment   {  100 };
-static const int verb_priority_not         {  100 };
-static const int verb_priority_bitnot      {  100 };
-                 
-static const int verb_priority_at          {   80 };  
-static const int verb_priority_power       {   70 };
-static const int verb_priority_multiply    {   60 }; 
-static const int verb_priority_add         {   50 }; 
-static const int verb_priority_shift       {   40 }; 
-static const int verb_priority_compare     {   30 }; 
-static const int verb_priority_bitwise     {   20 }; 
-static const int verb_priority_boolean     {   10 };
-static const int verb_priority_default     {    0 };
-static const int verb_priority_assign      {  -10 };
-                 
-static const int verb_priority_separate    { -100 };
+static const int verb_priority_attached_paren      {  1000 };  
+                                                     
+static const int verb_priority_select              {   120 };  
+static const int verb_priority_subscript           {   120 };  
+                                                     
+static const int verb_priority_increment           {   100 };
+static const int verb_priority_not                 {   100 };
+static const int verb_priority_bitnot              {   100 };
+                                                     
+static const int verb_priority_at                  {    80 };  
+static const int verb_priority_power               {    70 };
+static const int verb_priority_multiply            {    60 }; 
+static const int verb_priority_add                 {    50 }; 
+static const int verb_priority_shift               {    40 }; 
+static const int verb_priority_compare             {    30 }; 
+static const int verb_priority_bitwise             {    20 }; 
+static const int verb_priority_boolean             {    10 };
+static const int verb_priority_default             {     0 };
+static const int verb_priority_assign              {   -10 };
+                                                     
+static const int verb_priority_separate            { -1000 };
 
  
 
@@ -95,7 +98,7 @@ void add_predefined_verbs();
 
 int verb_non_builtin(                 frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_verb(                        frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
-int verb_fcn(                         frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
+int verb_fn(                          frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_unverb(                      frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_call(                        frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_xctl(                        frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
@@ -128,6 +131,7 @@ int verb_loop(                        frame_S& eval, const e_vexpr_S&, const ver
 int verb_var(                         frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_const(                       frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_noeval(                      frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
+int verb_eval(                        frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_unshare(                     frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_export(                      frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_unexport(                    frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
@@ -160,6 +164,7 @@ int verb_concatenate_eq(              frame_S& eval, const e_vexpr_S&, const ver
 int verb_bitand_eq(                   frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_bitor_eq(                    frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_bitxor_eq(                   frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
+//int verb_bitnot_eq(                 frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_shift_left_eq(               frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_shift_right_logical_eq(      frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_shift_right_arithmetic_eq(   frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&); 
@@ -214,6 +219,7 @@ int verb_concatenate(                 frame_S& eval, const e_vexpr_S&, const ver
 
 int verb_type(                        frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 
+int verb_to_bool(                     frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_to_int8(                     frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_to_int16(                    frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_to_int32(                    frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
@@ -227,7 +233,8 @@ int verb_to_float64(                  frame_S& eval, const e_vexpr_S&, const ver
 int verb_to_str(                      frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_to_ident(                    frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
                                     
-int verb_is_empty(                    frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
+int verb_is_unit(                     frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
+int verb_is_bool(                     frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_is_int8(                     frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_is_int16(                    frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);
 int verb_is_int32(                    frame_S& eval, const e_vexpr_S&, const verbdef_S&, results_S&);

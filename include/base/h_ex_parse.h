@@ -110,60 +110,91 @@ public:
 
     // passthru or semi-passthru functions to imbedded token_string_C
 
-    void              close(                                                                       );  // free up everything and reset states   
-    void              reuse(                                                                       );  // reset leftover states to pre_parse can be reused   
-    int               attach_file(  const std::wstring&                                            );  // add new file to this token stream -- placed on top of filestack -- wide string filename version
-    int               attach_file(  const std::string&                                             );  // add new file to this token stream -- placed on top of filestack -- "plain" string filename version
-    int               attach_string(const std::wstring&, const std::wstring&                       );  // add new string to this token stream -- placed on top of filestack -- wide string version
-    int               attach_string(const std::string& , const std::wstring&                       );  // add new string to this token stream -- placed on top of filestack -- wide string name version
-    int               attach_string(const std::string& , const std::string&                        );  // add new string to this token stream -- placed on top of filestack -- "plain" string name version
-                                                                                                   
-    int               get_token(          token_C&                                                 );  // get (and consume) next composite token from stream  
-    int               peek_token(         token_C&, size_t = 1ULL                                  );  // return n-th composite token from stream/stack but do not consume it -- leave for next time  
-    void              putback_token(const token_C&                                                 );  // putback composite token to stream 
-    int               discard_token(                size_t = 1ULL                                  );  // Discard n-th token on putback queue (if any) R/C is -1 if putback q is not large enough 
+    void              close(                                                                                  );  // free up everything and reset states   
+    void              reuse(                               bool     = false                                   );  // reset leftover states to pre_parse can be reused   
+    int               attach_file(  const std::wstring&                                                       );  // add new file to this token stream -- placed on top of filestack -- wide string filename version
+    int               attach_file(  const std::string&                                                        );  // add new file to this token stream -- placed on top of filestack -- "plain" string filename version
+    int               attach_string(const std::wstring&, const std::wstring&                                  );  // add new string to this token stream -- placed on top of filestack -- wide string version
+    int               attach_string(const std::string& , const std::wstring&                                  );  // add new string to this token stream -- placed on top of filestack -- wide string name version
+    int               attach_string(const std::string& , const std::string&                                   );  // add new string to this token stream -- placed on top of filestack -- "plain" string name version
+                                                                                                              
+    int               get_token(          token_C&                                                            );  // get (and consume) next composite token from stream  
+    int               peek_token(         token_C&, size_t = 1ULL                                             );  // return n-th composite token from stream/stack but do not consume it -- leave for next time  
+    void              putback_token(const token_C&                                                            );  // putback composite token to stream 
+    int               discard_token(                size_t = 1ULL                                             );  // Discard n-th token on putback queue (if any) R/C is -1 if putback q is not large enough 
+                                                                                                             
+    bool              is_empty()     const;                                                                       // return true, if put-back token queue is empty
+    size_t            putback_size() const;                                                                       // return number of put-back tokens currently queued up 
+    uint64_t          errors()       const;                                                                       // return number of errors so far  
                                                                                             
-    bool              is_empty()     const;                                                            // return true, if put-back token queue is empty
-    size_t            putback_size() const;                                                            // return number of put-back tokens currently queued up 
-    uint64_t          errors()       const;                                                            // return number of errors so far  
-                                                                                            
-    void              set_quiet_mode(              bool     = true                                 );  // set/reset quiet mode to suppress/show error messages 
-    void              set_suppress_echo(           bool     = true                                 );  // set/reset line comment echo suppression
-    void              set_combine_strings(         bool     = true                                 );  // set/reset combine adjacent strings flag
-    void              set_always_attach_plus_minus(bool     = true                                 );  // set/reset always_attach_plus_minus flag
-    void              set_never_attach_plus_minus( bool     = true                                 );  // set/reset never _attach_plus_minus flag
-    void              set_allow_leading_op_sigils( bool     = true                                 );  // set/reset allow_leading_op_sigils  flag
-    void              set_allow_trailing_op_sigils(bool     = true                                 );  // set/reset allow_trailing_op_sigils flag
-    void              set_allow_leading_id_sigils( bool     = true                                 );  // set/reset allow_leading_op_sigils  flag
-    void              set_allow_trailing_id_sigils(bool     = true                                 );  // set/reset allow_trailing_op_sigils flag
-    void              set_allow_paren_sigils(      bool     = true                                 );  // set/reset allow_pare_sigils        flag
+    void              set_quiet_mode(                      bool     = true                                    );  // set/reset quiet mode to suppress/show error messages 
+    void              set_suppress_echo(                   bool     = true                                    );  // set/reset line comment echo suppression
+    void              set_combine_strings(                 bool     = true                                    );  // set/reset combine adjacent strings flag
+    void              set_always_attach_plus_minus(        bool     = true                                    );  // set/reset always_attach_plus_minus flag
+    void              set_never_attach_plus_minus(         bool     = true                                    );  // set/reset never _attach_plus_minus flag
+    void              set_allow_leading_op_sigils(         bool     = true                                    );  // set/reset allow_leading_op_sigils  flag
+    void              set_allow_trailing_op_sigils(        bool     = true                                    );  // set/reset allow_trailing_op_sigils flag
+    void              set_allow_leading_id_sigils(         bool     = true                                    );  // set/reset allow_leading_op_sigils  flag
+    void              set_allow_trailing_id_sigils(        bool     = true                                    );  // set/reset allow_trailing_op_sigils flag
+    void              set_allow_paren_sigils(              bool     = true                                    );  // set/reset allow_paren_sigils       flag
+    void              set_allow_attached_paren(            bool     = true                                    );  // set/reset allow_attached_paren     flag
+                         
 
-    void              set_digraph_char(            char32_t = const_N::ch_digraph                  );  // set digraph char 
-    void              set_string_escape_char1(     char32_t = const_N::ch_str_esc1                 );  // set 1st type of string escape char    
-    void              set_string_escape_char2(     char32_t = const_N::ch_str_esc2                 );  // set 2nd type of string escape char    
-    void              set_line_continuation_char(  char32_t = const_N::ch_line_continuation        );  // set line continuation char  
-    void              set_line_comment_char(       char32_t = const_N::ch_unechoed_line_comment    );  // set unechoed line comment char       
-    void              set_echoed_line_comment_char(char32_t = const_N::ch_echoed_line_comment      );  // set echoed   line comment char     
-    void              set_vanishing_separator_char(char32_t = const_N::ch_vanishing_sep            );  // set vanishing separator char 
+    //                functions to set configurable characters 
 
-    void              set_leading_sigils(          const std::vector<char32_t>&                    );    // set vector with sigils that can be attached to front of identifiers and operators and parens    
-    void              set_leading_ident_sigils(    const std::vector<char32_t>&                    );    // set vector with sigils that can be attached to front of identifiers    
-    void              set_trailing_ident_sigils(   const std::vector<char32_t>&                    );    // set vector with sigils that can be attached to back  of identifiers  
-    void              set_leading_oper_sigils(     const std::vector<char32_t>&                    );    // set vector with sigils that can be attached to front of identifiers    
-    void              set_trailing_oper_sigils(    const std::vector<char32_t>&                    );    // set vector with sigils that can be attached to back  of identifiers 
-    void              set_paren_sigils(            const std::vector<char32_t>&                    );    // set vector with sigils that can be attached to fron/back of parenthesis 
+    void              set_digraph_char(                    char32_t = const_N::ch_digraph                     );  // set digraph char 
+    void              set_vanishing_separator_char(        char32_t = const_N::ch_vanishing_sep               );  // set vanishing separator char 
+    void              set_line_continuation_char(          char32_t = const_N::ch_line_continuation           );  // set line continuation char 
+    void              set_always_sign_char(                char32_t = const_N::ch_always_sign                 );  // set always-sign char 
+    
+    void              set_type1_string_start_char(         char32_t = const_N::ch_type1_string_start          );  // open  quotes for type1 string  
+    void              set_type2_string_start_char(         char32_t = const_N::ch_type2_string_start          );  // open  quotes for type2 string  
+    void              set_type1_string_end_char(           char32_t = const_N::ch_type1_string_end            );  // close quotes for type1 string  
+    void              set_type2_string_end_char(           char32_t = const_N::ch_type2_string_end            );  // close quotes for type2 string  
+    void              set_type1_string_escape_char(        char32_t = const_N::ch_type1_string_escape         );  // set 1st type of string escape char    
+    void              set_type2_string_escape_char(        char32_t = const_N::ch_type2_string_escape         );  // set 2nd type of string escape char 
+    void              set_raw_string_prefix_char(          char32_t = const_N::ch_raw_string_prefix           );  // prefix char ( "R" ) for raw strings  
+    void              set_multiline_string_prefix_char(    char32_t = const_N::ch_multiline_string_prefix     );  // prefix char ( "M" ) for multiline strings 
+    void              set_word_string_start_char(          char32_t = const_N::ch_word_string_start           );  // open  quotes for type2 string  
+
+    void              set_unechoed_line_comment_char(      char32_t = const_N::ch_unechoed_line_comment       );  // set unechoed line comment char       
+    void              set_echoed_line_comment_char(        char32_t = const_N::ch_echoed_line_comment         );  // set echoed   line comment char     
+
+    void              set_comment_1st_char(                char32_t = const_N::ch_comment_1st                 );  // set comment_1st                char 
+    void              set_unechoed_line_comment_2nd_char(  char32_t = const_N::ch_unechoed_line_comment_2nd   );  // set unechoed line_comment_2nd  char 
+    void              set_echoed_line_comment_2nd_char(    char32_t = const_N::ch_echoed_line_comment_2nd     );  // set echoed_line_comment_2nd    char 
+    void              set_suppress_eol_comment_2nd_char(   char32_t = const_N::ch_suppress_eol_comment_2nd    );  // set suppress_eol_comment_2nd   char 
+    void              set_eof_comment_2nd_char(            char32_t = const_N::ch_eof_comment_2nd             );  // set eof_comment_2nd            char 
+    void              set_retained_line_comment_2nd_char(  char32_t = const_N::ch_retained_line_comment_2nd   );  // set retained_line_comment_2nd  char 
+                   
+    void              set_block_comment_2nd_char(          char32_t = const_N::ch_block_comment_2nd           );  // set block_comment_2nd          char 
+    void              set_block_comment_3rd_char(          char32_t = const_N::ch_block_comment_3rd           );  // set block_comment_3rd          char 
+    void              set_block_comment_4th_char(          char32_t = const_N::ch_block_comment_4th           );  // set block_comment_4th          char 
+    void              set_nest_comment_2nd_char(           char32_t = const_N::ch_nest_comment_2nd            );  // set nest_comment_2nd           char 
+    void              set_nest_comment_3rd_char(           char32_t = const_N::ch_nest_comment_3rd            );  // set nest_comment_3rd           char 
+    void              set_nest_comment_4th_char(           char32_t = const_N::ch_nest_comment_4th            );  // set nest_comment_4th           char 
+    void              set_retained_block_comment_2nd_char( char32_t = const_N::ch_retained_block_comment_2nd  );  // set retained_block_comment_2nd char 
+    void              set_retained_block_comment_3rd_char( char32_t = const_N::ch_retained_block_comment_3rd  );  // set retained_block_comment_3rd char 
+    void              set_retained_block_comment_4th_char( char32_t = const_N::ch_retained_block_comment_4th  );  // set retained_block_comment_4th char 
+
+    void              set_leading_sigils(                  const std::vector<char32_t>&                       );   // set vector with sigils that can be attached to front of identifiers and operators and parens    
+    void              set_leading_ident_sigils(            const std::vector<char32_t>&                       );   // set vector with sigils that can be attached to front of identifiers    
+    void              set_trailing_ident_sigils(           const std::vector<char32_t>&                       );   // set vector with sigils that can be attached to back  of identifiers  
+    void              set_leading_oper_sigils(             const std::vector<char32_t>&                       );   // set vector with sigils that can be attached to front of identifiers    
+    void              set_trailing_oper_sigils(            const std::vector<char32_t>&                       );   // set vector with sigils that can be attached to back  of identifiers 
+    void              set_paren_sigils(                    const std::vector<char32_t>&                       );   // set vector with sigils that can be attached to fron/back of parenthesis 
 
                              
     // non-passthru external functions
 
-    void              set_var(         const std::wstring&, const std::wstring&, bool = false      );  // directly set variable 
-    void              unset_var(       const std::wstring&                                         );  // remove variable setting from symbol table (if present) 
-    bool              is_set_var(      const std::wstring&                                         );  // directly set variable 
-    int               get_var(         const std::wstring&,       std::wstring&                    );  // get current value of variable
-    void              display_all_vars(                                                            );  // display all current variables
-    void              set_imbed_folder(const std::wstring&                                         );  // set base folder for imbed files -- form with passed-in string
-    void              set_imbed_folder(                                                            );  // set default base folder for imbed files -- use envar if set
-    void              display_settings(                                                            );  // display pre-parser settings
+    void              set_var(                     const std::wstring&, const std::wstring&, bool = false     );   // directly set variable 
+    void              unset_var(                   const std::wstring&                                        );   // remove variable setting from symbol table (if present) 
+    bool              is_set_var(                  const std::wstring&                                        );   // directly set variable 
+    int               get_var(                     const std::wstring&,       std::wstring&                   );   // get current value of variable
+    void              display_all_vars(                                                                       );   // display all current variables
+    void              set_imbed_folder(            const std::wstring&                                        );   // set base folder for imbed files -- form with passed-in string
+    void              set_imbed_folder(                                                                       );   // set default base folder for imbed files -- use envar if set
+    void              display_settings(                                                                       );   // display pre-parser settings
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -237,7 +268,7 @@ enum class tok_u2_E { none                    // not classified yet
                     , end                     // END token or R/C from pre-parser 
                     , verbname                // verbname                               (@identifier -or- ++ -- <<<<, etc.)
                     , keyname                 // keyword parm for verb                  (identifier:)
-                    , value                   // quoted string, integer, floating pt, empty -- see main token type for details
+                    , value                   // quoted string, integer, floating pt, unit -- see main token type for details
                     , identifier              // plain identifier (variable, etc.)      (identifier or $identifier)
                     , label                   // label                                  (:identifier, etc.)
                     , open_paren              // main type passed-through
@@ -444,7 +475,7 @@ struct frame_S
 
 struct results_S : public value_S
 {
-    bool                                  multiple_results                 {false};     // multiple individual results are returned in vlist positional values  
+    bool                                  multiple_results                 {false};     // multiple individual results are returned in vlist positional values  (value type may be none, since values are in vlist)
     bool                                  re_eval_vexpr_results            {false};     // need to call eval_value() again after 1st call to eval_value() returned a vlist or identifier from evaluating a nested vexpr  
     bool                                  builtin_verb_results             {false};     // true, if these results came from a builtin verb   
 
@@ -510,7 +541,7 @@ int import_dll(const std::wstring &, const std::wstring &);
 uint64_t  parse_setup(             pre_parse_C&, frame_S&                                                                                         );
 uint64_t  process_input(           pre_parse_C&, frame_S&                                                                                         );
 uint64_t  process_cmdline(         pre_parse_C&, frame_S&, symtab_S&, int, wchar_t *[]                                                            ); 
-int       parse_string(            pre_parse_C&, frame_S&, slist_S&, const std::wstring&, const std::wstring& = L"parsed string"                  );
+int       parse_string(            pre_parse_C&, frame_S&, slist_S&, const std::wstring&, const std::wstring& = L"parsed string", bool = false    );
 
 
 ///////////////// location string and other debug-message-oriented routines
@@ -712,7 +743,7 @@ int  export_local_identifier(      frame_S&, const std::wstring&                
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // fieldparm_S parm for make_structure_typdef()
-// -----------------------------------===------
+// --------------------------------------------
 
 struct fieldparm_S
 {                                                                     // note: default base/starting offset for this field is right after end of prior field
@@ -743,7 +774,8 @@ std::wstring verb_name(     const e_vexpr_S&);
 
 results_S    to_results( const value_S& );    
 results_S error_results(                ); 
-results_S empty_results(                );
+results_S    no_results(                );
+results_S  unit_results(                );
 results_S  true_results(                );
 results_S false_results(                );
 results_S    tf_results( bool tf        );    
@@ -751,7 +783,9 @@ results_S    tf_results( bool tf        );
 
 //////////////////////////////// value-oriented functions /////////////////////////////////////////////////////////////////
 
-value_S   empty_val(                                                 int64_t = -1, int64_t = -1 );
+value_S   unit_val(                                                  int64_t = -1, int64_t = -1 );
+value_S   nval_val(                                                  int64_t = -1, int64_t = -1 );     // only for keywords with no following value
+value_S   boolean_val(     bool                                    , int64_t = -1, int64_t = -1 );
 value_S   int8_val(        int8_t                                  , int64_t = -1, int64_t = -1 );
 value_S   int16_val(       int16_t                                 , int64_t = -1, int64_t = -1 );
 value_S   int32_val(       int32_t                                 , int64_t = -1, int64_t = -1 );
@@ -775,6 +809,7 @@ value_S   ref_val(         const ref_S&                            , int64_t = -
 value_S   buffer_val(      const buf8_T&       , const typdef_S&   , int64_t = -1, int64_t = -1 );
 value_S   buffer_val(      const buf8_T&       , const typdef_S&   , bool);                              // special internal version that allows std::move()
 
+value_S   type_val(        bool                                    , int64_t = -1, int64_t = -1 ); 
 value_S   type_val(        int8_t                                  , int64_t = -1, int64_t = -1 );    
 value_S   type_val(        int16_t                                 , int64_t = -1, int64_t = -1 );    
 value_S   type_val(        int32_t                                 , int64_t = -1, int64_t = -1 );    
@@ -823,6 +858,7 @@ bool is_value_unsigned(   const value_S&);
 bool is_value_float(      const value_S&);
 bool is_value_arithmetic( const value_S&);
 bool is_value_comparable( const value_S&);
+bool is_value_boolean(    const value_S&);
 bool is_value_true(       const value_S&);
 bool is_value_false(      const value_S&);
 
@@ -867,6 +903,10 @@ int                dereference_value(      value_S&, const value_S&             
 int                set_via_reference(const value_S&, const value_S&,                                   bool=true);
 
 
+
+
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////
 /////
@@ -876,7 +916,23 @@ int                set_via_reference(const value_S&, const value_S&,            
 /////
 /////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-          
+ 
+
+
+/////////////////////////////////// query and statistical functions
+
+void       display_stack(const frame_S&);
+
+uint64_t   get_eval_verb_count(      void);
+uint64_t   get_eval_value_count(     void);
+uint64_t   get_eval_slist_count(     void);
+uint64_t   get_eval_statement_count( void);
+
+uint64_t   get_eval_frame_serial(    void);
+uint64_t   get_eval_frame_depth(     void);
+uint64_t   get_eval_frame_max_depth( void);
+                                                                              
+
 /////////////////////////////////// verb parameter-oriented external functions
 
 int get_right_positional(      const e_vexpr_S& ,                       value_S&, uint32_t = 0);
@@ -891,13 +947,7 @@ int get_vlist_keyword(         const vlist_S&   ,  const std::wstring&, value_S&
 int get_vlist_keyword(         const vlist_S&   ,                       value_S&, uint32_t = 0);
 
 
-///////////////////////////////// evaluation-oriented external functions
-
-void       display_stack(const frame_S&);
-uint64_t   get_frame_serial(               void);
-uint64_t   get_frame_depth(                void);
-uint64_t   get_frame_max_depth(       
-    void);
+///////////////////////////////// principal evaluation functions
 
 void           main_eval(      frame_S&, int, wchar_t *[] );
 
@@ -1092,7 +1142,7 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////      002C  ,  COMMA                                              ,                                        ,    PU       comma/1  , verb (also @SEP)
 ////      002D  -  HYPHEN_MINUS                                       -                                        -    OP      (op/*)    minus/subtract verb ( - -- -= ) , etc.  (lex: can be attached sign)
 ////      002E  .  FULL_STOP                                          .                                        .    PU      (punct/1) lex: decimal point in floating point literals, line comment with newline suppression (...)
-////      002F  /  SOLIDUS                                            /                                        /    OP      (op/*)    divide verb ( /  /= ), lex: start comment ( //   /-    /< >/    /* */    /!  /^  )
+////      002F  /  SOLIDUS                                            /                                        /    OP      (op/*)    divide verb ( /  /= ), lex: start comment ( //    /~    /#     /< >/    /* */    /{ }/  )
 ////      003A  :  COLON                                              :                                        :    PU      (colon/1) trailing sigil for keyword identifiers and pre-processor labels
 ////      003B  ;  SEMICOLON                                          ;                                        ;    PU       semi/1   slist vexpr separator
 ////      003C  <  LESS_THAN_SIGN                                     <                                        O1   OP      (op/*)    less than verb ( <  <= ), left assignment verb ( <<< ), etc. 
@@ -1123,8 +1173,8 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////      00AB  «  LEFT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK          AltGr + [         Alt-174   Alt-0171     OAQ2 OQ       estr2    lex: escaped string-2 starting delimiter
 ////      00AC  ¬  NOT_SIGN                                           AltGr + \         Alt-170   Alt-0940     O2   OP       op/*     not verb ( ¬ ), not equal verb ( ¬=  or !=)
 ////      00AE  ®  REGISTERED_SIGN                                    AltGr + r         --------  Alt-0174     MM   MM       misc/1   ------------------------
-////      00AF  ¯  MACRON                                             ---------------   --------  Alt-0175     ¯    AC      (acc/1)   lex: always-attached minus sign for negative literals
-////      00B0  °  DEGREE_SIGN                                        AltGr+Shift + :   Alt-504   Alt-0944     O2   OP       op/*     empty value literal
+////      00AF  ¯  MACRON                                             ---------------   --------  Alt-0175     ¯    AC      (acc/1)   ------------------------
+////      00B0  °  DEGREE_SIGN                                        AltGr+Shift + :   Alt-504   Alt-0944     MM   MM       misc/1   ------------------------
 ////      00B1  ±  PLUS_MINUS_SIGN                                    ---------------   Alt-497   Alt-0177     O2   OP       op/*     ------------------------
 ////      00B2  ²  SUPERSCRIPT_TWO                                    AltGr + 2         Alt-509   Alt-0434     O2   OP       op/*     ------------------------
 ////      00B3  ³  SUPERSCRIPT_THREE                                  AltGr + 3         --------  Alt-0179     O2   OP       op/*     ------------------------
@@ -1132,7 +1182,7 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////      00B5  µ  MICRO_SIGN                                         AltGr + m         --------  Alt-0437     MM   MM       misc/1   ------------------------
 ////      00B6  ¶  PILCROW_SIGN                                       AltGr + ;         Alt-1044  Alt-0950     S2   SP       spch/1   ------------------------
 ////      00B7  ·  MIDDLE_DOT                                         ---------------   Alt-1530  Alt-0951     O2   OP       op/*     ------------------------
-////      00B8  ¸  CEDILLA                                            ---------------   --------  Alt-0440     A2   AC       (acc/1)  --------------------------
+////      00B8  ¸  CEDILLA                                            ---------------   --------  Alt-0440     A2   AC      (acc/1)   --------------------------
 ////      00B9  ¹  SUPERSCRIPT_ONE                                    AltGr+Shift + !   --------  Alt-0441     O2   OP       op/*     --------------------------
 ////      00BA  º  MASCULINE_ORDINAL_INDICATOR                        ---------------   Alt-935   Alt-0954     MM   MM       misc/1   --------------------------
 ////      00BB  »  RIGHT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK         AltGr + [         Alt-175   Alt-0443     CAQ2 CQ       estr2    lex: escaped string-2 ending delimiter
@@ -1144,7 +1194,7 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////      00F7  ÷  DIVISION_SIGN                                      AltGr+Shift + +   Alt-1014  Alt-0503     O2   OP       op/*     --------------------------
 ////                                                                                                                                  
 //// 2000-206F ----------------------------------------------------------------------------------------------- S2   SP       spch/1   Except for the following special cases:      
-////      2016  ‖   DOUBLE_VERTICAL_LINE                              --------------    --------  ---------    O2   OP       op/*     ----------------------- 
+////      2016  ‖  DOUBLE_VERTICAL_LINE                               --------------    --------  ---------    O2   OP       op/*     ----------------------- 
 ////      2018  ‘  LEFT_SINGLE_QUOTATION_MARK                         AltGr + 9         --------  Alt-0145     OQ1  OQ       ustr ??    ----------------------
 ////      2019  ’  RIGHT_SINGLE_QUOTATION_MARK                        AltGr + 0         --------  Alt-0914     CQ1  CQ       ustr ??    ----------------------
 ////      201A  ‚  SINGLE_LOW_9_QUOTATION_MARK                        ---------------   --------  ---------    OQ1  OQ       ustr ??    ----------------------
@@ -1287,11 +1337,9 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////          `<   =  «        LEFT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK      lex: start of type-2 string
 ////          `>   =  »        RIGHT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK     lex: end   of type-2 string
 ////          `'   =  ´        ACUTE_ACCENT                                   lex: default type 2 string escape char
-////          `-   =  ¯        MACRON                                         lex: always-attached minus sign for negative numeric literals
-////          `0   =  °        DEGREE_SIGN                                    empty value literal char 
-////          `~   =  ¬        NOT_SIGN                                       used in ¬= operator, etc.
+////          `~   =  ¬        NOT_SIGN                                       used in ¬= operator, etc.   ?????????????????????????????    replace with != once pre-processor comments are in place
 ////                                                                          
-////          `4   =  ¼        VULGAR_FRACTION_ONE_QUARTER                    for use in strings
+////          `4   =  ¼        VULGAR_FRACTION_ONE_QUARTER                    for use in strings     ????????????????????????????    replace with interpolation and pre-defined special char constants
 ////          `2   =  ½        VULGAR_FRACTION_ONE_HALF                       for use in strings
 ////          `3   =  ¾        VULGAR_FRACTION_THREE_QUARTERS                 for use in strings
 ////          `c   =  ¢        CENT_SIGN                                      for use in strings      
@@ -1305,7 +1353,6 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////          GRAVE_ACCENT                     ``                 `        -- lex: default digraph character
 ////          REVERSE_SOLIDUS                                     \        -- lex: default string escape char -1 strings   -- "" strings, etc.
 ////          ACUTE_ACCENT                     `'                 ´        -- lex: default string escape char -2 strings   -- «» strings, etc.
-////          MACRON                           `-                 ¯        -- lex: negative sign for numeric literals
 ////          LEFT_PARENTHESIS                                    (        -- open  vexpr  paren  -- also   @(   and   :( 
 ////          RIGHT_PRENTHESIS                                    )        -- close vexpr  paren  -- also   )@   and   ):
 ////          LEFT_CURLY_BRACKET                                  {        -- open  slist paren   
@@ -1313,7 +1360,7 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////          LEFT_SQUARE_BRACKET                                 [        -- open  vlist paren   
 ////          RIGHT_SQUARE_BRACKET                                ]        -- close vlist paren   
 ////          SEMICOLON                                           ;        -- vexpr separator in slist
-////          DEGREE_SIGN                      `0                 °        -- empty value                                                     
+////                                                      
 ////
 ////
 ////
@@ -1442,7 +1489,6 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////  " -- end simple string character 
 ////  + -- plus  (when attachable to decimal integer)
 ////  - -- minus (when attachable to decimal integer)
-////  ¯ -- macron -- negation sign for decimal integers (always attached)
 ////  . -- decimal point 
 ////
 ////
@@ -1480,9 +1526,9 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////
 ////
 ////
-//// ------------------
+//// 
 ////
-////    DEGREE_SIGN     `o  (Alt + Shift + :)   °   -- empty value  
+////   
 //// 
 ////
 ////
