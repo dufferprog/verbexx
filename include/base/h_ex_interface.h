@@ -39,14 +39,14 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// i = vexpr  k = keyword name    f = field to set   v = value to set field to,  t = type to cast parm value to field value     
+// i = expression  k = keyword name    f = field to set   v = value to set field to,  t = type to cast parm value to field value     
 //
-//         examples:      M_get_right_keyword_nval(  vexpr, L"display", xparm.display, true   )
-//                        M_get_right_keyword_string(vexpr, L"name"   , xparm.name            )
-//                        M_get_right_keyword_int64( vexpr, L"width"  , xparm.width  , int32_t)
+//         examples:      M_get_right_keyword_nval(  expression, L"display", xparm.display, true   )
+//                        M_get_right_keyword_string(expression, L"name"   , xparm.name            )
+//                        M_get_right_keyword_int64( expression, L"width"  , xparm.width  , int32_t)
 //
 //
-//                        M_get_right_keyword_vlist(vexpr, L"filenames",  filenames_vl)
+//                        M_get_right_keyword_vlist(expression, L"filenames",  filenames_vl)
 
 #define M_get_right_keyword_nval(     i, k, f, v)   {if (i.rparms.eval_kws.count(k) > 0) f  =    (v                                                    );  }
 #define M_get_right_keyword_string(   i, k, f   )   {if (i.rparms.eval_kws.count(k) > 0) f  =     i.rparms.eval_kws.find(k)->second.string              ;  }
@@ -111,9 +111,9 @@ if (v##_p != nullptr)                                           \
 
 // following MACROs get n-th right/left positional parm, if present
 //
-//    example -- xparm.length = (int2_t)M_get_right_pos_int64(vexpr, 3) -- gets 4th positional parm  
+//    example -- xparm.length = (int2_t)M_get_right_pos_int64(expression, 3) -- gets 4th positional parm  
 //
-//    i = vexpr  ,  n = n-th positional parm, l = nested vlist
+//    i = expression  ,  n = n-th positional parm, l = nested vlist
 //
 
 
@@ -640,7 +640,7 @@ enum class type_E { none          // not valid for values -- default initializat
                   , verbname      // UTF-16 string -- name of verb  (can have operator characters, like + -, etc.)         
                   , keyname       // UTF-16 string -- name of keyword (same characters as identifier) 
                   , vlist         // 
-                  , vexpr         // 
+                  , expression    // 
                   , slist         // 
                   , verbdef       // 
                   , typdef        // 
@@ -662,7 +662,7 @@ enum class type_E { none          // not valid for values -- default initializat
 struct typdef_S
 {
     type_E                                                  kind              {    };           // primary value type
-    size_t                                                  tsize             { 0  };           // will be 0 (not valid) for non-atomic types like none, special, error, unit, string, identifier, verbname, keyname, type, vlist. vexpr, slist, verbdef, etc.
+    size_t                                                  tsize             { 0  };           // will be 0 (not valid) for non-atomic types like none, special, error, unit, string, identifier, verbname, keyname, type, vlist. expression, slist, verbdef, etc.
                                                                                                 // non-0     (valid    ) only for atomic and aggregate types  
     uint64_t                                                acount            { 0  };           // if .kind = type_E::array, this is the number of elements in the array (1-N) -- fixed number
     std::shared_ptr<typdef_S>                               atype_sp          {    };           // if .kind = type_E::array, this is a pointer to the type of each element in the array
@@ -683,7 +683,7 @@ struct fieldef_S
 //
 //
 //    ------------------
-//    ref_S  structure                                            note: vexprs pointed to by the shared pointers here never get unshared
+//    ref_S  structure                                            note: items pointed to by the shared pointers here never get unshared
 //    ------------------
 //
 //
@@ -698,7 +698,7 @@ struct ref_S
     bool                                                    auto_deref        {false};           // true, if this is should be auto dereferenced (reference not explicitly created by user) 
     std::shared_ptr<value_S>                                value_sp          {     };           // pointer to value_S being referenced -- never nullptr  
     uint64_t                                                offset            { 0   };           // offset into *(value_sp->buffer_sp), if required -- 0 if full *value_sp reference 
-    std::shared_ptr<typdef_S>                               typdef_sp         {     };           // typdef_S for vexpr/field referenced -- nullptr, if full *value_sp reference    
+    std::shared_ptr<typdef_S>                               typdef_sp         {     };           // typdef_S for expression/field referenced -- nullptr, if full *value_sp reference    
 };
 
 
@@ -741,13 +741,13 @@ struct value_S
 
     //  shared pointers to non-local data -- will be set only when corresponding type is saved in this value_S, as indicated by value_S::ty
 
-    std::shared_ptr<   vlist_S >   vlist_sp                     {               };      // pointer to vlist_S    (if any)    -- if .ty = type_E::vlist
-    std::shared_ptr< a_vexpr_S >   vexpr_sp                     {               };      // pointer to a_vexpr_S  (if any)    -- if .ty = type_E::vexpr
-    std::shared_ptr<   slist_S >   slist_sp                     {               };      // pointer to slist_S    (if any)    -- if .ty = type_E::slist
-    std::shared_ptr< verbdef_S >   verbdef_sp                   {               };      // pointer to verbdef_S  (if any)    -- if .ty = type_E::verbdef
-    std::shared_ptr<  typdef_S >   typdef_sp                    {               };      // pointer to typdef_S   (if any)    -- if .ty = type_E::typdef   -or-   type_E::structure    -or-   type_E::array
-    std::shared_ptr<    buf8_T >   buffer_sp                    {               };      // pointer to buf8_T     (if any)    -- if .ty = type_E::array    -or-   type_E::structure
-    std::shared_ptr<     ref_S >   ref_sp                       {               };      // pointer to ref_S      (if any)    -- if .ty = type_E::ref     
+    std::shared_ptr<    vlist_S     >       vlist_sp            {               };      // pointer to vlist_S         (if any)       -- if .ty = type_E::vlist
+    std::shared_ptr< a_expression_S >  expression_sp            {               };      // pointer to a_expression_S  (if any)       -- if .ty = type_E::expression
+    std::shared_ptr<    slist_S     >       slist_sp            {               };      // pointer to slist_S         (if any)       -- if .ty = type_E::slist
+    std::shared_ptr<  verbdef_S     >     verbdef_sp            {               };      // pointer to verbdef_S       (if any)       -- if .ty = type_E::verbdef
+    std::shared_ptr<   typdef_S     >      typdef_sp            {               };      // pointer to typdef_S        (if any)       -- if .ty = type_E::typdef   -or-   type_E::structure    -or-   type_E::array
+    std::shared_ptr<     buf8_T     >      buffer_sp            {               };      // pointer to buf8_T          (if any)       -- if .ty = type_E::array    -or-   type_E::structure
+    std::shared_ptr<      ref_S     >         ref_sp            {               };      // pointer to ref_S           (if any)       -- if .ty = type_E::ref     
 };
 
 
@@ -775,8 +775,8 @@ struct keyword_S
 struct vlist_S
 {
     uint64_t                                  value_ct         { 0     };      // number of positional values    
-    uint64_t                                  kw_ct            { 0     };      // number of literal-keywords present
-                                         
+    uint64_t                                  kw_ct            { 0     };      // number of keywords present -- if kw_eval_done, this is number of evaluated keywords in the multimap, if not, it's the number of keywords in the vector  
+                                           
     bool                                      val_unit         { false };      // true = one or more positional values are UNIT_T
     bool                                      val_boolean      { false };      // true = one or more positional values are BOOL_T
     bool                                      val_int8         { false };      // true = one or more positional values are INT8_T
@@ -792,7 +792,7 @@ struct vlist_S
     bool                                      val_string       { false };      // true = one or more positional values are std::wstring
     bool                                      val_identifier   { false };      // true = one or more positional values are identifier
     bool                                      val_vlist        { false };      // true = one or more positional values are vlist_S
-    bool                                      val_vexpr        { false };      // true = one or more positional values are vexpr_S
+    bool                                      val_expression   { false };      // true = one or more positional values are expression_S
     bool                                      val_slist        { false };      // true = one or more positional values are slist_S
     bool                                      val_verbdef      { false };      // true = one or more positional values are verbdef_S
     bool                                      val_typdef       { false };      // true = one or more positional values are typdef_S
@@ -802,9 +802,9 @@ struct vlist_S
                                          
     bool                                      val_mixed        { false };      // true = more than one type of positional value seen (excluding identifiers)
                                          
-    bool                                      kw_vexpr         { false };      // true = one or more keyword values are vexprs 
-    bool                                      kw_vlist         { false };      // true = one or more keyword values are vlists 
-    bool                                      kw_identifier    { false };      // true = one or more keyword values are identifiers 
+    bool                                      kw_expression    { false };      // true = one or more keyword values is an expression 
+    bool                                      kw_vlist         { false };      // true = one or more keyword values is an vlist 
+    bool                                      kw_identifier    { false };      // true = one or more keyword values is an identifier 
     bool                                      kw_eval_done     { false };      // true = eval_kws has been filled in 
                                          
     int64_t                                   token_ix1        { -1    };      // starting token index for this vlist, if known  
@@ -820,16 +820,16 @@ struct vlist_S
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-//    -------------------
-//    e_vexpr_S structure -- copied-over vexpr_S for use during verb execution (resolved verb name and keyword names, with evaluated values, etc.)
-//    -------------------
+//    ------------------------
+//    e_expression_S structure -- copied-over expression_S for use during verb execution (resolved verb name and keyword names, with evaluated values, etc.)
+//    ------------------------
 //
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct e_vexpr_S 
+struct e_expression_S 
 {
-    bool                                       has_verb         { false };      // true -- verb present,   false -- no verb found for this vexpr
+    bool                                       has_verb         { false };      // true -- verb present,   false -- no verb found for this expression
     bool                                       has_sigil        { false };      // true -- original verb had leading @ sigil
     char32_t                                   sigil            {       };      // if has_sigil is true, sigil is saved here 
                                               
@@ -837,12 +837,12 @@ struct e_vexpr_S
     bool                                       right_associate  { false };      // true = always right-to-left associativity, false = left-to-right when infix or postfix, right-to-left when prefix or nofix 
     bool                                       left_associate   { false };      // true = always left-to-right associativity, false = left-to-right when infix or postfix, right-to-left when prefix or nofix
                                               
-    int64_t                                    token_ix1        { -1    };      // starting token index for this vexpr, if known  
-    int64_t                                    token_ix2        { -1    };      // ending   token index for this vexpr, if known 
+    int64_t                                    token_ix1        { -1    };      // starting token index for this expression, if known  
+    int64_t                                    token_ix2        { -1    };      // ending   token index for this expression, if known 
                                                                         
     std::wstring                               verb_name        {       };      // string with evaluated verb name 
-    int64_t                                    verb_token_ix1   { -1    };      // original starting token index for evaluated verb name vexpr, if known 
-    int64_t                                    verb_token_ix2   { -1    };      // original ending   token index for evaluated verb name vexpr, if known
+    int64_t                                    verb_token_ix1   { -1    };      // original starting token index for evaluated verb name expression, if known 
+    int64_t                                    verb_token_ix2   { -1    };      // original ending   token index for evaluated verb name expression, if known
                                                                          
     vlist_S                                    lparms           {       };      // left-side  parameters for verb or option  
     vlist_S                                    rparms           {       };      // right-side parameters for verb or option 
@@ -866,10 +866,10 @@ struct plist_S
     bool                                   no_check_keyword_names       { false };      // don't check keyword names    -- any names are OK (number and types must match 1st/only kw in multimap, with name = "*")
 
 
-    // global checking flags for positional parms -- used only when vexpr has no verb, (meaning it has positional parmtypes in the values vector)
+    // global checking flags for positional parms -- used only when expression has no verb, (meaning it has positional parmtypes in the values vector)
 
     bool                                   no_eval_ident                { false };      // true -- don't evaluate identifiers in positional parms  
-    bool                                   no_eval_vexpr                { false };      // true -- don't evaluate vexprs in positional parms  
+    bool                                   no_eval_expression           { false };      // true -- don't evaluate expressions in positional parms  
     bool                                   no_eval_vlist                { false };      // true -- don't evaluate (nested) vlists in positional parms 
                             
     int64_t                                min_ct                       { 0     };      // minimum number of positional parms allowed 
@@ -958,7 +958,7 @@ struct parmtype_S
     int64_t                        kw_max_ct                    { 0     };      // max number of times keyword can appear -- not used when checking positional parms  
 
     bool                           no_eval_ident                { false };      // don't evaluate, if parm is an identifier 
-    bool                           no_eval_vexpr                { false };      // don't evaluate, if parm is an vexpr
+    bool                           no_eval_expression           { false };      // don't evaluate, if parm is an expression
     bool                           no_eval_vlist                { false };      // don't evaluate, if parm is a  vlist
     bool                           no_eval_ref                  { false };      // don't evaluate/dereference, if parm is a  ref
 
@@ -986,7 +986,7 @@ struct parmtype_S
     bool                           const_ident_ok               { false };      // ok for value to be defined constant identifier (not a variable) 
     bool                           undef_ident_ok               { false };      // ok for value to be undefined identifier (and not defined)
     bool                           vlist_ok                     { false };      // ok for value to be vlist -- optional pointer is set, if verb cares about value types in vlist
-    bool                           vexpr_ok                     { false };      // ok for value to be vexpr  
+    bool                           expression_ok                { false };      // ok for value to be expression  
     bool                           slist_ok                     { false };      // ok for value to be slist 
     bool                           verbdef_ok                   { false };      // ok for value to be verbdef
     bool                           typdef_ok                    { false };      // ok for value to be typdef
@@ -1063,36 +1063,36 @@ M_EX_IMPEXP pre_parse_C  *get_main_preparse();
 
 ///////////////// location string and other debug-message-oriented routines  ///////////////////////////////////
 
-//M_EX_IMPEXP std::wstring vexpr_loc_str(  const a_vexpr_S& );                       // in ex_parse.h
-//M_EX_IMPEXP std::wstring  verb_loc_str(  const a_vexpr_S& );                       // in ex_parse.h
-  M_EX_IMPEXP std::wstring vexpr_loc_str(  const e_vexpr_S& );                    
-  M_EX_IMPEXP std::wstring  verb_loc_str(  const e_vexpr_S& );                    
-//M_EX_IMPEXP std::wstring vlist_loc_str(  const vlist_S&);                          // in ex_parse.h
-//M_EX_IMPEXP std::wstring value_loc_str(  const value_S&);                          // in ex_parse.h
-//M_EX_IMPEXP std::wstring    kw_loc_str(  const value_S&);                          // in ex_parse.h
+//M_EX_IMPEXP std::wstring expression_loc_str( const a_expression_S& );                  // in ex_parse.h
+//M_EX_IMPEXP std::wstring       verb_loc_str( const a_expression_S& );                  // in ex_parse.h
+  M_EX_IMPEXP std::wstring expression_loc_str( const e_expression_S& );                    
+  M_EX_IMPEXP std::wstring       verb_loc_str( const e_expression_S& );                    
+//M_EX_IMPEXP std::wstring      vlist_loc_str( const vlist_S&);                          // in ex_parse.h
+//M_EX_IMPEXP std::wstring      value_loc_str( const value_S&);                          // in ex_parse.h
+//M_EX_IMPEXP std::wstring         kw_loc_str( const value_S&);                          // in ex_parse.h
 
-//M_EX_IMPEXP void                msg_loc( const   value_S&                      );  // in ex_parse.h
-//M_EX_IMPEXP void                msg_loc( const   value_S&, const std::wstring& );  // in ex_parse.h
-//M_EX_IMPEXP void                msg_loc( const   vlist_S&                      );  // in ex_parse.h
-//M_EX_IMPEXP void                msg_loc( const   vlist_S&, const std::wstring& );  // in ex_parse.h
-//M_EX_IMPEXP void                msg_loc(                   const a_vexpr_S&    );  // in ex_parse.h
-  M_EX_IMPEXP void                msg_loc(                   const e_vexpr_S&    );  
-//M_EX_IMPEXP void                msg_loc( const   value_S&, const a_vexpr_S&    );  // in ex_parse.h
-//M_EX_IMPEXP void                msg_loc( const   value_S&, const e_vexpr_S&    );  // in ex_parse.h
-//M_EX_IMPEXP void                msg_loc( const   vlist_S&, const a_vexpr_S&    );  // in ex_parse.h
-//M_EX_IMPEXP void                msg_loc( const   vlist_S&, const e_vexpr_S&    );  // in ex_parse.h
+//M_EX_IMPEXP void                msg_loc( const   value_S&                          );  // in ex_parse.h
+//M_EX_IMPEXP void                msg_loc( const   value_S&, const std::wstring&     );  // in ex_parse.h
+//M_EX_IMPEXP void                msg_loc( const   vlist_S&                          );  // in ex_parse.h
+//M_EX_IMPEXP void                msg_loc( const   vlist_S&, const std::wstring&     );  // in ex_parse.h
+//M_EX_IMPEXP void                msg_loc(                   const a_expression_S&   );  // in ex_parse.h
+  M_EX_IMPEXP void                msg_loc(                   const e_expression_S&   );  
+//M_EX_IMPEXP void                msg_loc( const   value_S&, const a_expression_S&   );  // in ex_parse.h
+//M_EX_IMPEXP void                msg_loc( const   value_S&, const e_expression_S&   );  // in ex_parse.h
+//M_EX_IMPEXP void                msg_loc( const   vlist_S&, const a_expression_S&   );  // in ex_parse.h
+//M_EX_IMPEXP void                msg_loc( const   vlist_S&, const e_expression_S&   );  // in ex_parse.h
 
-//M_EX_IMPEXP void             msg_kw_loc( const   value_S&                      );  // in ex_parse.h
-
-//M_EX_IMPEXP void             msgend_loc( const   value_S&                      );  // in ex_parse.h
-//M_EX_IMPEXP void             msgend_loc( const   value_S&, const std::wstring& );  // in ex_parse.h
-//M_EX_IMPEXP void             msgend_loc( const   vlist_S&                      );  // in ex_parse.h
-//M_EX_IMPEXP void             msgend_loc( const   vlist_S&, const std::wstring& );  // in ex_parse.h
-//M_EX_IMPEXP void             msgend_loc(                   const a_vexpr_S&    );  // in ex_parse.h
-  M_EX_IMPEXP void             msgend_loc(                   const e_vexpr_S&    );  
-//M_EX_IMPEXP void             msgend_loc( const   value_S&, const a_vexpr_S&    );  // in ex_parse.h
-//M_EX_IMPEXP void             msgend_loc( const   value_S&, const e_vexpr_S&    );  // in ex_parse.h
-//M_EX_IMPEXP void             msgend_loc( const   vlist_S&, const a_vexpr_S&    );  // in ex_parse.h
-//M_EX_IMPEXP void             msgend_loc( const   vlist_S&, const e_vexpr_S&    );  // in ex_parse.h
+//M_EX_IMPEXP void             msg_kw_loc( const   value_S&                          );  // in ex_parse.h
+                                                                                     
+//M_EX_IMPEXP void             msgend_loc( const   value_S&                          );  // in ex_parse.h
+//M_EX_IMPEXP void             msgend_loc( const   value_S&, const std::wstring&     );  // in ex_parse.h
+//M_EX_IMPEXP void             msgend_loc( const   vlist_S&                          );  // in ex_parse.h
+//M_EX_IMPEXP void             msgend_loc( const   vlist_S&, const std::wstring&     );  // in ex_parse.h
+//M_EX_IMPEXP void             msgend_loc(                   const a_expression_S&   );  // in ex_parse.h
+  M_EX_IMPEXP void             msgend_loc(                   const e_expression_S&   );  
+//M_EX_IMPEXP void             msgend_loc( const   value_S&, const a_expression_S&   );  // in ex_parse.h
+//M_EX_IMPEXP void             msgend_loc( const   value_S&, const e_expression_S&   );  // in ex_parse.h
+//M_EX_IMPEXP void             msgend_loc( const   vlist_S&, const a_expression_S&   );  // in ex_parse.h
+//M_EX_IMPEXP void             msgend_loc( const   vlist_S&, const e_expression_S&   );  // in ex_parse.h
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

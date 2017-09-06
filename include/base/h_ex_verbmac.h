@@ -1888,7 +1888,7 @@
 #define M_vt_add_x_kw(n, v, pt, x)       M_vt_add_##x##_kw( n, v, pt)
 
 
-// add pos or kw parm MACROs for unnested vexprs
+// add pos or kw parm MACROs for unnested Expressions
 
 #define M_vt_add_l_kw(n, v, pt) v.lparms.keywords.emplace(n, pt);
 #define M_vt_add_r_kw(n, v, pt) v.rparms.keywords.emplace(n, pt);
@@ -1905,7 +1905,7 @@
 }
 
 
-// add pos or kw MACROs for nested vexprs
+// add pos or kw MACROs for nested Expressions
 
 #define M_vt_add_nested_pos(pl, pt)     \
 {                                       \

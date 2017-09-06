@@ -342,7 +342,39 @@
 namespace utf32_N
 {
 constexpr char32_t _BAD_CHARACTER_                                                                      {0x0FFFFFFF}; // invalid character -- should never be assigned
-constexpr char32_t SPACE                                                                                {0x00000020}; // ------------------
+constexpr char32_t _BAD_CHARACTER_0                                                                     {0x0FFFFF00}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_1                                                                     {0x0FFFFF01}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_2                                                                     {0x0FFFFF02}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_3                                                                     {0x0FFFFF03}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_4                                                                     {0x0FFFFF04}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_5                                                                     {0x0FFFFF05}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_6                                                                     {0x0FFFFF06}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_7                                                                     {0x0FFFFF07}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_8                                                                     {0x0FFFFF08}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_9                                                                     {0x0FFFFF09}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_10                                                                    {0x0FFFFF0A}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_11                                                                    {0x0FFFFF0B}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_12                                                                    {0x0FFFFF0C}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_13                                                                    {0x0FFFFF0D}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_14                                                                    {0x0FFFFF0E}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_15                                                                    {0x0FFFFF0F}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_16                                                                    {0x0FFFFF10}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_17                                                                    {0x0FFFFF11}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_18                                                                    {0x0FFFFF12}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_19                                                                    {0x0FFFFF13}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_20                                                                    {0x0FFFFF14}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_21                                                                    {0x0FFFFF15}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_22                                                                    {0x0FFFFF16}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_23                                                                    {0x0FFFFF17}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_24                                                                    {0x0FFFFF18}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_25                                                                    {0x0FFFFF19}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_26                                                                    {0x0FFFFF1A}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_27                                                                    {0x0FFFFF1B}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_28                                                                    {0x0FFFFF1C}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_29                                                                    {0x0FFFFF1D}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_30                                                                    {0x0FFFFF1E}; // invalid character -- should never be assigned
+constexpr char32_t _BAD_CHARACTER_31                                                                    {0x0FFFFF1F}; // invalid character -- should never be assigned
+constexpr char32_t SPACE                                                                                {0x00000020}; // -------------------------------------------------
 constexpr char32_t EXCLAMATION_MARK                                                                     {0x00000021}; // !
 constexpr char32_t QUOTATION_MARK                                                                       {0x00000022}; // "
 constexpr char32_t NUMBER_SIGN                                                                          {0x00000023}; // #

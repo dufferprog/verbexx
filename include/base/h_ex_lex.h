@@ -8,7 +8,7 @@
 ////
 ////
 ////            ==========
-////            h_ex_lex.h -- vexprs for  ex_inchar.cpp,  ex_infile.cpp,  and  ex_intoken.cpp  
+////            h_ex_lex.h -- items for  ex_inchar.cpp,  ex_infile.cpp,  and  ex_intoken.cpp  
 ////            ==========
 //// 
 ////
@@ -38,7 +38,7 @@ constexpr char32_t  ch_sigil_keyword               { utf32_N::COLON             
 constexpr char32_t  ch_sigil_verb                  { utf32_N::COMMERCIAL_AT                                 };      // parser leading  sigil for verb
 constexpr char32_t  ch_sigil_parm                  { utf32_N::DOLLAR_SIGN                                   };      // parser leading  sigil for parm    
                                                                                                           
-constexpr char32_t  ch_digraph                     { utf32_N::GRAVE_ACCENT                                  };      // (pre-processor) digraph                          character (default)
+constexpr char32_t  ch_trigraph                    { utf32_N::QUESTION_MARK                                 };      // (pre-processor) trigraph                         character (default)
 constexpr char32_t  ch_vanishing_sep               { utf32_N::_BAD_CHARACTER_                               };      // (pre-processor) vanishing separator              character (default = none -- use () or , )
 constexpr char32_t  ch_line_continuation           { utf32_N::_BAD_CHARACTER_                               };      // pre-processor line continuation                  character (default = none                ) 
 constexpr char32_t  ch_always_sign                 { utf32_N::_BAD_CHARACTER_                               };      // always_sign char -- always becomes part of signed integer  (default = none                ) 
@@ -106,6 +106,128 @@ constexpr wchar_t  *chws_string_start              { L"«"                      
 constexpr wchar_t  *chws_string_end                { L"»"                                                   };      // for debug mode output strings 
 } 
 
+                                                                  
+//   ---------------------------------------------------------------------------------------------------------------------------------------------------- 
+//
+//   trigraph characters  -- in and out
+//   ----------------------------------
+//
+//      
+//     ???   =  ?        GRAVE_ACCENT                                   lex: default trigraph char          (not in table) 
+//     ??<   =  «        LEFT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK      lex: start of type-2 string
+//     ??>   =  »        RIGHT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK     lex: end   of type-2 string
+//     ??'   =  ´        ACUTE_ACCENT                                   lex: default type 2 string escape char
+//     ??~   =  ¬        NOT_SIGN                                       used in ¬= operator, etc.                         ????? out ????
+//                                                                 
+//     ??4   =  ¼        VULGAR_FRACTION_ONE_QUARTER                    for use in strings     
+//     ??2   =  ½        VULGAR_FRACTION_ONE_HALF                       for use in strings
+//     ??3   =  ¾        VULGAR_FRACTION_THREE_QUARTERS                 for use in strings
+//     ??c   =  ¢        CENT_SIGN                                      for use in strings      
+//
+//
+//   ----------------------------------------------------------------------------------------------------------------------------------------------------- 
+
+namespace const_N
+{
+ constexpr char32_t  ch_trigraph_in_01             { utf32_N::APOSTROPHE                                    };     
+ constexpr char32_t  ch_trigraph_out_01            { utf32_N::ACUTE_ACCENT                                  };     
+
+ constexpr char32_t  ch_trigraph_in_02             { utf32_N::LESS_THAN_SIGN                                };     
+ constexpr char32_t  ch_trigraph_out_02            { utf32_N::LEFT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK     };     
+
+ constexpr char32_t  ch_trigraph_in_03             { utf32_N::GREATER_THAN_SIGN                             };     
+ constexpr char32_t  ch_trigraph_out_03            { utf32_N::RIGHT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK    };     
+
+ constexpr char32_t  ch_trigraph_in_04             { utf32_N::TILDE                                         };     
+ constexpr char32_t  ch_trigraph_out_04            { utf32_N::NOT_SIGN                                      };     
+
+ constexpr char32_t  ch_trigraph_in_05             { utf32_N::LATIN_SMALL_LETTER_C                          };     
+ constexpr char32_t  ch_trigraph_out_05            { utf32_N::CENT_SIGN                                     };     
+
+ constexpr char32_t  ch_trigraph_in_06             { utf32_N::DIGIT_TWO                                     };    
+ constexpr char32_t  ch_trigraph_out_06            { utf32_N::VULGAR_FRACTION_ONE_HALF                      }; 
+
+ constexpr char32_t  ch_trigraph_in_07             { utf32_N::DIGIT_THREE                                   };     
+ constexpr char32_t  ch_trigraph_out_07            { utf32_N::VULGAR_FRACTION_ONE_THIRD                     }; 
+
+ constexpr char32_t  ch_trigraph_in_08             { utf32_N::DIGIT_FOUR                                    };     
+ constexpr char32_t  ch_trigraph_out_08            { utf32_N::VULGAR_FRACTION_ONE_QUARTER                   };     
+
+ constexpr char32_t  ch_trigraph_in_09             { utf32_N::DIGIT_FIVE                                    };     
+ constexpr char32_t  ch_trigraph_out_09            { utf32_N::VULGAR_FRACTION_TWO_THIRDS                    };     
+
+ constexpr char32_t  ch_trigraph_in_10             { utf32_N::DIGIT_SIX                                     };    
+ constexpr char32_t  ch_trigraph_out_10            { utf32_N::VULGAR_FRACTION_ONE_SIXTH                     };  
+
+ constexpr char32_t  ch_trigraph_in_11             { utf32_N::DIGIT_SEVEN                                   };    
+ constexpr char32_t  ch_trigraph_out_11            { utf32_N::VULGAR_FRACTION_THREE_QUARTERS                }; 
+
+ constexpr char32_t  ch_trigraph_in_12             { utf32_N::DIGIT_EIGHT                                   };     
+ constexpr char32_t  ch_trigraph_out_12            { utf32_N::VULGAR_FRACTION_ONE_EIGHTH                    };  
+ 
+ constexpr char32_t  ch_trigraph_in_13             { utf32_N::LATIN_SMALL_LETTER_T                          };     
+ constexpr char32_t  ch_trigraph_out_13            { utf32_N::DAGGER                                        }; 
+
+ constexpr char32_t  ch_trigraph_in_14             { utf32_N::LATIN_CAPITAL_LETTER_I                        };    
+ constexpr char32_t  ch_trigraph_out_14            { utf32_N::DOUBLE_DAGGER                                 }; 
+
+ constexpr char32_t  ch_trigraph_in_15             { utf32_N::LATIN_CAPITAL_LETTER_P                        };     
+ constexpr char32_t  ch_trigraph_out_15            { utf32_N::PILCROW_SIGN                                  }; 
+
+ constexpr char32_t  ch_trigraph_in_16             { utf32_N::LATIN_SMALL_LETTER_P                          };     
+ constexpr char32_t  ch_trigraph_out_16            { utf32_N::REVERSED_PILCROW_SIGN                         }; 
+
+ constexpr char32_t  ch_trigraph_in_17             { utf32_N::LATIN_CAPITAL_LETTER_S                        };     
+ constexpr char32_t  ch_trigraph_out_17            { utf32_N::SECTION_SIGN                                  }; 
+
+ constexpr char32_t  ch_trigraph_in_18             { utf32_N::LATIN_SMALL_LETTER_O                          };     
+ constexpr char32_t  ch_trigraph_out_18            { utf32_N::CURRENCY_SIGN                                 }; 
+
+ // unused trigraph sequences:
+
+ constexpr char32_t  ch_trigraph_in_19             { utf32_N::_BAD_CHARACTER_1                              };     
+ constexpr char32_t  ch_trigraph_out_19            { utf32_N::_BAD_CHARACTER_                               }; 
+
+ constexpr char32_t  ch_trigraph_in_20             { utf32_N::_BAD_CHARACTER_2                              };     
+ constexpr char32_t  ch_trigraph_out_20            { utf32_N::_BAD_CHARACTER_                               }; 
+
+ constexpr char32_t  ch_trigraph_in_21             { utf32_N::_BAD_CHARACTER_3                              };     
+ constexpr char32_t  ch_trigraph_out_21            { utf32_N::_BAD_CHARACTER_                               }; 
+
+ constexpr char32_t  ch_trigraph_in_22             { utf32_N::_BAD_CHARACTER_4                              };     
+ constexpr char32_t  ch_trigraph_out_22            { utf32_N::_BAD_CHARACTER_                               }; 
+
+ constexpr char32_t  ch_trigraph_in_23             { utf32_N::_BAD_CHARACTER_5                              };     
+ constexpr char32_t  ch_trigraph_out_23            { utf32_N::_BAD_CHARACTER_                               }; 
+
+ constexpr char32_t  ch_trigraph_in_24             { utf32_N::_BAD_CHARACTER_6                              };     
+ constexpr char32_t  ch_trigraph_out_24            { utf32_N::_BAD_CHARACTER_                               }; 
+
+ constexpr char32_t  ch_trigraph_in_25             { utf32_N::_BAD_CHARACTER_7                              };     
+ constexpr char32_t  ch_trigraph_out_25            { utf32_N::_BAD_CHARACTER_                               }; 
+
+ constexpr char32_t  ch_trigraph_in_26             { utf32_N::_BAD_CHARACTER_8                              };     
+ constexpr char32_t  ch_trigraph_out_26            { utf32_N::_BAD_CHARACTER_                               }; 
+
+ constexpr char32_t  ch_trigraph_in_27             { utf32_N::_BAD_CHARACTER_9                              };     
+ constexpr char32_t  ch_trigraph_out_27            { utf32_N::_BAD_CHARACTER_                               }; 
+
+ constexpr char32_t  ch_trigraph_in_28             { utf32_N::_BAD_CHARACTER_10                             };     
+ constexpr char32_t  ch_trigraph_out_28            { utf32_N::_BAD_CHARACTER_                               }; 
+
+ constexpr char32_t  ch_trigraph_in_29             { utf32_N::_BAD_CHARACTER_11                             };     
+ constexpr char32_t  ch_trigraph_out_29            { utf32_N::_BAD_CHARACTER_                               }; 
+
+ constexpr char32_t  ch_trigraph_in_30             { utf32_N::_BAD_CHARACTER_13                             };     
+ constexpr char32_t  ch_trigraph_out_30            { utf32_N::_BAD_CHARACTER_                               }; 
+
+ constexpr char32_t  ch_trigraph_in_31             { utf32_N::_BAD_CHARACTER_14                             };     
+ constexpr char32_t  ch_trigraph_out_31            { utf32_N::_BAD_CHARACTER_                               }; 
+
+ constexpr char32_t  ch_trigraph_in_32             { utf32_N::_BAD_CHARACTER_15                             };     
+ constexpr char32_t  ch_trigraph_out_32            { utf32_N::_BAD_CHARACTER_                               }; 
+}
+
 
 
 
@@ -120,7 +242,7 @@ constexpr wchar_t  *chws_string_end                { L"»"                      
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //
-//                                   Classs = C     Family = F      Type = T      Subtype = S
+//                                   classs = C     family = F      type = T      subtype = S
 
 enum class char_E { none                      // C F T S   initialized -- not yet set
                   , eol                       // C F T S   both type and subtype fields  
@@ -136,7 +258,7 @@ enum class char_E { none                      // C F T S   initialized -- not ye
                   , alphanum                  // - F - -   numbers and letters (with/without accents, etc.) 
                   , punct                     // - F T -   all punctuation characters -- do not usually combine into tokens ( ) [ ] { } ! ? , . ; : ' "  
                   , oper                      // - F T -   operator characters - + = / < > | * ^ \ (normally combine into operator tokens, but not identifiers)  
-                  , special                   // - F T -   special characters _ @ # $ % & (all currency) etc.  -- some can be in identifiers
+                  , special                   // - F T -   special characters _ @ # % &, etc.  -- some can be in identifiers (note $ and currency are in this family, but currency type below)
                   , misc                      // - F T S   miscellaneous -- degree, copyright, TM, etc.   
                   , accent                    // - F T -   (pure) accent marks and diacritics, etc. ???? -- some may combine with letters, etc.
 
@@ -144,7 +266,7 @@ enum class char_E { none                      // C F T S   initialized -- not ye
 
                   , num                       // - - T S   numeric digits (may be superscript, circled, etc.) (OK in identifiers) 
                   , alpha                     // - - T -   accented/unaccented alphabetic char (OK in identifiers) 
-                  , currency                  // - - T S   currency symbols (OK in identifiers??)
+                  , currency                  // - - T S   currency symbols  $ and others (OK in identifiers??)
                   , sep                       // - - T S   separator characters (OK in numbers, identifiers, etc.) _, etc. 
                   , open_bracket              // - - T -   ( { [  etc.
                   , close_bracket             // - - T -   ) } ]  etc.
@@ -279,23 +401,23 @@ struct in_char_S
     char_E          type                {char_E::none};    // char type  
     char_E          subtype             {char_E::none};    // detailed character type 
 
-    char32_t        ch32                {0           };    // UTF-32 final character (after any digraph processing)
-    wchar_t         wch1                {0           };    // 1st wchar -- can be leading surrogate (after any digraph processing) 
-    wchar_t         wch2                {0           };    // second wchar -- 0000 if not trailing surrogate (after any digraph processing)
+    char32_t        ch32                {0           };    // UTF-32 final character (after any trigraph processing)
+    wchar_t         wch1                {0           };    // 1st wchar -- can be leading surrogate (after any trigraph processing) 
+    wchar_t         wch2                {0           };    // second wchar -- 0000 if not trailing surrogate (after any trigraph processing)
 
-    char32_t        ch32_orig           {0           };    // UTF-32 original 2nd character (before digraph processing) -- same as final char, if no digraph
-    wchar_t         wch1_orig           {0           };    // 1st wchar -- can be leading surrogate (before digraph processing) 
-    wchar_t         wch2_orig           {0           };    // second wchar -- 0000 if not trailing surrogate (before digraph processing)
+    char32_t        ch32_orig           {0           };    // UTF-32 original 2nd character (before trigraph processing) -- same as final char, if no trigraph
+    wchar_t         wch1_orig           {0           };    // 1st wchar -- can be leading surrogate (before trigraph processing) 
+    wchar_t         wch2_orig           {0           };    // second wchar -- 0000 if not trailing surrogate (before trigraph processing)
 
-    char32_t        ch32_digraph        {0           };    // UTF-32 character for digraph char (if present)
-    wchar_t         wch1_digraph        {0           };    // 1st wchar -- can be leading surrogate (digraph char) 
-    wchar_t         wch2_digraph        {0           };    // second wchar -- 0000 if not trailing surrogate (digraph char)
+    char32_t        ch32_trigraph       {0           };    // UTF-32 character for trigraph char (if present)
+    wchar_t         wch1_trigraph       {0           };    // 1st wchar -- can be leading surrogate (trigraph char) 
+    wchar_t         wch2_trigraph       {0           };    // second wchar -- 0000 if not trailing surrogate (trigraph char)
 
-    uint32_t        digraph_count       {0           };    // 0 -- no digraph char present, >0 one or more digraph chars present          
+    uint32_t        trigraph_count      {0           };    // 0 -- no trigraph char present, >0 one or more trigraph chars present          
     uint64_t        source_id           {0           };    // unique source_id of source file or string 
-    uint32_t        lineno              {0           };    // line number in file/string containing this char (for error messages) 1-based  -- both digraph and 2nd char must be on same line
-    size_t          linepos             {0           };    // position in line of start of this char (2nd one, if digraph present)
-    size_t          linepos_digraph     {0           };    // position in line of start of this digraph    
+    uint32_t        lineno              {0           };    // line number in file/string containing this char (for error messages) 1-based  -- both trigraph and 2nd char must be on same line
+    size_t          linepos             {0           };    // position in line of start of this char (2nd one, if trigraph present)
+    size_t          linepos_trigraph    {0           };    // position in line of start of this trigraph    
 
                 in_char_S()                 = default;     // default constructor
                 in_char_S(const in_char_S&) = default;     // copy constructor
@@ -519,7 +641,7 @@ public:
     int           open(const std::string&);                     // open file -- plain string
     int           close();                                      // close file 
     bool          is_open() const;                              // return true if file is open
-    int           get_char(in_char_S&);                         // get next character from file
+    int           get_char(in_char_S&, bool=true);              // get next character from file
     std::wstring  get_filename() const;                         // get filename of open file (if any)  
     uint64_t      get_source_id() const;                        // get source_id of open file (if any) 
 
@@ -542,8 +664,8 @@ private:
 
     // internal (private) functions
 
-    int         fetch_char(in_char_S&);                         // fetch next char in curr_line 
-    void        out_char(  in_char_S&, char_E);                 // set up in_char_S for output char based on passed-in type
+    int         fetch_char(in_char_S&,         bool=true);      // fetch next char in curr_line 
+    void        out_char(  in_char_S&, char_E, bool=true);      // set up in_char_S for output char based on passed-in type
 };
 
 
@@ -580,7 +702,7 @@ public:
     int           open(const std::wstring&, const std::wstring&);                    // open string -- input wstring, wstring for string name
     int           close();                                                           // close string
     bool          is_open() const;                                                   // return true if string is open
-    int           get_char(in_char_S&);                                              // get next character from string
+    int           get_char(in_char_S&, bool=true);                                   // get next character from string
     std::wstring  get_name() const;                                                  // get name of open string (if any) 
     uint64_t      get_source_id() const;                                             // get source_id of open file (if any) 
 
@@ -602,8 +724,8 @@ private:
     // internal (private) functions 
 
     int         reset();                                                             // close string
-    int         fetch_char(in_char_S&);                                              // fetch next char in curr_line 
-    void        out_char(  in_char_S&, char_E);                                      // set up in_char_S for output char based on passed-in type
+    int         fetch_char(in_char_S&        , bool=true);                           // fetch next char in curr_line 
+    void        out_char(  in_char_S&, char_E, bool=true);                           // set up in_char_S for output char based on passed-in type
 };
 
 
@@ -633,8 +755,8 @@ public:
 
     void            attach_file(           infile_C *                       )  ;        // assign pre-opened file to this char stream (file is not owned here)
     void            attach_string(         instring_C *                     )  ;        // assign pre-filled string to this char stream 
-    void            set_digraph_char(      char32_t = const_N::ch_digraph   )  ;        // set digraph char                  
-    void            set_process_digraphs(  bool = true                      )  ;        // enable/disable digraph processing -- default is enabled
+    void            set_trigraph_char(     char32_t = const_N::ch_trigraph  )  ;        // set trigraph char                  
+    void            set_process_trigraphs( bool = true                      )  ;        // enable/disable trigraph processing -- default is enabled
     int             get_char(              in_char_S&                       )  ;        // get (and consume) next character from stream (may return previously put-bach char)  
     int             get_source_char(       in_char_S&                       )  ;        // get (and consume) next character from source  
     int             peek_char(             in_char_S&, size_t = 1ULL        )  ;        // return next (or n-th next) char from stream but do not consume it -- leave for next time  
@@ -646,8 +768,8 @@ public:
     size_t          size(                                               ) const;        // return number of put-back characters currently queued up
 
 private:
-    bool                   m_process_digraphs         { true                   };       // enable/disable digraph processing 
-    char32_t               m_digraph_char             { const_N::ch_digraph    };       // digraph char                                         
+    bool                   m_process_trigraphs        { true                   };       // enable/disable trigraph processing 
+    char32_t               m_trigraph_char            { const_N::ch_trigraph   };       // trigraph char                                         
     uint64_t               m_source_id                { 0                      };       // unique source ID for current file or string
     infile_C              *m_in_file_p                { nullptr                };       // current in_file for the stream -- can be 0, if reading from string
     instring_C            *m_in_string_p              { nullptr                };       // current in_string for the stream -- can be 0, if reading from file
@@ -758,7 +880,7 @@ public:
 
     //               configurable character setting functions  
 
-    void             set_digraph_char(                    char32_t = const_N::ch_digraph                     );      // set digraph char                  
+    void             set_trigraph_char(                   char32_t = const_N::ch_trigraph                    );      // set trigraph char                  
     void             set_vanishing_separator_char(        char32_t = const_N::ch_vanishing_sep               );      // set vanishing separator char  
     void             set_line_continuation_char(          char32_t = const_N::ch_line_continuation           );      // set line continuation character  
     void             set_always_sign_char(                char32_t = const_N::ch_always_sign                 );      // set always-sign character  
@@ -841,7 +963,7 @@ private:
 
     //                       configurable characters
 
-    char32_t                 m_digraph_char                   {const_N::ch_digraph                     };            // digraph char                                         
+    char32_t                 m_trigraph_char                  {const_N::ch_trigraph                    };            // trigraph char                                         
     char32_t                 m_line_continuation_ch           {const_N::ch_line_continuation           };            // line continuation char  
     char32_t                 m_always_sign_ch                 {const_N::ch_always_sign                 };            // always_sign character (like macron) -- always becomes part of signed integer                                           
 
@@ -932,8 +1054,8 @@ private:
     int              escaped_string(         token_C&, char32_t, char32_t,         bool = false             );       // gather up string with escapes
     void             invalid_token(          token_C&, const wchar_t *                                      );       // mark token as invalid, and put out token error message  
                                                                                                                      
-    void             close_all_instreams();                                                                          // close all in_file_C and in_string_C vexprs on the instream_C stack 
-    void             close_current_instream();                                                                       // close current in_file_C vexpr at top of file_stack
+    void             close_all_instreams();                                                                          // close all in_file_C and in_string_C items on the instream_C stack 
+    void             close_current_instream();                                                                       // close current in_file_C item at top of file_stack
 };                                                                                                      
 
 

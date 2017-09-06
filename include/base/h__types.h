@@ -88,7 +88,7 @@ typedef enum class log_E  {none, few, some, most, all} log_T;
 // forward type declarations (incomplete structure/union/class/enum types)
 // -----------------------------------------------------------------------
 
-struct                       a_vexpr_S;
+struct                       a_expression_S;
 template<typename T> class   buffer_C; 
 struct                       cache_S; 
 class                        canvas_C;
@@ -97,7 +97,7 @@ class                        char_stream_C;
 struct                       color_parm_S;
 struct                       dbf_hdr_S;
 struct                       draw_parm_S;
-struct                       e_vexpr_S; 
+struct                       e_expression_S; 
 struct                       fieldef_S; 
 class                        filebuf_C;
 struct                       font_S; 

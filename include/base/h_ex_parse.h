@@ -25,7 +25,7 @@
 // path for imbedded files
 // -----------------------
 
-#define IMBED_PATH_ENVAR       L"IMBED_PATH"                    // IMBED_PATH environment variable name   
+#define IMBED_PATH_ENVAR       L"VERBEXX_IMBED_PATH"            // IMBED_PATH environment variable name   
 #define IMBED_PATH             L"..\\imbed\\"                   // default path for imbedded files, in case IMBED_PATH envar is not set  
 
 
@@ -142,7 +142,7 @@ public:
 
     //                functions to set configurable characters 
 
-    void              set_digraph_char(                    char32_t = const_N::ch_digraph                     );  // set digraph char 
+    void              set_trigraph_char(                   char32_t = const_N::ch_trigraph                    );  // set trigraph char 
     void              set_vanishing_separator_char(        char32_t = const_N::ch_vanishing_sep               );  // set vanishing separator char 
     void              set_line_continuation_char(          char32_t = const_N::ch_line_continuation           );  // set line continuation char 
     void              set_always_sign_char(                char32_t = const_N::ch_always_sign                 );  // set always-sign char 
@@ -196,29 +196,36 @@ public:
     void              set_imbed_folder(                                                                       );   // set default base folder for imbed files -- use envar if set
     void              display_settings(                                                                       );   // display pre-parser settings
 
+    // parsing/pre-parsing configuration flags
+
+    bool                                   m_allow_verbless_kws                       { true       };              // true -- allows keywords to be present in a verbless expression
+    bool                                   m_allow_verbless_multi_parms               { true       };              // true -- allows more than one positional parm to be present in a verbless expression
+
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 private:
 
-    token_stream_C                         m_token_stream                      {            };   // stream of incoming tokens    
-    std::map<std::wstring, var_S>          m_symbol_table                      {            };   // defined pre-processor symbols 
-    std::deque<token_C>                    m_token_stack                       {            };   // stack of tokens (that have been put back or peek()ed) 
-    bool                                   m_skipping                          { false      };   // true -- compiler is in skipping mode 
-    std::wstring                           m_skipto_label                      {            };   // label that pre-parse is skipping to            
-                                                                                            
-    std::wstring                           m_imbed_folder                      { IMBED_PATH };   // folder for imbedding files                               
-    uint64_t                               m_error_ct                          { 0          };   // accumulatyed pre-parse error counter  
-    uint64_t                               m_max_substitutions                 { 1000       };   // maximum consecutive substitutions -- loop detection
-    uint64_t                               m_substitution_ct                   { 0          };   // accumulated number of variable substitutions
-
-
-    // internal (private) functions           
-
-    int      peek_subst_token( token_C&,   size_t = 1ULL                                     );  // peek next token, handling any sustitution-type values in token string 
-    int      peek_raw_token(   token_C&,   size_t = 1ULL                                     );  // get token trom token stream and do initial processing
-    int      pre_parse_token(  token_C&,   size_t = 1ULL                                     );  // process any pre-parse values in token string
-    int      get_parm(         token_C&, const token_C&, const std::wstring&, int, size_t = 1);  // see if next token is stream is considered a parm for preceeding verb
+    token_stream_C                         m_token_stream                             {            };              // stream of incoming tokens    
+    std::map<std::wstring, var_S>          m_symbol_table                             {            };              // defined pre-processor symbols 
+    std::deque<token_C>                    m_token_stack                              {            };              // stack of tokens (that have been put back or peek()ed) 
+    bool                                   m_skipping                                 { false      };              // true -- compiler is in skipping mode 
+    std::wstring                           m_skipto_label                             {            };              // label that pre-parse is skipping to            
+                                                                                                                  
+    std::wstring                           m_imbed_folder                             { IMBED_PATH };              // folder for imbedding files                               
+    uint64_t                               m_error_ct                                 { 0          };              // accumulatyed pre-parse error counter  
+    uint64_t                               m_max_substitutions                        { 1000       };              // maximum consecutive substitutions -- loop detection
+    uint64_t                               m_substitution_ct                          { 0          };              // accumulated number of variable substitutions
+                                                                                                           
+                                                                                                                  
+    // internal (private) functions                                                                               
+                                                                                                                  
+    int      peek_subst_token( token_C&,   size_t = 1ULL                                            );             // peek next token, handling any sustitution-type values in token string 
+    int      peek_raw_token(   token_C&,   size_t = 1ULL                                            );             // get token trom token stream and do initial processing
+    int      pre_parse_token(  token_C&,   size_t = 1ULL                                            );             // process any pre-parse values in token string
+    int      get_parm(         token_C&, const token_C&, const std::wstring&, int, size_t = 1       );             // see if next token is stream is considered a parm for preceeding verb
 };                                    
 
 
@@ -293,24 +300,24 @@ enum class tok_u2_E { none                    // not classified yet
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-//    ------------------
-//    a_vexpr_S structure -- vexpr structure for AST from parsing
-//    ------------------
+//    ------------------------
+//    a_expression_S structure -- expression structure for AST from parsing
+//    ------------------------
 //
 //
-//    vexpr type                expected syntax
-//    ------------             -------------------------------------
+//    expression type                expected syntax
+//    ---------------                -------------------------------------
 //
-//    verbless                 (value value value ...)
-//    with verb                (value/kw:value ... value/kw:value    @verbname              value/kw:value ... value/kw:value)   -- 0-N values or keyword:value pairs on either/both sides
-//    with verb expression     (value/kw:value ... value/kw:value    @(verb_expression)@    value/kw:value ... value/kw:value)   -- 0-N values or keyword:value pairs on either/both sides
+//    verbless                       (value value value ...)
+//    with verb                      (value/kw:value ... value/kw:value    @verbname              value/kw:value ... value/kw:value)   -- 0-N values or keyword:value pairs on either/both sides
+//    with verb expression           (value/kw:value ... value/kw:value    @(verb_expression)@    value/kw:value ... value/kw:value)   -- 0-N values or keyword:value pairs on either/both sides
 //
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct a_vexpr_S 
+struct a_expression_S 
 {
-    bool                              has_verb         { false } ;      // true -- verb present,   false -- no verb found for this vexpr
+    bool                              has_verb         { false } ;      // true -- verb present,   false -- no verb found for this expression
     bool                              has_sigil        { false } ;      // true -- original verb had leading sigil
     char32_t                          sigil            {       } ;      // if has sigil is true, leading sigil chr is saved here 
 
@@ -318,10 +325,10 @@ struct a_vexpr_S
     bool                              right_associate  { false } ;      // true = always right-to-left associativity, false = left-to-right when infix or postfix, right-to-left when prefix or nofix 
     bool                              left_associate   { false } ;      // true = always left-to-right associativity, false = left-to-right when infix or postfix, right-to-left when prefix or nofix
 
-    int64_t                           token_ix1        { -1    } ;      // starting token index for this vexpr, if known  
-    int64_t                           token_ix2        { -1    } ;      // ending   token index for this vexpr, if known 
+    int64_t                           token_ix1        { -1    } ;      // starting token index for this expression, if known  
+    int64_t                           token_ix2        { -1    } ;      // ending   token index for this expression, if known 
    
-    value_S                           verb_value       {       } ;      // value with verb name (can be vexpr yielding a verb name)
+    value_S                           verb_value       {       } ;      // value with verb name (can be expression yielding a verb name)
     vlist_S                           lparms           {       } ;      // left-side  parameters for verb or option  
     vlist_S                           rparms           {       } ;      // right-side parameters for verb or option 
 };
@@ -340,14 +347,14 @@ struct a_vexpr_S
 
 struct slist_S
 {
-    uint64_t                          vexpr_ct         { 0     };      // number of vexprs in vector    
-    std::vector<a_vexpr_S>            vexprs                    ;      // vector of vexprs (can be empty)
+    uint64_t                          expression_ct      { 0     };      // number of expression in vector    
+    std::vector<a_expression_S>       expressions                 ;      // vector of expressions (can be empty)
 
-    int64_t                           token_ix1        { -1 }   ;      // starting token index for this vexpr, if known  
-    int64_t                           token_ix2        { -1 }   ;      // ending   token index for this vexpr, if known  
+    int64_t                           token_ix1          { -1 }   ;      // starting token index for this expression, if known  
+    int64_t                           token_ix2          { -1 }   ;      // ending   token index for this expression, if known  
 
-    std::wstring                      label                     ;      // main label for this slist (often empty string)
-    std::map<std::wstring, uint64_t>  labels                    ;      // map with all labels (including main, if not empty) and associated vexpr indexes in this slist
+    std::wstring                      label                       ;      // main label for this slist (often empty string)
+    std::map<std::wstring, uint64_t>  labels                      ;      // map with all labels (including main, if not empty) and associated expression indexes in this slist
 };
 
 
@@ -476,7 +483,7 @@ struct frame_S
 struct results_S : public value_S
 {
     bool                                  multiple_results                 {false};     // multiple individual results are returned in vlist positional values  (value type may be none, since values are in vlist)
-    bool                                  re_eval_vexpr_results            {false};     // need to call eval_value() again after 1st call to eval_value() returned a vlist or identifier from evaluating a nested vexpr  
+    bool                                  re_eval_expression_results       {false};     // need to call eval_value() again after 1st call to eval_value() returned a vlist or identifier from evaluating a nested expression  
     bool                                  builtin_verb_results             {false};     // true, if these results came from a builtin verb   
 
     bool                                  special_results                  {false};     // this flag is on, if any of the following flags are on -- for quick testing
@@ -487,7 +494,7 @@ struct results_S : public value_S
     bool                                  end_flag                         {false};     // @END --  immediately end the main slist 
     bool                                  leave_flag                       {false};     // @LEAVE some active enclosing (perhaps-labelled) slist -- optional label (if any) is in .str member
     bool                                  goto_flag                        {false};     // @GOTO some label in an active enclosing slist -- required label is in .str member
-    bool                                  xctl_flag                        {false};     // @XCTL pending to some verb -- new vexpr with verb to xctl-to is in value_S base struct
+    bool                                  xctl_flag                        {false};     // @XCTL pending to some verb -- new expression with verb to xctl-to is in value_S base struct
     bool                                  return_flag                      {false};     // @RETURN from lowest enclosing user-defined verb -- value is in value_S base struct
     bool                                  throw_flag                       {false};     // @THROW to nearest @TRY catch: verb              -- value is in value_S base struct
 
@@ -495,7 +502,7 @@ struct results_S : public value_S
 
     /////////////////////////////////////////////////////////////////////////
 
-    bool                                  suppress_eval_once               {false};     // suppress evaluation once after value is returned from vexpr evaluation  
+    bool                                  suppress_eval_once               {false};     // suppress evaluation once after value is returned from expression evaluation  
 
 
     /// rest of fields are inherited from value_S
@@ -546,45 +553,45 @@ int       parse_string(            pre_parse_C&, frame_S&, slist_S&, const std::
 
 ///////////////// location string and other debug-message-oriented routines
 
-std::wstring   vexpr_loc_str( const a_vexpr_S& );
-std::wstring    verb_loc_str( const a_vexpr_S& );
-//std::wstring vexpr_loc_str( const e_vexpr_S& );   // in ex_interface.h
-//std::wstring  verb_loc_str( const e_vexpr_S& );   // in ex_interface.h
-std::wstring   vlist_loc_str( const vlist_S&   );
-std::wstring   value_loc_str( const value_S&   ); 
-std::wstring      kw_loc_str( const value_S&   );
+std::wstring   expression_loc_str(const a_expression_S& );
+std::wstring         verb_loc_str(const a_expression_S& );
+//std::wstring expression_loc_str(const e_expression_S& );   // in ex_interface.h
+//std::wstring       verb_loc_str(const e_expression_S& );   // in ex_interface.h
+std::wstring        vlist_loc_str(const vlist_S&        );
+std::wstring        value_loc_str(const value_S&        ); 
+std::wstring           kw_loc_str(const value_S&        );
   
-void                msg_loc( const   value_S&                      );
-void                msg_loc( const   value_S&, const std::wstring& );
-void                msg_loc( const   vlist_S&                      );
-void                msg_loc( const   vlist_S&, const std::wstring& );
-void                msg_loc(                   const a_vexpr_S&    );
-//void              msg_loc(                   const e_vexpr_S&    );   // in ex_interface.h
-void                msg_loc( const   value_S&, const e_vexpr_S&    );
-void                msg_loc( const   value_S&, const a_vexpr_S&    );
-void                msg_loc( const   vlist_S&, const e_vexpr_S&    );
-void                msg_loc( const   vlist_S&, const a_vexpr_S&    );
+void                msg_loc( const   value_S&                          );
+void                msg_loc( const   value_S&, const std::wstring&     );
+void                msg_loc( const   vlist_S&                          );
+void                msg_loc( const   vlist_S&, const std::wstring&     );
+void                msg_loc(                   const a_expression_S&   );
+//void              msg_loc(                   const e_expression_S&   );   // in ex_interface.h
+void                msg_loc( const   value_S&, const e_expression_S&   );
+void                msg_loc( const   value_S&, const a_expression_S&   );
+void                msg_loc( const   vlist_S&, const e_expression_S&   );
+void                msg_loc( const   vlist_S&, const a_expression_S&   );
 
-void             msg_kw_loc( const   value_S&                      );
-
-void             msgend_loc( const   value_S&                      );
-void             msgend_loc( const   value_S&, const std::wstring& );
-void             msgend_loc( const   vlist_S&                      );
-void             msgend_loc( const   vlist_S&, const std::wstring& );
-void             msgend_loc(                   const a_vexpr_S&    );
-//void           msgend_loc(                   const e_vexpr_S&    );   // in ex_interface.h
-void             msgend_loc( const   value_S&, const e_vexpr_S&    );
-void             msgend_loc( const   value_S&, const a_vexpr_S&    );
-void             msgend_loc( const   vlist_S&, const e_vexpr_S&    );
-void             msgend_loc( const   vlist_S&, const a_vexpr_S&    );
+void             msg_kw_loc( const   value_S&                          );
+                                                                       
+void             msgend_loc( const   value_S&                          );
+void             msgend_loc( const   value_S&, const std::wstring&     );
+void             msgend_loc( const   vlist_S&                          );
+void             msgend_loc( const   vlist_S&, const std::wstring&     );
+void             msgend_loc(                   const a_expression_S&   );
+//void           msgend_loc(                   const e_expression_S&   );   // in ex_interface.h
+void             msgend_loc( const   value_S&, const e_expression_S&   );
+void             msgend_loc( const   value_S&, const a_expression_S&   );
+void             msgend_loc( const   vlist_S&, const e_expression_S&   );
+void             msgend_loc( const   vlist_S&, const a_expression_S&   );
 
 token_C token_list_at(std::vector<token_C>::size_type);
 
 
-/////////////////// vexpr-oriented external functions
+/////////////////// expression-oriented external functions
 
-void vexpr_set_verb(frame_S&, a_vexpr_S&, const token_C&  ,  const verbdef_S&  );   // version with passed-in verbname token
-void vexpr_set_verb(frame_S&, a_vexpr_S&, const a_vexpr_S&,  bool = false      );   // version with passed-in verb sub-vexpr 
+void expression_set_verb(frame_S&, a_expression_S&, const token_C&       ,  const verbdef_S&  );   // version with passed-in verbname token
+void expression_set_verb(frame_S&, a_expression_S&, const a_expression_S&,  bool = false      );   // version with passed-in verb sub-expression 
 
 
 /////////////////// vlist-oriented external functions
@@ -615,12 +622,12 @@ void    add_keyword_value(   vlist_S&, const value_S&, const value_S&           
 
 //////////////// display , debug, and string_oriented functions (usually displaying symtab values)
 
-void    display_vlist(      const  vlist_S& , const std::wstring& = L"vlist"        , const std::wstring& = L"",               bool = false, const std::wstring& = L"");
-void    display_slist(      const  slist_S& , const std::wstring& = L"slist"        , const std::wstring& = L"", bool = false, bool = false, const std::wstring& = L"");
-void    display_vexpr(     const a_vexpr_S& , const std::wstring& = L"expression"   , const std::wstring& = L"",               bool = true , const std::wstring& = L"");
-void    display_vexpr(     const e_vexpr_S& , const std::wstring& = L"expression"   , const std::wstring& = L"",               bool = true , const std::wstring& = L"");
-void    display_value(       const value_S& , const std::wstring& = L"value"        , const std::wstring& = L"",               bool = false, const std::wstring& = L"");
-void    display_buffer( const std::wstring& , const buf8_T&     ,  size_t           , const std::wstring& = L""                                                       ); 
+void    display_vlist(      const  vlist_S&       , const std::wstring& = L"vlist"        , const std::wstring& = L"",               bool = false, const std::wstring& = L"");
+void    display_slist(      const  slist_S&       , const std::wstring& = L"slist"        , const std::wstring& = L"", bool = false, bool = false, const std::wstring& = L"");
+void    display_expression( const a_expression_S& , const std::wstring& = L"expression"   , const std::wstring& = L"",               bool = true , const std::wstring& = L"");
+void    display_expression( const e_expression_S& , const std::wstring& = L"expression"   , const std::wstring& = L"",               bool = true , const std::wstring& = L"");
+void    display_value(       const value_S&       , const std::wstring& = L"value"        , const std::wstring& = L"",               bool = false, const std::wstring& = L"");
+void    display_buffer( const std::wstring&       , const buf8_T&     ,  size_t           , const std::wstring& = L""                                                       ); 
 
 void    display_ref(                          const ref_S&                                            );
 void    display_verbdef(                      const verbdef_S&                                        );
@@ -766,8 +773,8 @@ std::wstring str_vlist( const vlist_S&, bool, bool, bool);
 
 std::wstring type_str(  type_E); 
 
-std::wstring verb_name(     const a_vexpr_S&);
-std::wstring verb_name(     const e_vexpr_S&);
+std::wstring verb_name(     const a_expression_S&);
+std::wstring verb_name(     const e_expression_S&);
 
 
 //////////////////////////////// results-oriented functions /////////////////////////////////////////////////////////////////
@@ -782,6 +789,8 @@ results_S    tf_results( bool tf        );
 
 
 //////////////////////////////// value-oriented functions /////////////////////////////////////////////////////////////////
+
+void      refresh_evaluated_vlist(vlist_S&); 
 
 value_S   unit_val(                                                  int64_t = -1, int64_t = -1 );
 value_S   nval_val(                                                  int64_t = -1, int64_t = -1 );     // only for keywords with no following value
@@ -801,7 +810,7 @@ value_S   identifier_val(  const wchar_t *                         , int64_t = -
 value_S   string_val(      const std::wstring&                     , int64_t = -1, int64_t = -1 );
 value_S   identifier_val(  const std::wstring&                     , int64_t = -1, int64_t = -1 );       // no type_val version for this function
 value_S   vlist_val(       const vlist_S&                          , int64_t = -1, int64_t = -1 );
-value_S   vexpr_val(       const a_vexpr_S&                        , int64_t = -1, int64_t = -1 );
+value_S   expression_val(  const a_expression_S&                   , int64_t = -1, int64_t = -1 );
 value_S   slist_val(       const slist_S&                          , int64_t = -1, int64_t = -1 );
 value_S   verbdef_val(     const verbdef_S&                        , int64_t = -1, int64_t = -1 );
 value_S   typdef_val(      const typdef_S&                         , int64_t = -1, int64_t = -1 );
@@ -822,7 +831,7 @@ value_S   type_val(        float32_T                               , int64_t = -
 value_S   type_val(        float64_T                               , int64_t = -1, int64_t = -1 );    
 value_S   type_val(        const std::wstring&                     , int64_t = -1, int64_t = -1 );    
 value_S   type_val(        const vlist_S&                          , int64_t = -1, int64_t = -1 );    
-value_S   type_val(        const a_vexpr_S&                        , int64_t = -1, int64_t = -1 );
+value_S   type_val(        const a_expression_S&                   , int64_t = -1, int64_t = -1 );
 value_S   type_val(        const slist_S&                          , int64_t = -1, int64_t = -1 );
 value_S   type_val(        const verbdef_S&                        , int64_t = -1, int64_t = -1 );
 value_S   type_val(        const typdef_S&                         , int64_t = -1, int64_t = -1 ); 
@@ -832,22 +841,22 @@ value_S   type_val(        const buf8_T&,        const typdef_S&   , int64_t = -
 
 ///////////////////  value setting and unsharing functions
 
-void    set_vlist_value(   value_S&, const vlist_S&                     , bool = false);
-void    set_vexpr_value(   value_S&, const a_vexpr_S&                   , bool = false);
-void    set_slist_value(   value_S&, const slist_S&                     , bool = false);
-void    set_verbdef_value( value_S&, const verbdef_S&                   , bool = false);
-void    set_typdef_value(  value_S&, const typdef_S&                    , bool = false);
-void    set_ref_value(     value_S&, const ref_S&                       , bool = false);
-void    set_buffer_value(  value_S&, const buf8_T&    , const typdef_S& , bool = false);
+void    set_vlist_value(       value_S&, const vlist_S&                     , bool = false);
+void    set_expression_value(  value_S&, const a_expression_S&              , bool = false);
+void    set_slist_value(       value_S&, const slist_S&                     , bool = false);
+void    set_verbdef_value(     value_S&, const verbdef_S&                   , bool = false);
+void    set_typdef_value(      value_S&, const typdef_S&                    , bool = false);
+void    set_ref_value(         value_S&, const ref_S&                       , bool = false);
+void    set_buffer_value(      value_S&, const buf8_T&    , const typdef_S& , bool = false);
 
-void      unshare_value(    value_S&    ); 
-void      unshare_vlist(    vlist_S&    );
-void      unshare_vexpr(    a_vexpr_S&  ); 
-void      unshare_slist(    slist_S&    );
-void      unshare_verbdef(  verbdef_S&  );
-void      unshare_plist(    plist_S&    );
-void      unshare_parmtype( parmtype_S& );
-void      unshare_typdef(   typdef_S&   ); 
+void      unshare_value(       value_S&        ); 
+void      unshare_vlist(       vlist_S&        );
+void      unshare_expression(  a_expression_S& ); 
+void      unshare_slist(       slist_S&        );
+void      unshare_verbdef(     verbdef_S&      );
+void      unshare_plist(       plist_S&        );
+void      unshare_parmtype(    parmtype_S&     );
+void      unshare_typdef(      typdef_S&       ); 
 
 
 ////////////////////  value testing functions
@@ -935,16 +944,16 @@ uint64_t   get_eval_frame_max_depth( void);
 
 /////////////////////////////////// verb parameter-oriented external functions
 
-int get_right_positional(      const e_vexpr_S& ,                       value_S&, uint32_t = 0);
-int get_left_positional(       const e_vexpr_S& ,                       value_S&, uint32_t = 0);
-int get_vlist_positional(      const vlist_S&   ,                       value_S&, uint32_t = 0);
+int get_right_positional(      const e_expression_S& ,                       value_S&, uint32_t = 0);
+int get_left_positional(       const e_expression_S& ,                       value_S&, uint32_t = 0);
+int get_vlist_positional(      const vlist_S&        ,                       value_S&, uint32_t = 0);
   
-int get_right_keyword(         const e_vexpr_S& ,  const std::wstring&, value_S&, uint32_t = 0);
-int get_left_keyword(          const e_vexpr_S& ,  const std::wstring&, value_S&, uint32_t = 0);
-int get_right_keyword(         const e_vexpr_S& ,  const std::wstring&,           uint32_t = 0);
-int get_left_keyword(          const e_vexpr_S& ,  const std::wstring&,           uint32_t = 0);
-int get_vlist_keyword(         const vlist_S&   ,  const std::wstring&, value_S&, uint32_t = 0);
-int get_vlist_keyword(         const vlist_S&   ,                       value_S&, uint32_t = 0);
+int get_right_keyword(         const e_expression_S& ,  const std::wstring&, value_S&, uint32_t = 0);
+int get_left_keyword(          const e_expression_S& ,  const std::wstring&, value_S&, uint32_t = 0);
+int get_right_keyword(         const e_expression_S& ,  const std::wstring&,           uint32_t = 0);
+int get_left_keyword(          const e_expression_S& ,  const std::wstring&,           uint32_t = 0);
+int get_vlist_keyword(         const vlist_S&        ,  const std::wstring&, value_S&, uint32_t = 0);
+int get_vlist_keyword(         const vlist_S&        ,                       value_S&, uint32_t = 0);
 
 
 ///////////////////////////////// principal evaluation functions
@@ -954,14 +963,14 @@ void           main_eval(      frame_S&, int, wchar_t *[] );
 frame_S       *add_frame(bool = true);
 void        remove_frame(           );
                          
-int           eval_block(      frame_S&,         const  vlist_S&, const vlist_S&, const   slist_S&, results_S&);
-int      eval_main_block(      frame_S&,                                          const   slist_S&            );
-int      eval_verb_block(      frame_S&,         const e_vexpr_S&,                const verbdef_S&, results_S&);
+int           eval_block(      frame_S&,           const      vlist_S&, const vlist_S&, const   slist_S&, results_S&);
+int      eval_main_block(      frame_S&,                                                const   slist_S&            );
+int      eval_verb_block(      frame_S&,         const e_expression_S&,                 const verbdef_S&, results_S&);
 
-int           eval_slist(      frame_S&,  const   slist_S&, results_S&                    , bool = false);
-int           eval_vexpr(      frame_S&,  const a_vexpr_S&, results_S&                    , bool = false );
-int           eval_vlist(      frame_S&,          vlist_S&, results_S&, const    plist_S& , bool = false );   // passed-in vlist is updated in-place 
-int           eval_value(      frame_S&,  const   value_S&, results_S&, const parmtype_S& , bool = false );
+int           eval_slist(      frame_S&,  const        slist_S&, results_S&                    , bool = false);
+int           eval_expression( frame_S&,  const a_expression_S&, results_S&                    , bool = false );
+int           eval_vlist(      frame_S&,               vlist_S&, results_S&, const    plist_S& , bool = false );   // passed-in vlist is updated in-place 
+int           eval_value(      frame_S&,  const        value_S&, results_S&, const parmtype_S& , bool = false );
 
 
 
@@ -1135,8 +1144,8 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////      0025  %  PERCENT_SIGN                                       %                                        O1   OP       op/*     % verb (also @REM)
 ////      0026  &  AMPERSAND                                          &                                        O1   OP       op/*     && operators
 ////      0027  '  APOSTROPHE                                         '                                        QQ1  QQ       ustr     start of word-string (ends with next whitespace char) 
-////      0028  (  LEFT_PARENTHESIS                                   (                                        OP1  OB       o_par/1  vexpr/expression open parenthesis
-////      0029  )  RIGHT_PARENTHESIS                                  )                                        CP1  CB       c_par/1  vexpr/expression close parenthesis
+////      0028  (  LEFT_PARENTHESIS                                   (                                        OP1  OB       o_par/1  expression open parenthesis
+////      0029  )  RIGHT_PARENTHESIS                                  )                                        CP1  CB       c_par/1  expression close parenthesis
 ////      002A  *  ASTERISK                                           *                                        O1   OP      (op/*)    multiply verb ( * *= ),  --  lex: block comment delimiters ( /* */ ) 
 ////      002B  +  PLUS_SIGN                                          +                                        +    OP      (op/*)    add verb ( + ++ += ), etc.
 ////      002C  ,  COMMA                                              ,                                        ,    PU       comma/1  , verb (also @SEP)
@@ -1144,7 +1153,7 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////      002E  .  FULL_STOP                                          .                                        .    PU      (punct/1) lex: decimal point in floating point literals, line comment with newline suppression (...)
 ////      002F  /  SOLIDUS                                            /                                        /    OP      (op/*)    divide verb ( /  /= ), lex: start comment ( //    /~    /#     /< >/    /* */    /{ }/  )
 ////      003A  :  COLON                                              :                                        :    PU      (colon/1) trailing sigil for keyword identifiers and pre-processor labels
-////      003B  ;  SEMICOLON                                          ;                                        ;    PU       semi/1   slist vexpr separator
+////      003B  ;  SEMICOLON                                          ;                                        ;    PU       semi/1   slist expression separator
 ////      003C  <  LESS_THAN_SIGN                                     <                                        O1   OP      (op/*)    less than verb ( <  <= ), left assignment verb ( <<< ), etc. 
 ////      003D  =  EQUALS_SIGN                                        =                                        O1   OP       op/*     left assignment verb ( = ), equals verb ( == >= <= ¬=), etc.  
 ////      003E  >  GREATER_THAN_SIGN                                  >                                        O1   OP      (op/*)    greater than verb ( > >= ), right assignment verb ( >>> ) etc.
@@ -1155,7 +1164,7 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////      005D  ]  RIGHT_SQUARE_BRACKET                               ]                                        CK1  CB       c_brk/1  vlist close bracket
 ////      005E  ^  CIRCUMFLEX_ACCENT                                  ^                                        O1   OP       op/*     -----------------------
 ////      005F  _  LOW_LINE                                           _                                        _    SE       id/*     lex: visual separator in identifiers and numeric literals
-////      0060  `  GRAVE_ACCENT                                       `                                        A1   AC       acc/1    lex: default digraph character  
+////      0060  `  GRAVE_ACCENT                                       `                                        A1   AC       acc/1    ----------------------  
 ////      007B  {  LEFT_CURLY_BRACKET                                 {                                        OC1  OB       o_brc/1  slist open brace
 ////      007C  |  VERTICAL_LINE                                      |                                        O1   OP       op/*     string concatenate verb  ( |  |= ),    logical or || 
 ////      007D  }  RIGHT_CURLY_BRACKET                                }                                        CC1  CB       c_brc/1  slist close brace
@@ -1330,19 +1339,19 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////  
 ////
 ////
-////     Digraph characters: 
-////     ------------------
+////     Trigraph characters: 
+////     -------------------
 ////          
-////          ``   =  `        GRAVE_ACCENT                                   lex: default digraph char
-////          `<   =  «        LEFT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK      lex: start of type-2 string
-////          `>   =  »        RIGHT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK     lex: end   of type-2 string
-////          `'   =  ´        ACUTE_ACCENT                                   lex: default type 2 string escape char
-////          `~   =  ¬        NOT_SIGN                                       used in ¬= operator, etc.   ?????????????????????????????    replace with != once pre-processor comments are in place
-////                                                                          
-////          `4   =  ¼        VULGAR_FRACTION_ONE_QUARTER                    for use in strings     ????????????????????????????    replace with interpolation and pre-defined special char constants
-////          `2   =  ½        VULGAR_FRACTION_ONE_HALF                       for use in strings
-////          `3   =  ¾        VULGAR_FRACTION_THREE_QUARTERS                 for use in strings
-////          `c   =  ¢        CENT_SIGN                                      for use in strings      
+////         ?????? =  ??       QUESTION_MARK                                  lex: default trigraph char    (must type ?????? to get ??)
+////         ??<    =  «        LEFT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK      lex: start of type-2 string
+////         ??>    =  »        RIGHT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK     lex: end   of type-2 string
+////         ??'    =  ´        ACUTE_ACCENT                                   lex: default type 2 string escape char
+////         ??~    =  ¬        NOT_SIGN                                       used in ¬= operator, etc.   ?????????????????????????????    replace with != once pre-processor comments are in place
+////                                                                      
+////         ??4    =  ¼        VULGAR_FRACTION_ONE_QUARTER                    for use in strings     ????????????????????????????    replace with interpolation and pre-defined special char constants
+////         ??2    =  ½        VULGAR_FRACTION_ONE_HALF                       for use in strings
+////         ??3    =  ¾        VULGAR_FRACTION_THREE_QUARTERS                 for use in strings
+////         ??c    =  ¢        CENT_SIGN                                      for use in strings      
 ////
 ////                                                                                                                                  
 ////
@@ -1350,16 +1359,16 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////     ---------------------------------------------  
 ////
 ////                                                              
-////          GRAVE_ACCENT                     ``                 `        -- lex: default digraph character
-////          REVERSE_SOLIDUS                                     \        -- lex: default string escape char -1 strings   -- "" strings, etc.
-////          ACUTE_ACCENT                     `'                 ´        -- lex: default string escape char -2 strings   -- «» strings, etc.
-////          LEFT_PARENTHESIS                                    (        -- open  vexpr  paren  -- also   @(   and   :( 
-////          RIGHT_PRENTHESIS                                    )        -- close vexpr  paren  -- also   )@   and   ):
+////          QUESTION_MARK                                       ?        -- lex: default trigraph character
+////          REVERSE_SOLIDUS                                     \        -- lex: default escape char in type-1 strings   -- "" strings
+////          ACUTE_ACCENT                    ??'                 ´        -- lex: default escape char in type-2 strings   -- «» strings      ??????? this should become the grave accent
+////          LEFT_PARENTHESIS                                    (        -- open  expression  paren  -- also   @(   and   :( 
+////          RIGHT_PRENTHESIS                                    )        -- close expression  paren  -- also   )@   and   ):
 ////          LEFT_CURLY_BRACKET                                  {        -- open  slist paren   
 ////          RIGHT_CURLY_BRACKET                                 }        -- close slist paren 
 ////          LEFT_SQUARE_BRACKET                                 [        -- open  vlist paren   
 ////          RIGHT_SQUARE_BRACKET                                ]        -- close vlist paren   
-////          SEMICOLON                                           ;        -- vexpr separator in slist
+////          SEMICOLON                                           ;        -- expression separator in slist
 ////                                                      
 ////
 ////
@@ -1367,10 +1376,10 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////   pre-processor sigils:
 ////   --------------------
 ////          
-////          QUESTION_MARK                                      ?        -- leading  sigil -- pre-process action token                            ?VERB                                                                          
-////          QUESTION_MARK                                       ?       -- trailing sigil -- pre-process substitute variable                     ?variable?                                                     
-////          EXCLAMATION_MARK                                    !       -- trailing sigil -- pre-process quoted substitute variable              ?variable!                                                                                      
-////          COLON                                               :       -- trailing sigil -- pre-process label                                   ?label:                                                          
+////          QUESTION_MARK                                      ?        -- leading  sigil -- pre-process action token                            ?VERB            ????? these need to go awat ????????                         
+////          QUESTION_MARK                                       ?       -- trailing sigil -- pre-process substitute variable                     ?variable?       ????? these need to go awat ????????         
+////          EXCLAMATION_MARK                                    !       -- trailing sigil -- pre-process quoted substitute variable              ?variable!       ????? these need to go awat ????????                                          
+////          COLON                                               :       -- trailing sigil -- pre-process label                                   ?label:          ????? these need to go awat ????????           
 ////                             
 ////          
 ////    parser sigils:
@@ -1394,11 +1403,11 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////                                                     &   = 0026
 ////                                                     *   = 002A
 ////                                                     +   = 002B
-////                                                     ,   = 002C    ( , ,, ,,, ,,,, etc., only ) 
+////                                                     ,   = 002C    ( , ,, ,,, ,,,, etc., only )  (uniform operator name)
 ////                                                     -   = 002D
-////                                                     .   = 002E    ( . .. ... .... etc., only )
+////                                                     .   = 002E    ( . .. ... .... etc., only )  (uniform operator name)
 ////                                                     /   = 002F
-////                                                     :   = 003A    ( : :: ::: :::: etc., only )
+////                                                     :   = 003A    ( : :: ::: :::: etc., only )  (uniform operator name)
 ////                                                     <   = 003C
 ////                                                     =   = 003D
 ////                                                     >   = 003E
@@ -1408,9 +1417,9 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////                                                     |   = 007C
 ////                                                     ~   = 007F
 ////
-////         entered by code or G keys    --                  
-////                                                     ¦   = 00A6  Alt-0934              ( @SEP )
-////                                                     ¬   = 00AC  Alt-170   AltGr + \   ( @NOT )
+////         entered by code value --                  
+////                                                     ¦   = 00A6  Alt-0934              
+////                                                     ¬   = 00AC  Alt-170   AltGr + \   ( @NOT )     ??????????? needs to be replaced with  !   and   !=
 ////                                                     °   = 00B0  AltGr+Shift + :       
 ////                                                     ±   = 00B1  Alt-0177
 ////                                                     ²   = 00B2
@@ -1428,13 +1437,13 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////                                                     →   = 2192
 ////                                                     ↔   = 2194
 ////                                                     ∙   = 2219  Alt-505          
-////                                                     ∨   = 2228                        ( @OR  ) 
-////                                                     ∧   = 2227                        ( @AND )   
-////          (all 22xx are operators)                   ≠   = 2260                        ( ¬=   )
-////          (selected ones shown here)                 ≡   = 2261                        ( ==   )
-////                                                     ≤   = 2264  Alt-499               ( <=   )
-////                                                     ≥   = 2265  Alt-754               ( >=   )
-////                                                     ⊻   = 22BB                        ( @XOR ) 
+////                                                     ∨   = 2228                         
+////                                                     ∧   = 2227                          
+////          (all 22xx are operators)                   ≠   = 2260                        
+////          (selected ones shown here)                 ≡   = 2261                        
+////                                                     ≤   = 2264  Alt-499               
+////                                                     ≥   = 2265  Alt-754               
+////                                                     ⊻   = 22BB                         
 ////                                                     ⋀   = 22C0                        
 ////                                                     ⋁   = 22C1                        
 ////                                                     ⌐   = 2310  Alt-937          
@@ -1450,24 +1459,24 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////
 ////
 ////       String literals:
-////                                'xx                            -- lex: word string -- no escape processing , digraphs processed
-////                                "xx"                           -- lex: string with escape - 1 (\ = default), digraphs processed
-////                                «xx»                           -- lex: string with escape - 2 (´ = default), digraphs processed
-////                               M"xx"                           -- lex: string with escape - 1 (\ = default), digraphs processed  -- string can span multiple lines
-////                               M«xx»                           -- lex: string with escape - 2 (´ = default), digraphs processed  -- string can span multiple lines
-////                               R"xx"                           -- lex: no escape processing,                 digraphs not processed
-////                               R«xx»                           -- lex: no escape processing,                 digraphs not processed
+////                                'xx                            -- lex: word string -- no escape processing , trigraphs processed
+////                                "xx"                           -- lex: string with escape - 1 (\ = default), trigraphs processed
+////                                «xx»                           -- lex: string with escape - 2 (´ = default), trigraphs processed
+////                               M"xx"                           -- lex: string with escape - 1 (\ = default), trigraphs processed  -- string can span multiple lines
+////                               M«xx»                           -- lex: string with escape - 2 (´ = default), trigraphs processed  -- string can span multiple lines
+////                               R"xx"                           -- lex: no escape processing,                 trigraphs not processed
+////                               R«xx»                           -- lex: no escape processing,                 trigraphs not processed
 //// 
 ////
 ////       Comments:                
-////                                // xxx                         -- lex: line comment -- don't suppress EOL -- don't echo  -- digraphs not processed
-////                                /^ xxx                         -- lex: line comment --       suppress EOL -- don't echo  -- digraphs not processed
-////                                /! xxx                         -- lex: line comment -- don't suppress EOL -- do    echo  -- digraphs not processed
-////                                /~ xxx                         -- lex: comment to EOF                     -- don't echo  -- digraphs not processed
+////                                // xxx                         -- lex: line comment -- don't suppress EOL -- don't echo  -- trigraphs not processed
+////                                /^ xxx                         -- lex: line comment --       suppress EOL -- don't echo  -- trigraphs not processed
+////                                /~ xxx                         -- lex: comment to EOF                     -- don't echo  -- trigraphs not processed
 ////                                                            
-////                                /* xxx */                      -- lex: block comment -- not nestable      -- don't echo  -- digraphs not processed
-////                                /< xxx /< xxx >/ >/            -- lex: block comment -- nestable          -- don't echo  -- digraphs not processed
-////
+////                                /* xxx */                      -- lex: block comment -- not nestable      -- don't echo  -- trigraphs not processed
+////                                /< xxx /< xxx >/ >/            -- lex: block comment -- nestable          -- don't echo  -- trigraphs not processed
+////                                /#                             -- lex: retained comment to EOL            -- passed up to parser -- trigraphs processed 
+////                                /{  /{  }/  }/                 -- lex: retained block comment (nestable)  -- passed up to parser -- trigraphs processed 
 ////
 ////
 ////  lexer output tokens
@@ -1593,7 +1602,7 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////   ^                       arith_type  ^  arith type 
 ////   ⁒  @REM                 arith_type  ⁒  arith_type 
 ////
-////   ¦  @SEP                 any-type  ¦  any-type
+////   ,  @SEP                 any-type ...  ,  any-type ...
 ////
 ////   |                       string | string
 ////   ==  ≡                   value == value
@@ -1610,40 +1619,4 @@ int           eval_value(      frame_S&,  const   value_S&, results_S&, const pa
 ////
 ////
 ////
-////////////////////////////////////////////////////////////////////////////////////////////
-////                                   //
-////           G910 KB                 //          G13 KB
-////                                   //
-////                                   //
-////               M1  M2  M3          //
-////           G1  '                   //           G1  ¿     G2  ¡    G3  ‼    G4  º    G5      G6     G7
-////           G2  "                   //           G8        G9       G10      G11 °    G12     G13    G14
-////           G3  ~                   //                     G15 «    G16 »    G17 ∙    G18 〈   G19 〉
-////           G4  `                   //                              G20 ×    G21 ÷    G22 ⁒
-////           G5  ^                   //
-////                                   //
-////           G6  ¯                   //
-////           G7  °                   //
-////           G8  ¬                   //
-////           G9  ´                   //
-////                                   //
-////                                   //
-////                                   //
-////                                   //
-////                                   //
-////                                   //
-////
-////
-////
-////
-////
-////
-////
-////
-////
-////
-
-
-
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
