@@ -780,26 +780,26 @@ int token_stream_C::attach_file(const std::string& s) try
     if (!(infile_p->is_open()))
     {
         delete infile_p; 
-        m_error_seen = true;                             // stop any further input
+        m_error_seen = true;                              // stop any further input
         return -1;
     }
 
-    m_in_filename = to_wstring(s);                       // file is open -- set active filename for use in token error messages
-    m_source_id   = infile_p->get_source_id();           // capture source id for error messages 
+    m_in_filename = to_wstring(s);                        // file is open -- set active filename for use in token error messages
+    m_source_id   = infile_p->get_source_id();            // capture source id for error messages 
 
     //  Allocate new char_stream to be stacked, and attach the pre-opened iput file
 
-    m_char_stream_p = new char_stream_C {};              // get new char_stream to be associated with this file -- anchor it as the active/current char_stream a -- this pointer does not own the char_stream  
-    m_char_stream_p->attach_file(infile_p);              // attach the new file to the new char_stream
-    m_char_stream_p->set_digraph_char(m_digraph_char);   // propogate current digraph char to new char_stream_S
+    m_char_stream_p = new char_stream_C {};               // get new char_stream to be associated with this file -- anchor it as the active/current char_stream a -- this pointer does not own the char_stream  
+    m_char_stream_p->attach_file(infile_p);               // attach the new file to the new char_stream
+    m_char_stream_p->set_trigraph_char(m_trigraph_char);  // propogate current trigraph char to new char_stream_S
 
 
     //  Allocate new instream_C structure, fill it in with the new infile_p and new m_char_stream_p, than add instream_C structure to m_instream_stack  
 
-    m_instream_p = new instream_C {};                    // allocate a new instream_C structure to be added to stack  (overwrite old pointer)
-    m_instream_p->infile_p = infile_p;                   // save pointer to pre-opened file in instream_C structure  
-    m_instream_p->char_stream_p = m_char_stream_p;       // anchor the new char_stream in the instream_C structure  
-    m_instream_stack.push(m_instream_p);                 // add to top of instream stack  
+    m_instream_p = new instream_C {};                     // allocate a new instream_C structure to be added to stack  (overwrite old pointer)
+    m_instream_p->infile_p = infile_p;                    // save pointer to pre-opened file in instream_C structure  
+    m_instream_p->char_stream_p = m_char_stream_p;        // anchor the new char_stream in the instream_C structure  
+    m_instream_stack.push(m_instream_p);                  // add to top of instream stack  
       
 
     // save current token stack and raw token stack in new instream-C object (for later restoration)
@@ -841,27 +841,27 @@ int token_stream_C::attach_file(const std::wstring& ws) try
     if (!(infile_p->is_open()))
     {
         delete infile_p; 
-        m_error_seen = true;                           // stop any further input
+        m_error_seen = true;                             // stop any further input
         return -1;
     }
 
-    m_in_filename = ws;                                // file is open -- set active filename for use in token error messages
-    m_source_id   = infile_p->get_source_id();         // capture source id for error messages 
+    m_in_filename = ws;                                  // file is open -- set active filename for use in token error messages
+    m_source_id   = infile_p->get_source_id();           // capture source id for error messages 
 
 
     //  Allocate new char_stream to be stacked, and attach the pre-opened iput file
 
-    m_char_stream_p = new char_stream_C {};            // get new char_stream to be associated with this file -- anchor it as the active/current char_stream a -- this pointer does not own the char_stream  
-    m_char_stream_p->attach_file(infile_p);            // attach the new file to the new char_stream
-    m_char_stream_p->set_digraph_char(m_digraph_char); // propogate current digraph char to new char_stream_S
+    m_char_stream_p = new char_stream_C {};              // get new char_stream to be associated with this file -- anchor it as the active/current char_stream a -- this pointer does not own the char_stream  
+    m_char_stream_p->attach_file(infile_p);              // attach the new file to the new char_stream
+    m_char_stream_p->set_trigraph_char(m_trigraph_char); // propogate current trigraph char to new char_stream_S
 
 
     //  Allocate new instream_C structure, fill it in with the new infile_p and new m_char_stream_p, than add instream_C structure to m_instream_stack  
 
-    m_instream_p = new instream_C {};                  // allocate a new instream_C structure to be added to stack (overwrite old pointer) 
-    m_instream_p->infile_p = infile_p;                 // save pointer to pre-opened file in instream_C structure  
-    m_instream_p->char_stream_p = m_char_stream_p;      // anchor the new char_stream in the instream_C structure  
-    m_instream_stack.push(m_instream_p);               // add to top of instream stack  
+    m_instream_p = new instream_C {};                    // allocate a new instream_C structure to be added to stack (overwrite old pointer) 
+    m_instream_p->infile_p = infile_p;                   // save pointer to pre-opened file in instream_C structure  
+    m_instream_p->char_stream_p = m_char_stream_p;       // anchor the new char_stream in the instream_C structure  
+    m_instream_stack.push(m_instream_p);                 // add to top of instream stack  
 
  
     // save current token stack and raw token stack in new instream-C object (for later restoration)
@@ -1050,7 +1050,7 @@ int token_stream_C::attach_string_common(instring_C *instring_p) try
 
     m_char_stream_p = new char_stream_C {};              // get new char_stream to be associated with this file -- anchor it as the active/current char_stream a -- this pointer does not own the char_stream  
     m_char_stream_p->attach_string(instring_p);          // attach the new string to the new char_stream
-    m_char_stream_p->set_digraph_char(m_digraph_char);   // propogate current digraph char to new char_stream_S
+    m_char_stream_p->set_trigraph_char(m_trigraph_char); // propogate current trigraph char to new char_stream_S
 
 
     //  Allocate new instream_C structure, fill it in with the new infile_p and new m_char_stream_p, then add instream_C structure to m_instream_stack  
@@ -1611,7 +1611,7 @@ void token_stream_C::set_allow_attached_paren(            bool     tf           
 
 // functions to set configurable characters
 
-void token_stream_C::set_digraph_char(                    char32_t ch32                  ) try { m_digraph_char                   = ch32; return; }  M_endf
+void token_stream_C::set_trigraph_char(                   char32_t ch32                  ) try { m_trigraph_char                  = ch32; return; }  M_endf
 void token_stream_C::set_vanishing_separator_char(        char32_t ch32                  ) try { m_vanishing_separator_ch         = ch32; return; }  M_endf
 void token_stream_C::set_line_continuation_char(          char32_t ch32                  ) try { m_line_continuation_ch           = ch32; return; }  M_endf
 void token_stream_C::set_always_sign_char(                char32_t ch32                  ) try { m_always_sign_ch                 = ch32; return; }  M_endf
@@ -2535,7 +2535,7 @@ int token_stream_C::line_comment(token_C& token, bool no_eol, bool echo, size_t 
     int         rc = 0; 
     in_char_S   ch {}; 
 
-    m_char_stream_p->set_process_digraphs(false);        // suppress digraph processing in comments
+    m_char_stream_p->set_process_trigraphs(false);      // suppress trigraph processing in comments
 
     start_token(token, m_comment_is_whitespace ? token_E::whitespace : token_E::line_comment); 
 
@@ -2566,7 +2566,7 @@ int token_stream_C::line_comment(token_C& token, bool no_eol, bool echo, size_t 
         }           
     } 
 
-    m_char_stream_p->set_process_digraphs(true);         // re-enable digraph processing, now that comment is done
+    m_char_stream_p->set_process_trigraphs(true);        // re-enable trigraph processing, now that comment is done
 
 
     // if required, echo the comment text, if any characters on line following the line comment introducer 
@@ -2594,7 +2594,7 @@ M_endf
 //
 //      "/#" ,  has been peek()ed before this routine is called, but not consumed
 //
-//      note: digraph processing is not disabled in retained line comments, which are passed back up to the parser for processing
+//      note: trigraph processing is not disabled in retained line comments, which are passed back up to the parser for processing
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   
@@ -2653,7 +2653,7 @@ int token_stream_C::eof_comment(token_C& token) try
     in_char_S   ch  {}; 
     in_char_S   ch1 {};
 
-    m_char_stream_p->set_process_digraphs(false);        // suppress digraph processing in comments
+    m_char_stream_p->set_process_trigraphs(false);       // suppress trigraph processing in comments
 
     start_token(token, m_comment_is_whitespace ? token_E::whitespace : token_E::eof_comment); 
 
@@ -2687,7 +2687,7 @@ int token_stream_C::eof_comment(token_C& token) try
     }
 
 
-    m_char_stream_p->set_process_digraphs(true);         // re-enable digraph processing, now that comment is done
+    m_char_stream_p->set_process_trigraphs(true);        // re-enable trigraph processing, now that comment is done
     return rc; 
 }
 M_endf
@@ -2710,7 +2710,7 @@ int token_stream_C::block_comment(token_C& token) try
     in_char_S   ch  {}; 
     in_char_S   ch1 {};
 
-    m_char_stream_p->set_process_digraphs(false);        // suppress digraph processing in comments
+    m_char_stream_p->set_process_trigraphs(false);                // suppress trigraph processing in comments
 
     start_token(token, m_comment_is_whitespace ? token_E::whitespace : token_E::block_comment); 
 
@@ -2760,7 +2760,7 @@ int token_stream_C::block_comment(token_C& token) try
     }                                                           
                                                                 
                                                                 
-    m_char_stream_p->set_process_digraphs(true);                  // re-enable digraph processing, now that comment is done
+    m_char_stream_p->set_process_trigraphs(true);                 // re-enable trigraph processing, now that comment is done
     return rc; 
 }
 M_endf
@@ -2783,7 +2783,7 @@ int token_stream_C::nestable_comment(token_C& token)  try
     in_char_S        ch1   { };
     uint64_t    nest_level {0};        
 
-    m_char_stream_p->set_process_digraphs(false);        // suppress digraph processing in comments
+    m_char_stream_p->set_process_trigraphs(false);       // suppress trigraph processing in comments
 
     start_token(token, m_comment_is_whitespace ? token_E::whitespace : token_E::nestable_comment); 
 
@@ -2851,7 +2851,7 @@ int token_stream_C::nestable_comment(token_C& token)  try
     }
     
 
-    m_char_stream_p->set_process_digraphs(true);         // re-enable digraph processing, now that comment is done
+    m_char_stream_p->set_process_trigraphs(true);        // re-enable trigraph processing, now that comment is done
     return rc; 
 }
 M_endf
@@ -2864,7 +2864,7 @@ M_endf
 //  retained_block_comment() -- gather up (nestable) retained block comment token     
 //  ------------------------
 //
-//      note: digraph processing is not turned off in retained comments, that are passed up to the parser for processing
+//      note: trigraph processing is not turned off in retained comments, that are passed up to the parser for processing
 //              
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3005,7 +3005,7 @@ int token_stream_C::word_string(token_C& token) try
     }
 
 
-    m_char_stream_p->set_process_digraphs(true);           // restore normal digraph processing after string is done
+    m_char_stream_p->set_process_trigraphs(true);          // restore normal trigraph processing after string is done
     return rc; 
 }
 M_endf
@@ -3018,8 +3018,8 @@ M_endf
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-//  simple_string() -- gather up simple string token with no escape sequences  (supports doubled-up ending delimiter)     digraphs are suppressed in string
-//  -------------
+//  simple_string() -- gather up simple string token with no escape sequences  (supports doubled-up ending delimiter)     trigraphs are suppressed in string
+//  ---------------
 //              
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3029,7 +3029,7 @@ int token_stream_C::simple_string(token_C& token, char32_t end_delim) try
     int         rc = 0; 
     in_char_S   ch  {}; 
     
-    m_char_stream_p->set_process_digraphs(false);          // suppress digraph processing in simple strings
+    m_char_stream_p->set_process_trigraphs(false);         // suppress trigraph processing in simple strings
 
     start_token(token, token_E::string); 
     get_char(ch);                                          // consume 1st character, which is not part of the string contents -- should be the opening delimiter (allow out-of-string escape processing)
@@ -3042,9 +3042,9 @@ int token_stream_C::simple_string(token_C& token, char32_t end_delim) try
         if (ch.ch32 == end_delim)                          // ending delimiter found -- might be end of string (already consumed)
         {                                       
             in_char_S ch1 {}; 
-            m_char_stream_p->set_process_digraphs(true);   // restore normal digraph processing before (perhaps) peeking next char after the string end
-            peek_char(ch1);                                // look at character following the ending delimiter (any digraphed char will not be another string delimiter)
-            m_char_stream_p->set_process_digraphs(false);  // suppress digraph processing after peeking next char 
+            m_char_stream_p->set_process_trigraphs(true);  // restore normal trigraph processing before (perhaps) peeking next char after the string end
+            peek_char(ch1);                                // look at character following the ending delimiter (any trigraphed char will not be another string delimiter)
+            m_char_stream_p->set_process_trigraphs(false); // suppress trigraph processing after peeking next char 
                                                           
             if (ch1.ch32 == end_delim)                     // doubled-up ending delimiter? --  replace with one copy of ending delimiter
             {                                             
@@ -3082,7 +3082,7 @@ int token_stream_C::simple_string(token_C& token, char32_t end_delim) try
     }
 
 
-    m_char_stream_p->set_process_digraphs(true);           // restore normal digraph processing after string is done
+    m_char_stream_p->set_process_trigraphs(true);          // restore normal trigraph processing after string is done
     return rc; 
 }
 M_endf
@@ -3111,7 +3111,7 @@ int token_stream_C::escaped_string(token_C& token, char32_t end_delim, char32_t 
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
-    // Main loop to look at each character in string literal
+    //   Main loop to look at each character in string literal
     //
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -3385,6 +3385,7 @@ int token_stream_C::numeric_literal(token_C& token) try
     
     int  rc           { 0     }; 
     int  int_length   { 64    };            // length of signed or unsigned integer
+    int  float_length { 64    };            // length of floating point number
     bool first_char   { true  };
     bool dot_seen     { false };
     bool digit_seen   { false };
@@ -3395,6 +3396,7 @@ int token_stream_C::numeric_literal(token_C& token) try
     bool u_seen       { false };
     bool s_seen       { false };
     bool e_seen       { false };
+    bool f_seen       { false };
 
     start_token(token, token_E::number);
 
@@ -3466,7 +3468,7 @@ int token_stream_C::numeric_literal(token_C& token) try
             {
                 addto_token(token, ch);         // add the minus sign to text for later conversion
             }
-            if (ch.subtype == char_E::f_always_sign)
+            else if (ch.subtype == char_E::f_always_sign)
             {
                 always_seen = true;             // indicate that always_sign char was seen, not minus 
                 addto_orig_token(token, ch);    // add the always_minus char to token.orig_str only -- token.str should still be empty at this point
@@ -3488,7 +3490,8 @@ int token_stream_C::numeric_literal(token_C& token) try
         }
 
 
-        //   Process "U" or "u" or "S" or "s"  -- maybe signed/unsigned flag followed by integer length, in bits
+        //   ---------------------------------------------------------------------------------------------------
+        //   Process "U" or "u" or "I" or "i"  -- maybe signed/unsigned flag followed by integer length, in bits
         //   ---------------------------------------------------------------------------------------------------
 
         else if (                 
@@ -3515,99 +3518,169 @@ int token_stream_C::numeric_literal(token_C& token) try
                   )
                 )
         {    
-            // valid S/s or U/u -- posibly followed by valid length specification -- 0  1  8  16  32  or   64
+            // valid I/i or U/u -- posibly followed by valid length specification -- 0  1  8  16  32  or   64
 
-            addto_orig_token(token, ch);      // don't put the U/u or S/s into the number -- just into original token string
+            addto_orig_token(token, ch);                                                                        // don't put the U/u or I/i into the number -- just into original token string
             
             if ( (ch.ch32 == const_N::ch_unsigned_lower) || (ch.ch32 == const_N::ch_unsigned_upper) )           // U or u ?
                 u_seen = true; 
-            else                                                                                                // must have been S or s
+            else                                                                                                // must have been I or i
                 s_seen = true; 
         
           
-            // check for optional length specifier following the S/s or U/u -- must be 0 1 8 16 32 or 64 only  -- anything else if not a length specifier
+            // check for optional length specifier following the I/i or U/u -- must be 0 1 8 16 32 or 64 only  -- anything else if not a length specifier
 
-            peek_char(ch1);                                                 // look at character after S/s or U/u -- must be 8, 1, 3, or 6, if it's a length specifier
-                                                                         
-            if (ch1.ch32 == utf32_N::DIGIT_EIGHT)                           // U8/S8 -- byte-length integer -- 8 marks the end of integer literal 
-            {                                                            
-                int_length = 8;                                             // indicate byte-length integer literal 
-                get_char(ch1);                                              // consume the 8 character before leaving
-                addto_orig_token(token, ch1);                               // add the 8 to original token only                          
-                break;                                                      // the 8 digit ends the integer literal token
-            }                                                            
-            if (ch1.ch32 == utf32_N::DIGIT_ZERO)                            // U0 -- byte-length integer -- 0 marks the end of unit literal 
-            {                                                            
-                if (u_seen)                                                 // only U0 is valid
-                {                                                        
-                    int_length = 0;                                         // indicate 0-length unit literal 
-                    get_char(ch1);                                          // consume the 0 character before leaving
-                    addto_orig_token(token, ch1);                           // add the 0 to original token only                          
-                    break;                                                  // the 0 digit ends the integer literal token
-                }                                                        
-                else                                                        // S0 is not valid
-                {                                                        
-                    break;                                                  // S ends the integer (unit) literal 
-                }
+            peek_char(ch1);                                                                                     // look at character after I/i or U/u -- must be 8, 1, 3, or 6, if it's a length specifier
+                                                                                                               
+            if (ch1.ch32 == utf32_N::DIGIT_EIGHT)                                                               // U8/I8 -- byte-length integer -- 8 marks the end of integer literal 
+            {                                                                                                  
+                int_length = 8;                                                                                 // indicate byte-length integer literal 
+                get_char(ch1);                                                                                  // consume the 8 character before leaving
+                addto_orig_token(token, ch1);                                                                   // add the 8 to original token only                          
+                break;                                                                                          // the 8 digit ends the integer literal token
+            }                                                                                                  
+            if (ch1.ch32 == utf32_N::DIGIT_ZERO)                                                                // U0 -- byte-length integer -- 0 marks the end of unit literal 
+            {                                                                                                  
+                if (u_seen)                                                                                     // only U0 is valid
+                {                                                                                              
+                    int_length = 0;                                                                             // indicate 0-length unit literal 
+                    get_char(ch1);                                                                              // consume the 0 character before leaving
+                    addto_orig_token(token, ch1);                                                               // add the 0 to original token only                          
+                    break;                                                                                      // the 0 digit ends the integer literal token
+                }                                                                                              
+                else                                                                                            // I0 is not valid
+                {                                                                                              
+                    break;                                                                                      // I ends the integer literal 
+                }                                                                                              
             }
             else if ( (ch1.ch32 == utf32_N::DIGIT_ONE) || (ch1.ch32 == utf32_N::DIGIT_THREE) || (ch1.ch32 == utf32_N::DIGIT_SIX) )
             {
-                peek_char(ch2, 2);                                          // look at character after 1, 3, or 6
+                peek_char(ch2, 2);                                                                              // look at character after 1, 3, or 6
             
                 if (
-                     ( (ch1.ch32 == utf32_N::DIGIT_ONE  ) && (ch2.ch32 == utf32_N::DIGIT_SIX)  )      //   S16 or U16 ? 
-                     ||
-                     ( (ch1.ch32 == utf32_N::DIGIT_THREE) && (ch2.ch32 == utf32_N::DIGIT_TWO)  )      //   S32 or U32 ?
-                     ||
-                     ( (ch1.ch32 == utf32_N::DIGIT_SIX  ) && (ch2.ch32 == utf32_N::DIGIT_FOUR) )      //   S64 or U64 ?
+                     ( (ch1.ch32 == utf32_N::DIGIT_ONE  ) && (ch2.ch32 == utf32_N::DIGIT_SIX)  )                //   I16 or U16 ? 
+                     ||                                                                                       
+                     ( (ch1.ch32 == utf32_N::DIGIT_THREE) && (ch2.ch32 == utf32_N::DIGIT_TWO)  )                //   I32 or U32 ?
+                     ||                                                                                       
+                     ( (ch1.ch32 == utf32_N::DIGIT_SIX  ) && (ch2.ch32 == utf32_N::DIGIT_FOUR) )                //   I64 or U64 ?
                     )
                 {
-                    get_char(ch1);                                          // consume the 1, 3, or 6  
-                    get_char(ch2);                                          // consume the 6, 2, or 4
-                    addto_orig_token(token, ch1);                           // add the 1st digit to the original token only
-                    addto_orig_token(token, ch2);                           // add the 2nd digit to the original token only
+                    get_char(ch1);                                                                              // consume the 1, 3, or 6  
+                    get_char(ch2);                                                                              // consume the 6, 2, or 4
+                    addto_orig_token(token, ch1);                                                               // add the 1st digit to the original token only
+                    addto_orig_token(token, ch2);                                                               // add the 2nd digit to the original token only
 
-                    if      (ch1.ch32 == utf32_N::DIGIT_ONE  )  int_length = 16;     // 1x must be 16 -- set length to 16 bits 
-                    else if (ch1.ch32 == utf32_N::DIGIT_THREE)  int_length = 32;     // 3x must be 32 -- set length to 32 bits
-                    else                                        int_length = 64;     //    must be 64 -- set length to 64 bits  
+                    if      (ch1.ch32 == utf32_N::DIGIT_ONE  )  int_length = 16;                                // 1x must be 16 -- set length to 16 bits 
+                    else if (ch1.ch32 == utf32_N::DIGIT_THREE)  int_length = 32;                                // 3x must be 32 -- set length to 32 bits
+                    else                                        int_length = 64;                                //    must be 64 -- set length to 64 bits  
 
-                    break;                                                  // 2nd digit ends the integer literal
+                    break;                                                                                      // 2nd digit ends the integer literal
                 }                                                          
-                else                                                        // 1st and 2nd chars after S/s or U/u are not 16, 32, or 64, but 1st char after U/u could still be 1 (boolean)  
-                {                                                          
-                    if (u_seen)                                             // only u1/U1 allowed for booleans -- not s1/S1
-                    {                                     
-                         if (ch1.ch32 == utf32_N::DIGIT_ONE)                // U1 or u1 -- is a boolean (2nd digit is not 6, os we don't have u16 or U16) following digits are ignored 
-                         {
-                             int_length = 1;                                // indicate 1-bit length boolean literal 
-                             get_char(ch1);                                 // consume the 1 character before leaving
-                             addto_orig_token(token, ch1);                  // add the 1 to original token only                          
-                             break;                                         // the 1 digit ends the integer literal token                        
-                         }  
-                         else                                               // 3 or 6, but not 32 or 64 -- not a boolean 
-                         {
-                             break;                                         // U/u S/s end the integer literal -- not a boolean 
-                         }
-                    }                                     
-                    else                                                    // S/s -- not a boolean 
-                    {                                                                           
-                        break;                                              // S/s ends the integer literal -- not valid boolean literal 
+                else                                                                                            // 1st and 2nd chars after I/i or U/u are not 16, 32, or 64, but 1st char after U/u could still be 1 (boolean)  
+                {                                                                                              
+                    if (u_seen)                                                                                 // only u1/U1 allowed for booleans -- not s1/S1
+                    {                                                                                         
+                         if (ch1.ch32 == utf32_N::DIGIT_ONE)                                                    // U1 or u1 -- is a boolean (2nd digit is not 6, os we don't have u16 or U16) following digits are ignored 
+                         {                                                                                    
+                             int_length = 1;                                                                    // indicate 1-bit length boolean literal 
+                             get_char(ch1);                                                                     // consume the 1 character before leaving
+                             addto_orig_token(token, ch1);                                                      // add the 1 to original token only                          
+                             break;                                                                             // the 1 digit ends the integer literal token                        
+                         }                                                                                    
+                         else                                                                                   // 3 or 6, but not 32 or 64 -- not a boolean 
+                         {                                                                                    
+                             break;                                                                             // U/u or I/i end the integer literal -- not a boolean 
+                         }                                                                                    
+                    }                                                                                         
+                    else                                                                                        // I/i -- not a boolean 
+                    {                                                                                                               
+                        break;                                                                                  // I/i ends the integer literal -- not valid boolean literal 
                     }                                                      
                 }                                                          
             }                                                              
-            else                                                             // 1st char not 0, 8, 1, 3, or 6 -- can't be start of length specifier
-            {                                                              
-                break;                                                       // S/s or U/u ends the integer literal  
+            else                                                                                                // 1st char not 0, 8, 1, 3, or 6 -- can't be start of length specifier
+            {                                                                                                 
+                break;                                                                                          // I/i or U/u ends the integer literal  
             }                                                              
                                                                            
             // shouldn't get here                                          
-        }                                                                    // process S/s or U/u
+        }   // process I/i or U/u
 
 
-        //   Process "E" or "e"  -- maybe start of exponent, or start of next token, or part of a numeric identifier  (no need to check for u_seen or s_seen -- since those end the number) 
+        //   ---------------------------------------------------------------------------------------------
+        //   Process "F" or "f" -- maybe floating point flag followed by floating point precision, in bits
+        //   ---------------------------------------------------------------------------------------------
+
+        else if (                 
+                 ( (ch.ch32 == const_N::ch_float_lower) || (ch.ch32 == const_N::ch_float_upper) )
+                   &&
+                   (!alpha_seen)                                                                                // make sure no alpha chars seen (extended identifier)
+                 )
+        {    
+            // valid F or f -- posibly followed by valid length specification -- 32  or   64
+
+            addto_orig_token(token, ch);                                                                        // Don't put the F or f into the number -- just into original token string
+            f_seen = true;                                                                                      // indicate that F or f has been seen
+        
+            
+            // put in 0 or .0, if not seen yet
+
+            if (!dot_seen)                                                                                      // number is something like 123E+77 -- need to add .0 at end
+            {                                                                                                 
+                token.str += L".0";                                                                             // add to output string, but not to orig_str 
+                dot_seen = true;                                                                                // no need for .0 anymore 
+            }                                                                                                 
+            else if (need_trail_0)                                                                              // have something like 1234.E-11
+            {                                                                                                 
+                token.str += L"0";                                                                              // add trailing zero, if no digits seen after the dot 
+                need_trail_0 = false;                                                                           // don't want this added later (to end of exponent)
+            }
+             
+          
+            // check for optional length specifier following the F or f -- must be 32 or 64 only  -- anything else if not a length specifier
+
+            peek_char(ch1);                                                                                     // look at character after F or f -- must be 3 or 6, if it's a length specifier
+ 
+            if ( (ch1.ch32 == utf32_N::DIGIT_ONE) || (ch1.ch32 == utf32_N::DIGIT_THREE) || (ch1.ch32 == utf32_N::DIGIT_SIX) )
+            {
+                peek_char(ch2, 2);                                                                              // look at character after 3, or 6
+                                                                                                              
+                if (                                                                                          
+                     ( (ch1.ch32 == utf32_N::DIGIT_THREE) && (ch2.ch32 == utf32_N::DIGIT_TWO)  )                //   f32 or F32 ?
+                     ||                                                                                       
+                     ( (ch1.ch32 == utf32_N::DIGIT_SIX  ) && (ch2.ch32 == utf32_N::DIGIT_FOUR) )                //   f64 or F64 ?
+                    )                                                                                         
+                {                                                                                             
+                    get_char(ch1);                                                                              // consume the 3, or 6  
+                    get_char(ch2);                                                                              // consume the 2, or 4
+                    addto_orig_token(token, ch1);                                                               // add the 1st digit to the original token only
+                    addto_orig_token(token, ch2);                                                               // add the 2nd digit to the original token only
+                                                                                                               
+                    if (ch1.ch32 == utf32_N::DIGIT_THREE)  float_length = 32;                                   // 3x must be 32 -- set length to 32 bits
+                    else                                   float_length = 64;                                   //    must be 64 -- set length to 64 bits  
+                                                                                                               
+                    break;                                                                                      // 2nd digit ends the integer literal
+                } 
+                else
+                {
+                    break;                                                                                      // valid number ends with f/F                                                                  
+                }
+                                                                                                               
+            }                                                                                                  
+            else                                                                                                 // 1st char not 3, or 6 -- can't be start of length specifier
+            {                                                                                                  
+                break;                                                                                           // S/s or U/u ends the integer literal  
+            }                                                                                                 
+                                                                                                              
+            // shouldn't get here                                          
+        }        
+
+
+        //   -------------------------------------------------------------------------------------------------------
+        //   Process "E" or "e"  -- maybe start of exponent, or start of next token, or part of a numeric identifier  (no need to check for u_seen or s_seen or f_seen -- since those end the number) 
         //   -------------------------------------------------------------------------------------------------------
 
-        else if (                                                            // check for E or e -- special meaning only valid if no alpha seen yet
+        else if (                                                                             // check for E or e -- special meaning only valid if no alpha seen yet
                  ( (ch.ch32 == const_N::ch_exponent_lower) || (ch.ch32 == const_N::ch_exponent_upper) )
                  &&
                  (!alpha_seen)
@@ -3618,42 +3691,42 @@ int token_stream_C::numeric_literal(token_C& token) try
 
             // only valid if e12345.. or E+12345... e-12345... etc.   (note macro is not allowed here)
 
-            peek_char(ch1);               // peek at character following the "e" 
+            peek_char(ch1);                                                                   // peek at character following the "e" 
             
             if ( (ch1.subtype == char_E::hyphen_minus) || (ch1.subtype == char_E::plus) )     // E+ or E- 
             {
                 exponent_sign_seen = true;  
-                peek_char(ch2, 2);        // peek at char following the + or - 
-
-                if (ch2.subtype != char_E::digit)     // e+xxx xxx not digit -- "e" or "E" starts next token, or is part of numeric identifier     
-                {
-                    if (m_allow_num_identifier && (!dot_seen) && (!sign_seen) )   // allowing numeric identifiers (like 11J), and no full_stop or sign yet seen?
-                    {
-                        addto_token(token, ch);
-                        alpha_seen   = true;                                    // indicate this is not a pure number
-                        need_trail_0 = false;                                   // don't add trailing 0 following alpha characters 
-                        continue;                                               // repeat loop -- don't fall through into exponent-handling code below
-                    }                                                         
-                    else                                                        // numeric identifiers not allowed or dot has been seen -- this e/E character ends the literal
-                    {                                                         
-                        rc = past_end_token(token, ch);                         // this e/E character ends the numeric literal  
-                        break;                 
-                    }
-                }
-            }
-            else if (ch1.subtype != char_E::digit)    // E not followed by digit, +, or -    --    this E or e ends the token, or is part of a numeric identifier -- r/c should be 0 here
-            {
-                if (m_allow_num_identifier && (!dot_seen) && (!sign_seen) )       // allowing numeric identifiers (like 11J), and no full_stop or sign yet seen?
-                {
-                    addto_token(token, ch);
-                    alpha_seen   = true;                                        // indicate this is not a pure number
-                    need_trail_0 = false;                                       // don't add trailing 0 following alpha characters 
-                    continue;                                                   // repeat loop -- don't fall through into exponent-handling code below
-                }                                                             
-                else                                                            // numeric identifiers not allowed or dot has been seen -- this e/E character ends the literal
-                {                                                             
-                    rc = past_end_token(token, ch);                             // this e/E character ends the numeric literal  
-                    break;                 
+                peek_char(ch2, 2);                                                            // peek at char following the + or - 
+                                                                                             
+                if (ch2.subtype != char_E::digit)                                             // e+xxx xxx not digit -- "e" or "E" starts next token, or is part of numeric identifier     
+                {                                                                            
+                    if (m_allow_num_identifier && (!dot_seen) && (!sign_seen) )               // allowing numeric identifiers (like 11J), and no full_stop or sign yet seen?
+                    {                                                                        
+                        addto_token(token, ch);                                              
+                        alpha_seen   = true;                                                  // indicate this is not a pure number
+                        need_trail_0 = false;                                                 // don't add trailing 0 following alpha characters 
+                        continue;                                                             // repeat loop -- don't fall through into exponent-handling code below
+                    }                                                                        
+                    else                                                                      // numeric identifiers not allowed or dot has been seen -- this e/E character ends the literal
+                    {                                                                        
+                        rc = past_end_token(token, ch);                                       // this e/E character ends the numeric literal  
+                        break;                                                               
+                    }                                                                        
+                }                                                                            
+            }                                                                                
+            else if (ch1.subtype != char_E::digit)                                            // E not followed by digit, +, or -    --    this E or e ends the token, or is part of a numeric identifier -- r/c should be 0 here
+            {                                                                                
+                if (m_allow_num_identifier && (!dot_seen) && (!sign_seen) )                   // allowing numeric identifiers (like 11J), and no full_stop or sign yet seen?
+                {                                                                            
+                    addto_token(token, ch);                                                  
+                    alpha_seen   = true;                                                      // indicate this is not a pure number
+                    need_trail_0 = false;                                                     // don't add trailing 0 following alpha characters 
+                    continue;                                                                 // repeat loop -- don't fall through into exponent-handling code below
+                }                                                                            
+                else                                                                          // numeric identifiers not allowed or dot has been seen -- this e/E character ends the literal
+                {                                                                            
+                    rc = past_end_token(token, ch);                                           // this e/E character ends the numeric literal  
+                    break;                                                                   
                 }
             }
 
@@ -3665,40 +3738,47 @@ int token_stream_C::numeric_literal(token_C& token) try
 
             // put in 0 or .0, if not seen yet
 
-            if (!dot_seen)                          // number is something like 123E+77 -- need to add .0 at end
-                token.str += L".0";                 // add to output string, but not to orig_str           
-            else if (need_trail_0)                  // have something like 1234.E-11
-            {
-                token.str += L"0";                  // add trailing zero, if no digits seen after the dot 
-                need_trail_0 = false;               // don't want this added later (to end of exponent)
-            }
-            
-            addto_token(token, ch);                 // add the "e" pr "E" to literal token 
-
-            if (exponent_sign_seen)
-            {
-                 addto_token(token, ch1);           // add the + or - following the E to token 
-                 discard_char();        // get rid of peek()ed + - so char stream is sitting on 1st char in exponent number 
-            }
+            if (!dot_seen)                                                                     // number is something like 123E+77 -- need to add .0 at end
+            {                                                                              
+                token.str += L".0";                                                            // add to output string, but not to orig_str 
+                dot_seen = true;                                                               // ".0" no longer needed
+            }                                                                              
+            else if (need_trail_0)                                                             // have something like 1234.E-11
+            {                                                                              
+                token.str += L"0";                                                             // add trailing zero, if no digits seen after the dot 
+                need_trail_0 = false;                                                          // don't want this added later (to end of exponent)
+            }                                                                              
+                                                                                           
+            addto_token(token, ch);                                                            // add the "e" pr "E" to literal token 
+                                                                                           
+            if (exponent_sign_seen)                                                        
+            {                                                                              
+                 addto_token(token, ch1);                                                      // add the + or - following the E to token 
+                 discard_char();                                                               // get rid of peek()ed + - so char stream is sitting on 1st char in exponent number 
+            }                                                                              
 
 
             //  At this point, should have one or more exponent digits in the char_stream -- next non-digit ends the token (no separators allowed in exponent) 
 
             for (;;)
             {
-                get_char(ch);           // get next char -- may be digit of start of next token  
-            
-                if (ch.subtype == char_E::digit)
-                {
-                    addto_token(token, ch);         // add the digit to the token 
-                }
-                else
-                {
-                    rc = past_end_token(token, ch); // non-digit character ends the token
+                get_char(ch);                                                                  // get next char -- may be digit of start of next token  
+                                                                                              
+                if (ch.subtype == char_E::digit)                                              
+                {                                                                             
+                    addto_token(token, ch);                                                    // add the digit to the token 
+                }                                                                             
+                else if (ch.type == char_E::sep)                                               // skip over any separators -- don't put them into number
+                {                                                                             
+                    addto_orig_token(token, ch);                                               // don't put the separator into the number -- just into original token string     
+                }                                                                             
+                else                                                                          
+                {                                                                             
+                    rc = past_end_token(token, ch);                                            // non-digit character ends the token
                     break; 
                 }            
             }              
-            break;                                     
+                                                                                               // continue loop to look for look for optional f32, f64                                     
         }                     
 
 
@@ -3706,20 +3786,20 @@ int token_stream_C::numeric_literal(token_C& token) try
         //   -----------------------------
 
         else if (
-                 (ch.type == char_E::alpha)    // alpha characters  and non-digit number chars don't end the number, but make it invalid -- keep count of them
-                 ||
-                 (ch.type == char_E::num  )    // numbers -- digits have already been filtered out, so these are misc numeric chars only
+                 (ch.type == char_E::alpha)                                                    // alpha characters  and non-digit number chars don't end the number, but make it invalid -- keep count of them
+                 ||                                                                          
+                 (ch.type == char_E::num  )                                                    // numbers -- digits have already been filtered out, so these are misc numeric chars only
                 )
         {
-            if (m_allow_num_identifier && (!dot_seen) && (!sign_seen) )   // allowing numeric identifiers (like 11J), and no full_stop or sign yet seen?
+            if (m_allow_num_identifier && (!dot_seen) && (!sign_seen) )                        // allowing numeric identifiers (like 11J), and no full_stop or sign yet seen?
             {
                 addto_token(token, ch);
-                alpha_seen   = true;              // indicate this is not a pure number
-                need_trail_0 = false;             // don't add trailing 0 following bad alpha characters            
-            }
-            else                                  // numeric identifiers not allowed or dot has been seen -- this charagter ends the literal
-            {
-                rc = past_end_token(token, ch);   //this alpha character ends the numeric literal  
+                alpha_seen   = true;                                                           // indicate this is not a pure number
+                need_trail_0 = false;                                                          // don't add trailing 0 following bad alpha characters            
+            }                                                                                 
+            else                                                                               // numeric identifiers not allowed or dot has been seen -- this charagter ends the literal
+            {                                                                                 
+                rc = past_end_token(token, ch);                                                //this alpha character ends the numeric literal  
                 break;                 
             }
         }
@@ -3737,44 +3817,65 @@ int token_stream_C::numeric_literal(token_C& token) try
         first_char = false;
     }                             // end of digit-gathering loop
 
+    
+    // make sure character following the end of the number is not a separator, digit, or letter (invalid)
+    // ----------------------------------------------------------------------------------------
 
+    peek_char(ch1);
+    M__(M_out(L"numeric_literal() -- checking for stop character -- ch1.type=%d") % (int)(ch1.type);)
 
-    // ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
-    // ??????????????? need to add checks to see what follows the numeric literal -- error if alpha char or numeric digit, separator char (underscore), negative sign (always_sign) or dot.  (+- are always OK) 
-    // need to flush through these characters to include them in the error token and error message
-
-
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
+    if (
+        (ch1.type == char_E::alpha)                                                            // don't want letters    immediately following the numeric literal
+        ||                                                                                  
+        (ch1.type == char_E::num  )                                                            // don't want digits     immediately following the numeric literal
+        ||                                                                                  
+        (ch1.type == char_E::sep  )                                                            // don't want separators immediately following the numeric literal
+       )
+    {
+        addto_token(token, ch1);
+        invalid_token(token, L"Invalid alphabetic characters, numeric digits, or separator characters occured immediately after a numeric literal");
+        rc = -1; 
+        return -1;
+    }
+    
 
     // Set integer/floating_pt value, based on presence of dot (if no error occurred) -- make sure no alphabetic characters seen in number -- compute value
     // ----------------------------------------------------------------------------------------------------------------------------------------------------
 
-    if (token.type == token_E::number)               // no I/O error ended the token ?
-    {
-        if (alpha_seen && !dot_seen)                 // must be identifier that starts with a digit (if "allow numeric identifier" flag is set)
-        {
-            token.type = token_E::numeric_identifier;   
-        }
-        else if (alpha_seen)                         // any alpha characters and dots make number invalid -- should not get here due to earlier checks 
+    if (token.type == token_E::number)                                                         // no I/O error ended the token ?
+    {                                                                                          
+        if (alpha_seen && !dot_seen)                                                           // must be identifier that starts with a digit (if "allow numeric identifier" flag is set)
+        {                                                                                      
+            token.type = token_E::numeric_identifier;                                             
+        }                                                                                      
+        else if (alpha_seen)                                                                   // any alpha characters and dots make number invalid -- should not get here due to earlier checks 
         {
             invalid_token(token, L"Alphabetic characters appear in a numeric literal");
             rc = -1; 
         }
-        else if (dot_seen || e_seen)                // "."or "e+000" means floating pt (if e+xxx seen, .0 has already been appended, if required) 
-        {
-            if (need_trail_0)
-                token.str += L"0";                  // add trailing zero, if no digits seen after the dot
+        else if (dot_seen || e_seen || f_seen)                                                 // "."or "e+000" or _f32/_F64 means floating pt (if e+xxx seen ot F/f seen, .0 has already been appended, if required) 
+        {                                                                                     
+            if (need_trail_0)                                                                 
+                token.str += L"0";                                                             // add trailing zero, if no digits seen after the dot
 
-            rc = to_float64(token.str, token.float64);
-            if (rc == 0)                
-                token.type = token_E::float64;                
+            if (float_length == 64)
+            {
+                rc = to_float64(token.str, token.float64);     
+                if (rc == 0)                
+                    token.type = token_E::float64;                
+                else
+                    invalid_token(token, L"Cannot obtain value for 64-bit floating point literal"); 
+            }
             else
-                invalid_token(token, L"Cannot obtain value for floating point literal");   
+            {                                                                                   // must be 32-bit
+                rc = to_float32(token.str, token.float32);     
+                if (rc == 0)                
+                    token.type = token_E::float32;                
+                else
+                    invalid_token(token, L"Cannot obtain value for 32-bit floating point literal"); 
+            }
         }
-        else                                                       // no dot and no alpha -- must be signed or unsigned integer
+        else                                                                                   // no dot and no alpha -- must be signed or unsigned integer
         {
             // process signed/usigned number  0-bit (unit), 1-bit (boolean), 8-bit, 16-bit, 32-bit, or 64-bit integer literal
 
@@ -3805,29 +3906,32 @@ int token_stream_C::based_numeric_literal(token_C& token) try
     // decode basing character - 0X 0B, or 0O            
     // --------------------------------------
 
-    int       base  {10};                         // in case unknown basing letter passed in ???? -- should not happen
-    in_char_S ch    {  };
-    in_char_S ch1   {  };                         // for peeking in advance
-    in_char_S ch2   {  };                         // for peeking in advance
+    int       base  {10};                                                                     // in case unknown basing letter passed in ???? -- should not happen
+    in_char_S ch    {  };                                                                    
+    in_char_S ch1   {  };                                                                     // for peeking in advance
+    in_char_S ch2   {  };                                                                     // for peeking in advance
+    in_char_S ch3   {  };                                                                     // for peeking in advance
+                                                                                             
+    peek_char(ch2, 2);                                                                        // peek at basing character 
 
-    peek_char(ch, 2);                 // peek at basing character 
-
-    if      ( (ch.ch32 == const_N::ch_base16_lower)        || (ch.ch32 == const_N::ch_base16_upper)      ) base = 16; 
-    else if ( (ch.ch32 == const_N::ch_base8_lower )        || (ch.ch32 == const_N::ch_base8_upper )      ) base = 8; 
-    else if ( (ch.ch32 == const_N::ch_base2_lower )        || (ch.ch32 == const_N::ch_base2_upper )      ) base = 2;      
+    if      ( (ch2.ch32 == const_N::ch_base16_lower)        || (ch2.ch32 == const_N::ch_base16_upper)      ) base = 16; 
+    else if ( (ch2.ch32 == const_N::ch_base8_lower )        || (ch2.ch32 == const_N::ch_base8_upper )      ) base = 8; 
+    else if ( (ch2.ch32 == const_N::ch_base2_lower )        || (ch2.ch32 == const_N::ch_base2_upper )      ) base = 2;      
 
 
-    // peek() the 3rd char, and check for ,0X, 0x,0b, 0o, etc.followed by valid based digit -- otherwise have: "0" (integer) "X/B/O/etc." (identifier) and next token
-    // ---------------------------------------------------------------------------------
+    // peek() the 3rd char, and check for ,0X, 0x,0b, 0o, etc.followed by valid based digit -- otherwise have: "0" (integer) "X/B/O/etc." then bad digit
+    // ------------------------------------------------------------------------------------
    
-    peek_char(ch, 3);                                           // get 3rd character -- needs to be valid based digit (not _)
-
-    if (!is_digit(ch.ch32, base))                               // char following the X/O/B is not a valid hex/decimal/binary digit? 
-    {
-        peek_char(ch);                                          // get the "0" back into ch for use by one_char_token()
-        one_char_token(token, token_E::uint64, ch);             // start the "0" token -- consume the "0", leave "X"and following
-        token.uint64 = 0ULL;                                    // set value to 0
-        return 0;     
+    peek_char(ch3, 3);                                                                        // get 3rd character -- needs to be valid based digit (not _)
+                                                                                             
+    if (!is_digit(ch3.ch32, base))                                                            // char following the X/O/B is not a valid hex/decimal/binary digit? 
+    {                                                                                        
+        peek_char(ch1);                                                                       // get "0"for use in invalid token for error message
+        addto_token(token, ch1);                                                              // put "0"       in token
+        addto_token(token, ch2);                                                              // put "x"(etc.) in token
+        addto_token(token, ch3);                                                              // put invalid non-digit 3rd character in token
+        invalid_token(token, L"Cannot obtain value for floating point literal");              // start the "0" token -- consume the "0", leave "X"and following
+        return -1;     
     }
    
 
@@ -3843,7 +3947,7 @@ int token_stream_C::based_numeric_literal(token_C& token) try
     //  Numeric literal (base 2,8,16 only -- no decimal point, sign,  or exponent allowed (separators are OK) -- U or u allowed at end to indicate unsigned
     //  ----------------------------------------------------------------------------------------------------------------------------------------------------
     //
-    //   note: number cannot start with _ (becomes identifier) 
+    //   note: number can't start with _ , even after the 0x.  This prevents things like 0x________u64, where x_________u64 is a valid identifier 
     
     int  rc           { 0     }; 
     int  int_length   { 64    };            // length of signed or unsigned integer
@@ -3866,7 +3970,7 @@ int token_stream_C::based_numeric_literal(token_C& token) try
 
         else if (ch.type == char_E::sep)    // skip over any separators -- don't put them into number
         {
-            // don't put the U or u into the number -- just into original token string
+            // don't put the separator into the number -- just into original token string
             addto_orig_token(token, ch);           
         }
 
@@ -3881,7 +3985,7 @@ int token_stream_C::based_numeric_literal(token_C& token) try
              
             // valid S/s or U/u -- posibly followed by valid length specification -- 8  16  32  or   64
 
-            addto_orig_token(token, ch);      // don't put the U/u or S/s into the number -- just into original token string
+            addto_orig_token(token, ch);                   // don't put the U/u or S/s into the number -- just into original token string
             
             if ( (ch.ch32 == const_N::ch_unsigned_lower) || (ch.ch32 == const_N::ch_unsigned_upper) )   // U or u ?
                 u_seen = true; 
@@ -3894,7 +3998,7 @@ int token_stream_C::based_numeric_literal(token_C& token) try
 
             peek_char(ch1);                                // look at character after S/s or U/u -- must be 8, 1, 3, or 6, if it's a length specifier
 
-            if (ch1.ch32 == utf32_N::DIGIT_EIGHT)            // U8/S8 -- byte-length integer -- 8 marks the end of integer literal 
+            if (ch1.ch32 == utf32_N::DIGIT_EIGHT)          // U8/S8 -- byte-length integer -- 8 marks the end of integer literal 
             {
                 int_length = 8;                            // indicate byte-length integer literal 
                 get_char(ch1);                             // consume the 8 character before leaving
@@ -3913,29 +4017,29 @@ int token_stream_C::based_numeric_literal(token_C& token) try
                      ( (ch1.ch32 == utf32_N::DIGIT_SIX  ) && (ch2.ch32 == utf32_N::DIGIT_FOUR) )      //   S64 or U64 ?
                     )
                 {
-                    get_char(ch1);                     // consume the 1, 3, or 6  
-                    get_char(ch2);                     // consume the 6, 2, or 4
-                    addto_orig_token(token, ch1);      // add the 1st digit to the original token only
-                    addto_orig_token(token, ch2);      // add the 2nd digit to the original token only
+                    get_char(ch1);                                                   // consume the 1, 3, or 6  
+                    get_char(ch2);                                                   // consume the 6, 2, or 4
+                    addto_orig_token(token, ch1);                                    // add the 1st digit to the original token only
+                    addto_orig_token(token, ch2);                                    // add the 2nd digit to the original token only
 
                     if      (ch1.ch32 == utf32_N::DIGIT_ONE  )  int_length = 16;     // 1x must be 16 -- set length to 16 bits 
                     else if (ch1.ch32 == utf32_N::DIGIT_THREE)  int_length = 32;     // 3x must be 32 -- set length to 32 bits
                     else                                        int_length = 64;     //    must be 64 -- set length to 64 bits  
 
-                    break;                             // 2nd digit ends the integer literal
-                }
-                else                                   // 1st and 2nd chars after S/s are not 16, 32, or 64 
-                {
-                    break;                             // S/s or U/u ends the integer literal 
-                }  
-            }
-            else                                       // 1st char not 8 -or- 2nd char not 1, 3, or 6 -- can't be start of length specifier
-            {
-                break;                                 // S/s or U/u ends the integer literal  
-            }
-
-            // shouldn't get here
-        }                                              // handle s/S/u/U + NN
+                    break;                                                           // 2nd digit ends the integer literal
+                }                                                                  
+                else                                                                 // 1st and 2nd chars after S/s are not 16, 32, or 64 
+                {                                                                  
+                    break;                                                           // S/s or U/u ends the integer literal 
+                }                                                                  
+            }                                                                      
+            else                                                                     // 1st char not 8 -or- 2nd char not 1, 3, or 6 -- can't be start of length specifier
+            {                                                                      
+                break;                                                               // S/s or U/u ends the integer literal  
+            }                                                                      
+                                                                                   
+            // shouldn't get here                                                  
+        }                                                                            // handle s/S/u/U + NN
 
 
         // anything else is not part of a numeric literal -- ends a valid numeric literal token
@@ -3947,16 +4051,32 @@ int token_stream_C::based_numeric_literal(token_C& token) try
         }        
     }
 
+   
+    // make sure character following the end of the number is not a separator, digit, or letter
+    // ----------------------------------------------------------------------------------------
 
-    // ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
-    // ??????????????? need to add checks to see what follows the numeric literal -- error if alpha char or numeric digit, separator char (underscore), negative sign (always_sign) or dot.  (+- are always OK) 
-    // need to flush through these characters to include them in the error token and error message
+    peek_char(ch1); 
+    M__(M_out(L"based_numeric_literal() -- checking for stop character -- ch1.type=%d") % (int)(ch1.type);)
+ 
+    if (
+        (ch1.type == char_E::alpha)                                                   // don't want letters    immediately following the numeric literal
+        ||                                                                           
+        (ch1.type == char_E::num  )                                                   // don't want digits     immediately following the numeric literal
+        ||                                                                           
+        (ch1.type == char_E::sep  )                                                   // don't want separators immediately following the numeric literal
+       )
+    {
+        addto_token(token, ch1);
+        invalid_token(token, L"Invalid alphabetic characters, numeric digits, or separator characters occured immediately after a based numeric literal");
+        rc = -1; 
+        return -1;
+    }
 
 
     // Set signed/unsigned integer, based on U u 
     // -----------------------------------------
 
-    if (token.type == token_E::number)               // no I/O error ended the token ?
+    if (token.type == token_E::number)                                 // no I/O error ended the token ?
     {
         rc = get_integer_value(token, int_length, u_seen, base);         
     }

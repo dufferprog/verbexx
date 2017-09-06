@@ -471,7 +471,7 @@ M_endf
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int infile_C::fetch_char(in_char_S & in_char) try
+int infile_C::fetch_char(in_char_S & in_char, bool advance) try
 {
     M__(M_out(L"infile_C::fetch_char() -- called");)
 
@@ -481,15 +481,16 @@ int infile_C::fetch_char(in_char_S & in_char) try
     {
          if (m_curr_pos < m_end_pos)
          {
-             out_char(in_char, char_E::normal);             
+             out_char(in_char, char_E::normal, advance);             
              return 0;         
          }          
          else     // sitting past end of data, but haven't passed back EOL yet (EOF may have been seen, too -- will be passed back next time)
          {
              // Pass back end of line, now, and mark line as not OK
          
-             out_char(in_char, char_E::eol);             
-             m_line_ok = false;                          // will need to read in more next time              
+             out_char(in_char, char_E::eol, advance);
+             if (advance)                                    // update state only if we're in advance mode 
+                 m_line_ok = false;                          // will need to read in more next time              
              return 0; 
          }    
     }
@@ -499,7 +500,7 @@ int infile_C::fetch_char(in_char_S & in_char) try
 
     if (m_error_seen)
     {
-        out_char(in_char, char_E::error); 
+        out_char(in_char, char_E::error, advance); 
         return -1;     
     }
     
@@ -508,12 +509,12 @@ int infile_C::fetch_char(in_char_S & in_char) try
 
     if (m_eof_seen)
     {
-        out_char(in_char, char_E::eof); 
+        out_char(in_char, char_E::eof, advance); 
         return 0;     
     }
     
     M_out_emsg(L"infile_C::fetch_char() called when no valid char could be fetched/returned -- file =\"%s\"") %  m_in_filename;
-    out_char(in_char, char_E:: error);  
+    out_char(in_char, char_E:: error, advance);  
     return -1;                                       // should not happen 
 }
 M_endf
@@ -529,17 +530,20 @@ M_endf
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void infile_C::out_char(in_char_S & in_char, char_E classs) try
+void infile_C::out_char(in_char_S & in_char, char_E classs, bool advance) try
 {
     M__(M_out(L"infile_C::out_char()-- called : m_in_filename=\"%s\"")  % m_in_filename;)  
 
-    in_char.source_id = m_source_id;           // capture current source ID
-    in_char.lineno    = m_curr_linenum;        // capture line number (already 1-based)
-    in_char.linepos   = m_curr_col + 1;        // capture column (1-based)
-    in_char.classs    = classs;
-    in_char.family    = char_E::none;          // initilize to "none" -- will get filled in later
-    in_char.type      = char_E::none; 
-    in_char.subtype   = char_E::none;    
+    in_char.source_id = m_source_id;                                           // capture current source ID
+    in_char.lineno    = m_curr_linenum;                                        // capture line number (already 1-based)
+    in_char.linepos   = m_curr_col + 1;                                        // capture column (1-based)
+    in_char.classs    = classs;                                              
+    in_char.family    = char_E::none;                                          // initilize to "none" -- will get filled in later
+    in_char.type      = char_E::none;                                        
+    in_char.subtype   = char_E::none;                                        
+                                                                             
+    size_t saved_pos = m_curr_pos;                                             // save away initial position for later rollback, in case advance parm = false
+    size_t saved_col = m_curr_col;          
 
     switch (classs)
     {
@@ -605,7 +609,16 @@ void infile_C::out_char(in_char_S & in_char, char_E classs) try
         in_char.ch32  = (char32_t)0;      
     }
 
-     M__(M_out(L"infile_C::out_char().2 : m_in_filename=\"%s\"") : m_in_filename;) 
+
+    // undo any position advance, if the advance option is false 
+
+    if (!advance)
+    {
+        m_curr_col = saved_col;
+        m_curr_pos = saved_pos;
+    }
+     
+    M__(M_out(L"infile_C::out_char().2 : m_in_filename=\"%s\"") : m_in_filename;) 
     return;    
 }
 M_endf
@@ -620,14 +633,14 @@ M_endf
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int infile_C::get_char(in_char_S& in_char) try 
+int infile_C::get_char(in_char_S& in_char, bool advance) try 
 {
     M__(M_out(L"infile_C::get_char() -- called");)
 
     // pass back existing data, or preset error EOF indication, if any -- don't go out to file (which may be closed if eof/error seen)
 
     if ( m_line_ok || m_eof_seen || m_error_seen )    
-        return fetch_char(in_char);    
+        return fetch_char(in_char, advance);    
 
 
     //  Need to go out to file to refill the line buffer -- error if file is not open
@@ -636,7 +649,7 @@ int infile_C::get_char(in_char_S& in_char) try
     if (!(m_is_open_f))
     {
         M_out_emsg(L"infile_C::get_char() called when file is not open  -- \"%s\"") %  m_in_filename;
-        out_char(in_char, char_E::error);         
+        out_char(in_char, char_E::error, advance);         
         return -1; 
     }       
 
@@ -753,7 +766,7 @@ int infile_C::get_char(in_char_S& in_char) try
 
     //  At this point, line_OK is on --or-- m_eof_seen/m_error_seen might be on (line can be empty or in bad state in this case) 
 
-    return fetch_char(in_char);
+    return fetch_char(in_char, advance);
 }
 M_endf
 
@@ -1159,7 +1172,7 @@ M_endf
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int instring_C::fetch_char(in_char_S & in_char) try
+int instring_C::fetch_char(in_char_S & in_char, bool advance) try
 {
     M__(M_out(L"instring_C::fetch_char() -- called");)
 
@@ -1169,15 +1182,16 @@ int instring_C::fetch_char(in_char_S & in_char) try
     {
          if (m_curr_pos < m_end_pos)
          {
-             out_char(in_char, char_E::normal);             
+             out_char(in_char, char_E::normal, advance);             
              return 0;         
          }          
          else     // sitting past end of data, but haven't passed back EOL yet (EOF may have been seen, too -- will be passed back next time)
          {
              // Pass back end of line, now, and mark line as not OK
          
-             out_char(in_char, char_E::eol);             
-             m_line_ok = false;                          // will need to read in more next time              
+             out_char(in_char, char_E::eol, advance); 
+             if (advance)                                // only update state if we're in advance mode -- state change will occur next time 
+                 m_line_ok = false;                      // will need to read in more next time              
              return 0; 
          }    
     }
@@ -1187,7 +1201,7 @@ int instring_C::fetch_char(in_char_S & in_char) try
 
     if (m_error_seen)
     {
-        out_char(in_char, char_E::error); 
+        out_char(in_char, char_E::error, advance); 
         return -1;     
     }
     
@@ -1196,12 +1210,12 @@ int instring_C::fetch_char(in_char_S & in_char) try
 
     if (m_eof_seen)
     {
-        out_char(in_char, char_E::eof); 
+        out_char(in_char, char_E::eof, advance); 
         return 0;     
     }
     
     M_out_emsg(L"infile_C::fetch_char() called when no valid char could be fetched/returned -- file =\"%s\"") %  m_in_name;
-    out_char(in_char, char_E::error);  
+    out_char(in_char, char_E::error, advance);  
     return -1;                                       // should not happen 
 }
 M_endf
@@ -1217,18 +1231,21 @@ M_endf
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void instring_C::out_char(in_char_S & in_char, char_E classs) try    // need to share code with infile_C here ????????????????????????????????????????????????????????
+void instring_C::out_char(in_char_S & in_char, char_E classs, bool advance) try    // need to share code with infile_C here ????????????????????????????????????????????????????????
 {
     M__(M_out(L"instring_C::out_char() -- called");)
 
-    in_char.source_id = m_source_id;           // capture current source ID
-    in_char.lineno    = m_curr_linenum;        // capture line number (already 1-based)
-    in_char.linepos   = m_curr_col + 1;        // capture column (1-based)
-    in_char.classs    = classs;
-    in_char.family    = char_E::none;          // initilize to "none" -- will get filled in later
-    in_char.type      = char_E::none; 
-    in_char.subtype   = char_E::none;    
-
+    in_char.source_id = m_source_id;                                          // capture current source ID
+    in_char.lineno    = m_curr_linenum;                                       // capture line number (already 1-based)
+    in_char.linepos   = m_curr_col + 1;                                       // capture column (1-based)
+    in_char.classs    = classs;                                             
+    in_char.family    = char_E::none;                                         // initilize to "none" -- will get filled in later
+    in_char.type      = char_E::none;                                       
+    in_char.subtype   = char_E::none;                                       
+                                                                            
+    size_t saved_pos = m_curr_pos;                                            // save away initial position for later rollback, in case advance parm = false
+    size_t saved_col = m_curr_col;     
+   
     switch (classs)
     {
     // normal characters -- fetch from line and convert to UTF-32, etc.
@@ -1282,8 +1299,7 @@ void instring_C::out_char(in_char_S & in_char, char_E classs) try    // need to 
         in_char.wch2  = (wchar_t)0;
         in_char.ch32  = (char32_t)0x00000085;
         break;
-
-
+  
 
     // special cases -- code points are all 0 -- only type is special
 
@@ -1294,7 +1310,16 @@ void instring_C::out_char(in_char_S & in_char, char_E classs) try    // need to 
         in_char.ch32  = (char32_t)0;      
     }
 
-     M__(M_out("infile_C::out_char().2 : m_in_filename=\"%s") % m_in_filename;) 
+
+    // undo any position advance, if the advance option is false 
+
+    if (!advance)
+    {
+        m_curr_col = saved_col;
+        m_curr_pos = saved_pos;
+    }
+    
+    M__(M_out("infile_C::out_char().2 : m_in_filename=\"%s") % m_in_filename;) 
     return;    
 }
 M_endf
@@ -1309,14 +1334,14 @@ M_endf
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int instring_C::get_char(in_char_S& in_char) try
+int instring_C::get_char(in_char_S& in_char, bool advance) try
 {
     M__(M_out(L"instring_C::get_char() -- called");)
 
     // pass back existing data, or preset error EOF indication, if any -- don't go out to file (which may be closed if eof/error seen)
 
     if ( m_line_ok || m_eof_seen || m_error_seen )    
-        return fetch_char(in_char);    
+        return fetch_char(in_char, advance);    
 
 
     //  Need to go out to string to refill the line buffer -- error if string is not open
@@ -1325,7 +1350,7 @@ int instring_C::get_char(in_char_S& in_char) try
     if (!(m_is_open_s))
     {
         M_out_emsg(L"instring_C::get_char() called when string is not open  -- \"%s\"") % m_in_name;
-        out_char(in_char, char_E::error);         
+        out_char(in_char, char_E::error, advance);         
         return -1; 
     }       
 
@@ -1374,7 +1399,7 @@ int instring_C::get_char(in_char_S& in_char) try
     
     //  At this point, line_OK is on --or-- m_eof_seen/m_error_seen might be on (line can be empty or in bad state in this case) 
 
-    return fetch_char(in_char);
+    return fetch_char(in_char, advance);
 }
 M_endf
 

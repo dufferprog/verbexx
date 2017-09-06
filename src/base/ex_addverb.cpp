@@ -69,7 +69,7 @@ void add_predefined_typdefs() try
     def_global_typdef(L"KEYNAME_T"    , make_atomic_typdef(type_E::keyname    ), true);
     def_global_typdef(L"IDENTIFIER_T" , make_atomic_typdef(type_E::identifier ), true);
     def_global_typdef(L"VLIST_T"      , make_atomic_typdef(type_E::vlist      ), true);
-    def_global_typdef(L"EXPRESSION_T" , make_atomic_typdef(type_E::vexpr      ), true);
+    def_global_typdef(L"EXPRESSION_T" , make_atomic_typdef(type_E::expression ), true);
     def_global_typdef(L"SLIST_T"      , make_atomic_typdef(type_E::slist      ), true);
     def_global_typdef(L"VERBDEF_T"    , make_atomic_typdef(type_E::verbdef    ), true);
     def_global_typdef(L"TYPEDEF_T"    , make_atomic_typdef(type_E::typdef     ), true);
@@ -454,7 +454,7 @@ void add_predefined_verbs() try
             M_vt_pos_parm(                pt)                  
             pt.anything_ok                = true;                                                       // want to pass through all parms verbatim (unevaluated)
             pt.no_eval_ident              = true; 
-            pt.no_eval_vexpr              = true; 
+            pt.no_eval_expression         = true; 
             pt.no_eval_vlist              = true; 
             pt.no_eval_ref                = true; 
             M_vt_add_l_pos(           vt, pt)
@@ -463,7 +463,7 @@ void add_predefined_verbs() try
             M_vt_pos_parm(                pt)                  
             pt.anything_ok                = true;                                                        // want to pass through all parms verbatim (unevaluated)
             pt.no_eval_ident              = true; 
-            pt.no_eval_vexpr              = true; 
+            pt.no_eval_expression         = true; 
             pt.no_eval_vlist              = true; 
             pt.no_eval_ref                = true; 
             M_vt_add_r_pos(           vt, pt)    
@@ -587,8 +587,8 @@ void add_predefined_verbs() try
     // =========================================
 
     {
-        M_vt_unary_prefix(            vt             )
-        M_vt_slist_right_pos(         vt             )
+        M_vt_unary_prefix(            vt            )
+        M_vt_slist_right_pos(         vt            )
 
         M_vt_vlist0_optional_right_kw(vt, L"left"   )
         M_vt_vlist0_optional_right_kw(vt, L"right"  )
@@ -598,9 +598,9 @@ void add_predefined_verbs() try
 
 
 
-    // =====================================
+    // ==========================================================================
     // @CASE when:(expression) {slist} when:(expression) {slist} ... else:{slist} 
-    // =====================================
+    // ==========================================================================
 
     {
         M_vt_nary_prefix(             vt         )
@@ -608,22 +608,22 @@ void add_predefined_verbs() try
 
         {                                                 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             M_vt_optional_kw_parm(kp)
-            kp.kw_min_ct      =  0;
-            kp.kw_max_ct      = -1;          // multiple when: keywords allowed
-            kp.no_eval_ident  = true;
-            kp.no_eval_vexpr  = true;
-            kp.int8_ok        = true; 
-            kp.int16_ok       = true;
-            kp.int32_ok       = true;
-            kp.int64_ok       = true;
-            kp.uint8_ok       = true;
-            kp.uint16_ok      = true;
-            kp.uint32_ok      = true;
-            kp.uint64_ok      = true;
-            kp.var_ident_ok   = true;
-            kp.const_ident_ok = true;
-            kp.undef_ident_ok = true;
-            kp.vexpr_ok       = true;
+            kp.kw_min_ct          =  0;
+            kp.kw_max_ct          = -1;                      // multiple when: keywords allowed
+            kp.no_eval_ident      = true;
+            kp.no_eval_expression = true;
+            kp.int8_ok            = true; 
+            kp.int16_ok           = true;
+            kp.int32_ok           = true;
+            kp.int64_ok           = true;
+            kp.uint8_ok           = true;
+            kp.uint16_ok          = true;
+            kp.uint32_ok          = true;
+            kp.uint64_ok          = true;
+            kp.var_ident_ok       = true;
+            kp.const_ident_ok     = true;
+            kp.undef_ident_ok     = true;
+            kp.expression_ok      = true;
             M_vt_add_r_kw(L"when",   vt, kp       ) 
         }
 
@@ -643,21 +643,21 @@ void add_predefined_verbs() try
         {                                                   // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             M_vt_optional_kw_parm(kp);
 
-            kp.no_eval_ident  = true;
-            kp.no_eval_vexpr  = true;
-            kp.boolean_ok     = true; 
-            kp.int8_ok        = true; 
-            kp.int16_ok       = true;
-            kp.int32_ok       = true;
-            kp.int64_ok       = true;
-            kp.uint8_ok       = true;
-            kp.uint16_ok      = true;
-            kp.uint32_ok      = true;
-            kp.uint64_ok      = true;
-            kp.var_ident_ok   = true;
-            kp.const_ident_ok = true;
-            kp.undef_ident_ok = true;
-            kp.vexpr_ok       = true;
+            kp.no_eval_ident      = true;
+            kp.no_eval_expression = true;
+            kp.boolean_ok         = true; 
+            kp.int8_ok            = true; 
+            kp.int16_ok           = true;
+            kp.int32_ok           = true;
+            kp.int64_ok           = true;
+            kp.uint8_ok           = true;
+            kp.uint16_ok          = true;
+            kp.uint32_ok          = true;
+            kp.uint64_ok          = true;
+            kp.var_ident_ok       = true;
+            kp.const_ident_ok     = true;
+            kp.undef_ident_ok     = true;
+            kp.expression_ok      = true;
 
             M_vt_add_r_kw(L"until",  vt, kp        ) 
             M_vt_add_r_kw(L"while",  vt, kp        ) 
@@ -1004,20 +1004,20 @@ void add_predefined_verbs() try
 
         {                                          // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             M_vt_pos_parm(      pt       )
-            pt.no_eval_ident   = true; 
-            pt.no_eval_vexpr   = true; 
-            pt.int8_ok         = true;
-            pt.int16_ok        = true;
-            pt.int32_ok        = true;
-            pt.int64_ok        = true;
-            pt.uint8_ok        = true;
-            pt.uint16_ok       = true;
-            pt.uint32_ok       = true;
-            pt.uint64_ok       = true;
-            pt.var_ident_ok    = true;
-            pt.const_ident_ok  = true;
-            pt.undef_ident_ok  = true;
-            pt.vexpr_ok        = true;
+            pt.no_eval_ident       = true; 
+            pt.no_eval_expression  = true; 
+            pt.int8_ok             = true;
+            pt.int16_ok            = true;
+            pt.int32_ok            = true;
+            pt.int64_ok            = true;
+            pt.uint8_ok            = true;
+            pt.uint16_ok           = true;
+            pt.uint32_ok           = true;
+            pt.uint64_ok           = true;
+            pt.var_ident_ok        = true;
+            pt.const_ident_ok      = true;
+            pt.undef_ident_ok      = true;
+            pt.expression_ok       = true;
             M_vt_add_r_pos( vt, pt     )
         }
       
@@ -1424,15 +1424,15 @@ void add_predefined_verbs() try
      {
         M_vt_unary_prefix(vt)                                                                                                    
         
-        {                                             // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-            M_vt_pos_parm(          pt             )
-            pt.anything_ok   = true;
-            pt.no_eval_vlist = true;                  // no need to evaluate vlists parm to see what type it is or isn't 
-            pt.no_eval_vexpr = true;                  // want to leave any vexprs unevaluated, so vexpr parms can be reported
-            M_vt_add_r_pos(     vt, pt             )
+        {                                                 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            M_vt_pos_parm(          pt                 )
+            pt.anything_ok        = true;
+            pt.no_eval_vlist      = true;                 // no need to evaluate vlists parm to see what type it is or isn't 
+            pt.no_eval_expression = true;                 // want to leave any expression unevaluated, so expression parms can be reported
+            M_vt_add_r_pos(     vt, pt                 )
         }
 
-        M_vt_add(L"IS_ITEM"   , vt, verb_is_vexpr   )  
+        M_vt_add(L"IS_ITEM"   , vt, verb_is_expression )  
     }
       
     ////////////////////////////////////////////////////////////
@@ -1722,6 +1722,17 @@ void add_predefined_verbs() try
         M_vt_nval_optional_right_kw(  vt, L"no_nl"              )
 
         M_vt_add(L"SAY",              vt, verb_say              );       
+    }
+
+
+    // ==========================
+    // @INTERPOLATE "string"
+    // ==========================
+
+    {
+        M_vt_unary_prefix(            vt                        )      
+        M_vt_string_right_pos(        vt                        )      
+        M_vt_add(L"INTERPOLATE",      vt, verb_interpolate      );        
     }
 
 

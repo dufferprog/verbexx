@@ -48,8 +48,8 @@ pre_parse_C::pre_parse_C() try
     M__(M_out(L"Pre_parse_C default constructor called");)
 
 
-    // set up default imbed folder rom IMBED_PATH envar, if set
-    // --------------------------------------------------------
+    // set up default imbed folder from IMBED_PATH envar, if set
+    // ---------------------------------------------------------
 
     set_imbed_folder(); 
 
@@ -391,7 +391,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   import_dll() -- load DLL and call do_import() function in DLL 
+////   import_dll() -- load DLL and call do_import(prefix-parm) function in DLL 
 ////                   
 ////
 ////_____________________________________________________________________________________________________________________
@@ -413,9 +413,11 @@ int import_dll(const std::wstring& dll_name, const std::wstring& prefix) try
 
     // locate do_import() function in loaded DLL-- get_dll_function() should put out any needed error messages
 
-    auto gfrc = get_dll_function(hmodule, std::wstring {L"do_import"}, fcn_p);
+    auto gfrc = get_dll_function(hmodule, std::wstring { L"do_import" }, fcn_p);
     if (gfrc != 0) return gfrc;
 
+
+    // call located do_import() function in loaded DLL, and return with R/C from that function call
 
     return (*(do_import_T)fcn_p)(prefix); 
 }
@@ -1190,7 +1192,11 @@ int pre_parse_C::pre_parse_token(token_C& t, size_t peek_level) try
  
             if (!m_skipping)
             {
-                auto irc = import_dll(parm1.str, L"");   
+                std::wstring dll_name { L"verbexx_" + parm1.str };
+
+
+
+                auto irc = import_dll(dll_name, L"");   
                 if (irc != 0)
                 {
                      M__(M_out(L"pre_parse_C::pre_parse_token() : returning immediately due to bad R/C from import_dll(\"%S\", \"%s\")") % parm1.str % L"";) 
@@ -1801,7 +1807,7 @@ void pre_parse_C::set_allow_trailing_id_sigils(        bool     tf           ) t
 void pre_parse_C::set_allow_paren_sigils(              bool     tf           ) try { return m_token_stream.set_allow_paren_sigils(                   tf  );      }  M_endf
 void pre_parse_C::set_allow_attached_paren(            bool     tf           ) try { return m_token_stream.set_allow_attached_paren(                 tf  );      }  M_endf
                                                        
-void pre_parse_C::set_digraph_char(                    char32_t ch32         ) try { return m_token_stream.set_digraph_char(                         ch32);      }  M_endf
+void pre_parse_C::set_trigraph_char(                   char32_t ch32         ) try { return m_token_stream.set_trigraph_char(                        ch32);      }  M_endf
 void pre_parse_C::set_vanishing_separator_char(        char32_t ch32         ) try { return m_token_stream.set_vanishing_separator_char(             ch32);      }  M_endf  
 void pre_parse_C::set_line_continuation_char(          char32_t ch32         ) try { return m_token_stream.set_line_continuation_char(               ch32);      }  M_endf
 void pre_parse_C::set_always_sign_char(                char32_t ch32         ) try { return m_token_stream.set_always_sign_char(                     ch32);      }  M_endf

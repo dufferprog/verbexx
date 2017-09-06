@@ -75,7 +75,7 @@ std::wstring type_str(type_E kind) try
         case type_E::typdef      : return std::wstring { L"typedef"                   };      break;
         case type_E::ref         : return std::wstring { L"ref"                       };      break;
         case type_E::vlist       : return std::wstring { L"vlist"                     };      break;
-        case type_E::vexpr       : return std::wstring { L"expression"                };      break;
+        case type_E::expression  : return std::wstring { L"expression"                };      break;
         case type_E::slist       : return std::wstring { L"slist"                     };      break;
         case type_E::verbdef     : return std::wstring { L"verbdef"                   };      break; 
         default                  : return std::wstring { L"???-Unknown_type_E::-???"  };      break; 
@@ -99,22 +99,22 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-std::wstring verb_name(const a_vexpr_S& vexpr) try
+std::wstring verb_name(const a_expression_S& expression) try
 {
     std::wstring name {};
 
 
-    if (vexpr.verb_value.ty == type_E::verbname)                    // handle simple verbname 
+    if (expression.verb_value.ty == type_E::verbname)                   // handle simple verbname 
     {
-        if (vexpr.has_sigil)
-            name += (wchar_t)(vexpr.sigil);
+        if (expression.has_sigil)
+            name += (wchar_t)(expression.sigil);
        
-        name += vexpr.verb_value.string;
+        name += expression.verb_value.string;
     }
-    else                                                            // handle vexpr yielding verbname 
+    else                                                                // handle expression yielding verbname 
     {
         name  = L"<"; 
-        name += str_value(vexpr.verb_value, true, false, false);    // debug formatting for value  
+        name += str_value(expression.verb_value, true, false, false);   // debug formatting for value  
         name += L">";                          
     }
 
@@ -125,14 +125,14 @@ M_endf
 
 ///////////////////////////////////////////////////////////////
 
-std::wstring verb_name(const e_vexpr_S& eval_vexpr) try
+std::wstring verb_name(const e_expression_S& eval_expression) try
 {
     std::wstring name {};
 
-    if (eval_vexpr.has_sigil)
-        name += (wchar_t)(eval_vexpr.sigil);
+    if (eval_expression.has_sigil)
+        name += (wchar_t)(eval_expression.sigil);
        
-    name += eval_vexpr.verb_name;
+    name += eval_expression.verb_name;
 
     return name;
 }
@@ -296,9 +296,9 @@ std::wstring str_value(const value_S& value, bool debug, bool debugx, bool nest)
     {
         str =  L"<array>";
     }
-    else if  (value.ty == type_E::vexpr)
+    else if  (value.ty == type_E::expression)
     {
-        str =  L"(vexpr)";
+        str =  L"(expression)";
     }
     else if  (value.ty == type_E::vlist) 
     {
@@ -445,6 +445,7 @@ M_endf
 //▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
 //▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 
 
@@ -859,11 +860,11 @@ M_endf
 
 /////////////////////////////////////////////////////
 
-value_S vexpr_val(const a_vexpr_S& v, int64_t ix1, int64_t ix2) try
+value_S expression_val(const a_expression_S& v, int64_t ix1, int64_t ix2) try
 {
     value_S value {}; 
 
-    set_vexpr_value(value, v); 
+    set_expression_value(value, v); 
     value.token_ix1 = v.token_ix1;
     value.token_ix2 = v.token_ix2;
     return value; 
@@ -1172,11 +1173,11 @@ M_endf
 
 /////////////////////////////////////////////////////
 
-value_S type_val(const a_vexpr_S& v, int64_t ix1, int64_t ix2) try
+value_S type_val(const a_expression_S& v, int64_t ix1, int64_t ix2) try
 {
     value_S value {}; 
 
-    set_vexpr_value(value, v); 
+    set_expression_value(value, v); 
     value.token_ix1 = v.token_ix1;
     value.token_ix2 = v.token_ix2;
     return value; 
@@ -1578,13 +1579,15 @@ void set_vlist_value(value_S& val, const vlist_S& vlist, bool move_ok) try
 
 
     // allocate new non-autodata vlist_S on heap, anchor in caller's value_S, and copy passed-in vlist_S into new vlist_S  -- nested things pointed to by the value_S remain shared
-
+   
     val.vlist_sp.reset(new vlist_S {}); 
 
-    if (move_ok)
+    if (move_ok) 
         *val.vlist_sp = std::move(vlist);
     else
+    {
         *val.vlist_sp = vlist;
+    }
 
 
     // set type in passed-in value
@@ -1610,8 +1613,8 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   set_vexpr_value() -- put shared_ptr to passed-in a_vexpr_S into caller's (uninitialized) value_S structure 
-////                        (allocates new a_vexpr_S and copies passed-in a_vexpr_S into it)
+////   set_expression_value() -- put shared_ptr to passed-in a_expression_S into caller's (uninitialized) value_S structure 
+////                             (allocates new a_expression_S and copies passed-in a_expression_S into it)
 ////
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -1619,38 +1622,38 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-void set_vexpr_value(value_S& val, const a_vexpr_S& vexpr, bool move_ok) try
+void set_expression_value(value_S& val, const a_expression_S& expression, bool move_ok) try
 {
     // make sure value is not already set
 
     if (val.ty != type_E::none)
     {
-        M_out_emsg1(L"set_vexpr_value(): passed-in value is already set: ");
+        M_out_emsg1(L"set_expression_value(): passed-in value is already set: ");
         display_value(val, L"already-set value");
         M_out_emsgz();
-        M_throw("set_vexpr_value(): passed-in value is already set")
+        M_throw("set_expression_value(): passed-in value is already set")
     }
 
 
-    // allocate new non-autodata a_vexpr_S on heap, anchor in caller's value_S, and copy passed-in a_vexpr_S into new a_vexpr_S    -- nested values in vlists remain shared
+    // allocate new non-autodata a_expression_S on heap, anchor in caller's value_S, and copy passed-in a_expression_S into new a_expression_S    -- nested values in vlists remain shared
 
-    val.vexpr_sp.reset(new a_vexpr_S {}); 
+    val.expression_sp.reset(new a_expression_S {}); 
 
     if (move_ok)
-        *val.vexpr_sp = std::move(vexpr);
+        *val.expression_sp = std::move(expression);
     else
-        *val.vexpr_sp = vexpr;
+        *val.expression_sp = expression;
 
 
     // set type in passed-in value
 
-    val.ty = type_E::vexpr; 
+    val.ty = type_E::expression; 
 
 
     // set location fields in passed-in value
 
-    val.token_ix1 = vexpr.token_ix1; 
-    val.token_ix2 = vexpr.token_ix2; 
+    val.token_ix1 = expression.token_ix1; 
+    val.token_ix2 = expression.token_ix2; 
 
 
     return; 
@@ -1977,7 +1980,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   unshare_value() -- make sure this value_S points to unique copy of nested vlists, vexprs, and slists, etc.
+////   unshare_value() -- make sure this value_S points to unique copy of nested vlists, expressions, and slists, etc.
 ////                     
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -1997,7 +2000,7 @@ void unshare_value(value_S& value) try
    	{
            M__(M_out(L"unshare_value() -- before: vlist_sp = %16X") % value.vlist_sp.get(); ) 
            std::shared_ptr<vlist_S> new_vlist_sp { std::make_shared<vlist_S>() };         // get new, empty vlist_S
-           *new_vlist_sp = *(value.vlist_sp);                                             // copy all existing fields into new vlist_S -- copies shared pointers, but not anything pointed to by those shared pointers
+           *new_vlist_sp  = *(value.vlist_sp);                                            // copy all existing fields into new vlist_S -- copies shared pointers, but not anything pointed to by those shared pointers
            value.vlist_sp = new_vlist_sp;                                                 // vlist_sp in value now points to filled-in new vlist_S (still with pointers to shared/uncopied vlists and values) -- .reset(xxx) does not work
                                                                                         
            unshare_vlist(*(value.vlist_sp));                                              // update new vlist_S with unshared copies of nested vlists (if any) 
@@ -2005,18 +2008,18 @@ void unshare_value(value_S& value) try
    	}
 
 
-    // if value has valid a_vexpr_S pointer, replace existing a_vexpr_S with new one
-    // ---------------------------------------------------------------------------
+    // if value has valid a_expression_S pointer, replace existing a_expression_S with new one
+    // -------------------------------------------------------------------------------
 
-    if (value.vexpr_sp.get() != nullptr)
+    if (value.expression_sp.get() != nullptr)
     {
-        M__(M_out(L"unshare_value() -- before: vexpr_sp = %16X") % value.vexpr_sp.get(); ) 
-        std::shared_ptr<a_vexpr_S> new_vexpr_sp { std::make_shared<a_vexpr_S>() };         // get new, empty a_vexpr_S
-        *new_vexpr_sp = *(value.vexpr_sp);                                                 // copy all existing fields into new a_vexpr_S -- copies shared pointers, but not anything pointed to by those shared pointers
-        value.vexpr_sp = new_vexpr_sp;                                                     // vexpr_sp in value now points to filled-in new a_vexpr_S (still with pointers to shared/uncopied vlists and vexprs)  -- .reset(xxx) does not work
+        M__(M_out(L"unshare_value() -- before: expression_sp = %16X") % value.expression_sp.get(); ) 
+        std::shared_ptr<a_expression_S> new_expression_sp { std::make_shared<a_expression_S>() };        // get new, empty a_expression_S
+        *new_expression_sp  = *(value.expression_sp);                                                    // copy all existing fields into new a_expression_S -- copies shared pointers, but not anything pointed to by those shared pointers
+        value.expression_sp = new_expression_sp;                                                         // expression_sp in value now points to filled-in new a_expression_S (still with pointers to shared/uncopied vlists and expressions)  -- .reset(xxx) does not work
 
-        unshare_vexpr(*(value.vexpr_sp));                                                  // update new a_vexpr_S with unshared copies of nested objects (if any)  
-        M__(M_out(L"unshare_value() -- after: vexpr_sp = %16X") % value.vexpr_sp.get(); ) 
+        unshare_expression(*(value.expression_sp));                                                      // update new a_expression_S with unshared copies of nested objects (if any)  
+        M__(M_out(L"unshare_value() -- after: expression_sp = %16X") % value.expression_sp.get(); ) 
     }
 
 
@@ -2027,8 +2030,8 @@ void unshare_value(value_S& value) try
     {
         M__(M_out(L"unshare_value() -- before: slist_sp = %16X") % value.slist_sp.get(); ) 
         std::shared_ptr<slist_S> new_slist_sp { std::make_shared<slist_S>() };            // get new, empty slist_S
-        *new_slist_sp = *(value.slist_sp);                                                // copy all existing fields into new slist_S -- copies shared pointers, but not anything pointed to by those shared pointers
-        value.slist_sp = new_slist_sp;                                                    // slist_sp in value now points to filled-in new slist_S (still with pointers to shared/uncopied vlists and vexprs)
+        *new_slist_sp  = *(value.slist_sp);                                               // copy all existing fields into new slist_S -- copies shared pointers, but not anything pointed to by those shared pointers
+        value.slist_sp = new_slist_sp;                                                    // slist_sp in value now points to filled-in new slist_S (still with pointers to shared/uncopied vlists and expressions)
                                                                                           
         unshare_slist(*(value.slist_sp));                                                 // update new slist with unshared copies of nested objects (if any) 
         M__(M_out(L"unshare_value() -- after: slist_sp = %16X") % value.slist_sp.get(); ) 
@@ -2050,7 +2053,7 @@ void unshare_value(value_S& value) try
     }  
 
 
-    // if value has valid typdef_S pointer, replace existing typdef_S with new one (this may be unnecessary, since typdef_S vexprs don't change once allocated) 
+    // if value has valid typdef_S pointer, replace existing typdef_S with new one (this may be unnecessary, since typdef_S expressions don't change once allocated) 
     // ---------------------------------------------------------------------------
 
     if (value.typdef_sp.get() != nullptr)
@@ -2096,7 +2099,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   unshare_vlist() -- make sure all values in this vlist_S point to unique copies of nested vlists, vexprs, and slists
+////   unshare_vlist() -- make sure all values in this vlist_S point to unique copies of nested vlists, expression, and slists
 ////                      
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -2146,7 +2149,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   unshare_vexpr() -- make sure all values in this a_vexpr_S point to unique copies of nested vlists, vexprs, and slists
+////   unshare_expression() -- make sure all values in this a_expression_S point to unique copies of nested vlists, expressions, and slists
 ////                     
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -2154,17 +2157,17 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-void unshare_vexpr(a_vexpr_S& vexpr) try
+void unshare_expression(a_expression_S& expression) try
 {
-    M__(M_out(L"unshare_vexpr() called -- &vexpr = %016X") % (void *)&vexpr;)
+    M__(M_out(L"unshare_expression() called -- &expression = %016X") % (void *)&expression;)
 
 	// unshare everything in both left-side and right-side vlists 
 
-    unshare_value(vexpr.verb_value); 
-    unshare_vlist(vexpr.lparms); 
-    unshare_vlist(vexpr.rparms);
+    unshare_value(expression.verb_value); 
+    unshare_vlist(expression.lparms); 
+    unshare_vlist(expression.rparms);
      
-    M__(M_out(L"unshare_vexpr() returning");)
+    M__(M_out(L"unshare_expression() returning");)
 	return; 
 }
 M_endf
@@ -2177,7 +2180,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   unshare_slist() -- make sure all values in this slist_S point to unique copies of nested vlists, vexprs, and slists
+////   unshare_slist() -- make sure all values in this slist_S point to unique copies of nested vlists, expressions, and slists
 ////                      
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -2189,10 +2192,10 @@ void unshare_slist(slist_S& slist) try
 {
     M__(M_out(L"unshare_slist() called -- &slist = %016X") % (void *)&slist;)
 
-	// loop 1 -- unshare values for vexprs in slist 
+	// loop 1 -- unshare values for expressions in slist 
 
-    if (slist.vexpr_ct > 0)
-        for (auto& vexpr : slist.vexprs) unshare_vexpr(vexpr); 
+    if (slist.expression_ct > 0)
+        for (auto& expression : slist.expressions) unshare_expression(expression); 
 
 
     M__(M_out(L"unshare_slist() returning");)
@@ -2235,7 +2238,7 @@ void unshare_verbdef(verbdef_S& verbdef) try
         M__(M_out(L"unshare_verbdef() -- before: slist_sp = %16X") % verbdef.slist_sp.get(); ) 
         std::shared_ptr<slist_S> new_slist_sp { std::make_shared<slist_S>() };                   // get new, empty slist_S
         *new_slist_sp = *(verbdef.slist_sp);                                                     // copy all existing fields into new slist -- copies shared pointers, but not anything pointed to by those shared pointers
-        verbdef.slist_sp = new_slist_sp;                                                         // slist_sp in verbdef now points to filled-in new slist (still with pointers to shared/uncopied plists and parmtype_S vexprs)
+        verbdef.slist_sp = new_slist_sp;                                                         // slist_sp in verbdef now points to filled-in new slist (still with pointers to shared/uncopied plists and parmtype_S expressions)
 
         unshare_slist(*(verbdef.slist_sp));                                                      // update new slist with unshared copies of nested objects (if any) 
         M__(M_out(L"unshare_verbdef() -- after: slist_sp = %16X") % verbdef.slist_sp.get(); ) 
@@ -2399,6 +2402,51 @@ M_endf
 //▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
 //▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   refresh_evaluated_vlist() -- converts keywords in evaluated keywords multlimap back to vector form and places them in the unevaluated keywords vector 
+////
+////                                (!!!!! note: order of keywords in reconstructed unevaluated keywords list may not be the same as it was originally !!!!)
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+ 
+void refresh_evaluated_vlist(vlist_S& vlist) try
+{
+    if (vlist.kw_eval_done)
+    {  
+        // loop through evaluated keywords multimap, extracting key/value pairs
+
+        vlist.keywords.clear();                                        // clear out unevaluated keyword vector before refilling with evaluated keywords 
+
+        for (auto elem : vlist.eval_kws)                               // get each name value pair in the evaluated keywords ist 
+        {
+            vlist.keywords.push_back(keyword_S { string_val(elem.first), elem.second });         // add newly reconstructed keyword to vector of unevaluated keywords
+        }
+
+
+        //  update flags and keyword counts, to make vlist look like keywords have not been evaluated yet 
+
+        vlist.eval_kws.clear();                                        // clear out evaluated keywords multimap 
+        set_vlist_flags(vlist);                                        // update main vlist flags, in case anything is different 
+        vlist.kw_eval_done  = false;                                   // make vlist look like it has unevaluated keywords 
+        vlist.kw_ct         = vlist.keywords.size();                   // update keyword count to number of keywords in the vector (shouldn't change)                 
+    }
+ 
+    return; 
+}
+M_endf
+
 
 
 
@@ -2588,7 +2636,7 @@ bool is_type_valid(type_E kind) try
         case type_E::typdef      : return true ;      break;
         case type_E::ref         : return true ;      break;
         case type_E::vlist       : return true ;      break;
-        case type_E::vexpr       : return true ;      break;
+        case type_E::expression  : return true ;      break;
         case type_E::slist       : return true ;      break;
         case type_E::verbdef     : return true ;      break; 
         default                  : return false;      break; 
@@ -3534,8 +3582,8 @@ int dereference_value(value_S& out_value, const value_S& in_value) try      // ?
 
     // check non-buffer type reference
 
-    else                                                       // not in-buffer type reference -- should have no offset or associated typdef, and should not be identifier or vexpr (and probably other things too)
-    {                                                          // ------------------------------------------------------------------------------------------------------------------------------------------------
+    else                                                       // not in-buffer type reference -- should have no offset or associated typdef, and should not be identifier or expression (and probably other things too)
+    {                                                          // ------------------------------------------------------------------------------------------------------------------------------------------------------
         if (in_value.ref_sp->typdef_sp.get() != nullptr)
         {
              count_error();
@@ -3552,10 +3600,10 @@ int dereference_value(value_S& out_value, const value_S& in_value) try      // ?
              return -1;          
         }   
 
-        if (                                                            // should not be reference to vexpr or identifier requiring further evaluation
+        if (                                                            // should not be reference to expression or identifier requiring further evaluation
             (in_value.ref_sp->value_sp->ty == type_E::identifier)
             ||
-            (in_value.ref_sp->value_sp->ty == type_E::vexpr)
+            (in_value.ref_sp->value_sp->ty == type_E::expression)
            )
         {
              count_error();

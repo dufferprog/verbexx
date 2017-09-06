@@ -34,9 +34,9 @@
 //  forward declarations for selected static functions
 //  --------------------------------------------------
 
-static int          check_verb_parms(frame_S&, const e_vexpr_S&, const verbdef_S&                                                                 );
-static int          check_verb_value(frame_S&, const e_vexpr_S&, const parmtype_S&, const value_S&, const std::wstring&                           );
-static int          check_verb_vlist(frame_S&, const e_vexpr_S&, const plist_S&   , const vlist_S&, const std::wstring&, const std::wstring& = L"");  
+static int          check_verb_parms(frame_S&, const e_expression_S&, const verbdef_S&                                                                 );
+static int          check_verb_value(frame_S&, const e_expression_S&, const parmtype_S&, const value_S&, const std::wstring&                           );
+static int          check_verb_vlist(frame_S&, const e_expression_S&, const plist_S&   , const vlist_S&, const std::wstring&, const std::wstring& = L"");  
 
 
 
@@ -45,6 +45,8 @@ static int          check_verb_vlist(frame_S&, const e_vexpr_S&, const plist_S& 
 
 namespace static_N
 {
+                            // evaluation statistics and counters
+
 uint64_t                   verb_count      {0};                  // number of verbs executed
 uint64_t                   value_count     {0};                  // number of values evaluated
 uint64_t                   slist_count     {0};                  // number of slists executed
@@ -149,11 +151,11 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-int get_right_positional(const e_vexpr_S& vexpr, value_S& value, uint32_t n) try
+int get_right_positional(const e_expression_S& expression, value_S& value, uint32_t n) try
 {
     // return unit value, and R/C = -1, if n-th  positional right-side parm is not present
 
-    if (vexpr.rparms.value_ct <= n)
+    if (expression.rparms.value_ct <= n)
     {
         value = unit_val(); 
         return -1; 
@@ -162,7 +164,7 @@ int get_right_positional(const e_vexpr_S& vexpr, value_S& value, uint32_t n) try
 
     // n-th positional right-side parm is present -- return parm value
 
-    value = vexpr.rparms.values.at(n);
+    value = expression.rparms.values.at(n);
     return 0; 
 }
 M_endf
@@ -184,11 +186,11 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-int get_left_positional(const e_vexpr_S& vexpr, value_S& value, uint32_t n) try
+int get_left_positional(const e_expression_S& expression, value_S& value, uint32_t n) try
 {
     // return unit value, and R/C = -1, if n-th  positional left-side parm is not present
 
-    if (vexpr.lparms.value_ct <= n)
+    if (expression.lparms.value_ct <= n)
     {
         value = unit_val(); 
         return -1; 
@@ -197,7 +199,7 @@ int get_left_positional(const e_vexpr_S& vexpr, value_S& value, uint32_t n) try
 
     // n-th positional left-side parm is present -- return parm value
 
-    value = vexpr.lparms.values.at(n);
+    value = expression.lparms.values.at(n);
     return 0; 
 }
 M_endf  
@@ -220,11 +222,11 @@ M_endf
 
 // version with passed-back value parm 
 
-int get_right_keyword(const e_vexpr_S& vexpr, const std::wstring& keyword_name, value_S& value, uint32_t n) try
+int get_right_keyword(const e_expression_S& expression, const std::wstring& keyword_name, value_S& value, uint32_t n) try
 {
     // return unit value, and R/C = -1, if n-th right keyword is not present
 
-    if (vexpr.rparms.eval_kws.count(keyword_name) <= n)
+    if (expression.rparms.eval_kws.count(keyword_name) <= n)
     {
         value = unit_val(); 
         return -1; 
@@ -233,7 +235,7 @@ int get_right_keyword(const e_vexpr_S& vexpr, const std::wstring& keyword_name, 
 
     // n-th keyword is present -- return keyword value
 
-    value = multimap_at(vexpr.rparms.eval_kws, keyword_name, n);
+    value = multimap_at(expression.rparms.eval_kws, keyword_name, n);
     return 0; 
 }
 M_endf
@@ -241,11 +243,11 @@ M_endf
 
 // version without passed-back value parm -- just R/C 
 
-int get_right_keyword(const e_vexpr_S& vexpr, const std::wstring& keyword_name, uint32_t n) try
+int get_right_keyword(const e_expression_S& expression, const std::wstring& keyword_name, uint32_t n) try
 {
     // return  R/C = -1, if n-th right keyword is not present
 
-    if (vexpr.rparms.eval_kws.count(keyword_name) <= n)
+    if (expression.rparms.eval_kws.count(keyword_name) <= n)
         return -1; 
 
 
@@ -274,11 +276,11 @@ M_endf
 
 // version with passed-back value parm 
 
-int get_left_keyword(const e_vexpr_S& vexpr, const std::wstring& keyword_name, value_S& value, uint32_t n) try
+int get_left_keyword(const e_expression_S& expression, const std::wstring& keyword_name, value_S& value, uint32_t n) try
 {
     // return unit value, and R/C = -1, if n-th left keyword is not present
 
-    if (vexpr.lparms.eval_kws.count(keyword_name) <= 0)
+    if (expression.lparms.eval_kws.count(keyword_name) <= 0)
     {
         value = unit_val();  
         return -1; 
@@ -287,7 +289,7 @@ int get_left_keyword(const e_vexpr_S& vexpr, const std::wstring& keyword_name, v
 
     // n-th keyword is present -- return keyword value
 
-    value = multimap_at(vexpr.lparms.eval_kws, keyword_name, n);
+    value = multimap_at(expression.lparms.eval_kws, keyword_name, n);
     return 0; 
 }
 M_endf
@@ -295,11 +297,11 @@ M_endf
 
 // version without passed-back value parm 
 
-int get_left_keyword(const e_vexpr_S& vexpr, const std::wstring& keyword_name, uint32_t n) try
+int get_left_keyword(const e_expression_S& expression, const std::wstring& keyword_name, uint32_t n) try
 {
     // return  R/C = -1, if n-th right keyword is not present
 
-    if (vexpr.lparms.eval_kws.count(keyword_name) <= n)
+    if (expression.lparms.eval_kws.count(keyword_name) <= n)
         return -1; 
     
 
@@ -385,7 +387,7 @@ M_endf
 
 // internal helper function for check_verb_parms()
 
-static int check_verb_value(frame_S& frame, const e_vexpr_S& vexpr, const parmtype_S& parmtype, const value_S& value, const std::wstring& ws) try
+static int check_verb_value(frame_S& frame, const e_expression_S& expression, const parmtype_S& parmtype, const value_S& value, const std::wstring& ws) try
 {
     int rc {0}; 
 
@@ -400,80 +402,80 @@ static int check_verb_value(frame_S& frame, const e_vexpr_S& vexpr, const parmty
     if ( (!parmtype.nval_ok) && (value.ty == type_E::no_value) )         // keyword with no associated value
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected keyword with no following value") % verb_name(vexpr) % ws; 
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected keyword with no following value") % verb_name(expression) % ws; 
+        msgend_loc(value, expression);
         rc = -1;  
     }
        
     if ( (!parmtype.unit_ok) && (value.ty == type_E::unit) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected unit parm") % verb_name(vexpr) % ws; 
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected unit parm") % verb_name(expression) % ws; 
+        msgend_loc(value, expression);
         rc = -1;  
     }
 
     if ( (!parmtype.int8_ok) && (value.ty == type_E::int8) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s --  unexpected int8 parm = %d") % verb_name(vexpr) % ws % (int16_t)(value.int8);
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s --  unexpected int8 parm = %d") % verb_name(expression) % ws % (int16_t)(value.int8);
+        msgend_loc(value, expression);
         rc = -1;  
     }
 
     if ( (!parmtype.int16_ok) && (value.ty == type_E::int16) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s --  unexpected int16 parm = %d") % verb_name(vexpr) % ws % value.int16;
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s --  unexpected int16 parm = %d") % verb_name(expression) % ws % value.int16;
+        msgend_loc(value, expression);
         rc = -1;  
     }
 
     if ( (!parmtype.int32_ok) && (value.ty == type_E::int32) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s --  unexpected int32 parm = %d") % verb_name(vexpr) % ws % value.int32;
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s --  unexpected int32 parm = %d") % verb_name(expression) % ws % value.int32;
+        msgend_loc(value, expression);
         rc = -1;  
     }
 
     if ( (!parmtype.int64_ok) && (value.ty == type_E::int64) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s --  unexpected int64 parm = %d") % verb_name(vexpr) % ws % value.int64;
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s --  unexpected int64 parm = %d") % verb_name(expression) % ws % value.int64;
+        msgend_loc(value, expression);
         rc = -1;  
     }
     
     if ( (!parmtype.uint8_ok) && (value.ty == type_E::uint8) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s --  unexpected uint8 parm = %d") % verb_name(vexpr) % ws % (uint16_t)(value.uint8);
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s --  unexpected uint8 parm = %d") % verb_name(expression) % ws % (uint16_t)(value.uint8);
+        msgend_loc(value, expression);
         rc = -1;  
     }
 
     if ( (!parmtype.uint16_ok) && (value.ty == type_E::uint16) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s --  unexpected uint16 parm = %d") % verb_name(vexpr) % ws % value.uint16;
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s --  unexpected uint16 parm = %d") % verb_name(expression) % ws % value.uint16;
+        msgend_loc(value, expression);
         rc = -1;  
     }
 
     if ( (!parmtype.uint32_ok) && (value.ty == type_E::uint32) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s --  unexpected uint32 parm = %d") % verb_name(vexpr) % ws % value.uint32;
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s --  unexpected uint32 parm = %d") % verb_name(expression) % ws % value.uint32;
+        msgend_loc(value, expression);
         rc = -1;  
     }
 
     if ( (!parmtype.uint64_ok) && (value.ty == type_E::uint64) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s --  unexpected uint64 parm = %d") % verb_name(vexpr) % ws % value.uint64;
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s --  unexpected uint64 parm = %d") % verb_name(expression) % ws % value.uint64;
+        msgend_loc(value, expression);
         rc = -1;  
     }
 
@@ -481,32 +483,32 @@ static int check_verb_value(frame_S& frame, const e_vexpr_S& vexpr, const parmty
     if ( (!parmtype.float32_ok) && (value.ty == type_E::float32) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected float32 parm = %g") % verb_name(vexpr) % ws % value.float32;
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected float32 parm = %g") % verb_name(expression) % ws % value.float32;
+        msgend_loc(value, expression);
         rc = -1;  
     }
 
     if ( (!parmtype.float64_ok) && (value.ty == type_E::float64) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected float64 parm = %g") % verb_name(vexpr) % ws % value.float64;
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected float64 parm = %g") % verb_name(expression) % ws % value.float64;
+        msgend_loc(value, expression);
         rc = -1;  
     }
     
     if ( (!parmtype.string_ok) && (value.ty == type_E::string) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected string parm = «%s»") % verb_name(vexpr) % ws % value.string;
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected string parm = «%s»") % verb_name(expression) % ws % value.string;
+        msgend_loc(value, expression);
         rc = -1;  
     }
 
     if ( (!parmtype.verbname_ok) && (value.ty == type_E::verbname) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected verbname parm = «%s»") % verb_name(vexpr) % ws % value.string;
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected verbname parm = «%s»") % verb_name(expression) % ws % value.string;
+        msgend_loc(value, expression);
         rc = -1;  
     }
      
@@ -532,8 +534,8 @@ static int check_verb_value(frame_S& frame, const e_vexpr_S& vexpr, const parmty
             // not expecting any type of identifier -- error
 
             count_error(); 
-            M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected identifier parm = %s") % verb_name(vexpr) % ws % value.string;
-            msgend_loc(value, vexpr);
+            M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected identifier parm = %s") % verb_name(expression) % ws % value.string;
+            msgend_loc(value, expression);
             rc = -1;  
         }
         else                                          // expecting some specific type(s) of identifier -- variable/const/undef -- need to check further
@@ -548,24 +550,24 @@ static int check_verb_value(frame_S& frame, const e_vexpr_S& vexpr, const parmty
                 if ( (!parmtype.var_ident_ok) && is_local_identifier_variable(frame, value.string) ) 
                 {
                     count_error(); 
-                    M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected (unevaluated) pre-defined local variable identifier parm = %s") % verb_name(vexpr) % ws % value.string;
-                    msgend_loc(value, vexpr);
+                    M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected (unevaluated) pre-defined local variable identifier parm = %s") % verb_name(expression) % ws % value.string;
+                    msgend_loc(value, expression);
                     rc = -1;  
                 }
          
                 if ( (!parmtype.const_ident_ok) &&  is_local_identifier_const(frame, value.string) ) 
                 {
                     count_error(); 
-                    M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected (unevaluated) pre-defined local constant identifier parm = %s") % verb_name(vexpr) % ws % value.string;
-                    msgend_loc(value, vexpr);
+                    M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected (unevaluated) pre-defined local constant identifier parm = %s") % verb_name(expression) % ws % value.string;
+                    msgend_loc(value, expression);
                     rc = -1;  
                 }
                      
                 if ( (!parmtype.undef_ident_ok) && (!is_local_identifier_defined(frame, value.string)) )
                 {
                     count_error(); 
-                    M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected undefined local identifier parm = %s") % verb_name(vexpr) % ws % value.string;
-                    msgend_loc(value, vexpr);
+                    M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected undefined local identifier parm = %s") % verb_name(expression) % ws % value.string;
+                    msgend_loc(value, expression);
                     rc = -1;  
                 } 
             }
@@ -577,24 +579,24 @@ static int check_verb_value(frame_S& frame, const e_vexpr_S& vexpr, const parmty
                 if ( (!parmtype.var_ident_ok) &&  is_global_identifier_variable(value.string) ) 
                 {
                     count_error(); 
-                    M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected (unevaluated) global pre-defined variable identifier parm = %s") % verb_name(vexpr) % ws % value.string;
-                    msgend_loc(value, vexpr);
+                    M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected (unevaluated) global pre-defined variable identifier parm = %s") % verb_name(expression) % ws % value.string;
+                    msgend_loc(value, expression);
                     rc = -1;  
                 }
          
                 if ( (!parmtype.const_ident_ok) &&  is_global_identifier_const(value.string) ) 
                 {
                     count_error(); 
-                    M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected (unevaluated) global pre-defined constant identifier parm = %s") % verb_name(vexpr) % ws % value.string;
-                    msgend_loc(value, vexpr);
+                    M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected (unevaluated) global pre-defined constant identifier parm = %s") % verb_name(expression) % ws % value.string;
+                    msgend_loc(value, expression);
                     rc = -1;  
                 }
                      
                 if ( (!parmtype.undef_ident_ok) &&  (!is_global_identifier_defined(value.string)) )
                 {
                     count_error(); 
-                    M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected undefined global identifier parm = %s") % verb_name(vexpr) % ws % value.string;
-                    msgend_loc(value, vexpr);
+                    M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected undefined global identifier parm = %s") % verb_name(expression) % ws % value.string;
+                    msgend_loc(value, expression);
                     rc = -1;  
                 } 
             }
@@ -606,24 +608,24 @@ static int check_verb_value(frame_S& frame, const e_vexpr_S& vexpr, const parmty
                 if ( (!parmtype.var_ident_ok) &&  is_identifier_variable(frame, value.string) ) 
                 {
                     count_error(); 
-                    M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected (unevaluated) pre-defined variable identifier parm = %s") % verb_name(vexpr) % ws % value.string;
-                    msgend_loc(value, vexpr);
+                    M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected (unevaluated) pre-defined variable identifier parm = %s") % verb_name(expression) % ws % value.string;
+                    msgend_loc(value, expression);
                     rc = -1;  
                 }
               
                 if ( (!parmtype.const_ident_ok) &&  is_identifier_const(frame, value.string) ) 
                 {
                     count_error(); 
-                    M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected (unevaluated) pre-defined constant identifier parm = %s") % verb_name(vexpr) % ws % value.string;
-                    msgend_loc(value, vexpr);
+                    M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected (unevaluated) pre-defined constant identifier parm = %s") % verb_name(expression) % ws % value.string;
+                    msgend_loc(value, expression);
                     rc = -1;  
                 }
                      
                 if ( (!parmtype.undef_ident_ok) && (!is_identifier_defined(frame, value.string)) )
                 {
                     count_error(); 
-                    M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected undefined identifier parm = %s") % verb_name(vexpr) % ws % value.string;
-                    msgend_loc(value, vexpr);
+                    M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected undefined identifier parm = %s") % verb_name(expression) % ws % value.string;
+                    msgend_loc(value, expression);
                     rc = -1;  
                 }
             }
@@ -631,48 +633,48 @@ static int check_verb_value(frame_S& frame, const e_vexpr_S& vexpr, const parmty
     }                   // identifier
 
 
-    // check vlist, slist, vexpr, verbdef, etc.
-    // ---------------------------------------
+    // check vlist, slist, expression, verbdef, etc.
+    // ---------------------------------------------
 
     M__(M_out(L"check_verb_value() -- value.ty = %d = %S") % (int)(value.ty) % type_str(value.ty);)
 
     if ( (!parmtype.vlist_ok) && (value.ty == type_E::vlist) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected vlist parm") % verb_name(vexpr) % ws;
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected vlist parm") % verb_name(expression) % ws;
+        msgend_loc(value, expression);
         rc = -1;  
     }
 
-    if ( (!parmtype.vexpr_ok) && (value.ty == type_E::vexpr) )
+    if ( (!parmtype.expression_ok) && (value.ty == type_E::expression) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected vexpr parm") % verb_name(vexpr) % ws;
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected expression parm") % verb_name(expression) % ws;
+        msgend_loc(value, expression);
         rc = -1;  
     }
     
     if ( (!parmtype.slist_ok) && (value.ty == type_E::slist) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected slist parm") % verb_name(vexpr) % ws;
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected slist parm") % verb_name(expression) % ws;
+        msgend_loc(value, expression);
         rc = -1;  
     }
 
     if ( (!parmtype.verbdef_ok) && (value.ty == type_E::verbdef) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected verbdef parm") % verb_name(vexpr) % ws;
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected verbdef parm") % verb_name(expression) % ws;
+        msgend_loc(value, expression);
         rc = -1;  
     }                                                                        
 
     if ( (!parmtype.typdef_ok) && (value.ty == type_E::typdef) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected typdef parm") % verb_name(vexpr) % ws;
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected typdef parm") % verb_name(expression) % ws;
+        msgend_loc(value, expression);
         rc = -1;  
     }  
 
@@ -680,8 +682,8 @@ static int check_verb_value(frame_S& frame, const e_vexpr_S& vexpr, const parmty
     if ( (!parmtype.array_ok) && (value.ty == type_E::array) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected array parm") % verb_name(vexpr) % ws;
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected array parm") % verb_name(expression) % ws;
+        msgend_loc(value, expression);
         rc = -1;  
     }  
     
@@ -689,8 +691,8 @@ static int check_verb_value(frame_S& frame, const e_vexpr_S& vexpr, const parmty
     if ( (!parmtype.structure_ok) && (value.ty == type_E::structure) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected structure parm") % verb_name(vexpr) % ws;
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected structure parm") % verb_name(expression) % ws;
+        msgend_loc(value, expression);
         rc = -1;  
     }  
 
@@ -698,8 +700,8 @@ static int check_verb_value(frame_S& frame, const e_vexpr_S& vexpr, const parmty
     if ( (!parmtype.lvalue_ref_ok) && ((value.ty == type_E::ref) && (value.ref_sp->is_lvalue)) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected lvalue-ref parm") % verb_name(vexpr) % ws;
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected lvalue-ref parm") % verb_name(expression) % ws;
+        msgend_loc(value, expression);
         rc = -1;  
     }  
 
@@ -707,8 +709,8 @@ static int check_verb_value(frame_S& frame, const e_vexpr_S& vexpr, const parmty
     if ( (!parmtype.rvalue_ref_ok) && ((value.ty == type_E::ref) && (value.ref_sp->is_rvalue)) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected rvalue-ref parm") % verb_name(vexpr) % ws;
-        msgend_loc(value, vexpr);
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected rvalue-ref parm") % verb_name(expression) % ws;
+        msgend_loc(value, expression);
         rc = -1;  
     }  
 
@@ -721,8 +723,8 @@ static int check_verb_value(frame_S& frame, const e_vexpr_S& vexpr, const parmty
         if ( (value.int64 < parmtype.int64_min) || (value.int64 > parmtype.int64_max) )
         {
             count_error(); 
-            M_out_emsg1(L"check_verb_value() -- verb= %s %s -- int64 value is not in allowed range -- min=%d  value=%d  max=%d") % verb_name(vexpr) % ws % parmtype.int64_min % value.int64 % parmtype.int64_max;
-            msgend_loc(value, vexpr);
+            M_out_emsg1(L"check_verb_value() -- verb= %s %s -- int64 value is not in allowed range -- min=%d  value=%d  max=%d") % verb_name(expression) % ws % parmtype.int64_min % value.int64 % parmtype.int64_max;
+            msgend_loc(value, expression);
             rc = -1;         
         }    
     }
@@ -732,8 +734,8 @@ static int check_verb_value(frame_S& frame, const e_vexpr_S& vexpr, const parmty
         if ( (value.float64 < parmtype.float64_min) || (value.float64 > parmtype.float64_max) )
         {
             count_error(); 
-            M_out_emsg1(L"check_verb_value() -- verb= %s %s -- float64 value is not in allowed range -- min=%g  value=%g  max=%g") % verb_name(vexpr) % ws % parmtype.float64_min % value.float64 % parmtype.float64_max;
-            msgend_loc(value, vexpr);
+            M_out_emsg1(L"check_verb_value() -- verb= %s %s -- float64 value is not in allowed range -- min=%g  value=%g  max=%g") % verb_name(expression) % ws % parmtype.float64_min % value.float64 % parmtype.float64_max;
+            msgend_loc(value, expression);
             rc = -1;         
         }    
     }
@@ -743,7 +745,7 @@ static int check_verb_value(frame_S& frame, const e_vexpr_S& vexpr, const parmty
     
     if ( parmtype.vlist_ok && (value.ty == type_E::vlist) && (parmtype.plist_sp.get() != nullptr) && (value.vlist_sp.get() != nullptr) )    
     {
-        auto crc = check_verb_vlist(frame, vexpr, *(parmtype.plist_sp), *(value.vlist_sp), L" " + ws + L"nested vlist", L"");
+        auto crc = check_verb_vlist(frame, expression, *(parmtype.plist_sp), *(value.vlist_sp), L" " + ws + L"nested vlist", L"");
         if (crc != 0) rc = crc; 
     }
     
@@ -769,7 +771,7 @@ M_endf
 
 // internal helper function for check_verb_parms()
 
-static int check_verb_vlist(frame_S& frame, const e_vexpr_S& vexpr, const plist_S& plist, const vlist_S& vlist, const std::wstring& ws1, const std::wstring& ws2) try
+static int check_verb_vlist(frame_S& frame, const e_expression_S& expression, const plist_S& plist, const vlist_S& vlist, const std::wstring& ws1, const std::wstring& ws2) try
 {
     int rc {0}; 
 
@@ -784,27 +786,27 @@ static int check_verb_vlist(frame_S& frame, const e_vexpr_S& vexpr, const plist_
         if (vlist.value_ct < plist.min_ct)
         {
             count_error(); 
-            M_out_emsg1(L"check_verb_vlist() -- verb= %s %s expects at least %d %s positional parm(s), but only %d were present") % verb_name(vexpr) % ws1 %  plist.min_ct % ws2 % vlist.value_ct;
-            msgend_loc(vlist, vexpr);
+            M_out_emsg1(L"check_verb_vlist() -- verb= %s %s expects at least %d %s positional parm(s), but only %d were present") % verb_name(expression) % ws1 %  plist.min_ct % ws2 % vlist.value_ct;
+            msgend_loc(vlist, expression);
             rc = -1;          
         }
        
         if  ( (plist.max_ct >= 0) && (vlist.value_ct > plist.max_ct) )
         {
             count_error(); 
-            M_out_emsg1(L"check_verb_vlist() -- verb= %s %s expects at most %d %s positional parm(s), but %d were present -- possible missing semicolon?") % verb_name(vexpr) % ws1 % plist.max_ct % ws2 % vlist.value_ct;
-            msgend_loc(vlist, vexpr);
+            M_out_emsg1(L"check_verb_vlist() -- verb= %s %s expects at most %d %s positional parm(s), but %d were present -- possible missing semicolon?") % verb_name(expression) % ws1 % plist.max_ct % ws2 % vlist.value_ct;
+            msgend_loc(vlist, expression);
             rc = -1;          
         }
 
 
         // set up default parmtype_S to use if vector does not have any parmtype_S elements
       
-        parmtype_S default_parmtype {};                                 // default parmtype
-        default_parmtype.no_eval_ident = plist.no_eval_ident;           // copy in eval flag (set only for verbless vexprs) 
-        default_parmtype.no_eval_vexpr = plist.no_eval_vexpr;           // copy in eval flag (set only for verbless vexprs) 
-        default_parmtype.no_eval_vlist = plist.no_eval_vlist;           // copy in eval flag (set only for verbless vexprs) 
-        default_parmtype.anything_ok = true;                            // allow anything -- default is no checking 
+        parmtype_S default_parmtype {};                                                                                                              // default parmtype
+        default_parmtype.no_eval_ident = plist.no_eval_ident;                                                                                        // copy in eval flag (set only for verbless expression) 
+        default_parmtype.no_eval_expression = plist.no_eval_expression;                                                                              // copy in eval flag (set only for verbless expression) 
+        default_parmtype.no_eval_vlist = plist.no_eval_vlist;                                                                                        // copy in eval flag (set only for verbless expression) 
+        default_parmtype.anything_ok = true;                                                                                                         // allow anything -- default is no checking 
       
       
         // loop to look at each positional parm and do parm type checking
@@ -816,15 +818,15 @@ static int check_verb_vlist(frame_S& frame, const e_vexpr_S& vexpr, const plist_
                 std::wstring ws {ws1 + ws2 + L" positional parm " + std::to_wstring(i) + L":"};
            
            
-                if (plist.values.empty())                                                                   // no parmtype_S elements available? 
+                if (plist.values.empty())                                                                                                            // no parmtype_S elements available? 
+                {                                                                                                                                   
+                    auto crc = check_verb_value(frame, expression, default_parmtype, vlist.values.at(i), ws);                                        // use default one just constructed -- no checking
+                    if (crc != 0)  rc = crc;                                                                                                         // remember any error   
+                }                                                                                                                                   
+                else                                                                                                                                 // some parmtype_S are available in plist.values vector -- use i-th parmtype_S, or last one if not enough)               
                 {
-                    auto crc = check_verb_value(frame, vexpr, default_parmtype, vlist.values.at(i), ws);    // use default one just constructed -- no checking
-                    if (crc != 0)  rc = crc;                                                                // remember any error   
-                }
-                else                                                                                        // some parmtype_S are available in plist.values vector -- use i-th parmtype_S, or last one if not enough)               
-                {
-                    auto crc = check_verb_value(frame, vexpr, plist.values.at(std::min(i, (int)(plist.values.size() - 1))), vlist.values.at(i), ws);
-                    if (crc != 0)  rc = crc;                                                                // remember any error
+                    auto crc = check_verb_value(frame, expression, plist.values.at(std::min(i, (int)(plist.values.size() - 1))), vlist.values.at(i), ws);
+                    if (crc != 0)  rc = crc;                                                                                                         // remember any error
                 }           
             }
         }
@@ -842,8 +844,8 @@ static int check_verb_vlist(frame_S& frame, const e_vexpr_S& vexpr, const plist_
             if (vlist.eval_kws.size() > 0)
             {
                 count_error(); 
-                M_out_emsg1(L"check_verb_vlist() -- verb= %s %s expects no %s keywords, but %d was/were present") % verb_name(vexpr) % ws1 % ws2 % vlist.kw_ct;
-                msgend_loc(vlist, vexpr);
+                M_out_emsg1(L"check_verb_vlist() -- verb= %s %s expects no %s keywords, but %d was/were present") % verb_name(expression) % ws1 % ws2 % vlist.kw_ct;     // unevaluated keyword count
+                msgend_loc(vlist, expression);
                 rc = -1;          
             }
         }
@@ -855,27 +857,27 @@ static int check_verb_vlist(frame_S& frame, const e_vexpr_S& vexpr, const plist_
             // keywords allowed -- check each keyword that is present in vlist to see if associated value type is allowed -- also check for duplicate kws, etc. 
             // ------------------------------------------------------------------------------------------------------------------------------------------------
         
-            for (const auto& elem : vlist.eval_kws)                  // look at each keyword in vlist
-            {
-                std::wstring kw_find_name   { };                     // name used to look up keywords in plist keyword list 
-
-                if (plist.no_check_keyword_names)                    // don't check keyword names?
-                   kw_find_name = L"";                               // use dummy substitute name for entry in kw map
-                else
-                   kw_find_name = elem.first;                        // look for this keyword name from parms vlist 
-
-                auto key_pct = plist.keywords.count(kw_find_name);   // find "*" or this vlist keyword in list of allowed keywords for this plist      
-
-                if (key_pct == 0)                                    // see if this keyword is not in the list of expected keywords for this vlist 
+            for (const auto& elem : vlist.eval_kws)                          // look at each keyword in vlist
+            {                                                               
+                std::wstring kw_find_name   { };                             // name used to look up keywords in plist keyword list 
+                                                                            
+                if (plist.no_check_keyword_names)                            // don't check keyword names?
+                   kw_find_name = L"";                                       // use dummy substitute name for entry in kw map
+                else                                                        
+                   kw_find_name = elem.first;                                // look for this keyword name from parms vlist 
+                                                                            
+                auto key_pct = plist.keywords.count(kw_find_name);           // find "*" or this vlist keyword in list of allowed keywords for this plist      
+                                                                            
+                if (key_pct == 0)                                            // see if this keyword is not in the list of expected keywords for this vlist 
                 {
                     count_error();
-                    M_out_emsg1(L"check_verb_vlist() -- verb= %s %s -- unexpected %s keyword=%s: present") % verb_name(vexpr) % ws1 % ws2 % elem.first; 
+                    M_out_emsg1(L"check_verb_vlist() -- verb= %s %s -- unexpected %s keyword=%s: present") % verb_name(expression) % ws1 % ws2 % elem.first; 
 
                     msg_kw_loc(elem.second);
-                    msgend_loc(vlist, vexpr);
+                    msgend_loc(vlist, expression);
                     rc = -1;               
                 }
-                else if (key_pct == 1)                               // this keyword or "*"found in list of expected keywords
+                else if (key_pct == 1)                                       // this keyword or "*"found in list of expected keywords
                 {
                     // check for duplicate keywords (or too many)    --  (missing kw, or too few) is checked later
 
@@ -884,8 +886,8 @@ static int check_verb_vlist(frame_S& frame, const e_vexpr_S& vexpr, const plist_
                     auto kw_vct      = vlist.eval_kws.count(elem.first);     // get number of occurrences of this keyword in vlist (use real kw name -- assume supplied plist allows 0-nnnn occurrences, if names are not being checked)
 
 
-                    M__(M_out(L"check_verb_vlist() -- ++++++++++++++++++++++++++++++++++ find_name = %S  located kw parmtype -- no_eval_ident=%s  no_eval_vexpr=%s  no_eval_vlist=%s")
-                              % kw_find_name % M_bool_cstr(kw_parmtype.no_eval_ident) % M_bool_cstr(kw_parmtype.no_eval_vexpr) % M_bool_cstr(kw_parmtype.no_eval_vlist)
+                    M__(M_out(L"check_verb_vlist() -- ++++++++++++++++++++++++++++++++++ find_name = %S  located kw parmtype -- no_eval_ident=%s  no_eval_expression=%s  no_eval_vlist=%s")
+                              % kw_find_name % M_bool_cstr(kw_parmtype.no_eval_ident) % M_bool_cstr(kw_parmtype.no_eval_expression) % M_bool_cstr(kw_parmtype.no_eval_vlist)
                         ;
                        )
 
@@ -894,34 +896,34 @@ static int check_verb_vlist(frame_S& frame, const e_vexpr_S& vexpr, const plist_
                         if (kw_max_ct == 1)
                         {
                             count_error();
-                            M_out_emsg1(L"check_verb_vlist() -- verb= %s %s -- %s keyword=%s: present %d times -- only once is allowed") % verb_name(vexpr) % ws1 % ws2 % elem.first % kw_vct; 
+                            M_out_emsg1(L"check_verb_vlist() -- verb= %s %s -- %s keyword=%s: present %d times -- only once is allowed") % verb_name(expression) % ws1 % ws2 % elem.first % kw_vct; 
                             msg_kw_loc(elem.second);
-                            msgend_loc(vlist, vexpr); 
+                            msgend_loc(vlist, expression); 
                             rc = -1;
                         }
                         else
                         {
                             count_error();
-                            M_out_emsg1(L"check_verb_vlist() -- verb= %s %s -- %s keyword=%s: present %d times -- maximum of %d times is allowed") % verb_name(vexpr) % ws1 % ws2 % elem.first % kw_vct % kw_max_ct; 
+                            M_out_emsg1(L"check_verb_vlist() -- verb= %s %s -- %s keyword=%s: present %d times -- maximum of %d times is allowed") % verb_name(expression) % ws1 % ws2 % elem.first % kw_vct % kw_max_ct; 
                             msg_kw_loc(elem.second);
-                            msgend_loc(vlist, vexpr); 
+                            msgend_loc(vlist, expression); 
                             M_out_emsgz();
                             rc = -1;
                         }
                     }
 
-                    kw_done.insert(elem.first);                          //mark this one done, so as not to complain multiple times 
+                    kw_done.insert(elem.first);                             //mark this one done, so as not to complain multiple times 
                    
 
                     // check located parmtype_S for this verb against actual value for keyword that is present in verb parms
       
-                     auto crc = check_verb_value(frame, vexpr, kw_parmtype, elem.second, ws1 + ws2 + L" keyword=" + elem.first + L":"); 
+                     auto crc = check_verb_value(frame, expression, kw_parmtype, elem.second, ws1 + ws2 + L" keyword=" + elem.first + L":"); 
                      if (crc != 0) rc = crc;               
                 }
                 else    // should not occur
                 {
-                    M_throw_v("check_verb_vlist() --  verb= %s %s -- more than one entry in %s expected keyword list -- keyword=%s verb=%s") % out_ws(verb_name(vexpr)) % out_ws(ws1) %  out_ws(ws2) % out_ws(elem.first) % out_ws(verb_name(vexpr)) ));
-                    msgend_loc(vlist, vexpr); 
+                    M_throw_v("check_verb_vlist() --  verb= %s %s -- more than one entry in %s expected keyword list -- keyword=%s verb=%s") % out_ws(verb_name(expression)) % out_ws(ws1) %  out_ws(ws2) % out_ws(elem.first) % out_ws(verb_name(expression)) ));
+                    msgend_loc(vlist, expression); 
                     return -2;                                              // should not get here
                 }         
             }   
@@ -946,8 +948,8 @@ static int check_verb_vlist(frame_S& frame, const e_vexpr_S& vexpr, const plist_
                         {
                             M__(M_out(L"check_verb_vlist() -- missing required kws");)
                             count_error();
-                            M_out_emsg1(L"check_verb_vlist() -- verb= %s %s -- missing required %s keyword=%s:") % verb_name(vexpr) % ws1 % ws2 % elem.first;
-                            msgend_loc(vlist, vexpr); 
+                            M_out_emsg1(L"check_verb_vlist() -- verb= %s %s -- missing required %s keyword=%s:") % verb_name(expression) % ws1 % ws2 % elem.first;
+                            msgend_loc(vlist, expression); 
                             M_out_emsgz();
                             rc = -1;                 
                         }
@@ -955,8 +957,8 @@ static int check_verb_vlist(frame_S& frame, const e_vexpr_S& vexpr, const plist_
                         {
                             M__(M_out(L"check_verb_vlist() -- not enough kws");)
                             count_error();
-                            M_out_emsg1(L"check_verb_vlist() -- verb= %s %s  -- %s keyword=%s: is present only %d time(s) -- minimum required times is %d") % verb_name(vexpr) % ws1 % ws2 % elem.first % kw_ct % min_ct;
-                            msgend_loc(vlist, vexpr); 
+                            M_out_emsg1(L"check_verb_vlist() -- verb= %s %s  -- %s keyword=%s: is present only %d time(s) -- minimum required times is %d") % verb_name(expression) % ws1 % ws2 % elem.first % kw_ct % min_ct;
+                            msgend_loc(vlist, expression); 
                             rc = -1;                 
                         }
                     }         
@@ -977,9 +979,9 @@ static int check_verb_vlist(frame_S& frame, const e_vexpr_S& vexpr, const plist_
 
                  for (const auto& conflict_set : plist.conflicts)
                  {
-                     int          conflict_ct  {0};               // number of conflicting keywords found in this conflict set
-                     std::wstring conflict_str { };               // list of conflicting keywords found in this set (for error message)
-
+                     int          conflict_ct  {0};                        // number of conflicting keywords found in this conflict set
+                     std::wstring conflict_str { };                        // list of conflicting keywords found in this set (for error message)
+                                                                         
 
                      // inner loop to count how many keywords in vlist are in this set (should be 0 or 1)
 
@@ -998,8 +1000,8 @@ static int check_verb_vlist(frame_S& frame, const e_vexpr_S& vexpr, const plist_
                     if (conflict_ct > 1)
                     {
                         count_error();
-                        M_out_emsg1(L"check_verb_vlist() -- verb= %s %s  --  conflicting %s keywords found -- %s") % verb_name(vexpr) % ws1 % ws2 % conflict_str;
-                        msgend_loc(vlist, vexpr); 
+                        M_out_emsg1(L"check_verb_vlist() -- verb= %s %s  --  conflicting %s keywords found -- %s") % verb_name(expression) % ws1 % ws2 % conflict_str;
+                        msgend_loc(vlist, expression); 
                         rc = -1;                       
                     } 
                  }                               // loop to ckeck each conflict set for this plist
@@ -1020,7 +1022,7 @@ static int check_verb_vlist(frame_S& frame, const e_vexpr_S& vexpr, const plist_
 
                  for (const auto& choice_set : plist.choices)
                  {
-                     int          choice_ct  {0};               // number of choice keywords found in this choice set
+                     int          choice_ct  {0};                        // number of choice keywords found in this choice set
                     
                      // inner loop to count how many keywords in vlist are in this set (should be 1 or more)
 
@@ -1037,7 +1039,7 @@ static int check_verb_vlist(frame_S& frame, const e_vexpr_S& vexpr, const plist_
                     {
                         // get string with keywords, one or more of which must be present 
 
-                        std::wstring choice_str { };               // list of choice keywords found in this set (for error message)
+                        std::wstring choice_str { };                      // list of choice keywords found in this set (for error message)
 
                         for (const auto cs_kw_name : choice_set)
                             choice_str += L" " + cs_kw_name + L": "; 
@@ -1048,11 +1050,11 @@ static int check_verb_vlist(frame_S& frame, const e_vexpr_S& vexpr, const plist_
                         count_error();
 
                         if (choice_ct == 0)
-                            M_out_emsg1(L"check_verb_vlist() -- verb= %s %s  --  one of the following %s keywords must be present -- %s")     % verb_name(vexpr) % ws1 % ws2 % choice_str;
+                            M_out_emsg1(L"check_verb_vlist() -- verb= %s %s  --  one of the following %s keywords must be present -- %s")     % verb_name(expression) % ws1 % ws2 % choice_str;
                         else
-                            M_out_emsg1(L"check_verb_vlist() -- verb= %s %s  --  only one of the following %s keywords can be present -- %s") % verb_name(vexpr) % ws1 % ws2 % choice_str;
+                            M_out_emsg1(L"check_verb_vlist() -- verb= %s %s  --  only one of the following %s keywords can be present -- %s") % verb_name(expression) % ws1 % ws2 % choice_str;
 
-                        msgend_loc(vlist, vexpr); 
+                        msgend_loc(vlist, expression); 
                         rc = -1;                       
                     } 
                  }                               // loop to ckeck each choice set for this plist
@@ -1074,29 +1076,29 @@ static int check_verb_vlist(frame_S& frame, const e_vexpr_S& vexpr, const plist_
 
                  for (const auto& match_set : plist.matches)
                  {
-                     std::wstring               found_str       { };         // printable list of matching keywords found in this set (for error message)
-                     std::wstring               required_str    { };         // printable list of keywords required in match set  
-                     std::vector<uint64_t>      kw_counts       { };         // list of actual keyword occurrence counts in vlist 
-                     std::vector<std::wstring>  kw_names        { };         // names of keywords found in vlist 
-                     uint64_t                   found_ct        {0};         // number of keywords in match set that are present in vlist
-                     uint64_t                   required_ct     {0};         // total number of keywords present in match set
+                     std::wstring               found_str       {   };         // printable list of matching keywords found in this set (for error message)
+                     std::wstring               required_str    {   };         // printable list of keywords required in match set  
+                     std::vector<uint64_t>      kw_counts       {   };         // list of actual keyword occurrence counts in vlist 
+                     std::vector<std::wstring>  kw_names        {   };         // names of keywords found in vlist 
+                     uint64_t                   found_ct        { 0 };         // number of keywords in match set that are present in vlist
+                     uint64_t                   required_ct     { 0 };         // total number of keywords present in match set
 
 
                     // inner loop to check each keyword in the match set (compute required_ct = number of kws in match set, found_ct = number of these KWs in vlist)
 
                     for (const auto& kw_name : match_set)
                     {
-                        required_ct ++;                                      // increment number of keywords present
-                        required_str += L" " + kw_name + L": ";              // add this keyword to the required string 
-                        
-                        auto kw_count = vlist.eval_kws.count(kw_name);       // number of times this keyword is present in vlist 
-
-                        if (kw_count > 0)                                    // is this keyword in vlist ?
-                        {
-                            found_ct++;                                      // increment count of keywords present
-                            found_str += L" " + kw_name + L": ";             // add this keyword to the found string 
-                            kw_names .push_back(kw_name);                    // save this kw name in vector 
-                            kw_counts.push_back(kw_count);                   // save this kw count in vector 
+                        required_ct ++;                                        // increment number of keywords present
+                        required_str += L" " + kw_name + L": ";                // add this keyword to the required string 
+                                                                              
+                        auto kw_count = vlist.eval_kws.count(kw_name);         // number of times this keyword is present in vlist 
+                                                                              
+                        if (kw_count > 0)                                      // is this keyword in vlist ?
+                        {                                                     
+                            found_ct++;                                        // increment count of keywords present
+                            found_str += L" " + kw_name + L": ";               // add this keyword to the found string 
+                            kw_names .push_back(kw_name);                      // save this kw name in vector 
+                            kw_counts.push_back(kw_count);                     // save this kw count in vector 
                         }
                     }
 
@@ -1105,21 +1107,21 @@ static int check_verb_vlist(frame_S& frame, const e_vexpr_S& vexpr, const plist_
 
                     if (found_ct > 0)
                     {
-                        if (found_ct != required_ct)                         // see if any keywords in the match set are missing   
+                        if (found_ct != required_ct)                           // see if any keywords in the match set are missing   
                         {
                             M__(M_out(L"check_verb_vlist() -- match kws -- some kws missing");)
                             count_error();
-                            M_out_emsg1(L"check_verb_vlist() -- verb= %s %s -- %s keyword match set=(%s) -- only some of these keywords are present: (%s)") % verb_name(vexpr) % ws1 % ws2 % required_str % found_str;
-                            msgend_loc(vlist, vexpr); 
+                            M_out_emsg1(L"check_verb_vlist() -- verb= %s %s -- %s keyword match set=(%s) -- only some of these keywords are present: (%s)") % verb_name(expression) % ws1 % ws2 % required_str % found_str;
+                            msgend_loc(vlist, expression); 
                             rc = -1;  
                         }
-                        else                                                         // right number of keywords (all) are present 
+                        else                                                   // right number of keywords (all) are present 
                         {
                             auto minmax_ct = std::minmax_element(kw_counts.cbegin(), kw_counts.cend());
 
                             M__(M_out(L"check_verb_vlist() -- *minmax_ct.first = %d,  *minmax_ct.second = %d") % *(minmax_ct.first) % *(minmax_ct.second); )
 
-                            if ( *(minmax_ct.first) != *(minmax_ct.second) )        // do keywords appear a different number of times in the vlist?  
+                            if ( *(minmax_ct.first) != *(minmax_ct.second) )  // do keywords appear a different number of times in the vlist?  
                             {
                                 // build string with varying counts, for error message -- kw_counts and kw_names should be the same size == found_ct == required_count
 
@@ -1130,8 +1132,8 @@ static int check_verb_vlist(frame_S& frame, const e_vexpr_S& vexpr, const plist_
                                 
                                 M__(M_out(L"check_verb_vlist() -- match kws -- different occurrences");)
                                 count_error();
-                                M_out_emsg1(L"check_verb_vlist() -- verb= %s %s -- %s keyword match set=(%s) -- differing number of occurrences: (%s) -- number of occurrences must all be the same") % verb_name(vexpr) % ws1 % ws2 % required_str % counts_str;
-                                msgend_loc(vlist, vexpr); 
+                                M_out_emsg1(L"check_verb_vlist() -- verb= %s %s -- %s keyword match set=(%s) -- differing number of occurrences: (%s) -- number of occurrences must all be the same") % verb_name(expression) % ws1 % ws2 % required_str % counts_str;
+                                msgend_loc(vlist, expression); 
                                 rc = -1;  
                             }
                         }                        
@@ -1153,7 +1155,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   check_verb_parms() -- complain and return error, if parms in vexpr don't match what is expected in the verbdef_S structure
+////   check_verb_parms() -- complain and return error, if parms in expression don't match what is expected in the verbdef_S structure
 ////
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -1161,15 +1163,15 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-static int check_verb_parms(frame_S& frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef) try
+static int check_verb_parms(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef) try
 {
     int rc {0}; 
 
 
-    // check both left and right vlists vs plist requirements in passed-in vexpr
+    // check both left and right vlists vs plist requirements in passed-in expression
 
-    auto crc1 = check_verb_vlist(frame, vexpr, verbdef.lparms, vexpr.lparms, L"", L"left-side" );  
-    auto crc2 = check_verb_vlist(frame, vexpr, verbdef.rparms, vexpr.rparms, L"", L"right-side");
+    auto crc1 = check_verb_vlist(frame, expression, verbdef.lparms, expression.lparms, L"", L"left-side" );  
+    auto crc2 = check_verb_vlist(frame, expression, verbdef.rparms, expression.rparms, L"", L"right-side");
     if (crc1 != 0) rc = crc1; 
     if (crc2 != 0) rc = crc2;
 
@@ -1178,11 +1180,11 @@ static int check_verb_parms(frame_S& frame, const e_vexpr_S& vexpr, const verbde
 
     if (verbdef.parms_some_required)
     {
-        if ( (vexpr.lparms.value_ct == 0) && (vexpr.rparms.value_ct == 0) )     // both sides have no positional parms ?  
+        if ( (expression.lparms.value_ct == 0) && (expression.rparms.value_ct == 0) )     // both sides have no positional parms ?  
         {
             count_error(); 
-            M_out_emsg1(L"check_verb_parms() -- verb= %s  expects at least one positional parm on one side or the other, but none were present at all") % verb_name(vexpr); 
-            msgend_loc(vexpr); 
+            M_out_emsg1(L"check_verb_parms() -- verb= %s  expects at least one positional parm on one side or the other, but none were present at all") % verb_name(expression); 
+            msgend_loc(expression); 
             rc = -1;           
         }
     }
@@ -1192,11 +1194,11 @@ static int check_verb_parms(frame_S& frame, const e_vexpr_S& vexpr, const verbde
 
     if (verbdef.parms_not_both_sides)
     {
-        if ( ((vexpr.lparms.value_ct + vexpr.lparms.kw_ct) > 0) && ((vexpr.rparms.value_ct + vexpr.rparms.kw_ct) > 0) )     // both sides have positional or keyword parms ?  
+        if ( ((expression.lparms.value_ct + expression.lparms.kw_ct) > 0) && ((expression.rparms.value_ct + expression.rparms.kw_ct) > 0) )     // both sides have positional or evaluated keyword parms ?  
         {
             count_error(); 
-            M_out_emsg1(L"check_verb_parms() -- verb= %s  does not expect positional or keyword parms on both left and right sides, but both left-side and right-side parms were present") % verb_name(vexpr); 
-            msgend_loc(vexpr); 
+            M_out_emsg1(L"check_verb_parms() -- verb= %s  does not expect positional or keyword parms on both left and right sides, but both left-side and right-side parms were present") % verb_name(expression); 
+            msgend_loc(expression); 
             rc = -1;           
         }
     }
@@ -1206,18 +1208,18 @@ static int check_verb_parms(frame_S& frame, const e_vexpr_S& vexpr, const verbde
 
     if (verbdef.parms_left_xor_right)
     {
-        if ( (vexpr.lparms.value_ct == 0) && (vexpr.rparms.value_ct == 0) )     // both sides have no positional parms ?  
+        if ( (expression.lparms.value_ct == 0) && (expression.rparms.value_ct == 0) )     // both sides have no positional parms ?  
         {
             count_error(); 
-            M_out_emsg1(L"check_verb_parms() -- verb= %s  expects positional parms on one side or the other, but none were present on either side") % verb_name(vexpr); 
-            msgend_loc(vexpr); 
+            M_out_emsg1(L"check_verb_parms() -- verb= %s  expects positional parms on one side or the other, but none were present on either side") % verb_name(expression); 
+            msgend_loc(expression); 
             rc = -1;           
         }
-        else if ( (vexpr.lparms.value_ct > 0) && (vexpr.rparms.value_ct > 0) )    // positional parms on both sides ?
+        else if ( (expression.lparms.value_ct > 0) && (expression.rparms.value_ct > 0) )    // positional parms on both sides ?
         {
             count_error(); 
-            M_out_emsg1(L"check_verb_parms() -- verb= %s  expects positional parms on only one side or the other, but parms were present on both sides") % verb_name(vexpr);
-            msgend_loc(vexpr); 
+            M_out_emsg1(L"check_verb_parms() -- verb= %s  expects positional parms on only one side or the other, but parms were present on both sides") % verb_name(expression);
+            msgend_loc(expression); 
             rc = -1;           
         }    
     }
@@ -1228,56 +1230,56 @@ static int check_verb_parms(frame_S& frame, const e_vexpr_S& vexpr, const verbde
     if (verbdef.parms_same_type)
     {
         if ( 
-            (vexpr.rparms.val_mixed)
+            (expression.rparms.val_mixed)
             ||
-            (vexpr.lparms.val_mixed)
+            (expression.lparms.val_mixed)
             ||
             (
-             ( (vexpr.lparms.value_ct > 0) && (vexpr.rparms.value_ct > 0) ) 
+             ( (expression.lparms.value_ct > 0) && (expression.rparms.value_ct > 0) ) 
              &&
              (
-              (vexpr.lparms.val_unit           !=  vexpr.rparms.val_unit        )
+              (expression.lparms.val_unit           !=  expression.rparms.val_unit        )
               ||
-              (vexpr.lparms.val_boolean        !=  vexpr.rparms.val_boolean     )
+              (expression.lparms.val_boolean        !=  expression.rparms.val_boolean     )
               ||
-              (vexpr.lparms.val_int8           !=  vexpr.rparms.val_int8        )
+              (expression.lparms.val_int8           !=  expression.rparms.val_int8        )
               ||
-              (vexpr.lparms.val_int16          !=  vexpr.rparms.val_int16       )
+              (expression.lparms.val_int16          !=  expression.rparms.val_int16       )
               ||
-              (vexpr.lparms.val_int32          !=  vexpr.rparms.val_int32       )
+              (expression.lparms.val_int32          !=  expression.rparms.val_int32       )
               ||
-              (vexpr.lparms.val_int64          !=  vexpr.rparms.val_int64       )
+              (expression.lparms.val_int64          !=  expression.rparms.val_int64       )
               ||
-              (vexpr.lparms.val_uint8          !=  vexpr.rparms.val_uint8       )
+              (expression.lparms.val_uint8          !=  expression.rparms.val_uint8       )
               ||
-              (vexpr.lparms.val_uint16         !=  vexpr.rparms.val_uint16      )
+              (expression.lparms.val_uint16         !=  expression.rparms.val_uint16      )
               ||
-              (vexpr.lparms.val_uint32         !=  vexpr.rparms.val_uint32      )
+              (expression.lparms.val_uint32         !=  expression.rparms.val_uint32      )
               ||
-              (vexpr.lparms.val_uint64         !=  vexpr.rparms.val_uint64      )
+              (expression.lparms.val_uint64         !=  expression.rparms.val_uint64      )
               ||
-              (vexpr.lparms.val_float32        !=  vexpr.rparms.val_float32     )
+              (expression.lparms.val_float32        !=  expression.rparms.val_float32     )
               ||
-              (vexpr.lparms.val_float64        !=  vexpr.rparms.val_float64     )
+              (expression.lparms.val_float64        !=  expression.rparms.val_float64     )
               ||
-              (vexpr.lparms.val_string         !=  vexpr.rparms.val_string      )
+              (expression.lparms.val_string         !=  expression.rparms.val_string      )
               ||
-              (vexpr.lparms.val_identifier     !=  vexpr.rparms.val_identifier  )
+              (expression.lparms.val_identifier     !=  expression.rparms.val_identifier  )
               ||
-              (vexpr.lparms.val_vlist          !=  vexpr.rparms.val_vlist       )
+              (expression.lparms.val_vlist          !=  expression.rparms.val_vlist       )
               ||
-              (vexpr.lparms.val_vexpr          !=  vexpr.rparms.val_vexpr       )
+              (expression.lparms.val_expression     !=  expression.rparms.val_expression  )
               ||
-              (vexpr.lparms.val_slist          !=  vexpr.rparms.val_slist       )
+              (expression.lparms.val_slist          !=  expression.rparms.val_slist       )
               ||
-              (vexpr.lparms.val_verbdef        !=  vexpr.rparms.val_verbdef     )
+              (expression.lparms.val_verbdef        !=  expression.rparms.val_verbdef     )
             )
            )
           )
         {
             count_error(); 
-            M_out_emsg1(L"check_verb_parms() -- verb= %s  expects all positional parms (both left-side and right-side) to be the same type, but more than one type was present") % verb_name(vexpr); 
-            msgend_loc(vexpr); 
+            M_out_emsg1(L"check_verb_parms() -- verb= %s  expects all positional parms (both left-side and right-side) to be the same type, but more than one type was present") % verb_name(expression); 
+            msgend_loc(expression); 
             rc = -1;  
         }
     }
@@ -1634,7 +1636,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   eval_verb_block() -- add new frame_S to stack for this verb block,  and run passed-in slist with that new stack frame, using vlists in vexpr as the block parms
+////   eval_verb_block() -- add new frame_S to stack for this verb block,  and run passed-in slist with that new stack frame, using vlists in expression as the block parms
 ////                         
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -1642,7 +1644,7 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-int eval_verb_block(frame_S& parent_frame, const e_vexpr_S& vexpr, const verbdef_S& verbdef, results_S& results) try
+int eval_verb_block(frame_S& parent_frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
 {
     // add new stack frame to the active frame_S queue (and do basic setup)
 
@@ -1661,20 +1663,20 @@ int eval_verb_block(frame_S& parent_frame, const e_vexpr_S& vexpr, const verbdef
         new_frame_p->scope_sp = std::shared_ptr<frame_S> { parent_frame.self_wp };                       // initialize shared ptr from weak sefl-ptr in parent frame_S -- upward scope starts at parent on call stack, for dynamic or block scoping  
 
 
-    // set up new stack frame for this block, using parms from the passed-in vexpr
+    // set up new stack frame for this block, using parms from the passed-in expression
     // --------------------------------------------------------------------------
 
     new_frame_p->is_verb  = true;                                                                        // flag this frame_S as started by verb 
-    new_frame_p->verbname = vexpr.verb_name; 
-    new_frame_p->lparms   = vexpr.lparms;                                                                          
-    new_frame_p->rparms   = vexpr.rparms;                                                                          
+    new_frame_p->verbname = expression.verb_name; 
+    new_frame_p->lparms   = expression.lparms;                                                                          
+    new_frame_p->rparms   = expression.rparms;                                                                          
                                            
 
     // -------------------------------------                                                                                                         
     // set up argvars (if any) in new frame_S                                                                  
     // -------------------------------------                                                                  
                                                                                                              
-    value_S unit_value { unit_val() };                                                                    // unit value, in case arg corresponding to variable name is not present
+    value_S unit_value { unit_val() };                                                                        // unit value, in case arg corresponding to variable name is not present
                                                                                                              
                                                                                                              
     // process left-side positional args  -- loop over variable names in left-side argvars list, assigining unit value or value of passed-in corresponding arg 
@@ -1682,31 +1684,31 @@ int eval_verb_block(frame_S& parent_frame, const e_vexpr_S& vexpr, const verbdef
     //
     //    note: new_eval should be empty, and there should be no duplicates in the variable names list, so def_local_var() should not fail
                                                                                                              
-    int var_n = 0;                                                                                        // left-side variable number     
-                                                                                                             
-    for (auto elem : verbdef.lvars.pos)                                                                   // elem is a std::wstring = variable name 
-    {                                                                                                        
-        int drc { };                                                                                      // return code from def_local_var
-                                                                                                             
-        if (var_n >= vexpr.lparms.value_ct)                                                               // this variable is past end of args for this invocation 
-            drc = def_local_var(*new_frame_p, elem, unit_value,                    false, false, true);   // define local non-exported variable with unit value -- make sure values are unshared
+    int var_n = 0;                                                                                             // left-side variable number     
+                                                                                                                  
+    for (auto elem : verbdef.lvars.pos)                                                                        // elem is a std::wstring = variable name 
+    {                                                                                                             
+        int drc { };                                                                                           // return code from def_local_var
+                                                                                                                  
+        if (var_n >= expression.lparms.value_ct)                                                               // this variable is past end of args for this invocation 
+            drc = def_local_var(*new_frame_p, elem, unit_value,                         false, false, true);   // define local non-exported variable with unit value -- make sure values are unshared
         else
-            drc = def_local_var(*new_frame_p, elem, vexpr.lparms.values.at(var_n), false, false, true);    // define local non-exported variable with value of passed-in n-th positional arg -- make sure values are unshared 
+            drc = def_local_var(*new_frame_p, elem, expression.lparms.values.at(var_n), false, false, true);   // define local non-exported variable with value of passed-in n-th positional arg -- make sure values are unshared 
         
 
         // return immediately with error, if def_local_var() failed
 
-        if (drc != 0)                                                                                     // did def_local_var() fail? -- not expected
+        if (drc != 0)                                                                                          // did def_local_var() fail? -- not expected
         {
             count_error(); 
             M_out_emsg1(L"eval_verb_block() -- left-side positional argvar -- unexpected error from def_local_var(,%s,)") % elem; 
-            msgend_loc(vexpr); 
+            msgend_loc(expression); 
 
-            results = error_results();                                                                    // results = error
-            return -1;                                                                                    // r/c     = error
-        }  
-
-        var_n++;                                                                                          // advance to next value in positional invocation parms 
+            results = error_results();                                                                         // results = error
+            return -1;                                                                                         // r/c     = error
+        }                                                                                                    
+                                                                                                             
+        var_n++;                                                                                               // advance to next value in positional invocation parms 
     }
     
 
@@ -1715,31 +1717,31 @@ int eval_verb_block(frame_S& parent_frame, const e_vexpr_S& vexpr, const verbdef
     //
     //    note: new_eval should be empty, and there should be no duplicates in the variable names list, so def_local_var() should not fail
                                                                                                              
-    var_n = 0;                                                                                            // right-side variable number     
+    var_n = 0;                                                                                                 // right-side variable number     
                                                                                                          
-    for (auto elem : verbdef.rvars.pos)                                                                   // elem is a std::wstring = variable name 
+    for (auto elem : verbdef.rvars.pos)                                                                        // elem is a std::wstring = variable name 
     {                                                                                                    
-        int drc { };                                                                                      // return code from def_local_var
+        int drc { };                                                                                           // return code from def_local_var
                                                                                                          
-        if (var_n >= vexpr.rparms.value_ct)                                                               // this variable is past end of args for this invocation
-            drc = def_local_var(*new_frame_p, elem, unit_value,                    false, false, true);   // define local non-exported variable with unit value -- make sure values are unshared
+        if (var_n >= expression.rparms.value_ct)                                                               // this variable is past end of args for this invocation
+            drc = def_local_var(*new_frame_p, elem, unit_value,                         false, false, true);   // define local non-exported variable with unit value -- make sure values are unshared
         else
-            drc = def_local_var(*new_frame_p, elem, vexpr.rparms.values.at(var_n), false, false, true);   // define local non-exported variable with value of passed-in n-th positional arg  -- make sure values are unshared
+            drc = def_local_var(*new_frame_p, elem, expression.rparms.values.at(var_n), false, false, true);   // define local non-exported variable with value of passed-in n-th positional arg  -- make sure values are unshared
         
 
         // return immediately with error, if def_local_var() failed
 
-        if (drc != 0)                                                                                     // did def_local_var() fail? -- not expected
+        if (drc != 0)                                                                                           // did def_local_var() fail? -- not expected
         {
             count_error(); 
             M_out_emsg1(L"eval_verb_block() -- right-side positional argvar -- unexpected error from def_local_var(,%s,)") % elem; 
-            msgend_loc(vexpr); 
+            msgend_loc(expression); 
 
-            results = error_results();                                                                    // results = error
-            return -1;                                                                                    // r/c     = error
+            results = error_results();                                                                         // results = error
+            return -1;                                                                                         // r/c     = error
         }  
 
-        var_n++;                                                                                          // advance to next value in positional invocation parms 
+        var_n++;                                                                                               // advance to next value in positional invocation parms 
     }
 
 
@@ -1748,38 +1750,38 @@ int eval_verb_block(frame_S& parent_frame, const e_vexpr_S& vexpr, const verbdef
     //
     //    note: new_eval should be empty, and there should be no duplicates in the variable names list, so def_local_var() should not fail
     
-    std::multiset<std::wstring>  lkw_names { };                                                           // multimap with keywords processes so far  
-
-    for (auto elem : verbdef.lvars.key)                                                                   // elem.first is a std::wstring = keyword name -- elem.second is a std::wstring = variable name 
-    {                                                                                                    
-        lkw_names.insert(elem.first);                                                                     // add this keyword name to combined list of keywords seen so far
-        auto kwvar_ct = lkw_names.count(           elem.first);                                           // get count of how many times this keyword name has been seen so far in argvar_S
-        auto kwval_ct = vexpr.lparms.eval_kws.count(elem.first);                                          // get count of how many times this keyword name is seen in the invocation parms 
+    std::multiset<std::wstring>  lkw_names { };                                                                // multimap with keywords processes so far  
+                                                                                                             
+    for (auto elem : verbdef.lvars.key)                                                                        // elem.first is a std::wstring = keyword name -- elem.second is a std::wstring = variable name 
+    {                                                                                                         
+        lkw_names.insert(elem.first);                                                                          // add this keyword name to combined list of keywords seen so far
+        auto kwvar_ct = lkw_names.count(                 elem.first);                                          // get count of how many times this keyword name has been seen so far in argvar_S
+        auto kwval_ct = expression.lparms.eval_kws.count(elem.first);                                          // get count of how many times this keyword name is seen in the invocation parms 
 
         M__(M_out(L"eval_verb_block() -- left-side : kw_name = «%S»  kwvar_ct=%d  kwval_ct=%d") % elem.first % kwvar_ct % kwval_ct;) 
   
-        int drc { };                                                                                     // return code from def_local_var
-
-        if (kwvar_ct > kwval_ct)                                                                         // this kw/variable pair is past end of kw/value pairs in invocation args
-            drc = def_local_var(*new_frame_p, elem.second, unit_value, false, false, true);              // define local non-exported variable with unit value -- make sure values are unshared
+        int drc { };                                                                                           // return code from def_local_var
+                                                                                                          
+        if (kwvar_ct > kwval_ct)                                                                               // this kw/variable pair is past end of kw/value pairs in invocation args
+            drc = def_local_var(*new_frame_p, elem.second, unit_value, false, false, true);                    // define local non-exported variable with unit value -- make sure values are unshared
         else
             drc = def_local_var(*new_frame_p
                                , elem.second
-                               , multimap_at(vexpr.lparms.eval_kws, elem.first, kwvar_ct-1)               // find value for n-th occurrence of this keyword in invocation keyword values multimap
+                               , multimap_at(expression.lparms.eval_kws, elem.first, kwvar_ct-1)               // find value for n-th occurrence of this keyword in invocation keyword values multimap
                                , false, false, true
-                               );                                                                         // define local non-exported variable with value of passed-in n-th positional arg -- make sure values are unshared
+                               );                                                                              // define local non-exported variable with value of passed-in n-th positional arg -- make sure values are unshared
         
 
         // return immediately with error, if def_local_var() failed
 
-        if (drc != 0)                                                                                     // did def_local_var() fail? -- not expected
+        if (drc != 0)                                                                                          // did def_local_var() fail? -- not expected
         {
             count_error(); 
             M_out_emsg1(L"eval_verb_block() -- left-side keyword(%S) argvar -- unexpected error from def_local_var(,%S,)") % elem.first % elem.second; 
-            msgend_loc(vexpr); 
+            msgend_loc(expression); 
 
-            results = error_results();                                                                    // results = error
-            return -1;                                                                                    // r/c     = error
+            results = error_results();                                                                         // results = error
+            return -1;                                                                                         // r/c     = error
         }  
     } 
       
@@ -1789,38 +1791,38 @@ int eval_verb_block(frame_S& parent_frame, const e_vexpr_S& vexpr, const verbdef
     //
     //    note: new_frame should be empty, and there should be no duplicates in the variable names list, so def_local_var() should not fail
     
-    std::multiset<std::wstring>  rkw_names { };                                                           // multimap with keywords processes so far  
-
-    for (auto elem : verbdef.rvars.key)                                                                   // elem.first is a std::wstring = keyword name -- elem.second is a std::wstring = variable name 
-    {                                                                                                    
-        rkw_names.insert(elem.first);                                                                     // add this keyword name to combined list of keywords seen so far
-        auto kwvar_ct = rkw_names.count(           elem.first);                                           // get count of how many times this keyword name has been seen so far in argvar_S
-        auto kwval_ct = vexpr.rparms.eval_kws.count(elem.first);                                           // get count of how many times this keyword name is seen in the invocation parms 
+    std::multiset<std::wstring>  rkw_names { };                                                                // multimap with keywords processes so far  
+                                                                                                             
+    for (auto elem : verbdef.rvars.key)                                                                        // elem.first is a std::wstring = keyword name -- elem.second is a std::wstring = variable name 
+    {                                                                                                         
+        rkw_names.insert(elem.first);                                                                          // add this keyword name to combined list of keywords seen so far
+        auto kwvar_ct = rkw_names.count(                 elem.first);                                          // get count of how many times this keyword name has been seen so far in argvar_S
+        auto kwval_ct = expression.rparms.eval_kws.count(elem.first);                                          // get count of how many times this keyword name is seen in the invocation parms 
 
         M__(M_out(L"eval_verb_block() -- right-side : kw_name = «%S»  kwvar_ct=%d  kwval_ct=%d") % elem.first % kwvar_ct % kwval_ct;) 
   
-        int drc { };                                                                                      // return code from def_local_var
-
-        if (kwvar_ct > kwval_ct)                                                                          // this kw/variable pair is past end of kw/value pairs in invocation args
-            drc = def_local_var(*new_frame_p, elem.second, unit_value, false, false, true);               // define local non-exported variable with unit value -- make sure values are unshared
+        int drc { };                                                                                           // return code from def_local_var
+                                                                                                              
+        if (kwvar_ct > kwval_ct)                                                                               // this kw/variable pair is past end of kw/value pairs in invocation args
+            drc = def_local_var(*new_frame_p, elem.second, unit_value, false, false, true);                    // define local non-exported variable with unit value -- make sure values are unshared
         else
             drc = def_local_var(*new_frame_p
                                , elem.second
-                               , multimap_at(vexpr.rparms.eval_kws, elem.first, kwvar_ct-1)                // find value for n-th occurrence of this keyword in invocation keyword values multimap
+                               , multimap_at(expression.rparms.eval_kws, elem.first, kwvar_ct-1)               // find value for n-th occurrence of this keyword in invocation keyword values multimap
                                , false, false, true
-                               );                                                                         // define local non-exported variable with value of passed-in n-th positional arg -- make sure values are unshared
+                               );                                                                              // define local non-exported variable with value of passed-in n-th positional arg -- make sure values are unshared
         
 
         // return immediately with error, if def_local_var() failed
 
-        if (drc != 0)                                                                                     // did def_local_var() fail? -- not expected
+        if (drc != 0)                                                                                          // did def_local_var() fail? -- not expected
         {
             count_error(); 
             M_out_emsg1(L"eval_verb_block() -- right-side keyword(%S) argvar -- unexpected error from def_local_var(,%S,)") % elem.first % elem.second; 
-            msgend_loc(vexpr); 
+            msgend_loc(expression); 
 
-            results = error_results();                                                                    // results = error
-            return -1;                                                                                    // r/c     = error
+            results = error_results();                                                                         // results = error
+            return -1;                                                                                         // r/c     = error
         }  
     } 
 
@@ -1831,11 +1833,11 @@ int eval_verb_block(frame_S& parent_frame, const e_vexpr_S& vexpr, const verbdef
 
     results_S slist_results {};
     auto erc = eval_slist(*new_frame_p, *(verbdef.slist_sp), slist_results, true);
-    remove_frame();                                                                                       // remove new frame from stack 
+    remove_frame();                                                                                            // remove new frame from stack 
     if (erc != 0)                                                                                       
     {                                                                                                   
-        results = error_results();                                                                        // results = error   
-        return erc;                                                                                       // return with error r/c
+        results = error_results();                                                                             // results = error   
+        return erc;                                                                                            // return with error r/c
     }
 
 
@@ -1843,26 +1845,26 @@ int eval_verb_block(frame_S& parent_frame, const e_vexpr_S& vexpr, const verbdef
 
     if (slist_results.special_results)
     {
-        if (slist_results.return_flag)                                                                    // @RETURN is expected -- neeeds to be consumed 
-        {                                                                                                 
-             slist_results.return_flag     = false;                                                       // consume the @RETURN         
-             slist_results.special_results = false;                                                       
-             results = slist_results;                                                                     // pass back value from @RETURN, with no special flags        
-        } 
-        else if (slist_results.xctl_flag)                                                                 // @XCTL is expected -- needs to be consumed 
+        if (slist_results.return_flag)                                                                         // @RETURN is expected -- neeeds to be consumed 
+        {                                                                                                      
+             slist_results.return_flag     = false;                                                            // consume the @RETURN         
+             slist_results.special_results = false;                                                            
+             results = slist_results;                                                                          // pass back value from @RETURN, with no special flags        
+        }                                                                                                   
+        else if (slist_results.xctl_flag)                                                                      // @XCTL is expected -- needs to be consumed 
         {   
              M__(M_out(L"eval_verb_block() -- saw @XCTL results -- verbdef.is_builtin = %d") % ((int)(verbdef.is_builtin));)
-             results = slist_results;                                                                     // percolate @XCTL results    
+             results = slist_results;                                                                          // percolate @XCTL results    
         }
-        else if (slist_results.end_flag)                                                                  // @END is expected
-        {                                                                                                 
-             results = slist_results;                                                                     // percolate @END results           
-        }                                                                                                 
-        else if (slist_results.throw_flag)                                                                // @THROW is expected
-        {                                                                                                 
-             results = slist_results;                                                                     // percolate @THROW results           
-        }                                                                                                 
-        else                                                                                              // unexpected special results
+        else if (slist_results.end_flag)                                                                       // @END is expected
+        {                                                                                                      
+             results = slist_results;                                                                          // percolate @END results           
+        }                                                                                                      
+        else if (slist_results.throw_flag)                                                                     // @THROW is expected
+        {                                                                                                      
+             results = slist_results;                                                                          // percolate @THROW results           
+        }                                                                                                      
+        else                                                                                                   // unexpected special results
         {              
             if (slist_results.goto_flag)
                 M_out_emsg(L"User-defined verb evaluation ended by unconsumed @GOTO «%s»") % slist_results.str;             
@@ -1886,16 +1888,16 @@ int eval_verb_block(frame_S& parent_frame, const e_vexpr_S& vexpr, const verbdef
                 M_out_emsg(L"User-defined verb evaluation ended by unexpected special results");
 
             count_error(); 
-            results = error_results();                                                                    // error results
-            return -1;                                                                                    // return with error 
-        }                                                                                                
-    }                                                                                                    
-    else                                                                                                  // slist not ended by @RETURN etc. - return value is not set 
-    {                                                                                                    
-        results = slist_results;                                                                          // pass back normal slist results
-    }                                                                                                    
-                                                                                                         
-    return 0;                                                                                             // return normally -- results have already been passed-back
+            results = error_results();                                                                          // error results
+            return -1;                                                                                          // return with error 
+        }                                                                                                      
+    }                                                                                                          
+    else                                                                                                        // slist not ended by @RETURN etc. - return value is not set 
+    {                                                                                                          
+        results = slist_results;                                                                                // pass back normal slist results
+    }                                                                                                          
+                                                                                                               
+    return 0;                                                                                                   // return normally -- results have already been passed-back
 }
 M_endf
 
@@ -2023,8 +2025,8 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   eval_value() -- evaluate contents of an passed-in value -- value should be either identifier or vexpr
-////                -- passed-in value parm is replaced by the value (which can be another vexpr or variable -- no double evaluation -- they are left as-is)
+////   eval_value() -- evaluate contents of an passed-in value -- value should be either identifier or expression
+////                -- passed-in value parm is replaced by the value (which can be another expression or variable -- no double evaluation -- they are left as-is)
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
@@ -2032,8 +2034,8 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 
-// internal routine to call eval_value in a loop, as long as re_eval_vexpr_results flag is on
-// -----------------------------------------------------------------------------------------
+// internal routine to call eval_value in a loop, as long as re_eval_expression_results flag is on
+// -----------------------------------------------------------------------------------------------
 
 static int reeval_value(frame_S& frame, const value_S& value, results_S& results, const parmtype_S& eval_parmtype, bool debug = false) try
 {
@@ -2050,17 +2052,17 @@ static int reeval_value(frame_S& frame, const value_S& value, results_S& results
         erc = eval_value(frame, in_value, results, eval_parmtype, debug);
         if (erc != 0) return erc;                                       // return immediately, if error
 
-        if (results.re_eval_vexpr_results)
+        if (results.re_eval_expression_results)
             in_value = results;                                         // copy results over to input area for next call 
 
 
         loop_count++;
         if ( debug && (loop_count > 1) )
         {
-            M_y(M_out(L"reeval_value() -- loop count = %d") % loop_count;)
+            M__(M_out(L"reeval_value() -- loop count = %d") % loop_count;)
         }
     }
-    while (results.re_eval_vexpr_results);
+    while (results.re_eval_expression_results);
 
     return erc; 
 }
@@ -2077,69 +2079,70 @@ int eval_value(frame_S& frame, const value_S& value, results_S& results, const p
 
     if (debug)
     {
-        M_y(M_out(L"*************************************** eval_value() -- called  -- parmtype.no_eval_ident=%s  parmtype.no_eval_vexpr=%s  parmtype.no_eval_vlist=%s") % M_bool_cstr(eval_parmtype.no_eval_ident) % M_bool_cstr(eval_parmtype.no_eval_vexpr) % M_bool_cstr(eval_parmtype.no_eval_vlist);)
-        M_y(display_value(value, L"eval_value()");)
+        M__(M_out(L"*************************************** eval_value() -- called  -- parmtype.no_eval_ident=%s  parmtype.no_eval_expression=%s  parmtype.no_eval_vlist=%s") % M_bool_cstr(eval_parmtype.no_eval_ident) % M_bool_cstr(eval_parmtype.no_eval_expression) % M_bool_cstr(eval_parmtype.no_eval_vlist);)
+        M__(display_value(value, L"eval_value()");)
     }
 
     static_N::value_count++; 
 
 
-    // evaluate nested vexpr, if required 
-    // ---------------------------------
+    // evaluate nested expression, if required 
+    // -----------------------------------
 
-    if ( (value.ty == type_E::vexpr) && (!eval_parmtype.no_eval_vexpr) )
+    if ( (value.ty == type_E::expression) && (!eval_parmtype.no_eval_expression) )
     {
 
         if (debug)
         {
-            M_y(M_out(L"*************************************** eval_value() -- evaluating nested vexpr");)
+            M__(M_out(L"*************************************** eval_value() -- evaluating nested expression");)
         }
 
-        results_S vexpr_results { }; 
+        results_S expression_results { }; 
 
-        auto erc = eval_vexpr(frame, *(value.vexpr_sp), vexpr_results, debug);   // pass vexpr attached to this value
-        vexpr_results.token_ix1 = value.token_ix1;                               // copy original location info into results
-        vexpr_results.token_ix2 = value.token_ix2;                             
-        if (erc != 0)                                                            // error during vexpr evaluation
-        {
-            results = vexpr_results;                                             // pass back results from vexpr evaluation
-            rc = erc;                                                            // pass back r/c
-        } 
-        else                                                                     // no error during vexpr evaluation
+        auto erc = eval_expression(frame, *(value.expression_sp), expression_results, debug);      // pass expression attached to this value
+        expression_results.token_ix1 = value.token_ix1;                                            // copy original location info into results
+        expression_results.token_ix2 = value.token_ix2;   
+
+        if (erc != 0)                                                                              // error during expression evaluation
+        {                                                                                      
+            results = expression_results;                                                          // pass back results from expression evaluation
+            rc = erc;                                                                              // pass back r/c
+        }                                                                                      
+        else                                                                                       // no error during expression evaluation
         {
              if (debug)
              {
-                 M_y(M_out(L"*************************************** eval_value() -- vexpr_results.ty=%S -- returned from nested expression evaluation") % type_str(vexpr_results.ty);)
+                 M__(M_out(L"*************************************** eval_value() -- expression_results.ty=%S -- returned from nested expression evaluation") % type_str(expression_results.ty);)
              }
 
              if (                                                                           
-                (vexpr_results.ty == type_E::identifier)                                    // re-evaluate, if results is an identifier 
+                (expression_results.ty == type_E::identifier)                                      // re-evaluate, if results is an identifier 
                 || 
-                (vexpr_results.ty == type_E::vlist)                                         // re-evaluate, if results is a vlist
+                (expression_results.ty == type_E::vlist)                                           // re-evaluate, if results is a vlist
                 ||
-                ( (vexpr_results.ty == type_E::ref) && (vexpr_results.ref_sp->auto_deref) )  // re-evaluate, if results is a reference, that should be automatically de-referenced                 
+                ( (expression_results.ty == type_E::ref) && (expression_results.ref_sp->auto_deref) )  // re-evaluate, if results is a reference, that should be automatically de-referenced                 
                ) 
             {
-                results                      = vexpr_results;                  // return (preliminary) results from vexpr evaluation
-                results.re_eval_vexpr_results = true;                          // indicate that re-evaluation of these results is required 
-            }
-            else                                                               // no further evaluation needed
-            {
-                results                    = vexpr_results;                    // return results from vexpr evaluation
-                results.suppress_eval_once = false;                            // make sure no_eval_once flag is not passed back up
+                results                        = expression_results;                               // return (preliminary) results from expression evaluation
+                results.re_eval_expression_results = true;                                         // indicate that re-evaluation of these results is required 
+            }                                                                                
+            else                                                                                   // no further evaluation needed
+            {                                                                                
+                results                    = expression_results;                                   // return results from expression evaluation
+                results.suppress_eval_once = false;                                                // make sure no_eval_once flag is not passed back up
             }   
         }
     }
 
 
-    // evaluate nested vlist, if required -- need to allocate a new one and attach it to the value -- in nested vlists, vexprs, and variables always evaluated (according to flags in default plist_S )
+    // evaluate nested vlist, if required -- need to allocate a new one and attach it to the value -- in nested vlists, expressions, and variables always evaluated (according to flags in default plist_S )
     // -------------------------------------------------------------------------------------------
 
     else if ( (value.ty == type_E::vlist) && (!eval_parmtype.no_eval_vlist) )
     {  
         if (debug)
         {
-            M_y(M_out(L"*************************************** eval_value() -- evaluating nested vlist");)
+            M__(M_out(L"*************************************** eval_value() -- evaluating nested vlist");)
         }
         
         vlist_S temp_vlist {};
@@ -2148,11 +2151,13 @@ int eval_value(frame_S& frame, const value_S& value, results_S& results, const p
 
         if (eval_parmtype.plist_sp.get() == nullptr )                          // nested plist not present? 
         {
+            M__(M_out(L" eval_value() -- calling eval_vlist() -- evaluating nested vlist - 1");)
             auto erc = eval_vlist(frame, temp_vlist, results, plist_S {});     // use default plist_S structure for nested vlist
             if (erc != 0) rc = erc;
         }
         else
-        {
+        {   
+            M__(M_out(L" eval_value() -- calling eval_vlist() -- evaluating nested vlist - 2");)
             auto erc = eval_vlist(frame, temp_vlist, results, *(eval_parmtype.plist_sp));   // use nested plist from passed-in parmtype
             if (erc != 0) rc = erc;
         }
@@ -2176,17 +2181,17 @@ int eval_value(frame_S& frame, const value_S& value, results_S& results, const p
     {
         if (debug)
         {
-            M_y(M_out(L"*************************************** eval_value() -- evaluating identifier");)
+            M__(M_out(L"*************************************** eval_value() -- evaluating identifier");)
         }
 
         auto grc = get_identifier(frame, value.string, results);
-        results.token_ix1 = value.token_ix1;                     // save original location info into passed-in results
+        results.token_ix1 = value.token_ix1;                                    // save original location info into passed-in results
         results.token_ix2 = value.token_ix2;
 
         if (debug)
         {
-            M_y(display_value(value  , L"eval_value() -- input value");)
-            M_y(display_value(results, L"eval_value() -- evaluated identifier ");)
+            M__(display_value(value  , L"eval_value() -- input value");)
+            M__(display_value(results, L"eval_value() -- evaluated identifier ");)
         }
 
         if (grc != 0)
@@ -2206,16 +2211,16 @@ int eval_value(frame_S& frame, const value_S& value, results_S& results, const p
     {
         if (debug)
         {
-            M_y(M_out(L"*************************************** eval_value() -- doing auto dereference");)
+            M__(M_out(L"*************************************** eval_value() -- doing auto dereference");)
         }
 
-        value_S out_val { };                                             // output value_S from dereferenced value
+        value_S out_val { };                                                    // output value_S from dereferenced value
         auto drc = dereference_value(out_val, value);
          
         if (debug)
         {
-            M_y(display_value(value  , L"eval_value() -- input reference value");)
-            M_y(display_value(out_val, L"eval_value() -- dereferenced value ");)
+            M__(display_value(value  , L"eval_value() -- input reference value");)
+            M__(display_value(out_val, L"eval_value() -- dereferenced value ");)
         }
 
         if (drc != 0)
@@ -2234,14 +2239,14 @@ int eval_value(frame_S& frame, const value_S& value, results_S& results, const p
 
         if (debug)
         {
-            M_y(M_out(L"*************************************** eval_value() -- copying value to output results");)
+            M__(M_out(L"*************************************** eval_value() -- copying value to output results");)
         }
         results = to_results(value); 
     }
 
     if (debug)
     {
-        M_y(M_out(L"********* eval_value() returning -- re-eval = %s <=========================") % M_bool_cstr(results.re_eval_vexpr_results);)
+        M__(M_out(L"********* eval_value() returning -- re-eval = %s <=========================") % M_bool_cstr(results.re_eval_expression_results);)
     }
 
     return rc; 
@@ -2293,18 +2298,20 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
     M__(M_out(L"=========================================> eval_vlist() called");)
     M__(display_vlist(vlist, L"passed-in to eval_vlist()");)
 
-    if ( vlist.val_vexpr || vlist.val_vlist || vlist.val_identifier || vlist.val_ref )
+    if ( vlist.val_expression || vlist.val_vlist || vlist.val_identifier || vlist.val_ref )
     {
        M__(M_out(L"eval_vlist() -- evaluation is needed");)
 
-       // build a temporary default parmtype_S with global evaluation flags -- used if no individual parmtype_S is available for positional parms (this should be the case only when vexpr has no verb)  
 
-       parmtype_S default_eval_parmtype {};                                  // default  parmtype 
+       // build a temporary default parmtype_S with global evaluation flags -- used if no individual parmtype_S is available for positional parms (this should be the case only when expression has no verb)  
+       //                                                                      also used for keyword evaluation 
 
-       default_eval_parmtype.no_eval_ident  = eval_plist.no_eval_ident;      // copy in eval flag
-       default_eval_parmtype.no_eval_vexpr  = eval_plist.no_eval_vexpr;      // copy in eval flag
-       default_eval_parmtype.no_eval_vlist  = eval_plist.no_eval_vlist;      // copy in eval flag
-       default_eval_parmtype.anything_ok    = true;                          // suppress parm type checking by default  
+       parmtype_S default_eval_parmtype {};                                          // default parmtype 
+
+       default_eval_parmtype.no_eval_ident       = eval_plist.no_eval_ident;         // copy in parmtype flag  from passed-in plist_S
+       default_eval_parmtype.no_eval_expression  = eval_plist.no_eval_expression;    // copy in parmtype flag  from passed-in plist_S
+       default_eval_parmtype.no_eval_vlist       = eval_plist.no_eval_vlist;         // copy in parmtype flag  from passed-in plist_S
+       default_eval_parmtype.anything_ok         = true;                             // suppress parm type checking by default  
 
 
        // -------------------------------------------------------------------------------------------
@@ -2317,43 +2324,43 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
 
             results_S val_results { }; 
 
-            if ( (vlist.values.at(i).ty == type_E::vexpr) || (vlist.values.at(i).ty == type_E::vlist) || (vlist.values.at(i).ty == type_E::identifier) || (vlist.values.at(i).ty == type_E::ref) )
+            if ( (vlist.values.at(i).ty == type_E::expression) || (vlist.values.at(i).ty == type_E::vlist) || (vlist.values.at(i).ty == type_E::identifier) || (vlist.values.at(i).ty == type_E::ref) )
             {                 
-                if (eval_plist.values.empty())                            // no plist_S available? 
+                if (eval_plist.values.empty())                                       // no plist_S available? 
                 {
                     M__(M_out(L"--------------------------------------->eval_vlist() calling eval_value() -- positional -- default_parmype_S");) 
                     auto erc = eval_value(frame, vlist.values.at(i), val_results, default_eval_parmtype);
                     M__(M_out(L"--------------------------------------->eval_vlist() eval_value() returned");)
-                    if (erc != 0)  rc = erc;                              // remember any error     
+                    if (erc != 0)  rc = erc;                                         // remember any error     
                 }
-                else                                                      // some plist_S are available in values vector -- use i-th parmtype_S or last one, if not enough)               
+                else                                                                 // some plist_S are available in values vector -- use i-th parmtype_S or last one, if not enough)               
                 {
                     M__(M_out(L"--------------------------------------->eval_vlist() calling eval_value() -- positional -- supplied parmtype_S");) 
                     auto erc = eval_value(frame, vlist.values.at(i), val_results, eval_plist.values.at(std::min(i, (int)(eval_plist.values.size() - 1))) );
                     M__(M_out(L"--------------------------------------->eval_vlist() eval_value() returned");)
-                    if (erc != 0)  rc = erc;                              // remember any error
-                }    
-            }
-            else                                                          // not vexpr, vlist, or identifier that requires evaluation
-            {
-                val_results = to_results(vlist.values.at(i));             // just copy value from vlist directly into results -- no need for evaluation
-            }
+                    if (erc != 0)  rc = erc;                                         // remember any error
+                }                                                                   
+            }                                                                       
+            else                                                                     // not expression, vlist, or identifier that requires evaluation
+            {                                                                       
+                val_results = to_results(vlist.values.at(i));                        // just copy value from vlist directly into results -- no need for evaluation
+            }                                                                       
 
             M__(M_out(L"eval_vlist() -- inside loop -- looking at results -- i = %d    vlist.values.size() = %d" ) % i % vlist.values.size();)
 
 
-            // ------------------------------------------------------------
-            // look at results from evaluating this vexpr/value in the vlist 
-            // ------------------------------------------------------------  
+            // ------------------------------------------------------------------
+            // look at results from evaluating this expression/value in the vlist 
+            // ------------------------------------------------------------------  
 
             // return immediately, if any special flags on in results 
 
             if (val_results.special_results)
             {
-                vlist.values.at(i) = val_results;                                 // update value in_place in vlist, from values imbedded in results
-                results = val_results;                                            // pass back results with special flags
-                return rc;                                                        // return with any errors
-            }                                                         
+                vlist.values.at(i) = val_results;                                      // update value in_place in vlist, from values imbedded in results
+                results = val_results;                                                 // pass back results with special flags
+                return rc;                                                             // return with any errors
+            }                                                                         
 
 
             // handle usual (single) results from evaluation
@@ -2361,12 +2368,12 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
 
             if (!val_results.multiple_results)
             {
-                vlist.values.at(i) = val_results;                                 // update value in_place in vlist, from values imbedded in results
+                vlist.values.at(i) = val_results;                                       // update value in_place in vlist, from values imbedded in results
                 M__(M_out(L"eval_vlist() -- (only) value.ty %S %S") % type_str(val_results.ty) % val_results.string;)
 
-                if (val_results.re_eval_vexpr_results)
-                    i--;                                                         // go back and re-evaluate results of vexpr value evaluation
-            }                                                   
+                if (val_results.re_eval_expression_results)
+                    i--;                                                               // go back and re-evaluate results of expression value evaluation
+            }                                                                      
 
 
             // handle multiple results  -- can be 0, 1, or more values in the multiple results vlist
@@ -2374,7 +2381,8 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
 
             else
             {
-                 M__(M_out(L"eval_vlist() -- multiple results --  before -- i = %d   vlist.values.size() = %d" ) % i % vlist.values.size();)
+                M__(M_out(L"eval_vlist() -- multiple results --  before -- i = %d   vlist.values.size() = %d" ) % i % vlist.values.size();)
+                M__(display_vlist(*(val_results.vlist_sp), L"eval_vlist() -- adding in multiple results");)
 
                 auto     vlist_it   = vlist.values.begin() + i;                                                // get iterator pointing to current (i-th) element in the positional values vector (guaranteed to exist at this point)
                 uint64_t n_results { 0 };                                                                      // number of positional value results -- set to 0 in case vlist_sp is not initialized    
@@ -2383,25 +2391,30 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
                 if (val_results.vlist_sp.use_count() > 0)                                                      // vlist_sp points to vlist (with multiple values)? 
                 {
                     n_results = val_results.vlist_sp->values.size();                                           // number of positional results -- can be 0, 1, 2, ...
-                    n_keys    = val_results.vlist_sp->keywords.size();                                         // number of keyword results - most likely 0 
+
+                    if (val_results.vlist_sp->kw_eval_done)                                                    // Keywords in results vlist have been evaluated ?
+                        n_keys = val_results.vlist_sp->eval_kws.size();                                        // get number of keyword results from evaluated keywords multimap
+                    else                                                                                       // Keywords in results have not been evaluated ?
+                        n_keys = val_results.vlist_sp->keywords.size();                                        // get number of keyword results from unevaluated keywords vector 
+
                     M__(M_out(L"eval_vlist() -- n_results = %d   n_keys = %d" ) % n_results % n_keys;)
                 }
                                                                                                               
-                if (n_results <= 0)                                                                            // no results from vexpr evaluation?  
+                if (n_results <= 0)                                                                            // no results from expression evaluation?  
                 {     
-                    vlist.values.erase(vlist_it);                                                              // just remove vexpr from vlist (don't replace with anything)
+                    vlist.values.erase(vlist_it);                                                              // just remove expression from vlist (don't replace with anything)
                     i--;                                                                                       // reduce loop index, which will be incremented later to point to new (slid-down) element now in i-th vector position
                     vlist.value_ct--;                                                                          // also reduce number of values present in this vlist
                 }                                                                                             
                 else if (n_results == 1)                                                                       // just one value in multiple results vlist? -- should not occur?? 
                 {                                                                                            
-                    vlist.values.at(i) = val_results.vlist_sp->values.at(0);                                   // replace vexpr in i-th value with the first/only value from the vexpr evaluation results 
+                    vlist.values.at(i) = val_results.vlist_sp->values.at(0);                                   // replace expression in i-th value with the first/only value from the expression evaluation results 
                     M__(M_out(L"eval_vlist() -- (multiple=one) value.ty %S %S") % type_str(val_results.vlist_sp->values.at(0).ty) % val_results.vlist_sp->values.at(0).string;)
                     i--;                                                                                       // multiple results may need to be re-evaluated, since eval_value() doesn't do it (since it doesn't have access to n+1-th parmtype) 
                 }                                                                                            
-                else                                                                                           // actually have multiple results from vexpr evaluation
+                else                                                                                           // actually have multiple results from expression evaluation
                 {                                                                                            
-                    vlist.values.at(i) = val_results.vlist_sp->values.at(0);                                   // replace vexpr in i-th value with the first value from the vexpr evaluation results
+                    vlist.values.at(i) = val_results.vlist_sp->values.at(0);                                   // replace expression in i-th value with the first value from the expression evaluation results
                     M__(M_out(L"eval_vlist() -- (multiple=0) value.ty %S %S") % type_str(val_results.vlist_sp->values.at(0).ty) % val_results.vlist_sp->values.at(0).string;)                                                            
 
                     // inner loop to insert multiple results values into vlist being evaluated
@@ -2420,16 +2433,20 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
                 }
 
 
-                // append any keywords (in unevaluated list) in results to unevaluated keyword list in this vlist -- kw evaluation has not started yet for this vlist, so these should be picked up down below
+                // Append any keywords in the results to the unevaluated keyword list in this vlist -- kw evaluation has not started yet for this vlist, so these should be picked up down below
+                // (these are keywords in the results from evaluating a positional parm)
 
                 if (n_keys > 0)
                 {
-                    auto saved_kw_ct { vlist.kw_ct };
+                    auto saved_kw_ct { vlist.kw_ct };                                                                                                // unevaluated kw count before any additions
 
-                    vlist.keywords.insert(vlist.keywords.end(), val_results.vlist_sp->keywords.cbegin(), val_results.vlist_sp->keywords.cend()); // append all unevaluated keyword names/values from v2 (if any) to output vlist
-                    vlist.kw_ct = vlist.keywords.size(); 
+                    if (val_results.vlist_sp->kw_eval_done)                                                                                          // if keywords are already evaluated, need to convert them into unevaluated format 
+                        refresh_evaluated_vlist( *(val_results.vlist_sp) );                                                                          // convertback to unevaluated format
+ 
+                    vlist.keywords.insert(vlist.keywords.end(), val_results.vlist_sp->keywords.cbegin(), val_results.vlist_sp->keywords.cend());     // apppend all unevaluated keyword names/values from v2 (if any) to output vlist
 
-                    M__(M_out(L"eval_vlist() -- vlist kw_ct:  before=%d  after=%d") % saved_kw_ct % vlist.kw_ct;)
+                    vlist.kw_ct = vlist.keywords.size();                                                                                             // update unevaluated kw count 
+                    M__(M_out(L"eval_vlist() -- vlist unevaluated kw_ct:  before=%d  after=%d") % saved_kw_ct % vlist.kw_ct;)
                 }
 
                 M__(M_out(L"eval_vlist() -- multiple results --  after  -- i = %d  vlist.values.size() = %d" ) % i % vlist.values.size();)  
@@ -2450,6 +2467,13 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
 
      if (vlist.keywords.size() > 0)
      {
+         parmtype_S keyword_parmtype { };                                         // eval_value() looks at only "no_eval" flags, which are off with default initialization
+
+         keyword_parmtype.no_eval_ident   = eval_plist.no_eval_ident;             // copy in parmtype flag  from passed-in plist_S
+         keyword_parmtype.no_eval_expression  = eval_plist.no_eval_expression;    // copy in parmtype flag  from passed-in plist_S
+         keyword_parmtype.no_eval_vlist   = eval_plist.no_eval_vlist;             // copy in parmtype flag  from passed-in plist_S
+
+
          for (auto& elem : vlist.keywords)
          {
              value_S        keyword_value { };
@@ -2469,15 +2493,14 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
 
                  // need to handle non-simple keyword name -- evaluate value and check for keyword type or string type that can be converted to keyword_name string
 
-                 results_S  keyname_results  { };                                        // results from verbname value evaluation 
-                 parmtype_S keyname_parmtype { };                                        // eval_value() looks at only "no_eval" flags, which are off with default initialization
+                 results_S  keyname_results  { };                                         // results from verbname value evaluation 
 
-                 auto evrc = reeval_value(frame, elem.name, keyname_results, keyname_parmtype, debug);
+                 auto evrc = reeval_value(frame, elem.name, keyname_results, keyword_parmtype, debug);
                  if (evrc != 0) rc = evrc;
 
                  if (keyname_results.special_results)
                  {
-                     results = keyname_results;                                          // pass back any unusual results from keyword name value evaluation
+                     results = keyname_results;                                           // pass back any unusual results from keyword name value evaluation
                      return rc;                       
                  }  
 
@@ -2517,7 +2540,7 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
 
              parmtype_S eval_parmtype = get_keyword_parmtype(eval_plist, keyword_name);     // will have to evaluate any name expressions here
        
-             if  ( (elem.value.ty == type_E::vexpr) || (elem.value.ty == type_E::vlist) || (elem.value.ty == type_E::identifier) || (elem.value.ty == type_E::ref) )
+             if  ( (elem.value.ty == type_E::expression) || (elem.value.ty == type_E::vlist) || (elem.value.ty == type_E::identifier) || (elem.value.ty == type_E::ref) )
              {
                  M__(M_out(L"--------------------------------------->eval_vlist() calling eval_value() -- keyword");)
                  results_S val_results  { };
@@ -2551,7 +2574,7 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
                      }
                      else if (val_results.vlist_sp->kw_ct > 0) 
                      {
-                         M_out_emsg1(L"eval_vlist() -- evaluation of vexpr supplied as keyword value returned with %d keywords -- none are allowed in a keyword value") % val_results.vlist_sp->kw_ct; 
+                         M_out_emsg1(L"eval_vlist() -- evaluation of expression supplied as keyword value returned with %d keywords -- none are allowed in a keyword value") % val_results.vlist_sp->kw_ct; 
                          msg_loc(elem.value, L"keyword value");
                          msgend_loc(vlist);
                          results = error_results();                          // pass back error results
@@ -2567,7 +2590,7 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
                      }
                      else                                                    // 2 or more values in multiple results -- not allowed for keyword 
                      {
-                         M_out_emsg1(L"eval_vlist() -- evaluation of vexpr supplied as keyword value returned with %d positional values -- max of one is allowed in a keyword value") % val_results.vlist_sp->value_ct; 
+                         M_out_emsg1(L"eval_vlist() -- evaluation of expression supplied as keyword value returned with %d positional values -- max of one is allowed in a keyword value") % val_results.vlist_sp->value_ct; 
                          msg_loc(elem.value, L"keyword value");
                          msgend_loc(vlist);
                          results = error_results();                          // pass back error results
@@ -2576,7 +2599,7 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
                  }
                  else                                                        // must be single results -- not special
                  {
-                      M__(M_out(L"eval_vlist() -- handling single (non-special) from keyword value expression evaluation");)  
+                      M__(M_out(L"eval_vlist() -- handling single (non-special) result from keyword value expression evaluation");)  
                       keyword_value = val_results;                           // set keyword value from evaluated value_S portion of results_S 
                  }
              }
@@ -2595,8 +2618,9 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
                   vlist.eval_kws.emplace(keyword_name, keyword_value);  
          }
          
-         updated            = true;     // indicate that vlist has been updated
-         vlist.kw_eval_done = true;     // indicate that eval_kws has been filled in
+         updated            = true;                           // indicate that vlist has been updated
+         vlist.kw_eval_done = true;                           // indicate that eval_kws has been filled in
+         vlist.kw_ct        = vlist.eval_kws.size();          // update keyrord count o reflect number of evaluated keywords   
     }
 
     if (updated) 
@@ -2612,8 +2636,8 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
         results = results_S { };       // uninitializedt results, when there is no error 
     }
 
-    M__(M_out(L"=========================================> eval_vlist() returning");)
     M__(display_vlist(vlist, L"output from eval_vlist()");)
+    M__(M_out(L"=========================================> eval_vlist() returning");)
     return rc; 
 }
 M_endf
@@ -2627,7 +2651,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   eval_vexpr() -- evaluate contents of a passed-in vexpr (values passed-in vexpr are updated in-place)
+////   eval_expression() -- evaluate contents of a passed-in expression (values passed-in expression are updated in-place)
 ////                  
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -2638,77 +2662,77 @@ M_endf
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-//   eval_vexpr() -- called in a loop from eval_vexpr()
+//   eval_expression() -- called in a loop from eval_expression()
 //
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                                                                                                                                                   
 static 
-int eval_vexpr_1(frame_S& frame, const a_vexpr_S& orig_vexpr, results_S& results, bool debug) try
+int eval_expression_1(frame_S& frame, const a_expression_S& orig_expression, results_S& results, bool debug, bool noeval_verbless) try
 {
-    e_vexpr_S     eval_vexpr     {       }; 
-    int           rc             { 0     };  
-    bool          lparms_updated { false }; 
-    bool          rparms_updated { false };    
+    e_expression_S    eval_expression    {       }; 
+    int               rc                 { 0     };  
+    bool              lparms_updated     { false }; 
+    bool              rparms_updated     { false };    
 
-    M__(M_out(L"*****************************************************eval_vexpr() called");)
-    M__(display_vexpr(orig_vexpr, L"eval-before", L"", false);)
-
-
-    // copy data members from original_vexpr to new vexpr
-    // ------------------------------------------------
-
-    eval_vexpr.has_verb         =  orig_vexpr.has_verb         ;
-    eval_vexpr.has_sigil        =  orig_vexpr.has_sigil        ;
-    eval_vexpr.sigil            =  orig_vexpr.sigil            ;
-    eval_vexpr.priority         =  orig_vexpr.priority         ;
-    eval_vexpr.right_associate  =  orig_vexpr.right_associate  ;
-    eval_vexpr.left_associate   =  orig_vexpr.left_associate   ;
-    eval_vexpr.token_ix1        =  orig_vexpr.token_ix1        ;
-    eval_vexpr.token_ix2        =  orig_vexpr.token_ix2        ;
-    eval_vexpr.lparms           =  orig_vexpr.lparms           ;       // nested complex values (pointed to by std::shared_ptr<> ) are shared with orig a_vexpr_S
-    eval_vexpr.rparms           =  orig_vexpr.rparms           ;       // nested complex values (pointed to by std::shared_ptr<> ) are shared with orig a_vexpr_S
+    M__(M_out(L"*****************************************************eval_expression() called");)
+    M__(display_expression(orig_expression, L"eval-before", L"", false);)
 
 
-    // =====================================================
-    // get verbdef, etc, (if verb is present for this vexpr)
-    // =====================================================
+    // copy data members from original_expression to new expression
+    // ----------------------------------------------------
 
-    verbdef_S verbdef         {       };                                             // default verbdef_S, in case verb expression is empty string
-    bool      have_verbdef    { false };                                             // set to true, once non-empty verbdef found
+    eval_expression.has_verb         =  orig_expression.has_verb         ;
+    eval_expression.has_sigil        =  orig_expression.has_sigil        ;
+    eval_expression.sigil            =  orig_expression.sigil            ;
+    eval_expression.priority         =  orig_expression.priority         ;
+    eval_expression.right_associate  =  orig_expression.right_associate  ;
+    eval_expression.left_associate   =  orig_expression.left_associate   ;
+    eval_expression.token_ix1        =  orig_expression.token_ix1        ;
+    eval_expression.token_ix2        =  orig_expression.token_ix2        ;
+    eval_expression.lparms           =  orig_expression.lparms           ;               // nested complex values (pointed to by std::shared_ptr<> ) are shared with orig a_expression_S
+    eval_expression.rparms           =  orig_expression.rparms           ;               // nested complex values (pointed to by std::shared_ptr<> ) are shared with orig a_expression_S
+
+
+    // ==========================================================
+    // get verbdef, etc, (if verb is present for this expression)
+    // ==========================================================
+
+    verbdef_S verbdef         {       };                                                 // default verbdef_S, in case verb expression is empty string
+    bool      have_verbdef    { false };                                                 // set to true, once non-empty verbdef found
     
-    if (orig_vexpr.has_verb)
+    if (orig_expression.has_verb)
     {
-        // set evaluated verb name in e_vexpr_S -- either direct from a_vexpr_S verb_value string value, or by evaluation of a_vexpr_S verb_value expression
+        // set evaluated verb name in e_expression_S -- either direct from a_expression_S verb_value string value, or by evaluation of a_expression_S verb_value expression
 
-        if (orig_vexpr.verb_value.ty == type_E::verbname)                              // handle simple verbname in this vexpr
+        if (orig_expression.verb_value.ty == type_E::verbname)                           // handle simple verbname in this expression
         {
-            eval_vexpr.verb_name      = orig_vexpr.verb_value.string;                  // simple verbname -- name is just string value 
-            eval_vexpr.verb_token_ix1 = orig_vexpr.verb_value.token_ix1;               // copy over token indexes for debugging
-            eval_vexpr.verb_token_ix2 = orig_vexpr.verb_value.token_ix2; 
+            eval_expression.verb_name      = orig_expression.verb_value.string;          // simple verbname -- name is just string value 
+            eval_expression.verb_token_ix1 = orig_expression.verb_value.token_ix1;       // copy over token indexes for debugging
+            eval_expression.verb_token_ix2 = orig_expression.verb_value.token_ix2; 
         }                                                                            
-        else                                                                           // verb expression requires evaluation
-        { 
+        else                                                                             // verb expression requires evaluation
+        {                                                                               
             // need to handle non-simple verbname -- evaluate value and check for verbdef or string that can be converted to verb_name string
             // ------------------------------------------------------------------------------------------------------------------------------
 
-            results_S  verbname_results  { };                                          // results from verbname value evaluation  (final)
-            parmtype_S verbname_parmtype { };                                          // eval_value() uses only "no_eval" flags, which are off by default
+            results_S  verbname_results  { };                                            // results from verbname value evaluation  (final)
+            parmtype_S verbname_parmtype { };                                            // eval_value() uses only "no_eval" flags, which are off by default
 
-            auto evrc = reeval_value(frame, orig_vexpr.verb_value, verbname_results, verbname_parmtype, false);
+            auto evrc = reeval_value(frame, orig_expression.verb_value, verbname_results, verbname_parmtype, false);
 
             if (evrc != 0) rc = evrc;
 
             if (verbname_results.special_results)
             {
-                results = verbname_results;                                               // pass back unusual results from verb_value evaluation
+                results = verbname_results;                                              // pass back unusual results from verb_value evaluation
                 return rc;                       
             }  
 
             if (evrc != 0)
             {
-                M_out_emsg1(L"eval_vexpr() -- expression evaluation to obtain verbname/verbdef failed -- orig_vexpr.verb_value = %s -- cannot execute") % verb_name(orig_vexpr); 
-                msgend_loc(orig_vexpr); 
+                M_out_emsg1(L"eval_expression() -- expression evaluation to obtain verbname/verbdef failed -- orig_expression.verb_value = %s -- cannot execute") % verb_name(orig_expression); 
+                msgend_loc(orig_expression); 
                 results = error_results();                                                // pass back error results
                 return -1;              
             }
@@ -2718,38 +2742,38 @@ int eval_vexpr_1(frame_S& frame, const a_vexpr_S& orig_vexpr, results_S& results
 
             if ( (verbname_results.ty == type_E::verbname) || (verbname_results.ty == type_E::string) )
             {
-                eval_vexpr.verb_name      = verbname_results.string;                      // save away evaluated string
-                eval_vexpr.verb_token_ix1 = orig_vexpr.verb_value.token_ix1;              // copy over token indexes for debugging
-                eval_vexpr.verb_token_ix2 = orig_vexpr.verb_value.token_ix2; 
+                eval_expression.verb_name      = verbname_results.string;                  // save away evaluated string
+                eval_expression.verb_token_ix1 = orig_expression.verb_value.token_ix1;     // copy over token indexes for debugging
+                eval_expression.verb_token_ix2 = orig_expression.verb_value.token_ix2; 
             }
             else if (verbname_results.ty == type_E::verbdef)
             {
-                verbdef = *(verbname_results.verbdef_sp);                                 // just capture verbdef from verbname vexpr evaluation
+                verbdef = *(verbname_results.verbdef_sp);                                 // just capture verbdef from verbname expression evaluation
                 have_verbdef = true;                                                      // suppress verbdef lookup down below, and indicate verbdef is already available
-                eval_vexpr.verb_token_ix1 = orig_vexpr.verb_value.token_ix1;              // copy over token indexes for debugging
-                eval_vexpr.verb_token_ix2 = orig_vexpr.verb_value.token_ix2; 
-                M__(M_out(L"eval_vexpr() -- verbdef results");)
+                eval_expression.verb_token_ix1 = orig_expression.verb_value.token_ix1;    // copy over token indexes for debugging
+                eval_expression.verb_token_ix2 = orig_expression.verb_value.token_ix2; 
+                M__(M_out(L"eval_expression() -- verbdef results");)
             }
             else
             {
-                 M_out_emsg1(L"eval_vexpr() -- orig_vexpr.verb_value evaluation did not yield a string, verbname, or verbdef -- orig_vexpr.verb_value = %s  -- verbname_results.ty = %S -- cannot execute") % verb_name(orig_vexpr) % type_str(verbname_results.ty); 
-                 msgend_loc(orig_vexpr); 
-                 results = error_results();                                               // pass back error results
+                 M_out_emsg1(L"eval_expression() -- orig_expression.verb_value evaluation did not yield a string, verbname, or verbdef -- orig_expression.verb_value = %s  -- verbname_results.ty = %S -- cannot execute") % verb_name(orig_expression) % type_str(verbname_results.ty); 
+                 msgend_loc(orig_expression); 
+                 results = error_results();                                                // pass back error results
                  return -1;  
             }
         }
    
 
-        // get verbdef for verb_name (if any) to see what type of variable and vexpr evaluation is needed in left and right parms -- end immediately, if unknown verb
+        // get verbdef for verb_name (if any) to see what type of variable and expression evaluation is needed in left and right parms -- end immediately, if unknown verb
 
-        if ( (!have_verbdef) && (eval_vexpr.verb_name.size() > 0) )                        // need to lookup verbdef -and- evaluated verb_name expression is non-empty string? 
+        if ( (!have_verbdef) && (eval_expression.verb_name.size() > 0) )                    // need to lookup verbdef -and- evaluated verb_name expression is non-empty string? 
         {                                                                                 
-            auto verbdef_rc = get_verb(frame, eval_vexpr.verb_name, verbdef);              // returns default, if undefined verb  
+            auto verbdef_rc = get_verb(frame, eval_expression.verb_name, verbdef);          // returns default, if undefined verb  
            
-            if (verbdef_rc != 0)                                                           // undefined verb? 
+            if (verbdef_rc != 0)                                                            // undefined verb? 
             {
-                M_out_emsg1(L"eval_vexpr() -- unknown verb = %s -- cannot execute") % eval_vexpr.verb_name; 
-                msgend_loc(eval_vexpr); 
+                M_out_emsg1(L"eval_expression() -- unknown verb = %s -- cannot execute") % eval_expression.verb_name; 
+                msgend_loc(eval_expression); 
                 results = error_results();                                                  // pass back error results
                 return -1; 
             }  
@@ -2757,66 +2781,72 @@ int eval_vexpr_1(frame_S& frame, const a_vexpr_S& orig_vexpr, results_S& results
             have_verbdef = true;                                                            // indicate that verbdef is now available 
         }
     }
-    else                                                                                    // vexpr has no verb -- need to suppress all evaluation
+    else                                                                                    // this expression has no verb -- may need to suppress evaluation or values in vlist 
     {
-        verbdef.lparms.no_eval_ident  = true;                                               // suppress vexpr and vlist  evaluating -- just pass through values
-        verbdef.lparms.no_eval_vlist  = true;    
-      //verbdef.lparms.no_eval_vexpr  = true;                                               // allow nested vexprs to be evaluated           
+       if (noeval_verbless)                                                                 // should vlist ident, sub expression, etc. evaluation be  suppress when verbless? 
+       {
+           verbdef.lparms.no_eval_ident   = true;                                            
+           verbdef.lparms.no_eval_vlist   = true;    
+           verbdef.lparms.no_eval_expression  = true;                                            
+       }
     }
 
 
-    //  Process any nested vexprs in left or right vlists -- replace vexpr with value -- updated value can be another vexpr or variable -- no double evaluation -- these will be left as-is here (verb checking may complain about them) 
-    //  -------------------------------------------------
+    //  Process any nested expressions in left or right vlists -- replace expression with value -- updated value can be another expression or variable -- no double evaluation -- these will be left as-is here (verb checking may complain about them) 
+    //  ------------------------------------------------------
 
-    if ( (eval_vexpr.lparms.value_ct > 0) || (eval_vexpr.lparms.kw_ct > 0) )
+    if ( (eval_expression.lparms.value_ct > 0) || (eval_expression.lparms.kw_ct > 0) )       // un-evaluated kw count
     {
-        M__(M_out(L"eval_vexpr() -- process left vlist (lparms)");) 
+        M__(M_out(L"eval_expression() -- process left vlist (lparms) -- calling eval_vlist()");) 
         results_S vlist_results {}; 
-        auto erc = eval_vlist(frame, eval_vexpr.lparms, vlist_results, verbdef.lparms);
+        auto erc = eval_vlist(frame, eval_expression.lparms, vlist_results, verbdef.lparms);
+
         if (erc != 0) rc = erc;
 
         if (vlist_results.special_results)
         {
-            results = vlist_results;       // pass back unusual results from vlist evaluation
+            results = vlist_results;                                                         // pass back unusual results from vlist evaluation
             return rc;                       
         }
     }
 
-    if ( (eval_vexpr.rparms.value_ct > 0) || (eval_vexpr.rparms.kw_ct > 0) )
+    if ( (eval_expression.rparms.value_ct > 0) || (eval_expression.rparms.kw_ct > 0) )       // un-evaluated kw count
     {
-        M__(M_out(L"eval_vexpr() -- process right vlist (rparms)");) 
+        M__(M_out(L"eval_expression() -- process right vlist (rparms) -- calling eval_vlist()");) 
         results_S vlist_results {}; 
-        auto erc = eval_vlist(frame, eval_vexpr.rparms, vlist_results, verbdef.rparms);
+        auto erc = eval_vlist(frame, eval_expression.rparms, vlist_results, verbdef.rparms);
+
         if (erc != 0) rc = erc;
 
         if (vlist_results.special_results)
         {
-            results = vlist_results;       // pass back unusual results from vlist evaluation
+            results = vlist_results;                                                          // pass back unusual results from vlist evaluation
             return rc;                       
         }
     }
     
-    M__(display_vexpr(eval_vexpr, L"eval-after", L"", false);)
+    M__(display_expression(eval_expression, L"eval-after", L"", false);)
 
 
     // don't evaluate the main verb, if any errors seen so far during vlist evaluation
 
     if (rc != 0)
     {
-        M_out_emsg1(L"eval_vexpr() -- bypassing execution of verb= %s  because of errors while evaluating parms") % verb_name(eval_vexpr);
-        msgend_loc(eval_vexpr); 
-        results = error_results();                                             // pass back error results
+        M_out_emsg1(L"eval_expression() -- bypassing execution of verb= %s  because of errors while evaluating parms") % verb_name(eval_expression);
+        msgend_loc(eval_expression); 
+        results = error_results();                                                            // pass back error results
         return rc; 
     }
 
 
     // do preliminary parm checking based on verbdef_S for main verb (if any)
+    // ----------------------------------------------------------------------
 
      
-    if (eval_vexpr.has_verb && have_verbdef)                                   // bypass parm checking if no verbdef is available
+    if (eval_expression.has_verb && have_verbdef)                                             // bypass parm checking if no verbdef is available
     {
-      M__(M_out(L"eval_vexpr() -- doing parm checking -- calling check_verb_parms()");)
-      auto crc = check_verb_parms(frame, eval_vexpr, verbdef);
+      M__(M_out(L"eval_expression() -- doing parm checking -- calling check_verb_parms()");)
+      auto crc = check_verb_parms(frame, eval_expression, verbdef);
       if (crc != 0) rc = crc; 
     }
 
@@ -2825,130 +2855,143 @@ int eval_vexpr_1(frame_S& frame, const a_vexpr_S& orig_vexpr, results_S& results
 
     if (rc != 0)
     {
-        M_out_emsg1(L"eval_vexpr() -- bypassing execution of verb= %s  because of errors while checking basic parm counts and types") % verb_name(eval_vexpr); 
-        msgend_loc(eval_vexpr); 
-        results = error_results();                                             // pass back error results
+        M_out_emsg1(L"eval_expression() -- bypassing execution of verb= %s  because of errors while checking basic parm counts and types") % verb_name(eval_expression); 
+        msgend_loc(eval_expression); 
+        results = error_results();                                                             // pass back error results
         return rc; 
     }
 
 
-    // =====================================
-    // evaluate the main verb for this vexpr
-    // =====================================
+    // ==========================================
+    // evaluate the main verb for this expression
+    // ==========================================
 
-    if (eval_vexpr.has_verb)
+    if (eval_expression.has_verb)
     {
         // just return unit value, if no verbdef is available
 
         if (!have_verbdef)
         {
-             results = unit_results();                                                  // return unit results ???????
+             results = unit_results();                                                          // return unit results ???????
         } 
 
         // otherwise, invoke the verb to get results
         // -----------------------------------------
 
-        else                                                                            // evaluated verb name is not empty string
+        else                                                                                    // evaluated verb name is not empty string
         {
             if (verbdef.fcn_p != nullptr)
             {
                 if (verbdef.simplified_call)
                 {
-                    M__(M_out(L"eval_vexpr() -- doing simplified verb call <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");)
+                    M__(M_out(L"eval_expression() -- doing simplified verb call <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");)
 
                     // do simplified verb call -- non ex-non-internal predefined verbs
                     
-                    int (*call_p)(const e_vexpr_S&, value_S&) = (int (*)(const e_vexpr_S&, value_S&))(verbdef.fcn_p);  // simplified call pointer
+                    int (*call_p)(const e_expression_S&, value_S&) = (int (*)(const e_expression_S&, value_S&))(verbdef.fcn_p);  // simplified call pointer
                     
-                    value_S result_value {  };                                                                         // predefined uninitialized value   
-                    auto prc = (*call_p)(eval_vexpr, result_value);                                                    // will pass back value_S converted to (non-special) result_S from verb call
-                    results = to_results(result_value);                                                                // convert return value to full (non-special) results 
+                    value_S result_value {  };                                                                                   // predefined uninitialized value   
+                    auto prc = (*call_p)(eval_expression, result_value);                                                         // will pass back value_S converted to (non-special) result_S from verb call
+                    results = to_results(result_value);                                                                          // convert return value to full (non-special) results 
                                                                                                                      
-                    if (prc != 0) rc = prc;                                                                            // remember any error from verb execution 
+                    if (prc != 0) rc = prc;                                                                                      // remember any error from verb execution 
                 }
                 else
                 {
-                     M__(M_out(L"eval_vexpr() -- doing regular verb call <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");)
+                     M__(M_out(L"eval_expression() -- doing regular verb call <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");)
 
                     // do regular verb call -- ex-internal predefined verbs
 
-                    int (*call_p)(frame_S&, const e_vexpr_S&, const verbdef_S&, results_S&) = (int (*)(frame_S&, const e_vexpr_S&, const verbdef_S&, results_S&))(verbdef.fcn_p);  // regular call pointer
+                    int (*call_p)(frame_S&, const e_expression_S&, const verbdef_S&, results_S&) = (int (*)(frame_S&, const e_expression_S&, const verbdef_S&, results_S&))(verbdef.fcn_p);  // regular call pointer
                             
-                    auto prc = (*call_p)(frame, eval_vexpr, verbdef, results);           // will pass back result_S from verb call
-
-                    if (prc != 0) rc = prc;                                              // remember any error from verb execution 
-                }
-
-                frame.verb_eval_ct++;                                                    // accumulate verb calls in current stack frame
-                static_N::verb_count++;                                                  // accumulate total verb calls                  
-
+                    auto prc = (*call_p)(frame, eval_expression, verbdef, results);                                              // will pass back result_S from verb call
+                                                                                                                      
+                    if (prc != 0) rc = prc;                                                                                      // remember any error from verb execution 
+                }                                                                                                               
+                                                                                                                                
+                frame.verb_eval_ct++;                                                                                            // accumulate verb calls in current stack frame
+                static_N::verb_count++;                                                                                          // accumulate total verb calls                  
+                               
                 // Indicate that these results are from a builtin verb, if the verbdef indicates built-in verb     
 
                 results.builtin_verb_results = verbdef.is_builtin;     
-                M__(M_out(L"eval_vexpr() -- results.builtin_verb_results = %d <<<<<<<<<<<<<<<<<<<<<<<<<") % ((int)(results.builtin_verb_results));)                           
+                M__(M_out(L"eval_expression() -- results.builtin_verb_results = %d <<<<<<<<<<<<<<<<<<<<<<<<<") % ((int)(results.builtin_verb_results));)                           
             }                                                                    
-            else                                                                         // should not happen
+            else                                                                                                                 // should not happen
             {
-                M_throw_v("eval_vexpr() -- verbdef.fcn_p = nullptr for verb=%s") % out_ws(verb_name(eval_vexpr)) ));  
+                M_out_emsg1(L"eval_expression() -- verbdef.fcn_p = nullptr for verb=%S") %         verb_name(eval_expression)    ;  
+                M_throw_v(   "eval_expression() -- verbdef.fcn_p = nullptr for verb=%S") % out_ws( verb_name(eval_expression)) ));  
             } 
         }
     }
 
 
-    // no verb present -- should be empty parens, of parens with just left-side positional values present -- no keywords allowed 
-    // -------------------------------------------------------------------------------------------------------------------------
+    // no verb present -- should be empty parens, or parens with just left-side positional values/keywords present -- no right parms expected here 
+    // -------------------------------------------------------------------------------------------------------------------------------------------
 
     else                                                                               
     {
         if (
-        //  (eval_vexpr.lparms.value_ct   > 1)
-        //  ||                         
-            (eval_vexpr.rparms.value_ct   > 0)                                           // no right-side positional parms allowed without verb   (should not happen)
-            ||
-        //    (eval_vexpr.lparms.kw_ct      > 0)                                         // no left-side keywords          allowed without verb
-        //    ||
-            (eval_vexpr.rparms.kw_ct      > 0)                                           // no right-side keywords         allowed without verb   (should not happen)
+            (eval_expression.rparms.value_ct   > 0)                                                                            // no right-side positional parms allowed without verb   (should not happen)
+            ||                                                                                                            
+            (eval_expression.rparms.kw_ct > 0     )                                                                            // no right-side keywords         allowed without verb   (should not happen)
            )
         {
-            // invalid verbless vexpr -- error -- should not occur -- error should heve been found during parsing phase before evaluation started
+            // invalid verbless expression -- error -- should not occur -- error should heve been found during parsing phase before evaluation started
 
-            M_out_emsg1(L"eval_vexpr() -- verbless vexpr with right-side parms seen -- should not occur");
-            msgend_loc(eval_vexpr);
-            M_throw("eval_vexpr() -- verbless vexpr with multiple parms")         
+            M_out_emsg1(L"eval_expression() -- verbless expression with right-side positional or keyword parms seen -- should not occur");
+            msgend_loc(eval_expression);
+            M_throw("eval_expression() -- verbless expression with right-side positional or keyword parms")         
         }
         else
         {
-            M__(M_out(L"eval_vexpr() -- handling no-verb case <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");)
+            M__(M_out(L"eval_expression() -- handling no-verb case <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");)
 
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             //////
             //////
-            //////     ====================
-            //////     handle no-verb vexpr -- just empty parens or vlist with left-side positional parm(s)  
-            //////     ====================
+            //////     =========================
+            //////     handle no-verb expression -- just empty expression or vlist with left-side positional/keyword parm(s)  
+            //////     =========================
+            //////
+            //////
+            //////     Just take left side vlist resulting from verbless evaluation and return it as the results from this expresion 
             //////
             //////
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-            M__(M_out(L"eval_vexpr() -- lparms.value_ct=%d   lparms.kw_ct=%d   rparms.value_ct=%d   rparms.kw_ct=%d ") % eval_vexpr.lparms.value_ct % eval_vexpr.lparms.kw_ct % eval_vexpr.rparms.value_ct % eval_vexpr.rparms.kw_ct;)
+            M__(M_out( L"eval_expression() -- lparms.value_ct=%d   lparms.kw_ct=%d   rparms.value_ct=%d   rparms.kw_ct=%d ") 
+                     % eval_expression.lparms.value_ct % eval_expression.lparms.kw_ct % eval_expression.rparms.value_ct % eval_expression.rparms.kw_ct;)
+ 
 
-            if  (eval_vexpr.lparms.value_ct == 0)                          // just parens -- no parm inside
+            // make sure any keywords in verbless left-side parms vlist are in unevaluated format
+            // ----------------------------------------------------------------------------------
+         
+            if (eval_expression.lparms.kw_eval_done)                          // has keyword multimap been filled in? 
+                refresh_evaluated_vlist(eval_expression.lparms);              // make it look like keywords have not been evaluated yet
+
+
+            // pass back left-side vlist from earlier verbless evaluation
+            // ----------------------------------------------------------
+
+            if ( (eval_expression.lparms.kw_ct > 0) || (eval_expression.lparms.value_ct > 1) )
             {
-                results = no_results();                                    // zero result values -- vlist_sp is not initialized
+                M__(display_vlist(eval_expression.lparms, L"eval_expression() -- passing back from verbless expression");)
+                results = to_results(vlist_val(eval_expression.lparms));        // pass back whole left-side positional parm vlist -- will be multiple results
+                results.multiple_results = true;                                // indicate that multiple results are being returned
             }
-            else if (eval_vexpr.lparms.value_ct == 1)                      // value_ct = 1 -- must be paren enclosing a single value
+            else if (eval_expression.lparms.value_ct == 0)                      // just parens -- no parms inside (or they all went away during evaluation)
             {
-                results = to_results(eval_vexpr.lparms.values.at(0));      // pass back 1st (only) left-side positional parm 
+                results = no_results();                                         // zero result values -- vlist_sp is not initialized
             }
-            else                                                           // must have more than one left-side positional parm 
+            else                                                                // must be single positional value, with no keywords
             {
-                results = to_results(vlist_val(eval_vexpr.lparms));        // pass back whole left-side positional parm vlist 
-                results.multiple_results = true;                           // indicate that we're passing back multiple values in the vlist, not a single value that is the vlist
+                results = to_results(eval_expression.lparms.values.at(0));      // pass back 1st/only left-side positional parm 
             }
         }
     }
 
-    M__(M_out(L"*****************************************************eval_vexpr() returning");)
+    M__(M_out(L"*****************************************************eval_expression() returning");)
     return rc; 
 }
 M_endf
@@ -2957,37 +3000,37 @@ M_endf
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-//   eval_vexpr() -- call eval_vexpr_1() in loop, as long as @XCTL results are seen from vexpr execution
+//   eval_expression() -- call eval_expression_1() in loop, as long as @XCTL results are seen from expression execution
 //
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int eval_vexpr(frame_S& frame, const a_vexpr_S& vexpr, results_S& results, bool debug) try
+int eval_expression(frame_S& frame, const a_expression_S& expression, results_S& results, bool debug) try
 {
-    const a_vexpr_S     *vexpr_p    {&vexpr}; 
-    results_S            results_x  {      };                         // @XCTL results from eval_vexpr_1() -- should have shared ptr to vexpr_S for next loop pass 
+    const a_expression_S     *expression_p    {&expression}; 
+    results_S            results_x  {      };                         // @XCTL results from eval_expression_1() -- should have shared ptr to expression_S for next loop pass 
 
 
-    // main loop to call eval_vexpr_1(), and repeat loop to handle any @XCTL results
+    // main loop to call eval_expression_1(), and repeat loop to handle any @XCTL results
     // -----------------------------------------------------------------------------
 
     for (;;)
     {
-        results_S results_1   { };                                    // results from eval_vexpr_1()
+        results_S results_1   { };                                    // results from eval_expression_1()
                                                 
-        auto rc = eval_vexpr_1(frame, *vexpr_p, results_1, debug);
-        M__(M_out(L"eval_vexpr() -- eval_vexpr_1() returned <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"); )
+        auto rc = eval_expression_1(frame, *expression_p, results_1, debug, false);
+        M__(M_out(L"eval_expression() -- eval_expression_1() returned <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"); )
       
         if (rc != 0)
         {
-            results = results_1;                                      // pass back (error?) results from eval_vexpr_1() 
-            return rc;                                                // pass back any errors from eval_vexpr_1()
+            results = results_1;                                      // pass back (error?) results from eval_expression_1() 
+            return rc;                                                // pass back any errors from eval_expression_1()
         }
        
         if ( !(results_1.special_results && results_1.xctl_flag) )
         {
-            M__(M_out(L"eval_vexpr() -- returning (non-@XCTL results  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"); )
-            results = results_1;                                      // pass back results from eval_vexpr_1()
+            M__(M_out(L"eval_expression() -- returning (non-@XCTL results  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"); )
+            results = results_1;                                      // pass back results from eval_expression_1()
             return rc;                                                // pass back all results, except for @XCTL special results
         }
                                
@@ -2996,18 +3039,18 @@ int eval_vexpr(frame_S& frame, const a_vexpr_S& vexpr, results_S& results, bool 
         
         if (results_1.builtin_verb_results == true)
         {
-            M__(M_out(L"eval_vexpr() -- processing @XCTL results -- from built-in verb <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");)
-            results = results_1;                                      // pass back special @XCTL results from eval_vexpr_1() -- don't action this time -- wait for user's verb (non-builtin) to come back before doing the @XCTL
+            M__(M_out(L"eval_expression() -- processing @XCTL results -- from built-in verb <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");)
+            results = results_1;                                      // pass back special @XCTL results from eval_expression_1() -- don't action this time -- wait for user's verb (non-builtin) to come back before doing the @XCTL
             return rc;                                                
         }
 
-        M__(M_out(L"eval_vexpr() -- processing @XCTL results -- from user-defined verb <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");)   
+        M__(M_out(L"eval_expression() -- processing @XCTL results -- from user-defined verb <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");)   
 
-        results_x = results_1;                                        // hold onto vexpr_S from @XCTL results via shared ptr until next call to eval_vexpr_1()
-        vexpr_p   = results_x.vexpr_sp.get();                         // next pass -- use vexpr provided with with @XCTL results
+        results_x = results_1;                                        // hold onto expression_S from @XCTL results via shared ptr until next call to eval_expression_1()
+        expression_p   = results_x.expression_sp.get();                         // next pass -- use expression provided with with @XCTL results
        
        
-        // (loop back to call eval_vexpr_1() with new vexpr setup by  the @XCTL verb, in place of current vexpr)
+        // (loop back to call eval_expression_1() with new expression setup by  the @XCTL verb, in place of current expression)
     }
 
 }
@@ -3021,7 +3064,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   eval_slist() -- evaluate all vexprs in an slist -- return results from last vexpr executed (if any)
+////   eval_slist() -- evaluate all expressions in an slist -- return results from last expression executed (if any)
 ////
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -3035,17 +3078,17 @@ int eval_slist(frame_S& frame, const slist_S& slist, results_S& results, bool is
     int rc = 0; 
     results_S slist_results {}; 
 
-    auto                vexpr_max   = slist.vexprs.size(); 
-    decltype(vexpr_max) vexpr_ix    = 0; 
+    auto                     expression_max   = slist.expressions.size(); 
+    decltype(expression_max) expression_ix    = 0; 
 
-    M__(M_out(L"eval_slist() -- vexpr_max=%d") % vexpr_max;)
+    M__(M_out(L"eval_slist() -- expression_max=%d") % expression_max;)
         
     static_N::slist_count++; 
 
 
     // filter out empty slist -- need to return 0 results from this (not just unit results)
 
-    if (vexpr_max ==0)
+    if (expression_max == 0)
     {
         results = no_results();                  // zero result values
         M__(M_out(L"eval_slist() -- multiple results = 0 results");)
@@ -3061,25 +3104,25 @@ int eval_slist(frame_S& frame, const slist_S& slist, results_S& results, bool is
     { 
         M__(M_out(L"eval_slist() -- top of for(;;) loop");)
 
-        if (vexpr_ix >= vexpr_max)
+        if (expression_ix >= expression_max)
             break; 
 
         static_N::statement_count++; 
 
 
-        //   evaluate n-th vexpr in slist, and handle error r/c
-        //   -------------------------------------------------
+        //   evaluate n-th expression in slist, and handle error r/c
+        //   ---------------------------------------------------
 
         slist_results = results_S { }; 
 
-        M__(M_out(L"eval_slist() -- calling eval_vexpr(%d)") % vexpr_ix;)
+        M__(M_out(L"eval_slist() -- calling eval_expression(%d)") % expression_ix;)
 
-        auto erc = eval_vexpr(frame, slist.vexprs.at(vexpr_ix), slist_results);
+        auto erc = eval_expression(frame, slist.expressions.at(expression_ix), slist_results);
         if (erc != 0)
         {
-            M_out_emsg1(L"eval_slist() -- slist evaluation ending immediately because of errors during expression evaluation at statement %d") % vexpr_ix;
-            msgend_loc(slist.vexprs.at(vexpr_ix));
-            slist_results = error_results();  // pass back error results
+            M_out_emsg1(L"eval_slist() -- slist evaluation ending immediately because of errors during expression evaluation at statement %d") % expression_ix;
+            msgend_loc(slist.expressions.at(expression_ix));
+            slist_results = error_results();                       // pass back error results
             rc = erc; 
             results = error_results(); 
             return -1; 
@@ -3127,10 +3170,10 @@ int eval_slist(frame_S& frame, const slist_S& slist, results_S& results, bool is
                 auto target_ct = slist.labels.count(slist_results.str);
                 if (target_ct > 0)   
                 {
-                    // matching label found in this slist -- reset vexpr_ix to label position and continue looping (label may point past last vexpr in this slist
+                    // matching label found in this slist -- reset expression_ix to label position and continue looping (label may point past last expression in this slist
                     
-                    vexpr_ix = slist.labels.at(slist_results.str);
-                    M__(M_out(L"eval_slist() -- @GOTO target found in current slist -- restarting slist evaluation at vexpr index = %d") % vexpr_ix;)
+                    expression_ix = slist.labels.at(slist_results.str);
+                    M__(M_out(L"eval_slist() -- @GOTO target found in current slist -- restarting slist evaluation at expression index = %d") % expression_ix;)
                     continue;
                 }
 
@@ -3152,12 +3195,12 @@ int eval_slist(frame_S& frame, const slist_S& slist, results_S& results, bool is
         }
 
 
-        // no error -- no special results -- normal advance to next vexpr in slist
+        // no error -- no special results -- normal advance to next expression in slist
 
-        vexpr_ix++; 
+        expression_ix++; 
     }
   
-    results = slist_results;       // return results from last vexpr evaluated -- no special results get here 
+    results = slist_results;       // return results from last expression evaluated -- no special results get here 
     M__(M_out(L"eval_slist() -- normal return at end");)
     return rc; 
 }

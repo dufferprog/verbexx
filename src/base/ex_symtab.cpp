@@ -79,29 +79,29 @@ namespace static_N
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-void display_slist(const slist_S& slist, const std::wstring& ws, const std::wstring& mod, bool show_vexprs, bool suppress_nesting, const std::wstring& nest) try
+void display_slist(const slist_S& slist, const std::wstring& ws, const std::wstring& mod, bool show_expressions, bool suppress_nesting, const std::wstring& nest) try
 {
     // display data from slist header 
 
-    M_out(L"%s %s %s: %80t slist: vexpr_ct=%d  main_label=«%s»") % ws % nest % mod % slist.vexpr_ct % slist.label;   
+    M_out(L"%s %s %s: %80t slist: expression_ct=%d  main_label=«%s»") % ws % nest % mod % slist.expression_ct % slist.label;   
 
 
     // display all labels in this slist
 
     if (slist.labels.size() > 0)
         for (const auto& elem : slist.labels)
-            M_out(L"%s %s %s %80t        label=«%s» %110t vexpr_index=%d") % ws % nest % mod % elem.first % elem.second;  
+            M_out(L"%s %s %s %80t        label=«%s» %110t expression_index=%d") % ws % nest % mod % elem.first % elem.second;  
     
 
-    // display vexprs, if requested
+    // display expressions, if requested
 
-    if ( (slist.vexpr_ct > 0) && (show_vexprs) )
+    if ( (slist.expression_ct > 0) && (show_expressions) )
     {
         auto i = 0; 
-        for (const auto& vexpr : slist.vexprs)
+        for (const auto& expression : slist.expressions)
         {
             M_out(L"- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
-            display_vexpr(vexpr, ws, mod + L"{" + std::to_wstring(i++) + L"} ", suppress_nesting, nest + L"."); 
+            display_expression(expression, ws, mod + L"{" + std::to_wstring(i++) + L"} ", suppress_nesting, nest + L"."); 
         }
         M_out(L"- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
     }
@@ -119,7 +119,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   display_vexpr() -- display passed-in vexpr, optionally with nested vexprs, etc.
+////   display_expression() -- display passed-in expression, optionally with nested expressions, etc.
 ////
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -127,26 +127,26 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-void display_vexpr(const a_vexpr_S& vexpr, const std::wstring& ws, const std::wstring& mod, bool suppress_nesting, const std::wstring& nest) try
+void display_expression(const a_expression_S& expression, const std::wstring& ws, const std::wstring& mod, bool suppress_nesting, const std::wstring& nest) try
 {
     std::wstring type_s  {L"no verb   "}; 
      
 
     // set up type and location strings for main verb in this token
 
-    if (vexpr.has_verb)   type_s = L"has verb  ";
+    if (expression.has_verb)   type_s = L"has verb  ";
 
     if (mod == L"") 
     {          
-        M_out(L"%s %sexpression -- %-15s name=%s %77t -- parms:   %125t -- loc = %s -- main verb loc = %s" ) % ws % nest %      type_s % verb_name(vexpr) % vexpr_loc_str(vexpr) % verb_loc_str(vexpr);
+        M_out(L"%s %sexpression -- %-15s name=%s %77t -- parms:   %125t -- loc = %s -- main verb loc = %s" ) % ws % nest %      type_s % verb_name(expression) % expression_loc_str(expression) % verb_loc_str(expression);
     }
     else
     {
-        M_out(L"%s %s%sexpression -- %-15s name=%s %77t -- parms: %125t -- loc = %s -- main verb loc = %s") % ws % nest % mod % type_s % verb_name(vexpr) % vexpr_loc_str(vexpr) % verb_loc_str(vexpr);
+        M_out(L"%s %s%sexpression -- %-15s name=%s %77t -- parms: %125t -- loc = %s -- main verb loc = %s") % ws % nest % mod % type_s % verb_name(expression) % expression_loc_str(expression) % verb_loc_str(expression);
     }
 
-    display_vlist(vexpr.lparms, ws, mod + L"(L )", suppress_nesting, nest + L".");
-    display_vlist(vexpr.rparms, ws, mod + L"( R)", suppress_nesting, nest + L".");
+    display_vlist(expression.lparms, ws, mod + L"(L )", suppress_nesting, nest + L".");
+    display_vlist(expression.rparms, ws, mod + L"( R)", suppress_nesting, nest + L".");
         
     return; 
 }
@@ -154,26 +154,26 @@ M_endf
 
 ///////////////////////////////////////////////////////
 
-void display_vexpr(const e_vexpr_S& eval_vexpr, const std::wstring& ws, const std::wstring& mod, bool suppress_nesting, const std::wstring& nest) try
+void display_expression(const e_expression_S& eval_expression, const std::wstring& ws, const std::wstring& mod, bool suppress_nesting, const std::wstring& nest) try
 {
     std::wstring type_s  {L"verb missing "}; 
      
 
     // set up type and location strings for main verb in this token
 
-    if (eval_vexpr.has_verb)   type_s = L"has verb  ";
+    if (eval_expression.has_verb)   type_s = L"has verb  ";
 
     if (mod == L"") 
     {          
-        M_out(L"%s %sexpression -- %-15s name=%s %77t -- parms:   %125t -- loc = %s -- main verb loc = %s" ) % ws % nest %      type_s % verb_name(eval_vexpr) % vexpr_loc_str(eval_vexpr) % verb_loc_str(eval_vexpr);
+        M_out(L"%s %sexpression -- %-15s name=%s %77t -- parms:   %125t -- loc = %s -- main verb loc = %s" ) % ws % nest %      type_s % verb_name(eval_expression) % expression_loc_str(eval_expression) % verb_loc_str(eval_expression);
     }
     else
     {
-        M_out(L"%s %s%sexpression -- %-15s name=%s %77t -- parms: %125t -- loc = %s -- main verb loc = %s") % ws % nest % mod % type_s % verb_name(eval_vexpr) % vexpr_loc_str(eval_vexpr) % verb_loc_str(eval_vexpr);
+        M_out(L"%s %s%sexpression -- %-15s name=%s %77t -- parms: %125t -- loc = %s -- main verb loc = %s") % ws % nest % mod % type_s % verb_name(eval_expression) % expression_loc_str(eval_expression) % verb_loc_str(eval_expression);
     }
 
-    display_vlist(eval_vexpr.lparms, ws, mod + L"(L )", suppress_nesting, nest + L".");
-    display_vlist(eval_vexpr.rparms, ws, mod + L"( R)", suppress_nesting, nest + L".");
+    display_vlist(eval_expression.lparms, ws, mod + L"(L )", suppress_nesting, nest + L".");
+    display_vlist(eval_expression.rparms, ws, mod + L"( R)", suppress_nesting, nest + L".");
         
     return; 
 }
@@ -203,7 +203,7 @@ void display_vlist(const vlist_S& vlist, const std::wstring& ws, const std::wstr
 
     if (vlist.val_mixed      ) flags += L"val_mixed "      ; 
     if (vlist.val_slist      ) flags += L"val_slist "      ;
-    if (vlist.val_vexpr      ) flags += L"val_vexpr "      ;
+    if (vlist.val_expression ) flags += L"val_expression " ;
     if (vlist.val_vlist      ) flags += L"val_vlist "      ; 
     if (vlist.val_verbdef    ) flags += L"val_verbdef "    ; 
     if (vlist.val_typdef     ) flags += L"val_typdef "     ; 
@@ -239,14 +239,14 @@ void display_vlist(const vlist_S& vlist, const std::wstring& ws, const std::wstr
 
     // display evaluated/unevaluated keyword values, if any
 
-    if (vlist.eval_kws.size() > 0)                   // display evaluated keywords, if any
+    if (vlist.eval_kws.size() > 0)                    // display evaluated keywords, if any
     {
         for (const auto& elem : vlist.eval_kws)
             display_value(elem.second, ws, mod + L"[" + elem.first + L":] ", suppress_nesting, nest + L".");     
     }
     else                                              // no evaluated keywords 
     {
-        if (vlist.keywords.size() > 0)               // display unevaluated keywords, if any
+        if (vlist.keywords.size() > 0)                // display unevaluated keywords, if any
         {
             for (const auto& elem : vlist.keywords)
             {   
@@ -294,14 +294,14 @@ void display_value(const value_S& value, const std::wstring& ws, const std::wstr
     else if (value.ty == type_E::identifier  ) flags += L"identifier "  ;
     else if (value.ty == type_E::verbname    ) flags += L"verbname "    ;
     else if (value.ty == type_E::keyname     ) flags += L"keyname "     ;
-    else if (value.ty == type_E::vlist       ) flags += L"vlist ["      + fmt_ptr(value.vlist_sp.get()   ) + L"] "  ;
-    else if (value.ty == type_E::vexpr       ) flags += L"expression (" + fmt_ptr(value.vexpr_sp.get()   ) + L") "  ;
-    else if (value.ty == type_E::slist       ) flags += L"slist {"      + fmt_ptr(value.slist_sp.get()   ) + L"} "  ;
-    else if (value.ty == type_E::verbdef     ) flags += L"verbdef <"    + fmt_ptr(value.verbdef_sp.get() ) + L"> "  ;
-    else if (value.ty == type_E::typdef      ) flags += L"typedef <"    + fmt_ptr(value.typdef_sp.get()  ) + L"> "  ;
-    else if (value.ty == type_E::ref         ) flags += L"ref <"        + fmt_ptr(value.ref_sp.get()     ) + L"> "  ;
-    else if (value.ty == type_E::array       ) flags += L"array <"      + fmt_ptr(value.buffer_sp.get()  ) + L"> "  ;
-    else if (value.ty == type_E::structure   ) flags += L"structure <"  + fmt_ptr(value.buffer_sp.get()  ) + L"> "  ;
+    else if (value.ty == type_E::vlist       ) flags += L"vlist ["      + fmt_ptr(value.vlist_sp.get()       ) + L"] "  ;
+    else if (value.ty == type_E::expression  ) flags += L"expression (" + fmt_ptr(value.expression_sp.get()  ) + L") "  ;
+    else if (value.ty == type_E::slist       ) flags += L"slist {"      + fmt_ptr(value.slist_sp.get()       ) + L"} "  ;
+    else if (value.ty == type_E::verbdef     ) flags += L"verbdef <"    + fmt_ptr(value.verbdef_sp.get()     ) + L"> "  ;
+    else if (value.ty == type_E::typdef      ) flags += L"typedef <"    + fmt_ptr(value.typdef_sp.get()      ) + L"> "  ;
+    else if (value.ty == type_E::ref         ) flags += L"ref <"        + fmt_ptr(value.ref_sp.get()         ) + L"> "  ;
+    else if (value.ty == type_E::array       ) flags += L"array <"      + fmt_ptr(value.buffer_sp.get()      ) + L"> "  ;
+    else if (value.ty == type_E::structure   ) flags += L"structure <"  + fmt_ptr(value.buffer_sp.get()      ) + L"> "  ;
     else if (value.ty == type_E::unit        ) flags += L"unit "        ;
     else if (value.ty == type_E::boolean     ) flags += L"boolean "     ;
     else if (value.ty == type_E::int8        ) flags += L"int8 "        ; 
@@ -375,12 +375,12 @@ void display_value(const value_S& value, const std::wstring& ws, const std::wstr
         display_vlist(*(value.vlist_sp), ws, mod, suppress_nesting, nest);   
     }
  
-    else if (value.ty == type_E::vexpr) 
+    else if (value.ty == type_E::expression) 
     {
-        M_out(L"%s %s%s %|80t|-- nested vexpr  %|125t| -- addr=%S  flags = <%s>   ix=%s -- %s")              % ws % nest % mod                    % fmt_ptr(&value) % flags % ix % value_loc_str(value); 
+        M_out(L"%s %s%s %|80t|-- nested expression  %|125t| -- addr=%S  flags = <%s>   ix=%s -- %s")              % ws % nest % mod                    % fmt_ptr(&value) % flags % ix % value_loc_str(value); 
 
         if (!suppress_nesting)
-            display_vexpr(*(value.vexpr_sp), ws, mod, suppress_nesting, nest);  
+            display_expression(*(value.expression_sp), ws, mod, suppress_nesting, nest);  
     }
  
     else if (value.ty == type_E::slist)
@@ -527,41 +527,41 @@ static std::wstring str_parmtype(const parmtype_S& parmtype) try
 {
     std::wstring parm_flags { };
 
-    if (parmtype.int64_range           )   parm_flags += L"int64_range    "   ;    
-    if (parmtype.float64_range         )   parm_flags += L"float64_range  "   ;
-    if (parmtype.no_eval_ident         )   parm_flags += L"no_eval_ident  "   ;
-    if (parmtype.no_eval_vexpr         )   parm_flags += L"no_eval_vexpr  "   ;
-    if (parmtype.no_eval_vlist         )   parm_flags += L"no_eval_vlist  "   ;
-    if (parmtype.anything_ok           )   parm_flags += L"anything_ok    "   ;
-    if (parmtype.nval_ok               )   parm_flags += L"nval_ok        "   ; 
-    if (parmtype.unit_ok               )   parm_flags += L"unit_ok        "   ; 
-    if (parmtype.int8_ok               )   parm_flags += L"int8_ok        "   ; 
-    if (parmtype.int16_ok              )   parm_flags += L"int16_ok       "   ; 
-    if (parmtype.int32_ok              )   parm_flags += L"int32_ok       "   ; 
-    if (parmtype.int64_ok              )   parm_flags += L"int64_ok       "   ; 
-    if (parmtype.uint8_ok              )   parm_flags += L"uint8_ok       "   ; 
-    if (parmtype.uint16_ok             )   parm_flags += L"uint16_ok      "   ; 
-    if (parmtype.uint32_ok             )   parm_flags += L"uint32_ok      "   ; 
-    if (parmtype.uint64_ok             )   parm_flags += L"uint64_ok      "   ; 
-    if (parmtype.float32_ok            )   parm_flags += L"float32_ok     "   ;
-    if (parmtype.float64_ok            )   parm_flags += L"float64_ok     "   ; 
-    if (parmtype.string_ok             )   parm_flags += L"string_ok      "   ; 
-    if (parmtype.verbname_ok           )   parm_flags += L"verbname_ok    "   ; 
-    if (parmtype.check_local_env_only  )   parm_flags += L"ck_local_env   "   ; 
-    if (parmtype.check_global_env_only )   parm_flags += L"ck_global_env  "   ;
-    if (parmtype.raw_ident_ok          )   parm_flags += L"raw_ident_ok   "   ;
-    if (parmtype.var_ident_ok          )   parm_flags += L"var_ident_ok   "   ; 
-    if (parmtype.const_ident_ok        )   parm_flags += L"const_ident_ok "   ; 
-    if (parmtype.undef_ident_ok        )   parm_flags += L"undef_ident_ok "   ;
-    if (parmtype.vlist_ok              )   parm_flags += L"vlist_ok       "   ;                 
-    if (parmtype.vexpr_ok              )   parm_flags += L"vexpr_ok       "   ; 
-    if (parmtype.slist_ok              )   parm_flags += L"slist_ok       "   ;
-    if (parmtype.verbdef_ok            )   parm_flags += L"verbdef_ok     "   ;
-    if (parmtype.typdef_ok             )   parm_flags += L"typdef_ok      "   ;
-    if (parmtype.array_ok              )   parm_flags += L"array_ok       "   ;
-    if (parmtype.structure_ok          )   parm_flags += L"structure_ok   "   ;
-    if (parmtype.lvalue_ref_ok         )   parm_flags += L"lvalue_ref_ok  "   ;
-    if (parmtype.rvalue_ref_ok         )   parm_flags += L"rvalue_ref_ok  "   ;
+    if (parmtype.int64_range           )   parm_flags += L"int64_range        "   ;    
+    if (parmtype.float64_range         )   parm_flags += L"float64_range      "   ;
+    if (parmtype.no_eval_ident         )   parm_flags += L"no_eval_ident      "   ;
+    if (parmtype.no_eval_expression    )   parm_flags += L"no_eval_expression "   ;
+    if (parmtype.no_eval_vlist         )   parm_flags += L"no_eval_vlist      "   ;
+    if (parmtype.anything_ok           )   parm_flags += L"anything_ok        "   ;
+    if (parmtype.nval_ok               )   parm_flags += L"nval_ok            "   ; 
+    if (parmtype.unit_ok               )   parm_flags += L"unit_ok            "   ; 
+    if (parmtype.int8_ok               )   parm_flags += L"int8_ok            "   ; 
+    if (parmtype.int16_ok              )   parm_flags += L"int16_ok           "   ; 
+    if (parmtype.int32_ok              )   parm_flags += L"int32_ok           "   ; 
+    if (parmtype.int64_ok              )   parm_flags += L"int64_ok           "   ; 
+    if (parmtype.uint8_ok              )   parm_flags += L"uint8_ok           "   ; 
+    if (parmtype.uint16_ok             )   parm_flags += L"uint16_ok          "   ; 
+    if (parmtype.uint32_ok             )   parm_flags += L"uint32_ok          "   ; 
+    if (parmtype.uint64_ok             )   parm_flags += L"uint64_ok          "   ; 
+    if (parmtype.float32_ok            )   parm_flags += L"float32_ok         "   ;
+    if (parmtype.float64_ok            )   parm_flags += L"float64_ok         "   ; 
+    if (parmtype.string_ok             )   parm_flags += L"string_ok          "   ; 
+    if (parmtype.verbname_ok           )   parm_flags += L"verbname_ok        "   ; 
+    if (parmtype.check_local_env_only  )   parm_flags += L"ck_local_env       "   ; 
+    if (parmtype.check_global_env_only )   parm_flags += L"ck_global_env      "   ;
+    if (parmtype.raw_ident_ok          )   parm_flags += L"raw_ident_ok       "   ;
+    if (parmtype.var_ident_ok          )   parm_flags += L"var_ident_ok       "   ; 
+    if (parmtype.const_ident_ok        )   parm_flags += L"const_ident_ok     "   ; 
+    if (parmtype.undef_ident_ok        )   parm_flags += L"undef_ident_ok     "   ;
+    if (parmtype.vlist_ok              )   parm_flags += L"vlist_ok           "   ;                 
+    if (parmtype.expression_ok         )   parm_flags += L"expression_ok      "   ; 
+    if (parmtype.slist_ok              )   parm_flags += L"slist_ok           "   ;
+    if (parmtype.verbdef_ok            )   parm_flags += L"verbdef_ok         "   ;
+    if (parmtype.typdef_ok             )   parm_flags += L"typdef_ok          "   ;
+    if (parmtype.array_ok              )   parm_flags += L"array_ok           "   ;
+    if (parmtype.structure_ok          )   parm_flags += L"structure_ok       "   ;
+    if (parmtype.lvalue_ref_ok         )   parm_flags += L"lvalue_ref_ok      "   ;
+    if (parmtype.rvalue_ref_ok         )   parm_flags += L"rvalue_ref_ok      "   ;
     
     return parm_flags; 
 }
@@ -628,12 +628,12 @@ static void display_plist(const plist_S& plist, const std::wstring& ws, const st
 
     std::wstring parm_flags { }; 
 
-    if (plist.no_check_keywords          )   parm_flags += L"no_chk_keywords  "    ; 
-    if (plist.no_check_keyword_names     )   parm_flags += L"no_chk_kw_names  "    ;
-    if (plist.no_check_positional        )   parm_flags += L"no_chk_positional "   ;
-    if (plist.no_eval_ident              )   parm_flags += L"no_eval_ident  "      ;                 
-    if (plist.no_eval_vexpr              )   parm_flags += L"no_eval_vexpr  "      ; 
-    if (plist.no_eval_vlist              )   parm_flags += L"no_eval_vlist  "      ; 
+    if (plist.no_check_keywords          )   parm_flags += L"no_chk_keywords    "    ; 
+    if (plist.no_check_keyword_names     )   parm_flags += L"no_chk_kw_names    "    ;
+    if (plist.no_check_positional        )   parm_flags += L"no_chk_positional  "    ;
+    if (plist.no_eval_ident              )   parm_flags += L"no_eval_ident      "    ;                 
+    if (plist.no_eval_expression         )   parm_flags += L"no_eval_expression "    ; 
+    if (plist.no_eval_vlist              )   parm_flags += L"no_eval_vlist      "    ; 
 
     std::wstring max_str{ }; 
 

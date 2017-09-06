@@ -43,30 +43,30 @@ static int     get_unnested_slist( frame_S&, pre_parse_C&, slist_S&             
 static int     get_nested_slist(   frame_S&, pre_parse_C&, slist_S&             );
 
 
-///////////////////// a_vexpr_S-oriented  internalfunctions
+///////////////////// a_expression_S-oriented  internalfunctions
 
 static int     get_verb_priority(frame_S&, const std::wstring&); 
-static void    vexpr_add_token(            a_vexpr_S&, const token_C&);
+static void    expression_add_token(           a_expression_S&, const token_C&);
 
-static int     get_vexpr(                 frame_S&, pre_parse_C&, a_vexpr_S&, bool, bool, bool, bool );
-static int     get_unnested_vexpr(        frame_S&, pre_parse_C&, a_vexpr_S&, bool = true            );
-static int     get_nested_vexpr(          frame_S&, pre_parse_C&, a_vexpr_S&                         );
-static int     get_nested_verbname_vexpr( frame_S&, pre_parse_C&, a_vexpr_S&                         );
-static int     get_nested_kwname_vexpr(   frame_S&, pre_parse_C&, a_vexpr_S&                         );
+static int     get_expression(                 frame_S&, pre_parse_C&, a_expression_S&, bool, bool, bool, bool );
+static int     get_unnested_expression(        frame_S&, pre_parse_C&, a_expression_S&, bool = true            );
+static int     get_nested_expression(          frame_S&, pre_parse_C&, a_expression_S&                         );
+static int     get_nested_verbname_expression( frame_S&, pre_parse_C&, a_expression_S&                         );
+static int     get_nested_kwname_expression(   frame_S&, pre_parse_C&, a_expression_S&                         );
 
 
 ///////////////////// vlist_S-oriented internal functions 
 
-static int     get_vlist_value(   frame_S&, pre_parse_C&, a_vexpr_S&, vlist_S&, const token_C&);
-static int     get_vlist(         frame_S&, pre_parse_C&, a_vexpr_S&, vlist_S&                );
-static int     get_nested_vlist(  frame_S&, pre_parse_C&, a_vexpr_S&, vlist_S&                );
+static int     get_vlist_value(   frame_S&, pre_parse_C&, a_expression_S&, vlist_S&, const token_C&);
+static int     get_vlist(         frame_S&, pre_parse_C&, a_expression_S&, vlist_S&                );
+static int     get_nested_vlist(  frame_S&, pre_parse_C&, a_expression_S&, vlist_S&                );
 
 
 //////////////////////  value_S-oriented internal functions
 
 static void    set_atom_token( value_S&, const token_C&, int64_t = -1);
 
-static int     get_keyword(frame_S&,        pre_parse_C&, a_vexpr_S&, vlist_S&);
+static int     get_keyword(frame_S&,        pre_parse_C&, a_expression_S&, vlist_S&);
 
 
 ////////////////////////////////// parse-oriented internal functions
@@ -95,7 +95,7 @@ static std::wstring value_loc_str(int64_t, int64_t = -1);
 namespace static_N
 {
 static int64_t                                token_ix         {-1   };     // will be incremented before each token is added  
-static std::vector<token_C>                   token_list       {     };     // list of tokens -- may contain duplicates if a token is added to an vexpr more than once
+static std::vector<token_C>                   token_list       {     };     // list of tokens -- may contain duplicates if a token is added to an expression more than once
 static bool                                   just_peeked      {false};     // 1st time, peek gets a new token
 }
 
@@ -246,7 +246,7 @@ uint64_t process_input(pre_parse_C& pp, frame_S& frame) try
     // parse the main slist_S in input file stream
     // -------------------------------------------
                                                                                     
-    slist_S slist {};               // main vexpr list 
+    slist_S slist {};               // main expression list 
 
     auto grc = get_unnested_slist(frame, pp, slist); 
     count_error(pp.errors()); 
@@ -644,7 +644,7 @@ static int peek_token(pre_parse_C& pp, token_C& tok, bool end_not_expected) try
             }
             else if ( ( token.has_leading_sigil) && (!token.has_trailing_sigil) && (token.leading_sigil  == const_N::ch_sigil_keyword   ) )        // check for :(    => treat enclosed expression as a keyword name
             {
-                token.utype2 = tok_u2_E::open_keyname_bracket;    // handle whole expression like a keyword name 
+                token.utype2 = tok_u2_E::open_keyname_bracket;     // handle whole expression like a keyword name 
             }
             else
             {
@@ -747,7 +747,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   get_slist() -- get list of vexprs
+////   get_slist() -- get list of expressions (statements)
 ////
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -787,15 +787,15 @@ static int get_slist(frame_S& frame, pre_parse_C& pp, slist_S& slist, bool end_b
 
     M__(M_out(L"==============================> get_slist() called -- end_by_brace=%s  end_expected=%s") % M_bool_cstr(end_by_brace) % M_bool_cstr(end_expected);) 
 
-    // ============================================================================ 
-    // main loop to fetch vexprs/statements, until end of statement list is reached
-    // ============================================================================
+    // ======================================================================== 
+    // main loop to fetch expressions/statements, until end of slist is reached
+    // ========================================================================
     
     bool first_pass {true}; 
 
     for (;;)
     {
-        a_vexpr_S vexpr {}; 
+        a_expression_S expression {}; 
 
 
         // do peek() to check for ending token
@@ -815,27 +815,27 @@ static int get_slist(frame_S& frame, pre_parse_C& pp, slist_S& slist, bool end_b
             {
                 M_out_emsg1(L"get_slist(): slist parsing ending with failure, after prior error/ unexpected END token was detected");
                 M_out_emsg2(L"           : empty slist is being returned rather than an incomplete one");
-                slist = slist_S { };              // pass back empty slist, rather than incomplete one 
+                slist = slist_S { };                            // pass back empty slist, rather than incomplete one 
                 return rc; 
             }
 
-            if (prc == 1)    // END -- expected or not
+            if (prc == 1)                                       // END -- expected or not
             {
                 if (!end_expected)
                 {
                     M_out_emsg1(L"get_slist(): unexpected END of input seen while parsing nested slist -- possible missing closing brace");
                     M_out_emsg2(L"           : empty slist is being returned rather than an incomplete one");
-                    slist = slist_S { };         // pass back empty slist, rather than incomplete one                   
+                    slist = slist_S { };                        // pass back empty slist, rather than incomplete one                   
                 }   
             }
-            else             // token processing error
+            else                                                // token processing error
             {
                 M_out_emsg1(L"get_slist(): unexpected token error seen while parsing nested slist");
                 M_out_emsg2(L"           : empty slist is being returned rather than an incomplete one");
-                slist = slist_S { };            // pass back empty slist, rather than incomplete one          
-            } 
-
-            return prc;                         // return immediately, if error or END -- pass back whatever has been accumulated so far in slist (if no prior error was seen)
+                slist = slist_S { };                            // pass back empty slist, rather than incomplete one          
+            }                                                 
+                                                              
+            return prc;                                         // return immediately, if error or END -- pass back whatever has been accumulated so far in slist (if no prior error was seen)
         }
 
 
@@ -843,10 +843,10 @@ static int get_slist(frame_S& frame, pre_parse_C& pp, slist_S& slist, bool end_b
         {
             if (end_by_brace)
             {
-                a_vexpr_S dummy_vexpr  {};   // dummy vexpr to add ending brace token to (for ending tokens index  in debug messages) 
-                vexpr_add_token(dummy_vexpr, token);
+                a_expression_S dummy_expression  { };           // dummy expression to add ending brace token to (for ending tokens index  in debug messages) 
+                expression_add_token(dummy_expression, token);
 
-                discard_token(pp);           // consume ending brace
+                discard_token(pp);                              // consume ending brace
 
                 if (rc != 0)
                 {
@@ -855,16 +855,16 @@ static int get_slist(frame_S& frame, pre_parse_C& pp, slist_S& slist, bool end_b
 
 
                 M__(M_out(L"<=================== get_slist() returning after closing brace -- r/c=%d") % rc;)
-                return rc;                   // return with whatever has been accumulated so far      
-            }
-            else                             // closing brace is unexpected (unnested slist)
+                return rc;                                      // return with whatever has been accumulated so far      
+            }                                               
+            else                                                // closing brace is unexpected (unnested slist)
             {
                 count_error(); 
                 M_out_emsg1(L"get_slist(): unexpected closing brace found in unnested slist"); 
                 token.display(L"unexpected");
                 M_out_emsg2(L"closing brace is ignored");  
-                discard_token(pp);          // get rid of unexpected brace, so loop can continue
-                rc = -1;                    // remember error 
+                discard_token(pp);                              // get rid of unexpected brace, so loop can continue
+                rc = -1;                                        // remember error 
             }
         }
 
@@ -881,9 +881,9 @@ static int get_slist(frame_S& frame, pre_parse_C& pp, slist_S& slist, bool end_b
                 slist.label = token.str; 
 
 
-            //  add label to labels list -- vexpr index will be at()-index for next vexpr going into vexpr vector (may point one past end of vexprs, if no vexprs follow this label)
+            //  add label to labels list -- expression index will be at()-index for next expression going into expression vector (may point one past end of expressions, if no expressions follow this label)
 
-            slist.labels.emplace(token.str, slist.vexprs.size()); 
+            slist.labels.emplace(token.str, slist.expressions.size()); 
         
             discard_token(pp);  
             first_pass = false; 
@@ -891,27 +891,27 @@ static int get_slist(frame_S& frame, pre_parse_C& pp, slist_S& slist, bool end_b
         }
 
 
-        // get next vexpr in list -- return immediately, if error or END
+        // get next expression in list -- return immediately, if error or END
 
-        auto grc = get_unnested_vexpr(frame, pp, vexpr, end_expected);    // r/c:  0=ok, 1=END, -1=error, 2=bad vexpr -- for r/c=0 or2,  ending semicolon consumed, closing brace not
-        M__(M_out(L"get_slist() -- r/c from get_vexpr() = %d") % grc;)
+        auto grc = get_unnested_expression(frame, pp, expression, end_expected);    // r/c:  0=ok, 1=END, -1=error, 2=bad expression -- for r/c=0 or2,  ending semicolon consumed, closing brace not
+        M__(M_out(L"get_slist() -- r/c from get_expression() = %d") % grc;)
         M__(M_out(L"-------- start of expression ------------");)
-        M__(display_vexpr(vexpr, L"get_slist() -- from get_vexpr()");) 
+        M__(display_expression(expression, L"get_slist() -- from get_expression()");) 
         M__(M_out(L"========= end of expression =============");)
 
 
-        if (grc < 0) rc = -1;             // error?  (end is expected, so valid vexpr should have been passed back) -- END is unconsumed  
+        if (grc < 0) rc = -1;             // error?  (end is expected, so valid expression should have been passed back) -- END is unconsumed  
         
 
-        // handle valid vexpr passed back from get_vexpr()
+        // handle valid expression passed back from get_expression()
 
         if ( (grc == 0) || (grc == 1) )            // normal token or normal token + END
         {
-            M__(M_out(L"get_slist() -- adding expression passed-back from get_vexpr() to slist");)
-            M__(display_vexpr(vexpr, L"get_slist() -- added vexpr");) 
+            M__(M_out(L"get_slist() -- adding expression passed-back from get_expression() to slist");)
+            M__(display_expression(expression, L"get_slist() -- added expression");) 
 
-            slist.vexprs.push_back(vexpr);
-            slist.vexpr_ct++; 
+            slist.expressions.push_back(expression);
+            slist.expression_ct++; 
         }
     
         first_pass = false; 
@@ -945,11 +945,11 @@ M_endf
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-//        V   V    EEEEE   X   X    PPPP     RRRR 
-//        V   V    E        X X     P   P    R   R
-//        V   V    EEEE      X      PPPP     RRRR
-//         V V     E        X X     P        R  R
-//          V      EEEEE   X   X    P        R   R
+//          EEEEE    X   X    PPPP     RRRR     EEEEE     SSSS     SSSS    IIIII     OOO     N   N
+//          E         X X     P   P    R   R    E        S        S          I      O   O    NN  N 
+//          EEEE       X      PPPP     RRRR     EEEE      SSS      SSS       I      O   O    N N N  
+//          E         X X     P        R  R     E            S        S      I      O   O    N  NN 
+//          EEEEE    X   X    P        R   R    EEEEE    SSSS     SSSS     IIIII     OOO     N   N
 //
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////   
@@ -962,8 +962,8 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   vexpr_add_token() -- add token to vexpr start/end token indexes -- for debugging
-////   =================
+////   expression_add_token() -- add token to expression start/end token indexes -- for debugging
+////   ======================
 ////
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -971,16 +971,16 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-static void vexpr_add_token(a_vexpr_S& vexpr, const token_C& token) try
+static void expression_add_token(a_expression_S& expression, const token_C& token) try
 {  
-    // update first/last token indexes in vexpr
+    // update first/last token indexes in expression
 
-    if (vexpr.token_ix1 == -1)     // not set yet?
-        vexpr.token_ix1 = static_N::token_ix;
+    if (expression.token_ix1 == -1)                                                   // not set yet?
+        expression.token_ix1 = static_N::token_ix;
     else
-        vexpr.token_ix1 = std::min(static_N::token_ix, vexpr.token_ix1);    // lowest token index yet seen
+        expression.token_ix1 = std::min(static_N::token_ix, expression.token_ix1);    // lowest token index yet seen
     
-    vexpr.token_ix2 = std::max(static_N::token_ix, vexpr.token_ix2);        // highest token index yet seen  
+    expression.token_ix2 = std::max(static_N::token_ix, expression.token_ix2);        // highest token index yet seen  
 
     return; 
 }
@@ -1027,10 +1027,10 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   vexpr_set_verb() -- add simple or complex verbname-oriented fields to newly constructed vexpr
-////   ================
+////   expression_set_verb() -- add simple or complex verbname-oriented fields to newly constructed expression
+////   =================
 ////
-////   Assume there is no verb already in the vexpr (left plist may be present in some cases)
+////   Assume there is no verb already in the expression (left plist may be present in some cases)
 ////
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -1042,16 +1042,16 @@ M_endf
 // version with passed-in token -- token type must be verbname
 ///////////////////////////////
 
-void vexpr_set_verb(frame_S& frame, a_vexpr_S& vexpr, const token_C& token, const verbdef_S& verbdef) try
+void expression_set_verb(frame_S& frame, a_expression_S& expression, const token_C& token, const verbdef_S& verbdef) try
 {  
-    // make sure there is no verb already saved away in this vexpr
+    // make sure there is no verb already saved away in this expression
 
-    if (vexpr.has_verb)
+    if (expression.has_verb)
     {
-        M_out_emsg1(L"vexpr_set_verb() -- trying to set verb into the expression, but a verb is already present for this expression");
-        display_vexpr(vexpr, L"already-has-verb");
+        M_out_emsg1(L"expression_set_verb() -- trying to set verb into the expression, but a verb is already present for this expression");
+        display_expression(expression, L"already-has-verb");
         M_out_emsgz(); 
-        M_throw("vexpr_set_verb() -- trying to set verb into the expression, but a verb is already present for this expression")
+        M_throw("expression_set_verb() -- trying to set verb into the expression, but a verb is already present for this expression")
     }
 
 
@@ -1059,67 +1059,67 @@ void vexpr_set_verb(frame_S& frame, a_vexpr_S& vexpr, const token_C& token, cons
 
     if (token.utype2 != tok_u2_E::verbname)
     {
-        M_out_emsg1(L"vexpr_set_verb() -- trying to set verb into the expression, but token is not a verb name");
+        M_out_emsg1(L"expression_set_verb() -- trying to set verb into the expression, but token is not a verb name");
         M_out_emsgz(); 
-        M_throw("vexpr_set_verb() -- trying to set verb into the expression, but token is not verb name")
+        M_throw("expression_set_verb() -- trying to set verb into the expression, but token is not verb name")
     }
       
 
-    // save away verbname token, etc. in this vexpr
+    // save away verbname token, etc. in this expression
 
-    vexpr.has_verb = true;
-    vexpr_add_token(vexpr, token);                               // add verb token to vexpr    
-    set_atom_token(vexpr.verb_value, token, static_N::token_ix); // fill in verb_value with simple verb name value
+    expression.has_verb = true;
+    expression_add_token(expression, token);                          // add verb token to expression    
+    set_atom_token(expression.verb_value, token, static_N::token_ix); // fill in verb_value with simple verb name value
     
     if (token.has_leading_sigil)
     {
-        vexpr.has_sigil = true;                                  // set sigil flag for debug messsages
-        vexpr.sigil     = token.leading_sigil;                   // save away sigil, too
+        expression.has_sigil = true;                                  // set sigil flag for debug messsages
+        expression.sigil     = token.leading_sigil;                   // save away sigil, too
     }  
 
 
     // save away verb priority and associativity (if verb is defined at this point -- otherwise empty verbdef is passed in) 
 
-    vexpr.priority        = verbdef.priority;                    // save away verb priority 
-    vexpr.right_associate = verbdef.right_associate;             // save away verb associativity 
-    vexpr.left_associate  = verbdef.left_associate;              // save away verb associativity
+    expression.priority        = verbdef.priority;                    // save away verb priority 
+    expression.right_associate = verbdef.right_associate;             // save away verb associativity 
+    expression.left_associate  = verbdef.left_associate;              // save away verb associativity
 
     return; 
 }
 M_endf
 
 
-////////////////////////////////////////
-// version with passed-in verb sub-vexpr  (evaluation of this must yield a string later on, or else a run-time error occurs)  
-////////////////////////////////////////
+/////////////////////////////////////////////
+// version with passed-in verb sub-expression  (evaluation of this must yield a string later on, or else a run-time error occurs)  
+/////////////////////////////////////////////
 
-void vexpr_set_verb(frame_S& frame, a_vexpr_S& vexpr, const a_vexpr_S& verb_vexpr, bool move_ok) try
+void expression_set_verb(frame_S& frame, a_expression_S& expression, const a_expression_S& verb_expression, bool move_ok) try
 {  
-    // make sure there is no verb already saved away in this vexpr
+    // make sure there is no verb already saved away in this expression
 
-    if (vexpr.has_verb)
+    if (expression.has_verb)
     {
-        M_out_emsg1(L"vexpr_set_verb() -- trying to set verb into the expression, but a verb is already present for this expression");
-        display_vexpr(vexpr, L"already-has-verb");
+        M_out_emsg1(L"expression_set_verb() -- trying to set verb into the expression, but a verb is already present for this expression");
+        display_expression(expression, L"already-has-verb");
         M_out_emsgz(); 
-        M_throw("vexpr_set_verb() -- trying to set verb into the expression, but a verb is already present for this expression")
+        M_throw("expression_set_verb() -- trying to set verb into the expression, but a verb is already present for this expression")
     }
       
 
-    // save away verbname token, etc. in this vexpr
+    // save away verbname token, etc. in this expression
 
-    vexpr.has_verb = true; 
-    set_vexpr_value(vexpr.verb_value, verb_vexpr, move_ok);   
+    expression.has_verb = true; 
+    set_expression_value(expression.verb_value, verb_expression, move_ok);   
 
 
     // update location info in passed-in main token to include verb sub-token limits
 
-    if (vexpr.token_ix1 == -1)                                                 // not set yet?
-        vexpr.token_ix1 = verb_vexpr.token_ix1;                                // verb sub-vexpr must be at start of main vexpr 
+    if (expression.token_ix1 == -1)                                                           // not set yet?
+        expression.token_ix1 = verb_expression.token_ix1;                                     // verb sub-expression must be at start of main expression 
     else
-        vexpr.token_ix1 = std::min(verb_vexpr.token_ix1, vexpr.token_ix1);     // lowest token index yet seen
+        expression.token_ix1 = std::min(verb_expression.token_ix1, expression.token_ix1);     // lowest token index yet seen
     
-    vexpr.token_ix2 = std::max(verb_vexpr.token_ix2, vexpr.token_ix2);         // highest token index yet seen   
+    expression.token_ix2 = std::max(verb_expression.token_ix2, expression.token_ix2);         // highest token index yet seen   
 
 
     // use default settings for has_sigil, verb priority, associations, etc.
@@ -1135,17 +1135,17 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   get_vexpr() -- fetch next vexpr from input token stream 
+////   get_expression() -- fetch next expression from input token stream 
 ////
 ////
 ////   rc = -2  -- should-not occur error
 ////   rc = -1  -- error from pre_parse
 ////   rc = 0   -- normal 
 ////   rc = 1   -- END seen (not consumed)
-////   rc = 2   -- empty vexpr passed back because of unexpected tokens, etc.error
+////   rc = 2   -- empty expression passed back because of unexpected tokens, etc.error
 ////
 ////
-////   note: input/output is vexpr is expected to be completely empty or contain left parms and verb. (no leftovers from last time) 
+////   note: input/output is expression is expected to be completely empty or contain left parms and verb. (no leftovers from last time) 
 ////
 ////
 ////
@@ -1159,10 +1159,10 @@ M_endf
 
 // this routine consumes ending semicolon (but not END token)
 
-static int get_unnested_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end_expected) try
+static int get_unnested_expression(frame_S& frame, pre_parse_C& pp, a_expression_S& expression, bool end_expected) try
 {
-    M__(M_out(L"get_unnested_vexpr() called");)
-    return get_vexpr(frame, pp, vexpr, false, false, false, end_expected);
+    M__(M_out(L"get_unnested_expression() called");)
+    return get_expression(frame, pp, expression, false, false, false, end_expected);
 }
 M_endf
 
@@ -1171,10 +1171,10 @@ M_endf
 
 // initial open paren must be consumed already -- this routine consumes matching close paren 
 
-static int get_nested_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr) try
+static int get_nested_expression(frame_S& frame, pre_parse_C& pp, a_expression_S& expression) try
 {
-    M__(M_out(L"get_nested_vexpr() called");)
-    return get_vexpr(frame, pp, vexpr, true, false, false, false);
+    M__(M_out(L"get_nested_expression() called");)
+    return get_expression(frame, pp, expression, true, false, false, false);
 }
 M_endf
 
@@ -1183,10 +1183,10 @@ M_endf
 
 // initial open verb bracket must be consumed already -- this routine consumes matching close verb bracket  
 
-static int get_nested_verbname_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr) try
+static int get_nested_verbname_expression(frame_S& frame, pre_parse_C& pp, a_expression_S& expression) try
 {
-    M__(M_out(L"get_nested_verbname_vexpr() called");)
-    return get_vexpr(frame, pp, vexpr, false, true, false, false);
+    M__(M_out(L"get_nested_verbname_expression() called");)
+    return get_expression(frame, pp, expression, false, true, false, false);
 }
 M_endf
 
@@ -1194,10 +1194,10 @@ M_endf
 
 // initial open keyword bracket must be consumed already -- this routine consumes matching close keyword bracket  
 
-static int get_nested_kwname_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr) try
+static int get_nested_kwname_expression(frame_S& frame, pre_parse_C& pp, a_expression_S& expression) try
 {
-    M__(M_out(L"get_nested_kwname_vexpr() called");)
-    return get_vexpr(frame, pp, vexpr, false, false, true, false);
+    M__(M_out(L"get_nested_kwname_expression() called");)
+    return get_expression(frame, pp, expression, false, false, true, false);
 }
 M_endf
 
@@ -1206,25 +1206,25 @@ M_endf
 
 ////////////////////  helper function for main routine
 
-static int get_vexpr_verb(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, const token_C& token, const verbdef_S& verbdef) try
+static int get_expression_verb(frame_S& frame, pre_parse_C& pp, a_expression_S& expression, const token_C& token, const verbdef_S& verbdef) try
 {
    if (token.utype2 == tok_u2_E::verbname)
    {
-       vexpr_set_verb(frame, vexpr, token, verbdef);                // add token directly to vexpr verbname value field   
-       discard_token(pp);                                           // get rid of verb/option token
+       expression_set_verb(frame, expression, token, verbdef);                 // add token directly to expression verbname value field   
+       discard_token(pp);                                                      // get rid of verb/option token
    }
-   else                                                             // open angle bracket is start of verb sub-vexpr
-   {
-       // add in <verb sub-vexpr > to passed-in (main) vexpr
+   else                                                                        // open angle bracket is start of verb sub-expression
+   {                                                                   
+       // add in <verb sub-expression > to passed-in (main) expression
 
-       discard_token(pp);                                           // get rid of open angle bracket token before calling get_nested_verbname_vexpr()
+       discard_token(pp);                                                      // get rid of open angle bracket token before calling get_nested_verbname_expression()
 
-       a_vexpr_S verb_vexpr { };                                    // local a_vexpr_S (in autodata) for gathering up verb_vexpr
-       auto grc = get_nested_verbname_vexpr(frame, pp, verb_vexpr); // fill in verb_vexpr 
+       a_expression_S verb_expression { };                                     // local a_expression_S (in autodata) for gathering up verb_expression
+       auto grc = get_nested_verbname_expression(frame, pp, verb_expression);  // fill in verb_expression 
        if (grc != 0)
-           return grc;                                              // pass back error -- let get_vexpr() handle error appropriately (should go into flush mode)  
+           return grc;                                                         // pass back error -- let get_expression() handle error appropriately (should go into flush mode)  
 
-       vexpr_set_verb(frame, vexpr, verb_vexpr, true);              // OK to move data from verb_vexpr, since it is going away very soon  
+       expression_set_verb(frame, expression, verb_expression, true);          // OK to move data from verb_expression, since it is going away very soon  
    } 
    
    return 0 ;
@@ -1236,108 +1236,117 @@ M_endf
 ////////////////////// main routine, called by above three routines //////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end_by_paren, bool end_by_verbname_bracket, bool end_by_keyname_bracket, bool end_expected) try
+static int get_expression(frame_S& frame, pre_parse_C& pp, a_expression_S& expression, bool end_by_paren, bool end_by_verbname_bracket, bool end_by_keyname_bracket, bool end_expected) try
 {
     bool flushing           { false };                                                // true -- flushing tokens until end reashed 
     bool left_parms_done    { false };                                                // true -- left side parms have been seen
     bool right_parms_done   { false };                                                // true -- right side parms have been seen
-    bool verb_done          { false };                                                // true -- verb has been added to vexpr 
+    bool verb_done          { false };                                                // true -- verb has been added to expression 
     bool priority_recursion { false };                                                // true -- recursive call due to finding higher priority verb 
-    int  error_count        { 0     };                                                // local counter -- number of errors so far accumulating this vexpr  
+    int  error_count        { 0     };                                                // local counter -- number of errors so far accumulating this expression  
     
-    M__(M_out(L"get_vexpr() called - end_by_paren=%d  end_by_verbname_bracket=%d  end_by_keyname_bracket=%d  end_expected=%d") % end_by_paren % end_by_verbname_bracket % end_by_keyname_bracket % end_expected;)
+    M__(M_out(L"get_expression() called - end_by_paren=%d  end_by_verbname_bracket=%d  end_by_keyname_bracket=%d  end_expected=%d") % end_by_paren % end_by_verbname_bracket % end_by_keyname_bracket % end_expected;)
 
 
-    // set vexpr gathering flags before starting main loop, if verb (and left parms) are already set in the incoming vexpr
+    // set expression gathering flags before starting main loop, if verb (and left parms) are already set in the incoming expression
 
-    if (vexpr.has_verb)
+    if (expression.has_verb)
     {
-        M__(M_out(L"get_vexpr() -- priority recursion -- left_parms and verb already done when called");)
+        M__(M_out(L"get_expression() -- priority recursion -- left_parms and verb already done when called");)
         left_parms_done    = true; 
         verb_done          = true; 
         priority_recursion = true; 
     }
 
 
-    // if this is a nested vexpr, set starting token index to accound for already-discarded open paren or open angle bracket token
+    // if this is a nested expression, set starting token index to accound for already-discarded open paren or open angle bracket token
 
     if (end_by_paren || end_by_verbname_bracket || end_by_keyname_bracket)
-        vexpr.token_ix1 = static_N::token_ix; 
+        expression.token_ix1 = static_N::token_ix; 
 
 
     // =================================================================================== 
-    // main loop to fetch tokens, until a complete vexpr (or error/END) can be passed back
+    // main loop to fetch tokens, until a complete expression (or error/END) can be passed back
     // ===================================================================================
 
     for(;;)
     {
-        // look at next token -- end immediately (perhaps with empty vexpr), if error or unexpected end 
+        // look at next token -- end immediately (perhaps with empty expression), if error or unexpected end 
 
         token_C token {}; 
-        M__(M_out(L"get_vexpr() calling peek_token");)
+        M__(M_out(L"get_expression() calling peek_token");)
         auto prc = peek_token(pp, token, !end_expected);
 
         if ( (prc < 0) || (prc > 1) )
         {
-            M_out_emsg1(L"get_vexpr(): unexpected input error while processing expression"); 
-            display_vexpr(vexpr, L"error token");
+            M_out_emsg1(L"get_expression(): unexpected input error while processing expression"); 
+            display_expression(expression, L"error token");
             M_out_emsg2(L"empty expression is being substituted");
-            vexpr = a_vexpr_S {};                                                       // pass back empty vexpr 
-            return prc;                                                                 // leave unexpected token unconsumed for next time
-        }                                                                           
-                                                                                    
-        if (prc == 1)                                                                   // END seen?
-        {                                                                           
-            if (!end_expected)                                                          // END not expected?
+            expression = a_expression_S {};                                                         // pass back empty expression 
+            return prc;                                                                             // leave unexpected token unconsumed for next time
+        }                                                                                          
+                                                                                                   
+        if (prc == 1)                                                                               // END seen?
+        {                                                                                          
+            if (!end_expected)                                                                      // END not expected?
             {
-                M_out_emsg1(L"get_vexpr(): unexpected END of input reached while processing nested expression -- possible missing close parenthesis"); 
-                display_vexpr(vexpr, L"unexpected END");
+                M_out_emsg1(L"get_expression(): unexpected END of input reached while processing nested expression -- possible missing close parenthesis"); 
+                display_expression(expression, L"unexpected END");
                 M_out_emsg2(L"empty expression is being substituted");
-                vexpr = a_vexpr_S {};                                                   // pass back empty vexpr if end if not expected (i.e. nested vexpr) 
-                return -1;                                                              // return error if end is not expected
-            }                                                                      
-            else                                                                        // END is expected
+                expression = a_expression_S {};                                                     // pass back empty expression if end if not expected (i.e. nested expression) 
+                return -1;                                                                          // return error if end is not expected
+            }                                                                                      
+            else                                                                                    // END is expected
             {
                 if (flushing)
                 {
-                     M_out_emsg1(L"get_vexpr(): END of input reached -- expression was flushed after first error"); 
-                     display_vexpr(vexpr, L"flushed");
+                     M_out_emsg1(L"get_expression(): END of input reached -- expression was flushed after first error"); 
+                     display_expression(expression, L"flushed");
                      M_out_emsg2(L"empty expression is being substituted");
-                     vexpr = a_vexpr_S {};                                              // pass back empty vexpr 
-                     return 2;                                                          // indicate bad vexpr 
+                     expression = a_expression_S {};                                                // pass back empty expression 
+                     return 2;                                                                      // indicate bad expression 
                 }
                 else if ( (!verb_done) && (left_parms_done) )
                 { 
-                    //if ( (vexpr.lparms.kw_ct == 0) && (vexpr.lparms.value_ct <= 1) )  // no more than a single positional parm?
-                    if (vexpr.lparms.kw_ct == 0)                                        // no keyword parms?
-                    {                                                                 
-                         return  (error_count > 0) ? 2 : 0;                             // just positional value(s) enclosed by paren -- return normally, or indicate bad vexpr  
-                    }
-                    else                                                                // not just positional values enclosed by parens -- has keyword parms -- incomplete vexpr -- error
+                    if (
+                        ( (expression.lparms.kw_ct == 0   ) || (pp.m_allow_verbless_kws        ) ) // no keywords present or keywords are allowed in verbless expressions
+                        &&
+                        ( (expression.lparms.value_ct <= 1) || (pp.m_allow_verbless_multi_parms) ) // not too many parms, dpending on how many are allowed
+                       )
+                    {    
+                        M__(M_out(L"get_expression() -- normal return due to END of input -- no verb present");)   
+                        return  (error_count > 0) ? 2 : 0;                                         // verbless expression is OK  
+                    }                                                                        
+                    else                                                                           // disallowed positional or keyword parms in verbless expression
                     {  
                         count_error(); 
-                        M_out_emsg1(L"get_vexpr(): END of input reached,  but no verb was present following the left-side keyword parm(s)");  
-                        display_vexpr(vexpr, L"no-verb");
-                        M_out_emsg2(L"empty expression is being substituted");
-                        vexpr = a_vexpr_S {};                                           // pass back empty vexpr
-                        return 2;                                                       // indicate bad vexpr
-                    }                  
-                }
 
-                M__(M_out(L"get_vexpr() -- normal return due to END of input");)
-                return  (error_count > 0) ? 2 : 1;                                      // return with normal END, or indicate bad vexpr
+                        if ( (expression.lparms.kw_ct > 0) && (!pp.m_allow_verbless_kws) )
+                            M_out_emsg1(L"get_expression(): END of input reached during expression parsing, but no verb was present following one or more left-side keyword parm(s)"  );   // disallowed keywords meg takes priority  
+                        else
+                            M_out_emsg1(L"get_expression(): END of input reached during expression parsing, but no verb was present following more than one left-side positionsl parm"); 
+
+                        display_expression(expression, L"no-verb");
+                        M_out_emsg2(L"empty expression is being substituted");
+                        expression = a_expression_S {};                                            // pass back empty expression
+                        return 2;                                                                  // indicate bad expression
+                    }                                                                      
+                }                                                                          
+                                                                                           
+                M__(M_out(L"get_expression() -- normal return due to END of input -- verb present");)           
+                return  (error_count > 0) ? 2 : 1;                                                 // return with normal END, or indicate bad expression
             }           
         }
 
-        M__(token.display(L"get_vexpr()");) 
-        M__(M_out(L"get_vexpr() -- token.utype2 = %d") % (int)(token.utype2);)
+        M__(token.display(L"get_expression()");) 
+        M__(M_out(L"get_expression() -- token.utype2 = %d") % (int)(token.utype2);)
 
 
         //  ----------------------     
         //  check for ending token
         //  ----------------------
 
-        if (end_by_paren || end_by_verbname_bracket || end_by_keyname_bracket)        // paren/bracket mode -- nested vexpr -- look only for close paren/bracket to end vlist (END should have been filtered out above)
+        if (end_by_paren || end_by_verbname_bracket || end_by_keyname_bracket)                     // paren/bracket mode -- nested expression -- look only for close paren/bracket to end vlist (END should have been filtered out above)
         {
             // check for matching close paren or close verbname/keyname bracket
             // ----------------------------------------------------------------
@@ -1350,49 +1359,53 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
                   ( end_by_keyname_bracket   && ((token.utype2 == tok_u2_E::close_keyname_bracket ) || (token.utype2 == tok_u2_E::close_paren)) )    // can have either :( ... ):  -or-  :( ... )
                 )
             {
-                M__(M_out(L"get_(nested)_vexpr(): ending token seen");) 
+                M__(M_out(L"get_(nested)_expression(): ending token seen");) 
 
-                vexpr_add_token(vexpr, token);                                          // add to token list for this vexpr  
+                expression_add_token(expression, token);                                           // add to token list for this expression  
 
-                if (!priority_recursion)                                                // leave ending token for upper-level get_vexpr() call, if priority recursion is active
+                if (!priority_recursion)                                                           // leave ending token for upper-level get_expression() call, if priority recursion is active
                 {
-                    M__(M_out(L"get_(nested)_vexpr() -- discarding matching close paren/bracket");)
-                    discard_token(pp);                                                  // get rid of closing parenthesis (if not priority recursion)
+                    M__(M_out(L"get_(nested)_expression() -- discarding matching close paren/bracket");)
+                    discard_token(pp);                                                             // get rid of closing parenthesis (if not priority recursion)
                 }
    
                 if (flushing)
                 {
-                     M_out_emsg1(L"get_vexpr(): expression was flushed after first error"); 
-                     display_vexpr(vexpr, L"flushed");
+                     M_out_emsg1(L"get_expression(): expression was flushed after first error"); 
+                     display_expression(expression, L"flushed");
                      M_out_emsg2(L"empty expression is being substituted");
-                     vexpr = a_vexpr_S {};                                              // pass back empty vexpr 
-                     return 2;                                                          // indicate bad vexpr 
+                     expression = a_expression_S {};                                               // pass back empty expression 
+                     return 2;                                                                     // indicate bad expression 
                 }
                 else if ( (!verb_done) && (left_parms_done) )
                 { 
-                    M__(M_out(L"get_vexpr() -- normal return due to close paren/bracket -- no verb present");)
-                    return  (error_count > 0) ? 2 : 0;                                  // just a single/multiple value(s) enclosed by paren -- return normally, or indicate bad vexpr  
+                    if (
+                        ( (expression.lparms.kw_ct == 0   ) || (pp.m_allow_verbless_kws        ) ) // no keywords present or keywords are allowed in verbless expressions
+                        &&
+                        ( (expression.lparms.value_ct <= 1) || (pp.m_allow_verbless_multi_parms) ) // not too many parms, dpending on how many are allowed
+                       )
+                    {    
+                        M__(M_out(L"get_expression() -- normal return due to close paren/bracket -- no verb present");)
+                        return  (error_count > 0) ? 2 : 0;                                         // verbless expression is OK  
+                    }                                                                        
+                    else                                                                           // disallowed positional or keyword parms in verbless expression
+                    {  
+                        count_error(); 
 
-                    //if ( (vexpr.lparms.kw_ct == 0) && (vexpr.lparms.value_ct <= 1) )  // no more than a single positional parm?
-                 //   if (vexpr.lparms.kw_ct == 0)                                      // no keyword parms?
-                 //   {                                                                 
-                 //        return  (error_count > 0) ? 2 : 0;                           // just a single value enclosed by paren -- return normally, or indicate bad vexpr  
-                 //   }
-                 //   else                                                              // not just positional values enclosed by parens -- has keyword parms -- incomplete vexpr -- error
-                 //   {  
-                 //       count_error(); 
-                 //       M_out_emsg1(L"get_vexpr(): closing paren (or verbname/keyname bracket) at end of vexpr was reached, but no verb was present following the left-side keyword/positional parms"); 
-                 //       display_vexpr(vexpr, L"no-verb");
-                 //       M_out_emsg2(L"vexpr is ignored");
-                  //      vexpr = a_vexpr_S {};                                         // pass back empty vexpr
-                  //      return 2;                                                     // indicate bad vexpr
-                  //  }                                                                
+                        if ( (expression.lparms.kw_ct > 0) && (!pp.m_allow_verbless_kws) )
+                            M_out_emsg1(L"get_expression(): close paren or bracket reached during expression parsing, but no verb was present following one or more left-side keyword parm(s)"  );   // disallowed keywords meg takes priority  
+                        else
+                            M_out_emsg1(L"get_expression(): close paren or bracket reached during expression parsing, but no verb was present following more than one left-side positionsl parm"); 
+
+                        display_expression(expression, L"no-verb");
+                        M_out_emsg2(L"empty expression is being substituted");
+                        expression = a_expression_S {};                                            // pass back empty expression
+                        return 2;                                                                  // indicate bad expression
+                    }  
                 }
-
-                // note: completely empty vexpr is OK
-
-                M__(M_out(L"get_vexpr() -- normal return due to close paren/bracket -- verb present");)
-                return  (error_count > 0) ? 2 : 0;                                      // return normally, or indicate bad vexpr 
+               
+                M__(M_out(L"get_expression() -- normal return due to close paren/bracket -- verb present");)
+                return  (error_count > 0) ? 2 : 0;     
             }
      
 
@@ -1406,143 +1419,162 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
                   ( end_by_keyname_bracket   && (token.utype2 == tok_u2_E::close_verbname_bracket)                                                          )    // :()@         is not valid
                 )
             {
-                M__(M_out(L"get_(nested)_vexpr(): mismatched ending parenthesis/bracket seen");) 
+                M__(M_out(L"get_(nested)_expression(): mismatched ending parenthesis/bracket seen");) 
 
-                vexpr_add_token(vexpr, token);                                          // add to token list for this vexpr -- for error message only  
+                expression_add_token(expression, token);                                  // add to token list for this expression -- for error message only  
 
-                if (!priority_recursion)                                                // leave ending token for upper-level get_vexpr() call, if priority recursion is active
-                    discard_token(pp);                                                  // get rid of closing parenthesis (if not priority recursion)
+                if (!priority_recursion)                                                  // leave ending token for upper-level get_expression() call, if priority recursion is active
+                    discard_token(pp);                                                    // get rid of closing parenthesis (if not priority recursion)
 
                 count_error(); 
-                M_out_emsg1(L"get_vexpr(): starting and ending parenthesis types do not match for this expression"); 
-                display_vexpr(vexpr, L"mismatched");
+                M_out_emsg1(L"get_expression(): starting and ending parenthesis types do not match for this expression"); 
+                display_expression(expression, L"mismatched");
                 M_out_emsg2(L"empty expression is being substituted"); 
-                vexpr = a_vexpr_S {};                                                   // pass back empty vexpr
-                return 2;                                                               // indicate bad vexpr   
+                expression = a_expression_S {};                                           // pass back empty expression
+                return 2;                                                                 // indicate bad expression   
             }                                                                
  
 
             // check for unexpected (ending) semicolon
 
-            if (token.utype2 == tok_u2_E::semicolon)                                    // unexpected semicolon -- overrides parens, marks end of vexpr -- consume semicolon
+            if (token.utype2 == tok_u2_E::semicolon)                                      // unexpected semicolon -- overrides parens, marks end of expression -- consume semicolon
             {                                                                       
-                vexpr_add_token(vexpr, token);                                          // add to token list for this vexpr  -- for error message only 
+                expression_add_token(expression, token);                                  // add to token list for this expression  -- for error message only 
                                                                                     
-                if (!priority_recursion)                                                // leave ending token for upper-level get_vexpr() call, if priority recursion is active
-                    discard_token(pp);                                                  // consume the semicolon, since this must be top level vexpr within braces
+                if (!priority_recursion)                                                  // leave ending token for upper-level get_expression() call, if priority recursion is active
+                    discard_token(pp);                                                    // consume the semicolon, since this must be top level expression within braces
             
                 count_error(); 
-                M_out_emsg1(L"get_vexpr(): semicolon reached before the closing parenthesis (or verbname/keyname bracket) for the expression was seen"); 
-                display_vexpr(vexpr, L"incomplete");
+                M_out_emsg1(L"get_expression(): semicolon reached before the closing parenthesis (or verbname/keyname bracket) for the expression was seen"); 
+                display_expression(expression, L"incomplete");
                 M_out_emsg2(L"empty expression is being substituted"); 
-                vexpr = a_vexpr_S {};                                                   // pass back empty vexpr
-                return 2;                                                               // indicate bad vexpr
+                expression = a_expression_S {};                                           // pass back empty expression
+                return 2;                                                                 // indicate bad expression
             }                                                                          
                                                                                        
                                                                                        
             // check for unexpected (ending) close brace                               
                                                                                        
-            if (token.utype2 == tok_u2_E::close_brace)                                  // closing brace -- must be end of vexpr list, without final semicolon
+            if (token.utype2 == tok_u2_E::close_brace)                                    // closing brace -- must be end of expression list, without final semicolon
             {                                                                          
-                vexpr_add_token(vexpr, token);                                          // add to token list for this vexpr  -- for error message only
-                                                                                        // don't consume closing brace          
+                expression_add_token(expression, token);                                  // add to token list for this expression  -- for error message only
+                                                                                          // don't consume closing brace          
                 count_error(); 
-                M_out_emsg1(L"get_vexpr(): closing brace reached before closing parenthesis (or verbname/keyname bracket) for expression was seen"); 
-                display_vexpr(vexpr, L"incomplete");
+                M_out_emsg1(L"get_expression(): closing brace reached before closing parenthesis (or verbname/keyname bracket) for expression was seen"); 
+                display_expression(expression, L"incomplete");
                 M_out_emsg2(L"empty expression is being substituted");          
-                vexpr = a_vexpr_S {};                                                   // pass back empty vexpr
-                return 2;                                                               // indicate bad vexpr
+                expression = a_expression_S {};                                           // pass back empty expression
+                return 2;                                                                 // indicate bad expression
             }
 
 
-            // check for unexpected (ending) close paren, if this is a verb-type or keyword-type vexpr (this is now allowed -- see above) 
+            // check for unexpected (ending) close paren, if this is a verb-type or keyword-type expression (this is now allowed -- see above) 
 
- //         if ( (end_by_verbname_bracket || end_by_keyname_bracket) && (token.utype2 == tok_u2_E::close_paren) )  // closing paren while in verb sub-vexpr?-- must be end of whole (outer) vexpr, without missing close verbname/keyname bracket
+ //         if ( (end_by_verbname_bracket || end_by_keyname_bracket) && (token.utype2 == tok_u2_E::close_paren) )  // closing paren while in verb sub-expression?-- must be end of whole (outer) expression, without missing close verbname/keyname bracket
  //         {                                               
- //             vexpr_add_token(vexpr, token);                                         // add to token list for this vexpr  -- for error message only
- //                                                                                    // don't consume closing paren, since this must be a sub-vexpr and caller needs the close paren to exit properly           
+ //             expression_add_token(expression, token);                                   // add to token list for this expression  -- for error message only
+ //                                                                                        // don't consume closing paren, since this must be a sub-expression and caller needs the close paren to exit properly           
  //             count_error(); 
- //             M_out_emsg1(L"get_vexpr(): closing paren reached before closing verbname/keyname bracket for verb-type or keyword-type expression was seen"); 
- //             display_vexpr(vexpr, L"incomplete");
+ //             M_out_emsg1(L"get_expression(): closing paren reached before closing verbname/keyname bracket for verb-type or keyword-type expression was seen"); 
+ //             display_expression(expression, L"incomplete");
  //             M_out_emsg2(L"empty expression is being substituted");           
- //             vexpr = a_vexpr_S {};                                                   // pass back empty vexpr
- //             return 2;                                                               // indicate bad vexpr
+ //             expression = a_expression_S {};                                            // pass back empty expression
+ //             return 2;                                                                  // indicate bad expression
  //         }   
-        }         // -----------------------------------------------------------------
-        else      // not in paren or verbname/keyname bracket mode -- not nested vexpr 
-                  // -----------------------------------------------------------------
+        }         // ------------------------------------------------------------------
+        else      // not in paren or verbname/keyname bracket mode -- not nested expression 
+                  // ------------------------------------------------------------------
         {
-            if (token.utype2 == tok_u2_E::semicolon)                                    // semicolon -- consume semicolon at end
+            if (token.utype2 == tok_u2_E::semicolon)                                      // semicolon -- consume semicolon at end
             {                                                                      
-                vexpr_add_token(vexpr, token);                                          // add to token list for this vexpr 
+                expression_add_token(expression, token);                                  // add to token list for this expression 
                                                                                    
-                if (!priority_recursion)                                                // leave ending token for upper-level get_vexpr() call, if priority recursion is active
-                    discard_token(pp);                                                  // consume the semicolon, since this must be top level vexpr within braces
+                if (!priority_recursion)                                                  // leave ending token for upper-level get_expression() call, if priority recursion is active
+                    discard_token(pp);                                                    // consume the semicolon, since this must be top level expression within braces
                                                                 
                 if (flushing)
                 {
-                     M_out_emsg1(L"get_vexpr(): expression was flushed after first error"); 
-                     display_vexpr(vexpr, L"flushed");
+                     M_out_emsg1(L"get_expression(): expression was flushed after first error"); 
+                     display_expression(expression, L"flushed");
                      M_out_emsg2(L"empty expression is being substituted");
-                     vexpr = a_vexpr_S {};                                              // pass back empty vexpr 
-                     return 2;                                                          // indicate bad vexpr 
+                     expression = a_expression_S {};                                      // pass back empty expression 
+                     return 2;                                                            // indicate bad expression 
                 }                                                                      
                 else if ( (!verb_done) && (left_parms_done) )
                 { 
-                    //if ( (vexpr.lparms.kw_ct == 0) && (vexpr.lparms.value_ct <= 1) )  // no more than a single positional parm?
-                    if (vexpr.lparms.kw_ct == 0)                                        // no keyword parms present?
-                    {
-                         return  (error_count > 0) ? 2 : 0;                             // just a positional value(s) enclosed by paren -- has keywords -- return normally, or indicate bad vexpr  
-                    }
-                    else                                                                // not just a positional value(s) -- incomplete vexpr -- error
-                    {
+                    if (
+                        ( (expression.lparms.kw_ct == 0   ) || (pp.m_allow_verbless_kws        ) ) // no keywords present or keywords are allowed in verbless expressions
+                        &&
+                        ( (expression.lparms.value_ct <= 1) || (pp.m_allow_verbless_multi_parms) ) // not too many parms, dpending on how many are allowed
+                       )
+                    {    
+                        M__(M_out(L"get_expression() -- normal return due to semicolon -- no verb present");)
+                        return  (error_count > 0) ? 2 : 0;                                         // verbless expression is OK  
+                    }                                                                        
+                    else                                                                           // disallowed positional or keyword parms in verbless expression
+                    {  
                         count_error(); 
-                        M_out_emsg1(L"get_vexpr(): semicolon reached,  but no verb was present following the left-side keyword/positional parms"); 
-                        display_vexpr(vexpr, L"no-verb");
+
+                        if ( (expression.lparms.kw_ct > 0) && (!pp.m_allow_verbless_kws) )
+                            M_out_emsg1(L"get_expression(): semicolon reached during expression parsing, but no verb was present following one or more left-side keyword parm(s)"  );   // disallowed keywords meg takes priority  
+                        else
+                            M_out_emsg1(L"get_expression(): semicolon reached during expression parsing, but no verb was present following more than one left-side positionsl parm"); 
+
+                        display_expression(expression, L"no-verb");                            
                         M_out_emsg2(L"empty expression is being substituted");
-                        vexpr = a_vexpr_S {};                                           // pass back empty vexpr
-                        return 2;                                                       // indicate bad vexpr
-                    }
-                }
-
-                M__(M_out(L"get_vexpr() -- normal return due to semicolon");)
-                return  (error_count > 0) ? 2 : 0;                                      // return normally, or indicate bad vexpr
-            }
-
-            if (token.utype2 == tok_u2_E::close_brace)                                  // closing brace -- must be end of vexpr list, without final semicolon
+                        expression = a_expression_S {};                                            // pass back empty expression
+                        return 2;                                                                  // indicate bad expression
+                    }  
+                }              
+     
+                M__(M_out(L"get_expression() -- normal return due to semicolon -- verb present");)
+                return  (error_count > 0) ? 2 : 0;                                                 // return normally, or indicate bad expression
+            }                                                                               
+                                                                                            
+            if (token.utype2 == tok_u2_E::close_brace)                                             // closing brace -- must be end of expression list, without final semicolon
             {
-                // closing brace is not part of this vexpr -- don't add to vexpr, and don't consume the brace                               
+                // closing brace is not part of this expression -- don't add to expression, and don't consume the brace                               
              
                 if (flushing)
                 {
-                     M_out_emsg1(L"get_vexpr(): expression was flushed after first error"); 
-                     display_vexpr(vexpr, L"flushed");
+                     M_out_emsg1(L"get_expression(): expression was flushed after first error"); 
+                     display_expression(expression, L"flushed");
                      M_out_emsg2(L"empty expression is being substituted");
-                     vexpr = a_vexpr_S {};                                              // pass back empty vexpr 
-                     return 2;                                                          // indicate bad vexpr 
+                     expression = a_expression_S {};                                                // pass back empty expression 
+                     return 2;                                                                      // indicate bad expression 
                 }
+
                 if ( (!verb_done) && (left_parms_done) )
                 {
-                    M__(M_out(L"get_vexpr() -- kw_ct = %d,    value_ct = %d") % vexpr.lparms.kw_ct % vexpr.lparms.value_ct;)
+                    M__(M_out(L"get_expression() -- kw_ct = %d,    value_ct = %d") % expression.lparms.kw_ct % expression.lparms.value_ct;)
 
-                  //if ( (vexpr.lparms.kw_ct == 0) && (vexpr.lparms.value_ct <= 1) )    // no more than a single positional parm?
-                    if (vexpr.lparms.kw_ct == 0)                                        // no keyword values present? 
-                    {
-                         return  (error_count > 0) ? 2 : 0;                             // just positional values enclosed by paren -- return normally, or indicate bad vexpr  
-                    }
-                    else                                                                // not just posiotional value(s) -- has keywords -- incomplete vexpr -- error
-                    {
+                    if (
+                        ( (expression.lparms.kw_ct == 0   ) || (pp.m_allow_verbless_kws        ) )  // no keywords present or keywords are allowed in verbless expressions
+                        &&
+                        ( (expression.lparms.value_ct <= 1) || (pp.m_allow_verbless_multi_parms) )  // not too many parms, dpending on how many are allowed
+                       )
+                    {    
+                        M__(M_out(L"get_expression() -- normal return due to closing brace -- no verb present");)
+                        return  (error_count > 0) ? 2 : 0;                                          // verbless expression is OK  
+                    }                                                                        
+                    else                                                                            // disallowed positional or keyword parms in verbless expression
+                    {  
                         count_error(); 
-                        M_out_emsg1(L"get_vexpr(): closing brace reached,  but no verb was present following the left-side keyword parms"); 
-                        display_vexpr(vexpr, L"no-verb");
-                        M_out_emsg2(L"empty expression is being substituted");
-                        vexpr = a_vexpr_S {};                                           // pass back empty vexpr
-                        return 2;                                                       // indicate bad vexpr
-                    }
-                }
 
-                M__(M_out(L"get_vexpr() -- normal return due to closing brace");)
-                return  (error_count > 0) ? 2 : 0;                                      // return normally, or indicate bad vexpr
+                        if ( (expression.lparms.kw_ct > 0) && (!pp.m_allow_verbless_kws) )
+                            M_out_emsg1(L"get_expression(): closing brace reached during expression parsing, but no verb was present following one or more left-side keyword parm(s)"  );   // disallowed keywords meg takes priority  
+                        else
+                            M_out_emsg1(L"get_expression(): closing brace reached during expression parsing, but no verb was present following more than one left-side positionsl parm"); 
+
+                        display_expression(expression, L"no-verb");
+                        M_out_emsg2(L"empty expression is being substituted");
+                        expression = a_expression_S {};                                            // pass back empty expression
+                        return 2;                                                                  // indicate bad expression
+                    }  
+                }   
+  
+                M__(M_out(L"get_expression() -- normal return due to closing brace -- verb present");)
+                return  (error_count > 0) ? 2 : 0;                                                 // return normally, or indicate bad expression
             }
         }
 
@@ -1551,10 +1583,10 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
 
         if (error_count > 0)
         {
-            flushing = true;                                                            // indicate flushing mode -- for final error message selection
-            vexpr_add_token(vexpr, token);                                              // add to vexpr -- for error messages only  
-            discard_token(pp);                                                          // flush the non-ending token
-            continue;                                                                   // loop back and look for ending token
+            flushing = true;                                                                       // indicate flushing mode -- for final error message selection
+            expression_add_token(expression, token);                                               // add to expression -- for error messages only  
+            discard_token(pp);                                                                     // flush the non-ending token
+            continue;                                                                              // loop back and look for ending token
         }
 
 
@@ -1565,16 +1597,16 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
         {
             left_parms_done = true; 
 
-            M__(M_out(L"get_vexpr() -- calling get_vlist() for left-side vlist");)
-            auto grc = get_vlist(frame, pp, vexpr, vexpr.lparms); 
+            M__(M_out(L"get_expression() -- calling get_vlist() for left-side vlist");)
+            auto grc = get_vlist(frame, pp, expression, expression.lparms); 
             if (grc != 0)
                 error_count++; 
-            continue;                                                                   // loop back to look for ending token (flush), if error seen -- should not have consumed ending token 
+            continue;                                                                               // loop back to look for ending token (flush), if error seen -- should not have consumed ending token 
         }
 
 
-        // handle verb -- add in verb, if not done yet -- reshuffle vexprs that already have verbs based on verb priorities
-        // ---------------------------------------------------------------------------------------------------------------
+        // handle verb -- add in verb, if not done yet -- reshuffle expressions that already have verbs based on verb priorities
+        // ---------------------------------------------------------------------------------------------------------------------
 
         if ( (token.utype2 == tok_u2_E::verbname) ||  (token.utype2 == tok_u2_E::open_verbname_bracket) )
         {
@@ -1584,7 +1616,7 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
             int       priority    { verb_priority_default };                            // start with default verb priority     ????????????????? where is this used ????????????????
             verbdef_S verbdef     { };                                                  // temporary verbdef to be filled in
 
-            if (token.utype2 == tok_u2_E::verbname)                                     // can get real priority only for simple verbdef vexprs
+            if (token.utype2 == tok_u2_E::verbname)                                     // can get real priority only for simple verbdef expressions
             {   
                 auto gvrc = get_verb(frame, token.str, verbdef);                        // look up verb name in symtab and extract verbdef info to local copy 
 
@@ -1600,15 +1632,15 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
             }
 
 
-            // if no verb yet seen for this vexpr, just add the verb value to the vexpr
+            // if no verb yet seen for this expression, just add the verb value to the expression
 
             if (!verb_done)
             {
-                auto vrc = get_vexpr_verb(frame, pp, vexpr, token, verbdef);            // fill in vexpr verb-oriented fields for main vexpr 
+                auto vrc = get_expression_verb(frame, pp, expression, token, verbdef);  // fill in expression verb-oriented fields for main expression 
                 if (vrc != 0)                                                          
                     error_count++;                                                      // cause flush mode to start because of error
                                                                                        
-                verb_done = true;                                                       // verb for current (main) token is now done -- this flag must be set after calling verb_get_vexpr, to avoid errroneous priority_recursion flag setting (in case of resursion)      
+                verb_done = true;                                                       // verb for current (main) token is now done -- this flag must be set after calling verb_get_expression, to avoid errroneous priority_recursion flag setting (in case of resursion)      
                 continue;                                                               // loop back to get next token (or start flushing) 
             }
             else                             
@@ -1617,10 +1649,10 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
                 // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
                 if (
-                    (vexpr.priority > verbdef.priority)                                 // prior verb goes first, because of higher priority ?
+                    (expression.priority > verbdef.priority)                            // prior verb goes first, because of higher priority ?
                     ||
                     (
-                     (vexpr.priority == verbdef.priority)                               // prior vexpr may go first, depending on assiciatiity and prefix/infix/postfix positioning
+                     (expression.priority == verbdef.priority)                          // prior expression may go first, depending on assiciatiity and prefix/infix/postfix positioning
                      &&
                      (
                       (verbdef.left_associate)                                          // always left-associate ? (note: left_associate and right_associate flags should never both be on -- left_associate takes priority, though)
@@ -1628,7 +1660,7 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
                       (
                        (!verbdef.right_associate)                                       // don't always right-associate ?
                        &&
-                       (vexpr.rparms.value_ct > 0)                                      // new verb appears to be infix (or postfix) ? -- left-associate by default
+                       (expression.rparms.value_ct > 0)                                 // new verb appears to be infix (or postfix) ? -- left-associate by default
                       )
                      )
                     )                                                                   // prior verb goes first because of equal priorities and new verb's effective left-associativity ?
@@ -1636,27 +1668,27 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
                 {
                     // --------------------------------------------------------------------------------------------------------------------------------------------------------
                     //
-                    // new verb has lower effective priority than verb already in in the vexpr: 
+                    // new verb has lower effective priority than verb already in in the expression: 
                     //
                     //  - save the results from prior verb's execution as the first (only) left-side positional parm for new verb
                     //
                     // -------------------------------------------------------------------------------------------------------------------------------------------------------- 
 
-                    // copy everything from current vexpr into a new vexpr, clear out current vexpr, and attach new vexpr as the first (only) left positional parm of current vexpr 
+                    // copy everything from current expression into a new expression, clear out current expression, and attach new expression as the first (only) left positional parm of current expression 
 
-                    value_S value    {      };                                           // temp value for set_vexpr_value()
-                    a_vexpr_S left_vexpr { vexpr };                                      // copy everything to new a_vexpr_S for adding in   (including set up verb and vlists, etc.)
+                    value_S value    {      };                                           // temp value for set_expression_value()
+                    a_expression_S left_expression { expression };                       // copy everything to new a_expression_S for adding in   (including set up verb and vlists, etc.)
                                                                                    
-                    vexpr = a_vexpr_S {};                                                // clear out existing vexpr                   
-                    set_vexpr_value(value, left_vexpr, true);                            // move OK -- temp_vexpr no longer needed 
-                    add_positional_value(vexpr.lparms, value);                           // add to start of left positional parms vector in cleared-out original vexpr 
-                    vexpr.lparms.token_ix1 = left_vexpr.token_ix1;                       // vlist location is same is prior verb's vexpr location
-                    vexpr.lparms.token_ix2 = left_vexpr.token_ix2;                       // vlist location is same is prior verb's vexpr location
-                                                                                         // !!!!!!!!!!!!!! note: that new vexpr's location does not include left parms in this case
+                    expression = a_expression_S {};                                      // clear out existing expression                   
+                    set_expression_value(value, left_expression, true);                  // move OK -- temp_expression no longer needed 
+                    add_positional_value(expression.lparms, value);                      // add to start of left positional parms vector in cleared-out original expression 
+                    expression.lparms.token_ix1 = left_expression.token_ix1;             // vlist location is same is prior verb's expression location
+                    expression.lparms.token_ix2 = left_expression.token_ix2;             // vlist location is same is prior verb's expression location
+                                                                                         // !!!!!!!!!!!!!! note: that new expression's location does not include left parms in this case
                     
-                    // set up cleared-out existing vexpr with the new verb   
+                    // set up cleared-out existing expression with the new verb   
 
-                    auto vrc = get_vexpr_verb(frame, pp, vexpr, token, verbdef);         // fill in vexpr verb-oriented fields for main vexpr 
+                    auto vrc = get_expression_verb(frame, pp, expression, token, verbdef);       // fill in expression verb-oriented fields for main expression 
                     if (vrc != 0)                                                 
                     {                                                             
                         error_count++;                                                   // cause flush mode to start because of error
@@ -1664,64 +1696,64 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
                     }
 
 
-                    // reset vexpr processing flags (for new verb) indicating left parms and verb are done, and right parms are not yet done
+                    // reset expression processing flags (for new verb) indicating left parms and verb are done, and right parms are not yet done
 
-                    right_parms_done = false;                                            // any right parms were moved into left_vexpr, so updated original vexpr doesn't have any yet   
-                    left_parms_done  = true;                                             // left parms for original vexpr are done (just the one nested vexpr)
-                    verb_done        = true;                                             // 2nd verb becomes 1st verb for original vexpr 
-                    continue;                                                            // loop back to get next token -- should be right parms for update original vexpr
+                    right_parms_done = false;                                            // any right parms were moved into left_expression, so updated original expression doesn't have any yet   
+                    left_parms_done  = true;                                             // left parms for original expression are done (just the one nested expression)
+                    verb_done        = true;                                             // 2nd verb becomes 1st verb for original expression 
+                    continue;                                                            // loop back to get next token -- should be right parms for update original expression
                 }
-                else // new verb priority is higher (or prior vexpr is effectively right-associative, and both verbs have same priority)
+                else // new verb priority is higher (or prior expression is effectively right-associative, and both verbs have same priority)
                 {
                     // ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
                     //
-                    // new verb needs to be evaluated before the verb already in in the vexpr: 
+                    // new verb needs to be evaluated before the verb already in in the expression: 
                     //
                     //  - transfer existing right-side parms to new verb's left parms, and set prior verb's only right-side positional parm = results from new hi-priority verb's execution
                     //
                     // ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- 
                 
-                    value_S    value       {    };
-                    a_vexpr_S   right_vexpr  {    };                                     // vexpr for new (hi-priority) verb 
+                    value_S    value       {    };                                      
+                    a_expression_S   right_expression  {    };                                    // expression for new (hi-priority) verb 
 
 
                     // transfer prior verb's right-side parms (positional and kw) to left sideparms for new higher-priority verb
 
-                    right_vexpr.lparms = vexpr.rparms;                                   // new verb's left parms are prior verb's right parms
-                    vexpr.rparms       = vlist_S {};                                     // clear out right parms for prior verb (will be set below to results from new hi-priority verb);
+                    right_expression.lparms = expression.rparms;                                   // new verb's left parms are prior verb's right parms
+                    expression.rparms       = vlist_S {};                                          // clear out right parms for prior verb (will be set below to results from new hi-priority verb);
 
 
-                    // set up new right_vexpr with the new higher-priority verb   
+                    // set up new right_expression with the new higher-priority verb   
                     
-                    auto vrc = get_vexpr_verb(frame, pp, right_vexpr, token, verbdef);   // fill in vexpr verb-oriented fields for main vexpr 
+                    auto vrc = get_expression_verb(frame, pp, right_expression, token, verbdef);   // fill in expression verb-oriented fields for main expression 
                     if (vrc != 0)
                     {                                                                
-                        error_count++;                                                   // cause flush mode to start because of error
-                        continue;                                                        // loop back to start flushing
-                    }
+                        error_count++;                                                            // cause flush mode to start because of error
+                        continue;                                                                 // loop back to start flushing
+                    }                                                                      
 
 
-                    // do priority-recursive call to get_vexpr() 
+                    // do priority-recursive call to get_expression() 
                     //
                     //   -- pass thru ending flags from current call
-                    //   -- partially-complete right_vexpr parm should cause nested get_vexpr() to go into "priority_recursive" mode, where ending token is left unconsumed for top-level get_vexpr() call 
+                    //   -- partially-complete right_expression parm should cause nested get_expression() to go into "priority_recursive" mode, where ending token is left unconsumed for top-level get_expression() call 
                     //
 
-                    M__(M_out(L"get_vexpr() -- doing priority-recursive call to get_vexpr()");)
-                    auto grc = get_vexpr(frame, pp, right_vexpr, end_by_paren, end_by_verbname_bracket, end_by_keyname_bracket, end_expected);
+                    M__(M_out(L"get_expression() -- doing priority-recursive call to get_expression()");)
+                    auto grc = get_expression(frame, pp, right_expression, end_by_paren, end_by_verbname_bracket, end_by_keyname_bracket, end_expected);
                     if (grc != 0)
                         error_count++; 
 
 
-                    // add completed higher-priority vexpr from priority-recursive get_vexpr() call to current vexpr's right-side positional parms -- will be the only right-side parm
+                    // add completed higher-priority expression from priority-recursive get_expression() call to current expression's right-side positional parms -- will be the only right-side parm
 
-                    set_vexpr_value(value, right_vexpr, true);                           // value points to completed higher-priority vexpr -- move is OK, since right_vexpr will soon go away
-                    add_positional_value(vexpr.rparms, value);                           // first (only) right-size positional parm for prior verb = results from higher-priority verb
-                    vexpr.rparms.token_ix1 = right_vexpr.token_ix1;                      // vlist location is same is higher_priority verb's vexpr location
-                    vexpr.rparms.token_ix2 = right_vexpr.token_ix2;                      // vlist location is same is higher_priority verb's vexpr location
+                    set_expression_value(value, right_expression, true);                           // value points to completed higher-priority expression -- move is OK, since right_expression will soon go away
+                    add_positional_value(expression.rparms, value);                                // first (only) right-size positional parm for prior verb = results from higher-priority verb
+                    expression.rparms.token_ix1 = right_expression.token_ix1;                      // vlist location is same is higher_priority verb's expression location
+                    expression.rparms.token_ix2 = right_expression.token_ix2;                      // vlist location is same is higher_priority verb's expression location
                                                                                        
-                    right_parms_done = true;                                             // vexpr for prior verb is done -- should next see end token (left unconsumed from recursive call to get_vexpr())
-                    continue;                                                            // loop back to get next token -- should be unconsumed ending token
+                    right_parms_done = true;                                                       // expression for prior verb is done -- should next see end token (left unconsumed from recursive call to get_expression())
+                    continue;                                                                      // loop back to get next token -- should be unconsumed ending token
                 }                                                                   
             }
         }
@@ -1732,10 +1764,10 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
         if (left_parms_done && verb_done && !right_parms_done)
         {
             right_parms_done = true; 
-            auto grc = get_vlist(frame, pp, vexpr, vexpr.rparms); 
+            auto grc = get_vlist(frame, pp, expression, expression.rparms); 
             if (grc != 0)
                 error_count++; 
-            continue;                                                                    // loop back to look for ending token if error seen -- should not consume ending token 
+            continue;                                                                      // loop back to look for ending token if error seen -- should not consume ending token 
         }
 
 
@@ -1744,12 +1776,12 @@ static int get_vexpr(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, bool end
 
         error_count++; 
         count_error(); 
-        M_out_emsg1(L"get_vexpr(): unexpected token « %s » seen -- expecting verb or option to begin new expression") % token.orig_str; 
+        M_out_emsg1(L"get_expression(): unexpected token « %s » seen -- expecting verb or option to begin new expression") % token.orig_str; 
         token.display(L"unexpected token");
-        display_vexpr(vexpr, L"unexpected token");
+        display_expression(expression, L"unexpected token");
         M_out_emsg2(L"bypassing this token -- flushing rest of expression");
-        discard_token(pp);                                                               // get rid of unexpected token
-        vexpr = a_vexpr_S {};                                                            // replace incomplete vexpr for pass-back with empty vexpr
+        discard_token(pp);                                                                 // get rid of unexpected token
+        expression = a_expression_S {};                                                    // replace incomplete expression for pass-back with empty expression
         continue;
 
         //   ================ 
@@ -1825,7 +1857,7 @@ void set_vlist_flags(vlist_S& vlist) try
     vlist.val_string          = false; 
     vlist.val_identifier      = false; 
     vlist.val_vlist           = false; 
-    vlist.val_vexpr           = false; 
+    vlist.val_expression      = false; 
     vlist.val_slist           = false; 
     vlist.val_verbdef         = false; 
     vlist.val_typdef          = false;
@@ -1835,7 +1867,7 @@ void set_vlist_flags(vlist_S& vlist) try
     
     vlist.val_mixed           = false; 
 
-    vlist.kw_vexpr            = false; 
+    vlist.kw_expression       = false; 
     vlist.kw_vlist            = false;
     vlist.kw_identifier       = false; 
 
@@ -1861,7 +1893,7 @@ void set_vlist_flags(vlist_S& vlist) try
         else if (value.ty == type_E::string       ) vlist.val_string      = true; 
         else if (value.ty == type_E::identifier   ) vlist.val_identifier  = true; 
         else if (value.ty == type_E::vlist        ) vlist.val_vlist       = true; 
-        else if (value.ty == type_E::vexpr        ) vlist.val_vexpr       = true; 
+        else if (value.ty == type_E::expression   ) vlist.val_expression  = true; 
         else if (value.ty == type_E::slist        ) vlist.val_slist       = true;     
         else if (value.ty == type_E::verbdef      ) vlist.val_verbdef     = true;   
         else if (value.ty == type_E::typdef       ) vlist.val_typdef      = true;
@@ -1877,18 +1909,18 @@ void set_vlist_flags(vlist_S& vlist) try
     {
         for (const auto& elem : vlist.eval_kws)           // elem is std::pair<kw name , value>
         {
-                if (elem.second.ty == type_E::identifier)   vlist.kw_identifier = true; 
-           else if (elem.second.ty == type_E::vexpr     )   vlist.kw_vexpr      = true; 
-           else if (elem.second.ty == type_E::vlist     )   vlist.kw_vlist      = true;
+                if (elem.second.ty == type_E::identifier    )   vlist.kw_identifier = true; 
+           else if (elem.second.ty == type_E::expression    )   vlist.kw_expression = true; 
+           else if (elem.second.ty == type_E::vlist         )   vlist.kw_vlist      = true;
         }      
     }
     else                                // no evaluated keywords -- do unevaluated ones (if any) instead 
     {
         for (const auto& elem : vlist.keywords)           // elem is keyword_S
         {
-                if (elem.value.ty == type_E::identifier)   vlist.kw_identifier = true; 
-           else if (elem.value.ty == type_E::vexpr     )   vlist.kw_vexpr      = true; 
-           else if (elem.value.ty == type_E::vlist     )   vlist.kw_vlist      = true;
+                if (elem.value.ty == type_E::identifier    )   vlist.kw_identifier = true; 
+           else if (elem.value.ty == type_E::expression    )   vlist.kw_expression  = true; 
+           else if (elem.value.ty == type_E::vlist         )   vlist.kw_vlist      = true;
         } 
     }
 
@@ -1913,7 +1945,7 @@ void set_vlist_flags(vlist_S& vlist) try
     if (vlist.val_string       ) type_ct++; 
     if (vlist.val_identifier   ) type_ct++; 
     if (vlist.val_vlist        ) type_ct++; 
-    if (vlist.val_vexpr        ) type_ct++;
+    if (vlist.val_expression   ) type_ct++;
     if (vlist.val_slist        ) type_ct++;
     if (vlist.val_verbdef      ) type_ct++;
     if (vlist.val_typdef       ) type_ct++;
@@ -1937,7 +1969,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   get_vlist_value() -- helper function to add value of pre-peek()ed token to passed-in vlist, vexpr, etc.
+////   get_vlist_value() -- helper function to add value of pre-peek()ed token to passed-in vlist, expression, etc.
 ////                     -- handles one value -- called in loop    
 ////
 ////
@@ -1946,9 +1978,9 @@ M_endf
 ////       -- literal value       -- positional parm added
 ////       -- keyword             -- keyword parm added (keyword name is literal)
 ////       -- open dot bracket    -- keyword parm added (keyword name is expression)
-////       -- open paren          -- nested vexpr     -- becomes positional parm (to be evaluated and replaced by results later)
-////       -- open bracket        -- nested vlist     -- becomes positional parm
-////       -- open brace          -- nested slist     -- becomes positional parm  
+////       -- open paren          -- nested expression     -- becomes positional parm (to be evaluated and replaced by results later)
+////       -- open bracket        -- nested vlist          -- becomes positional parm
+////       -- open brace          -- nested slist          -- becomes positional parm  
 ////  
 ////       -- anything else is internal error 
 ////
@@ -1958,7 +1990,7 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-static int get_vlist_value(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_S& vlist, const token_C& token) try
+static int get_vlist_value(frame_S& frame, pre_parse_C& pp, a_expression_S& expression, vlist_S& vlist, const token_C& token) try
 { 
     // literal or identifier token -- process positional value
     // -------------------------------------------------------
@@ -1967,7 +1999,7 @@ static int get_vlist_value(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vl
     {
         value_S value {}; 
 
-        vexpr_add_token(vexpr, token);                         // add to token list for passed-in vexpr 
+        expression_add_token(expression, token);               // add to token list for passed-in expression 
         set_atom_token(value, token, static_N::token_ix);      // fill in value_S based on contents of peek()ed value token
         discard_token(pp);                                     // get rid of token with value
         add_positional_value(vlist, value);                    // add to positional parms vector in passed-in vlist  
@@ -1981,7 +2013,7 @@ static int get_vlist_value(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vl
 
     if ( (token.utype2 == tok_u2_E::keyname) || (token.utype2 == tok_u2_E::open_keyname_bracket) )
     {
-        auto grc = get_keyword(frame, pp, vexpr, vlist);       // add keyword plus atom or nested vlist/vexpr/slist to keyword section of passed-in vlist
+        auto grc = get_keyword(frame, pp, expression, vlist);  // add keyword plus atom or nested vlist/expression/slist to keyword section of passed-in vlist
         if (grc != 0)                                          // end immediately if unexpected end or error
         {
             vlist = vlist_S {};                                //  return empty vlist 
@@ -1999,12 +2031,12 @@ static int get_vlist_value(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vl
     {
         value_S value        {};  
         slist_S new_slist    {}; 
-        a_vexpr_S  dummy_vexpr {};                             // dummy vexpr to hold open brace token (for debug messages) 
+        a_expression_S  dummy_expression {};                   // dummy expression to hold open brace token (for debug messages) 
 
-        vexpr_add_token(dummy_vexpr, token);                   // put open paren on brface stack for dummy vexpr 
+        expression_add_token(dummy_expression, token);         // put open paren on brface stack for dummy expression 
         int64_t ix1 = static_N::token_ix;                      // capture starting token index for this value 
         discard_token(pp);                                     // get_nested_slist() does not want open brace -- will consume matching close brace 
-        auto grc = get_nested_slist(frame, pp, new_slist);     // tokens for the nested slist don't go into current vexpr's token list  -- should consume ending brace
+        auto grc = get_nested_slist(frame, pp, new_slist);     // tokens for the nested slist don't go into current expression's token list  -- should consume ending brace
         if (grc != 0)                                          // end immediately if unexpected end or error
         {
             vlist = vlist_S {};                                //  return empty vlist 
@@ -2020,30 +2052,30 @@ static int get_vlist_value(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vl
     }
     
 
-    // open parenthesis -- process nested vexpr 
+    // open parenthesis -- process nested expression 
     // ----------------------------------------
 
     if (token.utype2 == tok_u2_E::open_paren)
     {
         value_S    value      {};  
-        a_vexpr_S  new_vexpr  {}; 
+        a_expression_S  new_expression  {}; 
 
-        vexpr_add_token(new_vexpr, token);                     // put open paren on token stack for new vexpr 
-        int64_t ix1 = static_N::token_ix;                      // capture starting token index for this value 
-        discard_token(pp);                                     // get_nested_vexpr() does not want open paren -- will consume matching close paren 
-        auto grc = get_nested_vexpr(frame, pp, new_vexpr);     // tokens for the nested vexpr don't go into current vexpr's token list  -- should consume ending paren
-        if (grc != 0)                                          // end immediately if unexpected end or error
-        {
-            vlist = vlist_S {};                                //  return empty vlist 
-            return -1; 
-        } 
-
-        int64_t ix2 = static_N::token_ix;                      // capture ending token index for this value
-        set_vexpr_value(value, new_vexpr, true);               // move OK -- new_vexpr no longer needed 
-        value.token_ix1 = ix1;                                 // save away starting token index                                
-        value.token_ix2 = ix2;                                 // save away ending token index
-        add_positional_value(vlist, value);                    // add to positional parms vector in passed-in vlist 
-        return 0;                                              // caller should loop back to look at next token          
+        expression_add_token(new_expression, token);                       // put open paren on token stack for new expression 
+        int64_t ix1 = static_N::token_ix;                                  // capture starting token index for this value 
+        discard_token(pp);                                                 // get_nested_expression() does not want open paren -- will consume matching close paren 
+        auto grc = get_nested_expression(frame, pp, new_expression);       // tokens for the nested expression don't go into current expression's token list  -- should consume ending paren
+        if (grc != 0)                                                      // end immediately if unexpected end or error
+        {                                                         
+            vlist = vlist_S {};                                            //  return empty vlist 
+            return -1;                                            
+        }                                                         
+                                                                  
+        int64_t ix2 = static_N::token_ix;                                  // capture ending token index for this value
+        set_expression_value(value, new_expression, true);                 // move OK -- new_expression no longer needed 
+        value.token_ix1 = ix1;                                             // save away starting token index                                
+        value.token_ix2 = ix2;                                             // save away ending token index
+        add_positional_value(vlist, value);                                // add to positional parms vector in passed-in vlist 
+        return 0;                                                          // caller should loop back to look at next token          
     }
         
 
@@ -2055,23 +2087,23 @@ static int get_vlist_value(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vl
         value_S value      {};  
         vlist_S new_vlist  {}; 
 
-        vexpr_add_token(vexpr, token);                           // put open bracket on token list for existing vexpr 
-        int64_t ix1 = static_N::token_ix;                        // capture starting token index for this value 
-        discard_token(pp);                                       // get rid of open bracket
-
-        auto grc = get_nested_vlist(frame, pp, vexpr, new_vlist);// should consume ending bracket
-        if (grc != 0)                                            // end immediately if unexpected end or error
-        {
-            vlist = vlist_S {};                                   // return empty vlist 
-            return -1; 
-        } 
-
-        int64_t ix2 = static_N::token_ix;                         // capture ending token index for this value
-        set_vlist_value(value, new_vlist, true);                  // move OK -- new_vlist no longer needed 
-        value.token_ix1 = ix1;                                    // save away starting token index                                
-        value.token_ix2 = ix2;                                    // save away ending token index
-        add_positional_value(vlist, value);                       // add to positional parms vector in passed-in vlist 
-        return 0;                                                 // caller should loop back to look at next token           
+        expression_add_token(expression, token);                           // put open bracket on token list for existing expression 
+        int64_t ix1 = static_N::token_ix;                                  // capture starting token index for this value 
+        discard_token(pp);                                                 // get rid of open bracket
+                                                                   
+        auto grc = get_nested_vlist(frame, pp, expression, new_vlist);     // should consume ending bracket
+        if (grc != 0)                                                      // end immediately if unexpected end or error
+        {                                                          
+            vlist = vlist_S {};                                            // return empty vlist 
+            return -1;                                                     
+        }                                                                  
+                                                                           
+        int64_t ix2 = static_N::token_ix;                                  // capture ending token index for this value
+        set_vlist_value(value, new_vlist, true);                           // move OK -- new_vlist no longer needed 
+        value.token_ix1 = ix1;                                             // save away starting token index                                
+        value.token_ix2 = ix2;                                             // save away ending token index
+        add_positional_value(vlist, value);                                // add to positional parms vector in passed-in vlist 
+        return 0;                                                          // caller should loop back to look at next token           
     }
 
 
@@ -2103,14 +2135,14 @@ M_endf
 ////       -- verb                   -- end vlist (not consumed) -- verb name which ends this (left side) vlist  
 ////       -- open_verbname_bracket  -- end vlist (not consumed) -- start of verb which ends thls (lesft side) vlist 
 ////       -- END of input token     -- end vlist (not consumed)
-////       -- close paren            -- end vlist (not consumed) -- normal end of nested vexpr containing this vlist 
-////       -- close_verbname_bracket -- end vlist (not consumed) -- normal end of verb sub-vexpr containing this lvist  
-////       -- close_keyname_bracket  -- end vlist (not consumed) -- normal end of keyword name sub-vexpr containing this vlist  
+////       -- close paren            -- end vlist (not consumed) -- normal end of nested expression containing this vlist 
+////       -- close_verbname_bracket -- end vlist (not consumed) -- normal end of verb sub-expression containing this lvist  
+////       -- close_keyname_bracket  -- end vlist (not consumed) -- normal end of keyword name sub-expression containing this vlist  
 ////       -- close brace            -- end vlist (not consumed) -- normal end of nested slist containing this vlist  
 ////       -- literal value          -- positional parm                                                              -- added to vlist positional parms list 
 ////       -- keyword                -- keyword parm (keyword name is literal)                                       -- added to vlist keyword parms list 
-////       -- open_keyname_bracket   -- keyword parm (keyword name is vexpr that must be evaluated later)            -- added to vlist keyword parms list 
-////       -- open paren             -- nested vexpr -- becomes positional parm (to be evaluated later)              -- added to vlist positional parms list 
+////       -- open_keyname_bracket   -- keyword parm (keyword name is expression that must be evaluated later)       -- added to vlist keyword parms list 
+////       -- open paren             -- nested expression -- becomes positional parm (to be evaluated later)         -- added to vlist positional parms list 
 ////       -- open bracket           -- nested vlist -- becomes positional parm                                      -- added to vlist positional parms list 
 ////       -- open brace             -- nested slist -- becomes positional parm -- passed to verb with no evaluation -- added to vlist positional parms list 
 ////
@@ -2122,7 +2154,7 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-static int get_vlist(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_S& vlist) try
+static int get_vlist(frame_S& frame, pre_parse_C& pp, a_expression_S& expression, vlist_S& vlist) try
 {    
     // make sure vlist is not already in use
 
@@ -2145,7 +2177,7 @@ static int get_vlist(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_S&
 
     for(;;)
     {
-        // look at next token -- end immediately (perhaps with empty vexpr), if error -- END is expected here 
+        // look at next token -- end immediately (perhaps with empty expression), if error -- END is expected here 
 
         token_C token; 
         M__(M_out(L"get_vlist() calling peek_token");)
@@ -2180,19 +2212,19 @@ static int get_vlist(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_S&
             ||                                                                  
             (token.utype2 == tok_u2_E::end)                                      // END 
             ||                                                                  
-            (token.utype2 == tok_u2_E::semicolon)                                // semicolon -- must be end of this vexpr
+            (token.utype2 == tok_u2_E::semicolon)                                // semicolon -- must be end of this expression
             ||                                                                  
             (token.utype2 == tok_u2_E::close_brace)                              // closing brace -- must be end of whole slist  
             ||                                                                  
             (token.utype2 == tok_u2_E::verbname)                                 // verbname 
             ||                                                                  
-            (token.utype2 == tok_u2_E::open_verbname_bracket)                    // start of verb sub-vexpr (handled like verbname) 
+            (token.utype2 == tok_u2_E::open_verbname_bracket)                    // start of verb sub-expression (handled like verbname) 
             ||                                                                  
-            (token.utype2 == tok_u2_E::close_paren)                              // close paren            - normal end for nested vexpr 
+            (token.utype2 == tok_u2_E::close_paren)                              // close paren            - normal end for nested expression 
             ||                                                                  
-            (token.utype2 == tok_u2_E::close_verbname_bracket)                   // close verbname bracket - normal end for verb sub-vexpr 
+            (token.utype2 == tok_u2_E::close_verbname_bracket)                   // close verbname bracket - normal end for verb sub-expression 
             ||                                                                  
-            (token.utype2 == tok_u2_E::close_keyname_bracket)                    // close keyname bracket  - normal end for keyword name sub-vexpr
+            (token.utype2 == tok_u2_E::close_keyname_bracket)                    // close keyname bracket  - normal end for keyword name sub-expression
            )
         {
             M__(M_out(L"get_vlist() -- ending normally: token_ix1=%d") % token_ix1;)
@@ -2221,7 +2253,7 @@ static int get_vlist(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_S&
             (token.utype2 == tok_u2_E::identifier)
            )
         {
-            auto rc = get_vlist_value(frame, pp, vexpr, vlist, token);             // pass through all parms
+            auto rc = get_vlist_value(frame, pp, expression, vlist, token);        // pass through all parms
             if (rc != 0) 
             {
                 vlist.token_ix1 = std::min(static_N::token_ix, token_ix1);         // capture starting token index for vlist
@@ -2232,22 +2264,22 @@ static int get_vlist(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_S&
         }
         
 
-        // unexpected token seen -- pass back vexpr, as-is, after complaining  
+        // unexpected token seen -- pass back expression, as-is, after complaining  
 
         count_error();
         M_out_emsg1(L"get_vlist(): Unexpected token « %s » seen in un-nested vlist") % token.orig_str; 
         token.display(L"bad-token", true);
-        vlist.token_ix1 = std::min(static_N::token_ix, token_ix1);             // capture starting token index for vlist -- for error message
-        vlist.token_ix2 = std::max(static_N::token_ix, token_ix1);             // capture ending token index for vlist   -- for error message 
-        display_vlist(vlist, L"incomplete vlist");
-        M_out_emsg2(L"Passing back empty vlist in place of incomplete vlist");
-        
-        vlist = vlist_S {};                                                    // return empty vlist
-        vlist.token_ix1 = std::min(static_N::token_ix, token_ix1);             // capture starting token index for vlist
-        vlist.token_ix2 = std::max(static_N::token_ix, token_ix1);             // capture ending token index for vlist
-
-        return -1;                                                             // don't discard unexpected token -- leave for next call in get_vexpr()                 
-                          // ================
+        vlist.token_ix1 = std::min(static_N::token_ix, token_ix1);                 // capture starting token index for vlist -- for error message
+        vlist.token_ix2 = std::max(static_N::token_ix, token_ix1);                 // capture ending token index for vlist   -- for error message 
+        display_vlist(vlist, L"incomplete vlist");                                  
+        M_out_emsg2(L"Passing back empty vlist in place of incomplete vlist");      
+                                                                                    
+        vlist = vlist_S {};                                                        // return empty vlist
+        vlist.token_ix1 = std::min(static_N::token_ix, token_ix1);                 // capture starting token index for vlist
+        vlist.token_ix2 = std::max(static_N::token_ix, token_ix1);                 // capture ending token index for vlist
+                                                                                    
+        return -1;                                                                 // don't discard unexpected token -- leave for next call in get_expression()                 
+                          // ================                                       
     }                     // end of main loop 
                           // ================
   
@@ -2270,14 +2302,14 @@ M_endf
 ////   -- caller must have already consumed starting bracket.
 ////   -- this routine consumes ending paren (if any)
 ////   -- don't expect semicolons or END tokens before ending close bracket.
-////   -- don't expect verb or open_verbname_bracket in vlist, except for nested vexprs enclosed in parens
+////   -- don't expect verb or open_verbname_bracket in vlist, except for nested expression enclosed in parens
 ////   
 ////   -- expect the following: 
 ////      -- close bracket        (end of vlist)                 -- consumed before return  
 ////      -- literal value        (positional parm)
 ////      -- keyword              (keyword with literal name)
 ////      -- open dot bracket     (keyword with name that needs evaluation)
-////      -- open paren           (nested vexpr)                 -- becomes positional parm (to be evaluated and replaced by results later)
+////      -- open paren           (nested expression)            -- becomes positional parm (to be evaluated and replaced by results later)
 ////      -- open bracket         (nested vlist)                 -- becomes positional parm
 ////      -- open brace           (nested slist)                 -- becomes positional parm -- passed to verb with no evaluation
 ////
@@ -2289,7 +2321,7 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-static int get_nested_vlist(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_S& vlist) try
+static int get_nested_vlist(frame_S& frame, pre_parse_C& pp, a_expression_S& expression, vlist_S& vlist) try
 {    
     // make sure vlist is not already in use
 
@@ -2310,7 +2342,7 @@ static int get_nested_vlist(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, v
 
     for(;;)
     {
-        // look at next token -- end immediately (perhaps with empty vexpr), if error or unexpected end 
+        // look at next token -- end immediately (perhaps with empty expression), if error or unexpected end 
 
         token_C token; 
 
@@ -2343,10 +2375,10 @@ static int get_nested_vlist(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, v
                                                        
             // pass back empty vlist with best guess for starting and ending token index
  
-            vlist = vlist_S {};                  //  return empty vlist 
-            vlist.token_ix1 = token_ix1;         //  set starting token index
-            vlist.token_ix2 = static_N::token_ix;//  set ending token index
-            return -1;                           //  leave unexpected token (END) unconsumed for next time
+            vlist = vlist_S {};                                                    //  return empty vlist 
+            vlist.token_ix1 = token_ix1;                                           //  set starting token index
+            vlist.token_ix2 = static_N::token_ix;                                  //  set ending token index
+            return -1;                                                             //  leave unexpected token (END) unconsumed for next time
         }           
 
         M__(token.display(L"get_nested_vlist()");) 
@@ -2356,11 +2388,11 @@ static int get_nested_vlist(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, v
 
         if (token.utype2 == tok_u2_E::close_bracket)
         {
-            vexpr_add_token(vexpr, token);       // add to token list for this vexpr  
-            discard_token(pp);                   // get rid of closing bracket 
-            vlist.token_ix1 = token_ix1;         // set starting token index
-            vlist.token_ix2 = static_N::token_ix;// set ending token index
-            return 0;                            // pass back whatever has already been accumulated in output vlist
+            expression_add_token(expression, token);                                // add to token list for this expression  
+            discard_token(pp);                                                      // get rid of closing bracket 
+            vlist.token_ix1 = token_ix1;                                            // set starting token index
+            vlist.token_ix2 = static_N::token_ix;                                   // set ending token index
+            return 0;                                                               // pass back whatever has already been accumulated in output vlist
         }    
 
 
@@ -2382,31 +2414,31 @@ static int get_nested_vlist(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, v
             (token.utype2 == tok_u2_E::identifier)
            )
         {
-            auto rc = get_vlist_value(frame, pp, vexpr, vlist, token);     // pass through all parms
-            if (rc != 0) 
-            {
-                vlist.token_ix1 = token_ix1;                               // set starting token index
-                vlist.token_ix2 = static_N::token_ix;                      // set ending token index
-                return rc;                                                 // just return with error -- get_vlist_value() does all needed error processing    
+            auto rc = get_vlist_value(frame, pp, expression, vlist, token);         // pass through all parms
+            if (rc != 0)                                                           
+            {                                                                      
+                vlist.token_ix1 = token_ix1;                                        // set starting token index
+                vlist.token_ix2 = static_N::token_ix;                               // set ending token index
+                return rc;                                                          // just return with error -- get_vlist_value() does all needed error processing    
             }
             continue;
         }
 
 
-        // unexpected token seen -- pass back vexpr, as-is, after complaining  (includes semicolons, close_brace, etc.
+        // unexpected token seen -- pass back expression, as-is, after complaining  (includes semicolons, close_brace, etc.
 
         count_error();
         M_out_emsg1(L"get_nested_vlist(): Unexpected token « %s » seen in nested vlist") % token.orig_str; 
-        display_vexpr(vexpr, L"bad-token");
+        display_expression(expression, L"bad-token");
         token.display(L"bad-token", true);
         display_vlist(vlist, L"incomplete vlist");
         M_out_emsg2(L"Passing back empty vlist in place of incomplete vlist");
 
-        vlist = vlist_S {};                                                // return empty vlist
-        vlist.token_ix1 = token_ix1;                                       // set starting token index
-        vlist.token_ix2 = static_N::token_ix;                              // set ending token index
-                                                                         
-        return -1;                                                         // don't discard unexpected token -- leave for next caller to consume  
+        vlist = vlist_S {};                                                          // return empty vlist
+        vlist.token_ix1 = token_ix1;                                                 // set starting token index
+        vlist.token_ix2 = static_N::token_ix;                                        // set ending token index
+                                                                                   
+        return -1;                                                                   // don't discard unexpected token -- leave for next caller to consume  
                           // ================
     }                     // end of main loop 
                           // ================
@@ -2602,9 +2634,9 @@ void add_keyword_value(vlist_S& vlist, const value_S& kw_name, const value_S& kw
 
     // set flag if this value is an identifier or anything else than needs evaluation 
 
-         if (kw_value.ty == type_E::identifier) vlist.kw_identifier = true; 
-    else if (kw_value.ty == type_E::vexpr     ) vlist.kw_vexpr      = true; 
-    else if (kw_value.ty == type_E::vlist     ) vlist.kw_vlist      = true; 
+         if (kw_value.ty == type_E::identifier    ) vlist.kw_identifier = true; 
+    else if (kw_value.ty == type_E::expression    ) vlist.kw_expression = true; 
+    else if (kw_value.ty == type_E::vlist         ) vlist.kw_vlist      = true; 
 
     return; 
 }
@@ -2667,7 +2699,7 @@ void add_positional_value(vlist_S& vlist, const value_S& value, bool update_toke
     else if (value.ty == type_E::string     ) vlist.val_string      = true;
     else if (value.ty == type_E::identifier ) vlist.val_identifier  = true;
     else if (value.ty == type_E::vlist      ) vlist.val_vlist       = true;
-    else if (value.ty == type_E::vexpr      ) vlist.val_vexpr       = true;
+    else if (value.ty == type_E::expression ) vlist.val_expression  = true;
     else if (value.ty == type_E::slist      ) vlist.val_slist       = true;
     else if (value.ty == type_E::verbdef    ) vlist.val_verbdef     = true;
     else if (value.ty == type_E::typdef     ) vlist.val_typdef      = true; 
@@ -2701,7 +2733,7 @@ void add_positional_value(vlist_S& vlist, const value_S& value, bool update_toke
     if (vlist.val_float64      ) type_ct++; 
     if (vlist.val_string       ) type_ct++; 
     if (vlist.val_vlist        ) type_ct++;
-    if (vlist.val_vexpr        ) type_ct++;
+    if (vlist.val_expression   ) type_ct++;
     if (vlist.val_slist        ) type_ct++; 
     if (vlist.val_verbdef      ) type_ct++; 
     if (vlist.val_typdef       ) type_ct++; 
@@ -2740,7 +2772,7 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-static int get_keyword(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_S& vlist) try
+static int get_keyword(frame_S& frame, pre_parse_C& pp, a_expression_S& expression, vlist_S& vlist) try
 {
     // get next token in stream, and check for end or errors -- should be the keyword itself -- end not expected
 
@@ -2763,36 +2795,36 @@ static int get_keyword(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_
     {
         // build atomic (string) value from simple keyword name token
 
-        set_atom_token(kw_name, kw_token, kw_token_ix);             // save away simple keyword name token 
+        set_atom_token(kw_name, kw_token, kw_token_ix);                       // save away simple keyword name token 
 
 
-        // add this token to vexpr token list and discard it from the token stream
+        // add this token to expression token list and discard it from the token stream
 
-        vexpr_add_token(vexpr, kw_token);                           // add keyword token to vexpr token list 
-        discard_token(pp);                                          // get rid of keyword token, so value can be peek()ed      
+        expression_add_token(expression, kw_token);                           // add keyword token to expression token list 
+        discard_token(pp);                                                    // get rid of keyword token, so value can be peek()ed      
     }   
 
     // handle keyword name expression
 
     else if (kw_token.utype2 == tok_u2_E::open_keyname_bracket)
     {
-        // handle keyword-name expression --  <. keyword-name vexpr .> 
+        // handle keyword-name expression --  <. keyword-name expression .> 
 
-        a_vexpr_S kwname_vexpr { };                                  // local a_vexpr_S (in autodata) for gathering up verb_vexpr
+        a_expression_S kwname_expression { };                                  // local a_expression_S (in autodata) for gathering up verb_expression
+                                                                              
+        expression_add_token(kwname_expression, kw_token);                     // put open dot bracket on token stack for kw_expression 
+        int64_t ix1 = static_N::token_ix;                                      // get starting token index for keyword name
+        discard_token(pp);                                                     // get rid of open_keyname_bracket token before calling get_nested_kwname_expression()
 
-        vexpr_add_token(kwname_vexpr, kw_token);                     // put open dot bracket on token stack for kw_vexpr 
-        int64_t ix1 = static_N::token_ix;                            // get starting token index for keyword name
-        discard_token(pp);                                           // get rid of open_keyname_bracket token before calling get_nested_kwname_vexpr()
-
-        auto grc = get_nested_kwname_vexpr(frame, pp, kwname_vexpr); // fill in local kwname_vexpr  -- will consume ending close_keyname_bracket 
+        auto grc = get_nested_kwname_expression(frame, pp, kwname_expression); // fill in local kwname_expression  -- will consume ending close_keyname_bracket 
         if (grc != 0)
-            return grc;                                              // pass back error -- let caller handle error appropriately   
-
-        int64_t ix2 = static_N::token_ix;                            // get ending token index
-        set_vexpr_value(kw_name, kwname_vexpr, true);                // move OK -- kwname_vexpr no longer needed
-        kw_name.token_ix1    = ix1;                                  // save away starting token index
-        kw_name.token_ix2    = ix2;                                  // save away ending   token index
-        kw_name.kw_token_ix  = kw_token_ix;                          // save away keyword value token starting index  ???????
+            return grc;                                                        // pass back error -- let caller handle error appropriately   
+                                                                              
+        int64_t ix2 = static_N::token_ix;                                      // get ending token index
+        set_expression_value(kw_name, kwname_expression, true);                        // move OK -- kwname_expression no longer needed
+        kw_name.token_ix1    = ix1;                                            // save away starting token index
+        kw_name.token_ix2    = ix2;                                            // save away ending   token index
+        kw_name.kw_token_ix  = kw_token_ix;                                    // save away keyword value token starting index  ???????
     }   
 
     // error -- unexpected token seen instead of keyword name of start of keyword name expression
@@ -2802,7 +2834,7 @@ static int get_keyword(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_
         count_error();
         M_out_emsg1(L"get_keyword(): Unexpected token « %s » seen -- expecting keyword name token or open_keyname_bracket token") % kw_token.orig_str; 
         kw_token.display();
-        display_vexpr(vexpr, L"unexpected token");
+        display_expression(expression, L"unexpected token");
         M_out_emsgz();
         return -1;
     }
@@ -2816,9 +2848,9 @@ static int get_keyword(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_
     //
     //   value token                  -- value for the keyword is the value token (consume token)
     //   identifier token             -- value for the keyword is the name of the identifier token (consume token)
-    //   open paren                   -- value for this keyword is an vexpr (expression with verbs) 
+    //   open paren                   -- value for this keyword is an expression (expression with verbs) 
     //   open bracket                 -- value for this keyword is a vlist (with 0-N values)
-    //   open brace                   -- value for this keyword is an slist (with 0-N vexprs)
+    //   open brace                   -- value for this keyword is an slist (with 0-N expressions/statements)
     //   END                          -- value for this keyword is nval (don't consume token)
     //   another keyword              -- value for this keyword is nval (don't consume token)
     //   another open_keyname_bracket -- value for this keyword is nval (don't consume token)
@@ -2847,28 +2879,28 @@ static int get_keyword(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_
          (value_token.utype2 == tok_u2_E::identifier)                // value for this keyword is an identifier name (treat as atomic value) 
        )
     {
-        vexpr_add_token(vexpr, value_token);                         // add value token to vexpr tokens list 
+        expression_add_token(expression, value_token);               // add value token to expression tokens list 
         set_atom_token(kw_value, value_token, static_N::token_ix);   // value token is already available
         kw_value.kw_token_ix = kw_token_ix;                          // save away keyword token index
         discard_token(pp);                                           // get rid of value token, so next token can be peek()ed   
     }
 
-    // handle keyword value = nested vexpr 
+    // handle keyword value = nested expression 
 
-    else if (value_token.utype2 == tok_u2_E::open_paren)             // should be a (nested) vexpr as the keyword value 
+    else if (value_token.utype2 == tok_u2_E::open_paren)             // should be a (nested) expression as the keyword value 
     {                                                             
-        a_vexpr_S new_vexpr {};                                     
+        a_expression_S new_expression {};                                     
                                                                   
-        vexpr_add_token(new_vexpr, value_token);                     // put open paren on token stack for new vexpr 
+        expression_add_token(new_expression, value_token);           // put open paren on token stack for new expression 
         int64_t ix1 = static_N::token_ix;                            // get starting token index
-        discard_token(pp);                                           // get_nested_vexpr() does not want open paren -- will consume matching close paren 
+        discard_token(pp);                                           // get_nested_expression() does not want open paren -- will consume matching close paren 
                                                                   
-        auto grc = get_nested_vexpr(frame, pp, new_vexpr);           // tokens for the nested vexpr don't go into current vexpr's token list  -- should consume ending paren
+        auto grc = get_nested_expression(frame, pp, new_expression); // tokens for the nested expression don't go into current expression's token list  -- should consume ending paren
         if (grc != 0)                                             
            return grc;                                               // pass back error -- let caller handle error appropriately 
                                                                   
         int64_t ix2 = static_N::token_ix;                            // get ending token index
-        set_vexpr_value(kw_value, new_vexpr, true);                  // move OK -- new_vexpr no longer needed
+        set_expression_value(kw_value, new_expression, true);                // move OK -- new_expression no longer needed
         kw_value.token_ix1    = ix1;                                 // save away starting token index
         kw_value.token_ix2    = ix2;                                 // save away ending   token index
         kw_value.kw_token_ix  = kw_token_ix;                         // save away keyword value token starting index
@@ -2879,13 +2911,13 @@ static int get_keyword(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_
     else if (value_token.utype2 == tok_u2_E::open_brace)             // should be a (nested) slist as the keyword value 
     {                                                               
         slist_S new_slist {};                                       
-        a_vexpr_S  dummy_vexpr {};                                    
+        a_expression_S  dummy_expression {};                                    
                                                                     
-        vexpr_add_token(dummy_vexpr, value_token);                   // put open brace on dummy token stack for new vexpr 
+        expression_add_token(dummy_expression, value_token);         // put open brace on dummy token stack for new expression 
         int64_t ix1 = static_N::token_ix;                            // get starting token index
         discard_token(pp);                                           // get_nested_slist() does not want open brace -- will consume matching close brace 
                                                                     
-        auto grc = get_nested_slist(frame, pp, new_slist);           // tokens for the nested vexpr don't go into current vexpr's token list  -- should consume ending brace
+        auto grc = get_nested_slist(frame, pp, new_slist);           // tokens for the nested expression don't go into current expression's token list  -- should consume ending brace
         if (grc != 0)                                               
            return grc;                                               // pass back error -- let caller handle error appropriately 
                                                                     
@@ -2902,11 +2934,11 @@ static int get_keyword(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_
     {                                                               
         vlist_S new_vlist {};                                       
                                                                     
-        vexpr_add_token(vexpr, value_token);                         // put open bracket on token stack for new vexpr 
+        expression_add_token(expression, value_token);               // put open bracket on token stack for new expression 
         int64_t ix1 = static_N::token_ix;                            // get starting token index
         discard_token(pp);                                           // get rid of open bracket before calling get_nested_vlist()
 
-        auto grc = get_nested_vlist(frame, pp, vexpr, new_vlist);   // should consume ending bracket
+        auto grc = get_nested_vlist(frame, pp, expression, new_vlist);   // should consume ending bracket
         if (grc != 0)
            return grc;                                               // pass back error -- let caller handle error appropriately 
                                                                    
@@ -2922,7 +2954,7 @@ static int get_keyword(frame_S& frame, pre_parse_C& pp, a_vexpr_S& vexpr, vlist_
     else                                                             // any other token
     {
         // no value for this keyword -- nval value_S will be added down below
-        // stopping token is not consumed (or added to passed-in vexpr token-list) 
+        // stopping token is not consumed (or added to passed-in expression token-list) 
       
         kw_value = nval_val();
         kw_value.kw_token_ix = kw_token_ix;                          // save away keyword token index in value_S
@@ -3143,7 +3175,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   verb_loc_str() -- return printable location of start and end of verb in vexpr in input source 
+////   verb_loc_str() -- return printable location of start and end of verb in expression in input source 
 ////
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -3151,16 +3183,16 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-std::wstring verb_loc_str(const a_vexpr_S& vexpr) try
+std::wstring verb_loc_str(const a_expression_S& expression) try
 {
-    return loc_str(vexpr.verb_value.token_ix1, vexpr.verb_value.token_ix2);      
+    return loc_str(expression.verb_value.token_ix1, expression.verb_value.token_ix2);      
 }
 M_endf
 
 M_EX_IMPEXP                                                          // usable via of ex_interface.h
-std::wstring verb_loc_str(const e_vexpr_S& eval_vexpr) try
+std::wstring verb_loc_str(const e_expression_S& eval_expression) try
 {
-    return loc_str(eval_vexpr.verb_token_ix1, eval_vexpr.verb_token_ix2);      
+    return loc_str(eval_expression.verb_token_ix1, eval_expression.verb_token_ix2);      
 }
 M_endf
 
@@ -3172,7 +3204,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   vexpr_loc_str() -- return printable location of start and end of vexpr in input source 
+////   expression_loc_str() -- return printable location of start and end of expression in input source 
 ////
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -3180,16 +3212,16 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-std::wstring vexpr_loc_str(const a_vexpr_S& vexpr) try
+std::wstring expression_loc_str(const a_expression_S& expression) try
 {
-    return loc_str(vexpr.token_ix1, vexpr.token_ix2);   
+    return loc_str(expression.token_ix1, expression.token_ix2);   
 }
 M_endf
 
 M_EX_IMPEXP                                                          // usable via of ex_interface.h
-std::wstring vexpr_loc_str(const e_vexpr_S& eval_vexpr) try
+std::wstring expression_loc_str(const e_expression_S& eval_expression) try
 {
-    return loc_str(eval_vexpr.token_ix1, eval_vexpr.token_ix2);   
+    return loc_str(eval_expression.token_ix1, eval_expression.token_ix2);   
 }
 M_endf
 
@@ -3202,15 +3234,15 @@ M_endf
 ////   functions to add location data to error messages
 ////   ------------------------------------------------
 ////
-////   msg_loc(xx_vexpr_S          ) -- put out part of an error message with verb and vexpr location 
-////   msg_loc(value_S, xx_vexpr_S ) -- put out part of an error message with value, verb, and vexpr location 
-////   msg_loc(value_S             ) -- put out part of an error message with value location 
-////   msg_loc(value_S, string     ) -- put out part of an error message with value location -- use passed-in text instead of "value"  
-////   msg_loc(vlist_S             ) -- put out part of an error message with vlist location 
+////   msg_loc(xx_expression_S          ) -- put out part of an error message with verb and expression location 
+////   msg_loc(value_S, xx_expression_S ) -- put out part of an error message with value, verb, and expression location 
+////   msg_loc(value_S                  ) -- put out part of an error message with value location 
+////   msg_loc(value_S, string          ) -- put out part of an error message with value location -- use passed-in text instead of "value"  
+////   msg_loc(vlist_S                  ) -- put out part of an error message with vlist location 
 ////
 ////   note: msgend_xxx() versions also close out the open multi-line error message
 ////
-////   msg_kw_loc(value_S          ) -- put out part of an error message with keyword value location (can't overload, since input type is same as regular value)  
+////   msg_kw_loc(value_S               ) -- put out part of an error message with keyword value location (can't overload, since input type is same as regular value)  
 ////   
 ////_________________________________________________________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
@@ -3250,60 +3282,60 @@ M_endf
 
 
 
-void msg_loc(const a_vexpr_S& vexpr) try
+void msg_loc(const a_expression_S& expression) try
 {
-    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %  verb_loc_str(vexpr);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % vexpr_loc_str(vexpr);     
+    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %       verb_loc_str(expression);
+    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % expression_loc_str(expression);     
 }
 M_endf
 
 
 
 M_EX_IMPEXP                                                          // usable outside of ex_dll, via ex_interface.h
-void msg_loc(const e_vexpr_S& vexpr) try
+void msg_loc(const e_expression_S& expression) try
 {
-    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %  verb_loc_str(vexpr);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % vexpr_loc_str(vexpr);        
+    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %       verb_loc_str(expression);
+    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % expression_loc_str(expression);        
 }
 M_endf
 
 
 
-void msg_loc(const value_S& value, const a_vexpr_S& vexpr) try
+void msg_loc(const value_S& value, const a_expression_S& expression) try
 {
-    M_out(L"%20s location -- %s" ) % std::wstring { L"value"      } % value_loc_str(value);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %  verb_loc_str(vexpr);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % vexpr_loc_str(vexpr);     
+    M_out(L"%20s location -- %s" ) % std::wstring { L"value"      } %      value_loc_str(value     );
+    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %       verb_loc_str(expression);
+    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % expression_loc_str(expression);     
 }
 M_endf
 
 
 
-void msg_loc(const value_S& value, const e_vexpr_S& vexpr) try
+void msg_loc(const value_S& value, const e_expression_S& expression) try
 {
-    M_out(L"%20s location -- %s" ) % std::wstring { L"value"      } % value_loc_str(value);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %  verb_loc_str(vexpr);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % vexpr_loc_str(vexpr);     
+    M_out(L"%20s location -- %s" ) % std::wstring { L"value"      } %      value_loc_str(value     );
+    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %       verb_loc_str(expression);
+    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % expression_loc_str(expression);     
 }
 M_endf
 
 
 
-void msg_loc(const vlist_S& vlist, const a_vexpr_S& vexpr) try
+void msg_loc(const vlist_S& vlist, const a_expression_S& expression) try
 {
-    M_out(L"%20s location -- %s" ) % std::wstring { L"vlist"      } % vlist_loc_str(vlist);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %  verb_loc_str(vexpr);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % vexpr_loc_str(vexpr);     
+    M_out(L"%20s location -- %s" ) % std::wstring { L"vlist"      } %      vlist_loc_str(vlist     );
+    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %       verb_loc_str(expression);
+    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % expression_loc_str(expression);     
 }
 M_endf
 
 
 
-void msg_loc(const vlist_S& vlist, const e_vexpr_S& vexpr) try
+void msg_loc(const vlist_S& vlist, const e_expression_S& expression) try
 {
-    M_out(L"%20s location -- %s" ) % std::wstring { L"vlist"      } % vlist_loc_str(vlist);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %  verb_loc_str(vexpr);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % vexpr_loc_str(vexpr);     
+    M_out(L"%20s location -- %s" ) % std::wstring { L"vlist"      } %      vlist_loc_str(vlist     );
+    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %       verb_loc_str(expression);
+    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % expression_loc_str(expression);     
 }
 M_endf
 
@@ -3355,10 +3387,10 @@ void msgend_loc(const vlist_S& vlist, const std::wstring& ws) try
 M_endf
 
 
-void msgend_loc(const a_vexpr_S& vexpr) try
+void msgend_loc(const a_expression_S& expression) try
 {
-    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %  verb_loc_str(vexpr);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % vexpr_loc_str(vexpr);
+    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %       verb_loc_str(expression);
+    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % expression_loc_str(expression);
     M_out_emsgz();
 }
 M_endf
@@ -3366,53 +3398,53 @@ M_endf
 
 
 M_EX_IMPEXP                                                          // usable outside of ex_dll, via ex_interface.h
-void msgend_loc(const e_vexpr_S& vexpr) try
+void msgend_loc(const e_expression_S& expression) try
 {
-    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %  verb_loc_str(vexpr);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % vexpr_loc_str(vexpr);
+    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %       verb_loc_str(expression);
+    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % expression_loc_str(expression);
     M_out_emsgz();
 }
 M_endf
 
 
 
-void msgend_loc(const value_S& value, const a_vexpr_S& vexpr) try
+void msgend_loc(const value_S& value, const a_expression_S& expression) try
 {
-    M_out(L"%20s location -- %s" ) % std::wstring { L"value"      } % value_loc_str(value);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %  verb_loc_str(vexpr);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % vexpr_loc_str(vexpr);
+    M_out(L"%20s location -- %s" ) % std::wstring { L"value"      } %      value_loc_str(value     );
+    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %       verb_loc_str(expression);
+    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % expression_loc_str(expression);
     M_out_emsgz();
 }
 M_endf
 
 
 
-void msgend_loc(const value_S& value, const e_vexpr_S& vexpr) try
+void msgend_loc(const value_S& value, const e_expression_S& expression) try
 {
-    M_out(L"%20s location -- %s" ) % std::wstring { L"value"      } % value_loc_str(value);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %  verb_loc_str(vexpr);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % vexpr_loc_str(vexpr); 
+    M_out(L"%20s location -- %s" ) % std::wstring { L"value"      } %      value_loc_str(value     );
+    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %       verb_loc_str(expression);
+    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % expression_loc_str(expression); 
     M_out_emsgz();
 }
 M_endf
 
 
-void msgend_loc(const vlist_S& vlist, const a_vexpr_S& vexpr) try
+void msgend_loc(const vlist_S& vlist, const a_expression_S& expression) try
 {
-    M_out(L"%20s location -- %s" ) % std::wstring { L"vlist"      } % vlist_loc_str(vlist);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %  verb_loc_str(vexpr);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % vexpr_loc_str(vexpr);
+    M_out(L"%20s location -- %s" ) % std::wstring { L"vlist"      } %      vlist_loc_str(vlist     );
+    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %       verb_loc_str(expression);
+    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % expression_loc_str(expression);
     M_out_emsgz();
 }
 M_endf
 
 
 
-void msgend_loc(const vlist_S& vlist, const e_vexpr_S& vexpr) try
+void msgend_loc(const vlist_S& vlist, const e_expression_S& expression) try
 {
-    M_out(L"%20s location -- %s" ) % std::wstring { L"vlist"      } % vlist_loc_str(vlist);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %  verb_loc_str(vexpr);
-    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % vexpr_loc_str(vexpr);
+    M_out(L"%20s location -- %s" ) % std::wstring { L"vlist"      } %      vlist_loc_str(vlist     );
+    M_out(L"%20s location -- %s" ) % std::wstring { L"verb"       } %       verb_loc_str(expression);
+    M_out(L"%20s location -- %s" ) % std::wstring { L"expression" } % expression_loc_str(expression);
     M_out_emsgz();
 }
 M_endf

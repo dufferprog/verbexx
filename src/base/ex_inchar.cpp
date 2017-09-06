@@ -1082,8 +1082,8 @@ M_endf
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void char_stream_C::set_digraph_char(      char32_t   ch32      ) try { m_digraph_char     = ch32  ;                                                                                    return; } M_endf
-void char_stream_C::set_process_digraphs(  bool       tf        ) try { m_process_digraphs = tf    ; M__(M_out(L"char_stream_C::set_process_digraphs(%d) -- called") % (int)tf;)        return; } M_endf
+void char_stream_C::set_trigraph_char(      char32_t   ch32     ) try { m_trigraph_char      = ch32  ;                                                                                    return; } M_endf
+void char_stream_C::set_process_trigraphs(  bool       tf       ) try { m_process_trigraphs  = tf   ; M__(M_out(L"char_stream_C::set_process_trigraphs(%d) -- called") % (int)tf;)       return; } M_endf
 
 
 
@@ -1163,7 +1163,7 @@ M_endf
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-// get_source_char() -- obtain next character from file or string source (does digraph processing)  
+// get_source_char() -- obtain next character from file or string source (does trigraph processing)  
 // -----------------
 //
 //
@@ -1195,83 +1195,127 @@ int char_stream_C::get_source_char(in_char_S& in_char)  try
         return -1; 
     }
     
-    // get next raw char from input source
-    // -----------------------------------
+
+    // get next raw char from input source, and peek the following char 
+    // ----------------------------------------------------------------
 
     int rc;
+    in_char_S peek_char  { }; 
         
-    if (m_in_file_p != nullptr)        
-        rc = m_in_file_p->get_char(in_char);   // should always return a char, even if error seen and R/C = -1  
-    else
-        rc = m_in_string_p->get_char(in_char); // should always return a char, even if error seen and R/C = -1 
-    
+    if (m_in_file_p != nullptr)
+    {
+        rc = m_in_file_p->get_char(in_char);                        // get and  consume 1st char -- should always return a char, even if error seen and R/C = -1 
 
-    // handle digraph case  (if rc from above is non-0, shouldn't have digraph char in_char)
-    // -------------------
+        if (m_process_trigraphs)
+            rc = m_in_file_p->get_char(peek_char, false);           // peek 2nd char             -- should always return a char, even if error seen and R/C = -1  (overlays rc from 1st call) 
+    }
+    else
+    {
+        rc = m_in_string_p->get_char(in_char);                      // get and  consume 1st char -- should always return a char, even if error seen and R/C = -1 
+
+        if (m_process_trigraphs)
+            rc = m_in_string_p->get_char(peek_char, false);         // peek 2nd char             -- should always return a char, even if error seen and R/C = -1  (overlays rc from 1st call) 
+    }
+ 
+    
+    // handle trigraph case  (if rc from above is non-0, shouldn't have trigraph char in_char)  -- note 1st trigraph char is consumed, but not the 2nd (which was peek()ed)
+    // --------------------
 
     if  (
-         (in_char.ch32 == m_digraph_char)
+         m_process_trigraphs
          &&
-         m_process_digraphs
+         (in_char.ch32   == m_trigraph_char)
+         &&
+         (peek_char.ch32 == m_trigraph_char)
         )
     {
-        M__(M_out(L"char_stream_C::get_source_char() -- digraph char seen");)
+        M__(M_out(L"char_stream_C::get_source_char() -- trigraph char seen");)
     
-        // save away info and position of digraph char (for debugging)  -- call to get_char() below will overlay this info with info for following char 
 
-        in_char.linepos_digraph = in_char.linepos;
-        in_char.ch32_digraph    = in_char.ch32;
-        in_char.wch1_digraph    = in_char.wch1;
-        in_char.wch2_digraph    = in_char.wch2;
-        in_char.digraph_count   = 1;
+        // save away info and position of trigraph char (for debugging)  -- call to get_char() below will overlay this info with info for following char 
+
+        in_char.linepos_trigraph = in_char.linepos;
+        in_char.ch32_trigraph    = in_char.ch32;
+        in_char.wch1_trigraph    = in_char.wch1;
+        in_char.wch2_trigraph    = in_char.wch2;
+        in_char.trigraph_count   = 1;
 
 
-        // get char following the digraph char (if any)
+        // consume second trigraph char, and get char following the two trigraph chars (if any)
 
-        if (m_in_file_p != nullptr)        
-            rc = m_in_file_p->get_char(in_char);   // should always return a char, even if error seen and R/C = -1  
+        if (m_in_file_p != nullptr) 
+        {
+            rc = m_in_file_p->get_char(in_char);   // should always return a char, even if error seen and R/C = -1 -- consume peek()ed 2nd trigraph char  (this R/C will get overlaid with next call)
+            rc = m_in_file_p->get_char(in_char);   // should always return a char, even if error seen and R/C = -1 -- replace it with char after the trigraph chars 
+        }
         else
-            rc = m_in_string_p->get_char(in_char); // should always return a char, even if error seen and R/C = -1 
+        {
+            rc = m_in_string_p->get_char(in_char); // should always return a char, even if error seen and R/C = -1  -- consume peek()ed 2nd trigraph char (this R/C will get overlaid with next call)
+            rc = m_in_string_p->get_char(in_char); // should always return a char, even if error seen and R/C = -1  -- replace it with char after the trigraph chars 
+        }
 
 
-        // save away 2nd char info before digraph processing
+        // save away 3rd char info before doing any trigraph substitution processing
 
         in_char.ch32_orig    = in_char.ch32;
         in_char.wch1_orig    = in_char.wch1;
         in_char.wch2_orig    = in_char.wch2;
 
 
-        // replace raw char following the digraph char with altered code point  
+        // replace input UTF-32 char following the 2nd trigraph char with substituted UTF-32 code point -- note: combining characters not supported 
+        // ----------------------------------------------------------------------------------------------------------------------------------------
         
         switch (in_char.ch32)
         {
-            case utf32_N::APOSTROPHE                :        in_char.ch32 = utf32_N::ACUTE_ACCENT                                ;   break;       //        `'   replaced with ´       -- escape char in type-2 strings
-            case utf32_N::LESS_THAN_SIGN            :        in_char.ch32 = utf32_N::LEFT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK   ;   break;       //        `<   replaced with «       -- start  char in type-2 strings
-            case utf32_N::GREATER_THAN_SIGN         :        in_char.ch32 = utf32_N::RIGHT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK  ;   break;       //        `>   replaced with »       -- end    char in type-2 strings
-            case utf32_N::TILDE                     :        in_char.ch32 = utf32_N::NOT_SIGN                                    ;   break;       //        `~   replaced with ¬       -- used in ¬= etc.
-                                                                                                                                 
-            case utf32_N::LATIN_SMALL_LETTER_C      :        in_char.ch32 = utf32_N::CENT_SIGN                                   ;   break;       //        `c   replaced with ¢       -- for use in strings
-            case utf32_N::DIGIT_FOUR                :        in_char.ch32 = utf32_N::VULGAR_FRACTION_ONE_QUARTER                 ;   break;       //        `4   replaced with ¼       -- for use in strings
-            case utf32_N::DIGIT_TWO                 :        in_char.ch32 = utf32_N::VULGAR_FRACTION_ONE_HALF                    ;   break;       //        `2   replaced with ½       -- for use in strings
-            case utf32_N::DIGIT_THREE               :        in_char.ch32 = utf32_N::VULGAR_FRACTION_THREE_QUARTERS              ;   break;       //        `3   replaced with ¾       -- for use in strings
-     
-        
+            case const_N::ch_trigraph_in_01  :  in_char.ch32 = const_N::ch_trigraph_out_01 ;   break;     
+            case const_N::ch_trigraph_in_02  :  in_char.ch32 = const_N::ch_trigraph_out_02 ;   break;     
+            case const_N::ch_trigraph_in_03  :  in_char.ch32 = const_N::ch_trigraph_out_03 ;   break;     
+            case const_N::ch_trigraph_in_04  :  in_char.ch32 = const_N::ch_trigraph_out_04 ;   break; 
+            case const_N::ch_trigraph_in_05  :  in_char.ch32 = const_N::ch_trigraph_out_05 ;   break;     
+            case const_N::ch_trigraph_in_06  :  in_char.ch32 = const_N::ch_trigraph_out_06 ;   break;     
+            case const_N::ch_trigraph_in_07  :  in_char.ch32 = const_N::ch_trigraph_out_07 ;   break;     
+            case const_N::ch_trigraph_in_08  :  in_char.ch32 = const_N::ch_trigraph_out_08 ;   break;     
+            case const_N::ch_trigraph_in_09  :  in_char.ch32 = const_N::ch_trigraph_out_09 ;   break; 
+            case const_N::ch_trigraph_in_10  :  in_char.ch32 = const_N::ch_trigraph_out_10 ;   break; 
+            case const_N::ch_trigraph_in_11  :  in_char.ch32 = const_N::ch_trigraph_out_11 ;   break; 
+            case const_N::ch_trigraph_in_12  :  in_char.ch32 = const_N::ch_trigraph_out_12 ;   break; 
+            case const_N::ch_trigraph_in_13  :  in_char.ch32 = const_N::ch_trigraph_out_13 ;   break; 
+            case const_N::ch_trigraph_in_14  :  in_char.ch32 = const_N::ch_trigraph_out_14 ;   break; 
+            case const_N::ch_trigraph_in_15  :  in_char.ch32 = const_N::ch_trigraph_out_15 ;   break; 
+            case const_N::ch_trigraph_in_16  :  in_char.ch32 = const_N::ch_trigraph_out_16 ;   break;
+            case const_N::ch_trigraph_in_17  :  in_char.ch32 = const_N::ch_trigraph_out_17 ;   break;     
+            case const_N::ch_trigraph_in_18  :  in_char.ch32 = const_N::ch_trigraph_out_18 ;   break;     
+            case const_N::ch_trigraph_in_19  :  in_char.ch32 = const_N::ch_trigraph_out_19 ;   break; 
+            case const_N::ch_trigraph_in_20  :  in_char.ch32 = const_N::ch_trigraph_out_20 ;   break; 
+            case const_N::ch_trigraph_in_21  :  in_char.ch32 = const_N::ch_trigraph_out_21 ;   break; 
+            case const_N::ch_trigraph_in_22  :  in_char.ch32 = const_N::ch_trigraph_out_22 ;   break; 
+            case const_N::ch_trigraph_in_23  :  in_char.ch32 = const_N::ch_trigraph_out_23 ;   break; 
+            case const_N::ch_trigraph_in_24  :  in_char.ch32 = const_N::ch_trigraph_out_24 ;   break; 
+            case const_N::ch_trigraph_in_25  :  in_char.ch32 = const_N::ch_trigraph_out_25 ;   break; 
+            case const_N::ch_trigraph_in_26  :  in_char.ch32 = const_N::ch_trigraph_out_26 ;   break;
+            case const_N::ch_trigraph_in_27  :  in_char.ch32 = const_N::ch_trigraph_out_27 ;   break;     
+            case const_N::ch_trigraph_in_28  :  in_char.ch32 = const_N::ch_trigraph_out_28 ;   break;     
+            case const_N::ch_trigraph_in_29  :  in_char.ch32 = const_N::ch_trigraph_out_29 ;   break; 
+            case const_N::ch_trigraph_in_30  :  in_char.ch32 = const_N::ch_trigraph_out_30 ;   break; 
+            case const_N::ch_trigraph_in_31  :  in_char.ch32 = const_N::ch_trigraph_out_31 ;   break; 
+            case const_N::ch_trigraph_in_32  :  in_char.ch32 = const_N::ch_trigraph_out_32 ;   break; 
 
-            // handle error cases -- unexpected data following digraph character (or another digraph char)
-            // -------------------------------------------------------------------------------------------
+
+            // handle error cases -- unexpected data following 2nd trigraph character (or another trigraph char)
+            // -------------------------------------------------------------------------------------------------
            
             default :             
-                if (in_char.ch32 != m_digraph_char)                 // just map 2nd digraph char to itself
+                if (in_char.ch32 != m_trigraph_char)                 // just map 3rd trigraph char to itself
                 {
                     if (in_char.classs != char_E::normal)
                     {
-                        M_out_emsg(L"char_stream_C::get_source_char() --  end-of-line, end-of_input, or I/O error (in_char_S.classs=%d) seen right after digraph character ('%c') -- source=(%d) = «%S»   lineno=%d linepos=%d")
-                        % (int)(in_char.classs) % (wchar_t)(in_char.ch32_digraph) % in_char.source_id % get_cached_id(in_char.source_id) % in_char.lineno % in_char.linepos; 
+                        M_out_emsg(L"char_stream_C::get_source_char() --  end-of-line, end-of_input, or I/O error (in_char_S.classs=%d) seen right after trigraph characters (%c%c) -- source=(%d) = «%S»   lineno=%d linepos=%d")
+                        % (int)(in_char.classs) % (wchar_t)(in_char.ch32_trigraph) % (wchar_t)(in_char.ch32_trigraph) % in_char.source_id % get_cached_id(in_char.source_id) % in_char.lineno % in_char.linepos; 
                     }
                     else
                     {
-                        M_out_emsg(L"char_stream_C::get_source_char() --  unsupported char '%c' following digraph char ('%c') -- source_id=(%d) = «%S»    lineno=%d linepos=%d")
-                        % (wchar_t)(in_char.ch32) % (wchar_t)(in_char.ch32_digraph) % in_char.source_id % get_cached_id(in_char.source_id) % in_char.lineno % in_char.linepos;
+                        M_out_emsg(L"char_stream_C::get_source_char() --  unsupported char '%c' following trigraph characters (%c%c) -- source_id=(%d) = «%S»    lineno=%d linepos=%d")
+                        % (wchar_t)(in_char.ch32) % (wchar_t)(in_char.ch32_trigraph) % (wchar_t)(in_char.ch32_trigraph) % in_char.source_id % get_cached_id(in_char.source_id) % in_char.lineno % in_char.linepos;
                     }
            
                     in_char.classs = char_E::error;    // pass back error char
@@ -1281,14 +1325,14 @@ int char_stream_C::get_source_char(in_char_S& in_char)  try
         }   
 
 
-        // if no error, update wide chars in in_char_S to match the altered ch32 value from digraph processing 
+        // if no error, update wide chars in in_char_S to match the altered ch32 value from trigraph processing 
         
         if (in_char.classs == char_E::normal)
             to_wchars(in_char.ch32, in_char.wch1, in_char.wch2);
     }
-    else                                                          // not digraph character
+    else                                                          // not trigraph character  -or- not processing trigraphs
     {
-        // inchar_S is already set up with 0's in digraph_count, digraph chars, etc. -- just need to copy orig char fields from final char fields
+        // inchar_S is already set up with 0's in trigraph_count, trigraph chars, etc. -- just need to copy orig char fields from final char fields
 
         in_char.ch32_orig = in_char.ch32; 
         in_char.wch1_orig = in_char.wch1; 
@@ -1299,7 +1343,7 @@ int char_stream_C::get_source_char(in_char_S& in_char)  try
     //  set in_char_S types, subtypes, family, etc. before passing back to upper layers 
     //  -------------------------------------------------------------------------------
 
-    ::char_classify(in_char);                     // set subtype field (based on final results of any digraph processing) 
+    ::char_classify(in_char);                     // set subtype field (based on final results of any trigraph processing) 
     return rc;  
 }
 M_endf
