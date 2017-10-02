@@ -30,7 +30,6 @@
 
 #include "h_ex_interface.h"
 
-#include "h_map_types.h"
 #include "h_map_global.h"
 #include "h_map_parms.h"  
 #include "h_map_verb.h"  
