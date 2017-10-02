@@ -2,15 +2,15 @@
 @ECHO * 
 @ECHO *   setup_17_c64.cmd -- Set up x64 C++ compiler (VS2017)
 @ECHO *
-@ECHO *     -- Boost  1.64        (installed in C:\local directory)
-@ECHO *     -- Python 3.6.2       (installed in c:\local\Python36-32)   
-@ECHO *     -- fftw   3.3.4       (installed in C:\local directory)
+@ECHO *     -- Boost  1.65.1      (installed in C:\local\boost_65_1   directory)    -- note: use lib64-msvc-14.1 (no msvc-15.0 version yet)
+@ECHO *     -- Python 3.6.2       (installed in c:\local\Python36-32  directory)   
+@ECHO *     -- fftw   3.3.4       (installed in C:\local\fftw_3_3_4   directory)
 @ECHO *
 @ECHO ************************************************************************************************************************************************************************************************************************************************************* 
 ::::::::::
-@set    boost_path=C:\local\boost_1_64_0\lib64-msvc-14.1
-@set boost_include=C:\local\boost_1_64_0
-@set     boost_lib=C:\local\boost_1_64_0\lib64-msvc-14.1
+@set    boost_path=C:\local\boost_1_65_1\lib64-msvc-14.1
+@set boost_include=C:\local\boost_1_65_1
+@set     boost_lib=C:\local\boost_1_65_1\lib64-msvc-14.1
 ::::
 @set       py_path=C:\local\Python36-32
 ::::
