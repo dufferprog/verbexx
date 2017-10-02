@@ -8,7 +8,7 @@
 #
 ###################################################################################################
  
-
+                   
 ################### headers #######################################################################
 
 PCH_HDRS = \
@@ -26,12 +26,13 @@ $(INC_DIR_CORE)h_core_template.h \
 $(INC_DIR_CORE)h_core_util.h 
           
 EX_HDR_IF = \
-$(INC_DIR_EX)h_ex_interface.h
+$(INC_DIR_EX)h_ex_interface.h 
 
 EX_HDRS = \
 $(INC_DIR_EX)h_ex_interface.h \
 $(INC_DIR_EX)h_ex_lex.h \
 $(INC_DIR_EX)h_ex_parse.h \
+$(INC_DIR_EX)h_ex_types.h \
 $(INC_DIR_EX)h_ex_verb.h \
 $(INC_DIR_EX)h_ex_verbmac.h 
 

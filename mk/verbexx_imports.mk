@@ -9,7 +9,6 @@
 #
 #  makes for:   map.dll
 #               draw.dll
-#               audio.dll
 #
 #    note: assumes output from verbexx_base.mk is already available  
 # 
@@ -79,12 +78,6 @@ $(OBJ_DIR)map_verb.obj \
 $(OBJ_DIR)map_water.obj   
 
 
-AUDIO_DLL_OBJS = \
-$(OBJ_DIR)audio_dll.obj \
-$(OBJ_DIR)audio.obj \
-$(OBJ_DIR)audio_main.obj
-
-
 ###############################################################################################################################
     
 
@@ -97,11 +90,6 @@ $(LIB_DIR)$(EXNAME)_core.lib \
 $(LIB_DIR)$(EXNAME)_ex.lib \
 $(LIB_DIR)$(EXNAME)_draw.lib
 
-AUDIO_LIBS = \
-$(LIB_DIR)$(EXNAME)_core.lib \
-$(LIB_DIR)$(EXNAME)_ex.lib \
-$(LIB_DIR)$(EXNAME)_draw.lib
-
 
 
 ###############################################################################################################################
@@ -110,8 +98,7 @@ $(LIB_DIR)$(EXNAME)_draw.lib
 
 ALL = \
 $(DLL_DIR)$(EXNAME)_draw.dll \
-$(DLL_DIR)$(EXNAME)_map.dll \
-$(DLL_DIR)$(EXNAME)_audio.dll 
+$(DLL_DIR)$(EXNAME)_map.dll  
 
 
 # show all DLLs in directory
@@ -135,12 +122,6 @@ $(LIB_DIR)map.lib $(DLL_DIR)$(EXNAME)_map.dll        : $(MK) $(PCH_OBJS) $(MAP_D
   $(LINK) $(LFLAGS_DLL)                                      $(PCH_OBJS) $(MAP_DLL_OBJS)     $(IMP_LIBS) $(MAP_LIBS)                 /OUT:$(DLL_DIR)$(EXNAME)_map.dll     /IMPLIB:$(LIB_DIR)$(EXNAME)_map.lib
   $(SEPARATOR) 
 # dumpbin /EXPORTS $(DLL_DIR)$(EXNAME)_map.dll                                       
-
-$(LIB_DIR)audio.lib $(DLL_DIR)$(EXNAME)_audio.dll    : $(MK) $(PCH_OBJS) $(AUDIO_DLL_OBJS)               $(AUDIO_LIBS)
-  $(SEPARATOR)
-  $(LINK) $(LFLAGS_DLL)                                      $(PCH_OBJS) $(AUDIO_DLL_OBJS)   $(IMP_LIBS) $(AUDIO_LIBS)              /OUT:$(DLL_DIR)$(EXNAME)_audio.dll    /IMPLIB:$(LIB_DIR)$(EXNAME)_audio.lib
-  $(SEPARATOR)                                                                                                                                        
-# dumpbin /EXPORTS $(DLL_DIR)$(EXNAME)_audio.dll   
 
 
 ###############################################################################################################################
@@ -224,18 +205,6 @@ $(OBJ_DIR)map_verb.obj      : $(SRC_DIR_IMPORTS)map_verb.cpp       $(MK)  $(PCH_
 
 $(OBJ_DIR)map_water.obj     : $(SRC_DIR_IMPORTS)map_water.cpp      $(MK)  $(PCH_STD) $(COMM_HDRS)               $(MAP_HDRS) 
   $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_IMPORTS)map_water.cpp
- 
-
-############# compile commands for AUDIO_DLL_OBJS ############################################################################## 
-
-$(OBJ_DIR)audio.obj         : $(SRC_DIR_IMPORTS)audio.cpp          $(MK)  $(PCH_STD) $(COMM_HDRS)               $(DRAW_HDRS) $(AUDIO_HDRS)                     
-  $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_IMPORTS)audio.cpp    
- 
-$(OBJ_DIR)audio_dll.obj     : $(SRC_DIR_IMPORTS)audio_dll.cpp      $(MK)  $(PCH_STD) $(COMM_HDRS) $(EX_IF_HDRS) $(DRAW_HDRS) $(AUDIO_HDRS)     
-  $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_IMPORTS)audio_dll.cpp  
-                                                   
-$(OBJ_DIR)audio_main.obj    : $(SRC_DIR_IMPORTS)audio_main.cpp     $(MK)  $(PCH_STD) $(COMM_HDRS) $(EX_IF_HDRS) $(DRAW_HDRS) $(AUDIO_HDRS)     
-  $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_IMPORTS)audio_main.cpp    
 
 
 ################################################################################################################################  

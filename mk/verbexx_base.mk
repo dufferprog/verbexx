@@ -10,7 +10,7 @@
 #           ex.dll
 #
 ####################################################################################################################
-
+                  
 EXNAME = verbexx
 
 !INCLUDE $(EXNAME)_folder.mk
@@ -30,10 +30,10 @@ COMPILE    = cl
 LINK       = link
 SEPARATOR  = @echo ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-CFLAGS           = /Yu /EHa /MD /nologo /O2 /Zm256      /I$(INC_DIR_CORE) /I$(INC_DIR_EX)     /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_std.pch
-CFLAGS_CLR       = /Yu /EHa /MD /nologo /O2 /Zm256 /clr /I$(INC_DIR_CORE)                     /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_clr.pch
-CFLAGS_PCH       = /Yc /EHa /MD         /O2 /Zm256      /I$(INC_DIR_CORE)                     /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_std.pch
-CFLAGS_PCHCLR    = /Yc /EHa /MD         /O2 /Zm256 /clr /I$(INC_DIR_CORE)                     /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_clr.pch   
+CFLAGS           = /Yu /EHa /MD /nologo         /O2 /Zm256      /I$(INC_DIR_CORE) /I$(INC_DIR_EX)     /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_std.pch
+CFLAGS_CLR       = /Yu /EHa /MD /nologo         /O2 /Zm256 /clr /I$(INC_DIR_CORE)                     /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_clr.pch
+CFLAGS_PCH       = /Yc /EHa /MD /showIncludes   /O2 /Zm256      /I$(INC_DIR_CORE)                     /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_std.pch
+CFLAGS_PCHCLR    = /Yc /EHa /MD                 /O2 /Zm256 /clr /I$(INC_DIR_CORE)                     /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_clr.pch   
 
 LFLAGS     = /STACK:2000000000 /NOLOGO /LIBPATH:$(LIB_DIR)      
 LFLAGS_DLL = /STACK:2000000000 /NOLOGO /LIBPATH:$(LIB_DIR) /DLL 
@@ -53,7 +53,9 @@ $(OBJ_DIR)main.obj
 CORE_DLL_OBJS = \
 $(OBJ_DIR)core_dll.obj \
 $(OBJ_DIR)core_clr.obj \
+$(OBJ_DIR)core_error.obj \
 $(OBJ_DIR)core_msdn.obj \
+$(OBJ_DIR)core_sys.obj \
 $(OBJ_DIR)core_util.obj  
 
 
@@ -161,9 +163,15 @@ $(OBJ_DIR)core_clr.obj      : $(SRC_DIR_CORE)core_clr.cpp            $(MK)  $(PC
 $(OBJ_DIR)core_dll.obj      : $(SRC_DIR_CORE)core_dll.cpp            $(MK)  $(PCH_STD) $(COMM_HDRS)               
   $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_CORE)core_dll.cpp  
 
+$(OBJ_DIR)core_error.obj    : $(SRC_DIR_CORE)core_error.cpp          $(MK)  $(PCH_STD) $(COMM_HDRS)
+  $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_CORE)core_error.cpp   
+
 $(OBJ_DIR)core_msdn.obj     : $(SRC_DIR_CORE)core_msdn.cpp           $(MK)  $(PCH_STD) $(COMM_HDRS)
   $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_CORE)core_msdn.cpp
-                                                   
+ 
+$(OBJ_DIR)core_sys.obj      : $(SRC_DIR_CORE)core_sys.cpp            $(MK)  $(PCH_STD) $(COMM_HDRS)
+  $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_CORE)core_sys.cpp   
+                                                  
 $(OBJ_DIR)core_util.obj     : $(SRC_DIR_CORE)core_util.cpp           $(MK)  $(PCH_STD) $(COMM_HDRS)
   $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_CORE)core_util.cpp   
 

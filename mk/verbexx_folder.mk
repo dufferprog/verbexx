@@ -15,10 +15,12 @@ EXDIR  = E:\Data01\program
 SRC_DIR_CORE     = $(EXDIR)\$(EXNAME)\src\base\#
 SRC_DIR_EX       = $(EXDIR)\$(EXNAME)\src\base\#
 SRC_DIR_IMPORTS  = $(EXDIR)\$(EXNAME)\src\imports\#
+SRC_DIR_OTHER    = $(EXDIR)\$(EXNAME)\src\other\#
 
 INC_DIR_CORE     = $(EXDIR)\$(EXNAME)\include\base\#
 INC_DIR_EX       = $(EXDIR)\$(EXNAME)\include\base\#
 INC_DIR_IMPORTS  = $(EXDIR)\$(EXNAME)\include\imports\#
+INC_DIR_OTHER    = $(EXDIR)\$(EXNAME)\include\other\#
 
 OBJ_DIR          = $(EXDIR)\$(EXNAME)\object\#
 PCH_DIR          = $(EXDIR)\$(EXNAME)\pch\#
