@@ -62,7 +62,8 @@
 ////     @STDOUT
 ////     @STDERR
 ////     @STDIN
-////     @INTERPOLATE    
+////     @INTERPOLATE 
+////     @FORMAT
 ////
 ////     @DISPLAY numerics:
 ////              locale: 
@@ -566,7 +567,7 @@ int verb_eval(frame_S& frame, const e_expression_S& expression, const verbdef_S&
     M__(M_out(L"verb_eval() called");)
 
     results = to_results(vlist_val(expression.rparms));                                         // place input vlist in results (should have been evaluated before verb_eval() was called) 
-    results.multiple_results = true;                                                            // indicate that mutiple results are being returned
+    results.multiple_results = true;                                                            // indicate that mutiple results are perhaps being returned
     return 0;
 }
 M_endf
@@ -967,12 +968,11 @@ int verb_type(frame_S& frame, const e_expression_S& expression, const verbdef_S&
 
               value_S offset_value    { };
               value_S skip_value      { };
-              value_S unwanted_value  { };
-
+            
               auto offset_rc = get_vlist_keyword(*(elem.vlist_sp), L"offset", offset_value    );   // get offset:nnnn   (if present)
               auto skip_rc   = get_vlist_keyword(*(elem.vlist_sp), L"skip"  , skip_value      );   // get skip:nnnn     (if present)  
-              auto same_rc   = get_vlist_keyword(*(elem.vlist_sp), L"same"  , unwanted_value  );   // get same:         (if present)
-              auto high_rc   = get_vlist_keyword(*(elem.vlist_sp), L"high"  , unwanted_value  );   // get high:         (if present)
+              auto same_rc   = get_vlist_keyword(*(elem.vlist_sp), L"same"                    );   // get same:         (if present)
+              auto high_rc   = get_vlist_keyword(*(elem.vlist_sp), L"high"                    );   // get high:         (if present)
 
               if (offset_rc == 0)
               {
@@ -1163,7 +1163,7 @@ int verb_to_int8(frame_S& frame, const e_expression_S& expression, const verbdef
     }
 
 
-    // convert arithmetic values with C/C++ casting
+    // convert arithmetic values with C/C++ casting  -- ???????????????????????? need to use get_val() functions instead of casting for integer conversions ?????????????????????????? 
 
     else if (is_value_arithmetic(in_val))
     {
@@ -1218,7 +1218,7 @@ int verb_to_int16(frame_S& frame, const e_expression_S& expression, const verbde
     }
 
 
-    // convert arithmetic values with C/C++ casting
+    // convert arithmetic values with C/C++ casting  -- ???????????????????????? need to use get_val() functions instead of casting for integer conversions ?????????????????????????? 
 
     else if (is_value_arithmetic(in_val))
     {
@@ -1273,7 +1273,7 @@ int verb_to_int32(frame_S& frame, const e_expression_S& expression, const verbde
     }
 
 
-    // convert arithmetic values with C/C++ casting
+    // convert arithmetic values with C/C++ casting     -- ???????????????????????? need to use get_val() functions instead of casting for integer conversions ?????????????????????????? 
 
     else if (is_value_arithmetic(in_val))
     {
@@ -1327,7 +1327,7 @@ int verb_to_int64(frame_S& frame, const e_expression_S& expression, const verbde
     }
 
 
-    // convert arithmetic values with C/C++ casting
+    // convert arithmetic values with C/C++ casting    -- ???????????????????????? need to use get_val() functions instead of casting for integer conversions ?????????????????????????? 
 
     else if (is_value_arithmetic(in_val))
     {
@@ -1382,7 +1382,7 @@ int verb_to_uint8(frame_S& frame, const e_expression_S& expression, const verbde
     }
 
 
-    // convert arithmetic values with C/C++ casting
+    // convert arithmetic values with C/C++ casting    -- ???????????????????????? need to use get_val() functions instead of casting for integer conversions ?????????????????????????? 
 
     else if (is_value_arithmetic(in_val))
     {
@@ -1437,7 +1437,7 @@ int verb_to_uint16(frame_S& frame, const e_expression_S& expression, const verbd
     }
 
 
-    // convert arithmetic values with C/C++ casting
+    // convert arithmetic values with C/C++ casting   -- ???????????????????????? need to use get_val() functions instead of casting for integer conversions ?????????????????????????? 
 
     else if (is_value_arithmetic(in_val))
     {
@@ -1494,7 +1494,7 @@ int verb_to_uint32(frame_S& frame, const e_expression_S& expression, const verbd
     }
 
 
-    // convert arithmetic values with C/C++ casting
+    // convert arithmetic values with C/C++ casting   -- ???????????????????????? need to use get_val() functions instead of casting for integer conversions ?????????????????????????? 
 
     else if (is_value_arithmetic(in_val))
     {
@@ -1549,7 +1549,7 @@ int verb_to_uint64(frame_S& frame, const e_expression_S& expression, const verbd
     }
 
 
-    // convert arithmetic values with C/C++ casting
+    // convert arithmetic values with C/C++ casting    -- ???????????????????????? need to use get_val() functions instead of casting for integer conversions ?????????????????????????? 
 
     else if (is_value_arithmetic(in_val))
     {
@@ -1671,7 +1671,7 @@ int verb_to_float64(frame_S& frame, const e_expression_S& expression, const verb
 
     else if (in_val.ty == type_E::string)
     {
-        // convert from string to float64_t -- complain about any conversion errors
+        // convert from string to float64_T -- complain about any conversion errors
 
         float64_T  float64 { }; 
         auto trc = to_float64(in_val.string, float64);
@@ -3558,10 +3558,9 @@ int verb_str(frame_S& frame, const e_expression_S& expression, const verbdef_S& 
     M__(display_vlist(expression.rparms, L"verb_str() -- expression.rparms");)
 
     // get debug: and debugx: keywords (if present)  
-
-    value_S unwanted_value  { };                                                   // don't need these keyword values                                
-    auto debug_rc  = get_right_keyword(expression, L"debug" , unwanted_value);     // r/c = -1, if debug:  keyword is not present 
-    auto debugx_rc = get_right_keyword(expression, L"debugx", unwanted_value);     // r/c = -1, if debugx: keyword is not present 
+                
+    auto debug_rc  = get_right_keyword(expression, L"debug" );     // r/c = -1, if debug:  keyword is not present 
+    auto debugx_rc = get_right_keyword(expression, L"debugx");     // r/c = -1, if debugx: keyword is not present 
 
     // create string from right positional vlist (without debug: and debugx: keywords)
 
@@ -3584,11 +3583,10 @@ int verb_say(frame_S& frame, const e_expression_S& expression, const verbdef_S& 
 
 
     // get debug: and debugx: keywords (if present)  
-
-    value_S unwanted_value  { };                                                   // don't neeed these keyword values                                
-    auto debug_rc  = get_right_keyword(expression, L"debug" , unwanted_value);     // r/c = -1, if debug:  keyword is not present 
-    auto debugx_rc = get_right_keyword(expression, L"debugx", unwanted_value);     // r/c = -1, if debugx: keyword is not present
-    auto no_nl_rc  = get_right_keyword(expression, L"no_nl" , unwanted_value);     // r/c = -1, if no_nl:  keyword is not present
+                                
+    auto debug_rc  = get_right_keyword(expression, L"debug" );     // r/c = -1, if debug:  keyword is not present 
+    auto debugx_rc = get_right_keyword(expression, L"debugx");     // r/c = -1, if debugx: keyword is not present
+    auto no_nl_rc  = get_right_keyword(expression, L"no_nl" );     // r/c = -1, if no_nl:  keyword is not present
 
 
     // write out formatted string from right vlist (without debug: and debugx: keywords) 
@@ -3673,110 +3671,260 @@ int verb_stdin(frame_S& frame, const e_expression_S& expression, const verbdef_S
 M_endf
 
 
-//---------------------------------------------------------------------------------
-//   verb_interpolate() -- @INTERPOLATE
-//---------------------------------------------------------------------------------
 
-int verb_interpolate(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//    @INTERPOLATE "string"     
+//    @FORMAT      "string" value_1 value_2 value_3 value_4 ... value_n         
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+// -------------------------------------------
+// input parm structure for interpolate_string
+// -------------------------------------------
+
+struct i_parm_S
 {
-    // already known there is 1 right string parm   
-    M_y(M_out(L"verb_interpolate() called");)
+          frame_S         *frame_p            { nullptr };                                   // passed-in frame, in case called function needs to run some code 
+    const e_expression_S  *expression_p       { nullptr };                                   // passed-in expression, for getting parms and for location messages, etc.
+          std::wstring     ws_begin           {         };                                   // beginning marker for interpolated values
+          std::wstring     ws_end             {         };                                   // ending    marker for interpolated values
+          std::wstring     ws_message         {         };                                   // string to start error messages with
+          bool             begin_any          { false   };                                   // delimited string section begins when any single char from begin string is found
+          bool             end_any            { false   };                                   // delimited string section ends   when any single char from end   string is found
+          bool             keep_begin         { false   };                                   // prepend delimited string with character/string that started it 
+          bool             keep_end           { false   };                                   // append  delimited string with character/string that ended   it
+};
+                                                                  
+
+
+
+//---------------------------------------------------------------------------------
+//   interpolate_string() -- helper function for string interpolation verbs
+//---------------------------------------------------------------------------------
+
+static int interpolate_string( i_parm_S&             iparm                                    // miscellaneous parms
+                             , const value_S&        verb_in_value                            // value containing main input format string 
+                             , results_S&            results                                  // results for main interpolation-type verb 
+                             , int                 (*fcn_p)( frame_S&                         // pass through current frame for invoking code, etc.
+                                                           , const e_expression_S&            // pass through expression for getting parms and for location messages 
+                                                           , results_S&                       // (error) results to be returned from main verb, if R/C is non-0 
+                                                           , const std::wstring&              // input string to be processed 
+                                                           , std::wstring&                    // output string to be appended to main output string from verb
+                                                           , const std::wstring&              // acccumulated main output string from verb (may not be used)
+                                                           , void *                           // pointer to parm passed through from main verb
+                                                           )                                  // function to call to process interpolated sections of the string -- R/C = 0 continue, -1 = return from main verb immediately
+                             , void *parm_p                                                   // pointer to parm area passed through to called function 
+                             )
+try
+{
+    // already known there is 1 right string parm + optional  begin:  and  end:  keyword parms + possible positional parms (not looked at here, but passed through to called function) 
+    M__(M_out(L"interpolate_string() called");)
     
-    std::wstring ws_in  { expression.rparms.values.at(0).string } ;
-    std::wstring ws_out {                                  } ;
+    std::wstring ws_verb_in  {verb_in_value.string};                   // main input string for outer verb  
+    std::wstring ws_verb_out {  };                                     // main verb output gets accumulated here 
 
-    std::wstring ws_start { L"{" }; 
-    std::wstring ws_end   { L"}" }; 
 
+    // compute stepping amount, based on whether whole delimiter string or any single character in it is the delimiter
+    // ---------------------------------------------------------------------------------------------------------------
+
+    auto begin_step = iparm.ws_begin.size();                           // assumes whole string is delimiter  
+    auto   end_step = iparm.ws_end  .size();                           // assumes whole string is delimiter
+
+    if (iparm.begin_any)                                               // start delimiter is any single char in ws_begin ??
+        begin_step = 1;                                                // if so, just step past one char in string after match
+
+    if (iparm.end_any)                                                 // ending delimiter is any single char in ws_end ??
+        end_step = 1;                                                  // if so, just step past one char in string after match
+
+
+    // main loop to locate and process interpolation sections
+    // ======================================================
+        
     std::wstring::size_type  find_idx { 0 }; 
-    std::wstring::size_type  out_idx  { 0 }; 
+    std::wstring::size_type  out_idx  { 0 };
+    std::wstring::size_type  idx1     { 0 };  
+    std::wstring::size_type  idx2     { 0 };  
 
     for (;;)
     {
-        auto idx1 = ws_in.find(ws_start, find_idx);
+        // find start of next interpolated string section
+        // ----------------------------------------------
 
-        if (idx1 == std::wstring::npos)                                // normal exit when open brace not found 
+        if (iparm.begin_any)                                                        // any single char in ws_begin is the starting delimiter? 
+            idx1  = ws_verb_in.find_first_of(iparm.ws_begin, find_idx);             // if so, look for match with any char in start delimiter string
+        else                                                                        // whole start delimiter string needs to match
+            idx1  = ws_verb_in.find(iparm.ws_begin, find_idx);                      // look for whole-string match with start delimiter string
+
+        if (idx1 == std::wstring::npos)                                             // normal exit when no starting delimiter found 
         {
-            ws_out += ws_in.substr(out_idx, ws_in.size() - out_idx);   // copy over last part of input string
+            ws_verb_out += ws_verb_in.substr(out_idx, ws_verb_in.size() - out_idx); // copy over last part of input string
             break;
         }
     
 
         // append latest chunk of non-interpolated string to the output string 
 
-        ws_out += ws_in.substr(out_idx, idx1 - out_idx); 
-        M__(M_out(L"verb_interpolate() -- ws_out   = «%S»") % ws_out;)
+        ws_verb_out += ws_verb_in.substr(out_idx, idx1 - out_idx); 
+        M__(M_out(L"interpolate_string() -- ws_out   = «%S»") % ws_verb_out;)
 
 
-        // search for "}" at end of interpolated area 
+        // search for ending delimiter to mark end of interpolated area 
 
-        find_idx = idx1 + ws_start.size();                             // start search right after the "{"
-        auto idx2 = ws_in.find(ws_end, find_idx);
+        find_idx = idx1 + begin_step;                                               // start search right after the starting delimiter (atstart of interpolated section)
+        
+        if (iparm.end_any)                                                          // any single char in ws_begin is the ending delimiter?
+            idx2 = ws_verb_in.find_first_of(iparm.ws_end, find_idx);                // if so, look for match with any char in end delimiter string
+        else                                                                        // whole end delimiter string needs to match
+            idx2 = ws_verb_in.find(iparm.ws_end, find_idx);                         // look for whole-string match with end delimiter string
 
 
-        // error -- unbalanced interpolation braces if closing "}" is not found 
+        // error -- unbalanced interpolation delimiters if closing delimiter is not found 
 
         if (idx2 == std::wstring::npos)
         {
             count_error(); 
-            M_out_emsg1(L"assign_interpolate() -- closing \"%S\" not found after opening \"%S\" at offset %d in string being interpolated") % ws_end % ws_start % idx1;
-            msgend_loc(expression.rparms.values.at(0), expression);
+            M_out_emsg1(L"%S -- closing \"%S\" not found after opening \"%S\" at offset %d in string being processed") % iparm.ws_message % iparm.ws_end % iparm.ws_begin % idx1;
+            msgend_loc(verb_in_value, *(iparm.expression_p));
             results = error_results(); 
             return -1;             
         } 
 
 
-        M__(M_out(L"verb_interpolate() -- idx1 = %d   idx2 = %d   find_idx = %d   out_idx = %d") % idx1 % idx2 % find_idx % out_idx;)
-        M__(M_out(L"verb_interpolate() -- ws_out   = «%S»") % ws_out;)
+        M__(M_out(L"interpolate_string() -- idx1 = %d   idx2 = %d   find_idx = %d   out_idx = %d") % idx1 % idx2 % find_idx % out_idx;)
+        M__(M_out(L"interpolate_string() -- ws_out   = «%S»") % ws_verb_out;)
 
 
-        // isolate string to be executed  -- idx1 is offset of "{" 
-        //                                   idx2 is offset of "}" 
+        // isolate string to be processed  -- idx1 is offset of start delimiter (1st char)
+        //                                    idx2 is offset of end delimiter   (1st char)
 
-        idx1 += ws_start.size();                                          // step past the "{"
-        std::wstring ws_inter = ws_in.substr(idx1, idx2 - idx1);          // isolate string for parsing, etc.
-                
-        M__(M_out(L"verb_interpolate() -- ws_inter = «%S»") % ws_inter;)
+        auto idx1s  = idx1;                                                           // save unstepped index, in case start delimiter needs to be kept in ws_call_in
+        idx1       += begin_step;                                                     // step past the starting delimiter
+        auto idx2s  = idx2;                                                           // 2nd copy of ending index
+   
+        if (!iparm.keep_begin)                                                        // should we pass the starting delimiter through?
+            idx1s = idx1;                                                             // if not, start passthrough at stepped index right after delimiter
 
-
-        // parse the current interpolated section of the input string
-
-        slist_S out_slist{ };                                                                                         // slist_s to be filled in by parse_string()  
-        auto prc = parse_string(*get_main_preparse(), frame, out_slist, ws_inter, L"string interpolation ", false);   // don't continue after error
- 
-        if (prc != 0)                                                                                                 // return with error, if parse_string() failed
-        {
-            M__(M_out(L"verb_interpolate() -- error rc from parse_string()");)       
-            count_error(); 
-            M_out_emsg1(L"verb_interpolate() -- parse_string() failed for interpolated section \"%S\"") % ws_inter;
-            msgend_loc(expression.rparms.values.at(0), expression);
-            results = error_results(); 
-            return -1;    
-        }
-      
-
-        // evaluate the slist returned by parse_string
-
-        results_S out_results {}; 
-        
-        M__(M_out(L"verb_interpolate() -- calling eval_slist() ************************");)
-        auto erc = eval_slist(frame, out_slist, out_results);                                                        // results (with any special flags) will be passed back directly (if no error)
-        M__(M_out(L"verb_interpolate() -- eval_slist() returned -- rc=%d *****************") % erc;)
+        if (iparm.keep_end)                                                           // should we pass the ending delimiter through?
+            idx2s = idx2 + end_step;                                                  // if so, end passthrough at stepped index right after delimiter
+     
+        std::wstring ws_call_in { ws_verb_in.substr(idx1s, idx2s - idx1s) };         // isolate string for parsing, etc. (with or without start/end delimiters)
        
-        if (out_results.multiple_results)
-        {
-            M__(M_out(L"verb_interpolate() -- multiple results returned by eval_slist()");)
-        }
-        
+        M__(M_out(L"interpolate_string() -- ws_inter = «%S»") % ws_call_in;)
 
-        // return immediately, if error returned by eval_slist()
-        
-        if (erc != 0)
+
+        // call passed-in function to process this interpolated section
+        // ============================================================
+
+        std::wstring  ws_call_out  { }; 
+        results_S     call_results { };
+
+        auto crc = (*fcn_p)( *(iparm.frame_p), *(iparm.expression_p), call_results, ws_call_in, ws_call_out, ws_verb_out, parm_p); 
+
+
+        // end loop and return imemdiately if called function returned with error
+
+        if (crc != 0)
         {
-            M__(M_out(L"verb_interpolate() -- eval_slist() returned error");)
-            M__(M_out(L"verb_interpolate() -- returning error");)
+             M_out_emsg1(L"%S -- string interpolation ending because called function failed for interpolated section = \"%S%S%S\"") % iparm.ws_message % iparm.ws_begin % ws_call_in % iparm.ws_end;
+             msgend_loc(verb_in_value, *(iparm.expression_p));
+             results = call_results;                                        // verb results = called function results 
+             return crc;                                                    // verb R/C     = called function R/C
+        }
+
+
+        // end loop and return immediately, if special results (like @GOTO) returned called function
+          
+        M__(M_out(L"interpolate_string() -- called function returned OK -- check for special results");)
+        if (call_results.special_results)
+        {
+            M__(M_out(L"interpolate_string() --  returning special results from called function");)  
+            results = call_results;                                         // pass back special results
+            return 0;
+        }
+
+        M__(M_out(L"interpolate_string() --  string from (*fcn_p)() call = \"%S\"") % call_out_ws;)  
+
+        // no problems from called function -- just append results string to main output string and continue the interpolation loop
+
+        ws_verb_out += ws_call_out;                                         // add outpout string from called function to main output string 
+        M__(M_out(L"interpolate_string() --  in-loop ws_out = \"%S\"") % ws_out;)  
+
+
+        // update index for find() for next loop pass 
+
+        find_idx = idx2 + end_step;
+        out_idx  = find_idx; 
+    }
+
+              
+    // normal return with interpolated string
+    // --------------------------------------
+
+
+    M__(M_out(L"interpolate_string() --  final ws_out = \"%S\"") % ws_verb_out;)  
+    results = to_results(string_val(ws_verb_out));  
+    return 0;  
+}
+M_endf
+
+
+
+//---------------------------------------------------------------------------------
+//   verb_interpolate() -- @INTERPOLATE
+//---------------------------------------------------------------------------------
+
+
+// inner function passed in to interpolate_string() to do actual processing for one interpolated section
+// -----------------------------------------------------------------------------------------------------
+
+static int verb_interpolate_1( frame_S&              frame
+                             , const e_expression_S& expression
+                             ,       results_S&      results
+                             , const std::wstring&   ws_in
+                             ,       std::wstring&   ws_out
+                             , const std::wstring&   verb_out
+                             ,       void*           parm_p
+                             )
+try
+{
+    std::wstring ws_verb_out {  };                                                                                // main verb output gets accumulated here 
+
+
+    // parse the passed-in interpolation section from the input string  
+
+    slist_S out_slist{ };                                                                                         // slist_s to be filled in by parse_string()  
+    auto prc = parse_string(frame, out_slist, ws_in, L"string interpolation ", false);                            // don't continue after error
+ 
+    if (prc != 0)                                                                                                 // return with error, if parse_string() failed
+    {
+        M__(M_out(L"verb_interpolate() -- error rc from parse_string()");)       
+        count_error(); 
+        M_out_emsg1(L"verb_interpolate() -- parse_string() failed for interpolated section \"%S\"") % ws_in;
+        msgend_loc(expression.rparms.values.at(0), expression);
+        results = error_results(); 
+        return -1;    
+    }
+   
+
+    // evaluate the slist returned by parse_string
+
+    results_S out_results {}; 
+    
+    M__(M_out(L"verb_interpolate_1() -- calling eval_slist() ************************");)
+    auto erc = eval_slist(frame, out_slist, out_results);                                                        // results (with any special flags) will be passed back directly (if no error)
+    M__(M_out(L"verb_interpolate_1() -- eval_slist() returned -- rc=%d *****************") % erc;)
+    
+  
+     // return immediately, if error returned by eval_slist()
+     
+     if (erc != 0)
+        {
+            M__(M_out(L"verb_interpolate_1() -- eval_slist() returned error");)
+            M__(M_out(L"verb_interpolate_1() -- returning error");)
             count_error(); 
-            M_out_emsg1(L"verb_interpolate() -- eval_slist() failed for interpolated section \"%S\"") % ws_inter;
+            M_out_emsg1(L"verb_interpolate_1() -- eval_slist() failed for interpolated section \"%S\"") % ws_in;
             msgend_loc(expression.rparms.values.at(0), expression);
             results = error_results(); 
             return erc;
@@ -3785,41 +3933,820 @@ int verb_interpolate(frame_S& frame, const e_expression_S& expression, const ver
 
         // return immediately, if special results (like @GOTO) returned by eval_slist()
           
-        M__(M_out(L"verb_interpolate() -- eval_slist() returned OK -- check for special results");)
+        M__(M_out(L"verb_interpolate_1() -- eval_slist() returned OK -- check for special results");)
         if (out_results.special_results)
         {
-            M__(M_out(L"verb_interpolate() --  returning special results");)  
+            M__(M_out(L"verb_interpolate_1() --  returning special results");)  
             results = out_results;    // pass back special results
             return 0;
         }
 
         // convert normal results (single, or multiple) to string
 
-        std::wstring ws_results { };
-
         if (out_results.multiple_results)
-            ws_results = str_vlist(*(out_results.vlist_sp), false, false, true);
-        else                                                               // single results
-            ws_results = str_value(out_results, false, false, true);
+        {
+            M__(display_results(out_results, L"multiple results flag on from eval_slist()");)
+            if (out_results.no_results)                   // vlist exists in this results_S
+            {
+                ws_out = std::wstring { };                // if not, put out empty string
+            }
+            else                                          // otherwise, need to format the (perhaps empty) vlist
+            {
+                M__(M_out(L"verb_interpolate_1() --  multiple results from eval_slist()");)
+                ws_out = str_vlist(*(out_results.vlist_sp), false, false, true);
+            }
+        }
+        else                                              // single results -- results not in vlist
+        {
+            ws_out = str_value(out_results, false, false, true);
+        }
 
-        ws_out += ws_results;                                              // add results of execution to output string
+        M__(M_out(L"verb_interpolate_1() -- output string = \"%S\"") % ws_out;)  
+        return 0; 
+}
+M_endf
 
 
-        // update index for find() for next loop pass 
+// ------------------------------------
+// outer function for @INTERPOLATE verb
+// ------------------------------------
 
-        find_idx = idx2 + ws_end.size();
-        out_idx  = find_idx; 
+int verb_interpolate(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+{
+    // already known there is 1 right string parm + optional  begin:  and  end:  keyword parms + possible positional parms (not looked at here, but passed through to called function) 
+    M__(M_out(L"verb_interpolate() called");)
+
+
+    // get strings from verb parms -- main string, and optional begin marker/end marker strings
+ 
+    std::wstring ws_verb_in    { expression.rparms.values.at(0).string } ;
+
+    std::wstring ws_verb_begin { L"{" };                               // default begin interpolation string
+    std::wstring ws_verb_end   { L"}" };                               // default end   interpolation string
+        
+    get_right_keyword(expression, L"begin" , ws_verb_begin );          // override default begin interpolation marker string
+    get_right_keyword(expression, L"end"   , ws_verb_end   );          // override default end   interpolation marker string   
+                                                                 
+
+    // just call string_interpolate() with specialized function to process each interpolated segment
+
+    i_parm_S iparm { };
+
+    iparm.frame_p      =      &frame;
+    iparm.expression_p =      &expression;
+    iparm.ws_begin     =      ws_verb_begin; 
+    iparm.ws_end       =      ws_verb_end;
+    iparm.ws_message   =      L"@INTERPOLATE string";
+    iparm.begin_any    =      false;                                    // whole string is start delimiter
+    iparm.end_any      =      false;                                    // whole string is end delimiter
+    iparm.keep_begin   =      false;                                    // don't pass through start delimiter
+    iparm.keep_end     =      false;                                    // don't pass through end    delimiter
+
+
+    return interpolate_string( iparm
+                             , expression.rparms.values.at(0)
+                             , results
+                             , &verb_interpolate_1
+                             , nullptr
+                             ); 
+}
+M_endf
+
+
+
+//---------------------------------------------------------------------------------
+//   verb_format() -- @FORMAT
+//---------------------------------------------------------------------------------
+
+
+// verb_format_l() -- inner function passed in to interpolate_string() to do actual processing for one interpolated section
+// ------------------------------------------------------------------------------------------------------------------------
+
+static int verb_format_1(frame_S& frame, const e_expression_S& expression, results_S& results, const std::wstring& ws_in, std::wstring& ws_out, const std::wstring& verb_out, void* in_p) try
+{
+    M__(M_out(L"verb_format_1(): called -- ws_in = \"%S\"") % ws_in;)
+
+
+    int *parm_index_p = (int *)in_p;                                                                          // get typed pointer to persistent parm index
+                                                                                                             
+    int parm_count = expression.rparms.values.size();                                                         // get number of right side positional parms passed to the outer @FORMAT verb                                                               
+                                                                                                              
+    value_S fmt_value { };                                                                                   
+    get_right_keyword(expression, L"fmt", fmt_value);                                                         // get input value containing main format string -- for location messsage 
+                                                                                                             
+                                                                                                             
+    // preliminary format string processing
+    // ------------------------------------
+ 
+    // replace leading % that was removed by interpolation delimiting routine, and append ";" to format spec for error messages
+
+    std::wstring ws_orig_fmt { ws_in                         };                                                  // copy over input format spec -- non-modifiable/original copy -- for error messages 
+    std::wstring ws_fmt      { ws_in                         };                                                  // modifiable format spec string -- for passing to swprintf, etc., after potential modifications 
+    auto         fmt_size    { ws_orig_fmt.size()            };                                                  // capture original format spec length for convenience
+      
+
+    M__(M_out(L"verb_format_1(): called  --  ws_in = \"%S\"  --  ws_fmt = \"%S\"   --  ws_orig_fmt = \"%S\"") % ws_in % ws_fmt % ws_orig_fmt;) 
+
+
+    // just put out "%", if format spec is just "%%" -- don't pass this through the regex scanners  
+
+    if (ws_fmt == L"%%")                                                                                        
+    {   
+        ws_out = L"%";                                      // just put out % -- similar to printf() %%
+        return 0;                                           // don't need to advance the positional parm                                                    
+    }                                                                                                        
+   
+
+    // ==============================================================================================================
+    // extract variable length and precision ( examples: %*.10X    %10.*X   %0#-*.*X ), if present in the format spec  
+    // ==============================================================================================================
+
+    int v_1     { -1 };                                                                                       // -1 indicates that 1st variable is not being used 
+    int v_2     { -1 };                                                                                       // -1 indicates that 2nd variable is not being used 
+    int v_count {  0 };                                                                                       // number of variable parms in format spec 
+
+    std::wregex  rpatv { LR"(\%([0\-\+\ \#]*)(\*|[[:digit:]]+)?(\.\*|\.[[:digit:]]+)?[acAeEfFgGdiuosxX])" };  // general pattern for a A c e E f F g G d i o u x X format specification -- final verification will take place later
+    std::wsmatch mv    { };                                                                                   // match results for std::wstring
+
+    auto foundv { std::regex_match(ws_fmt, mv, rpatv) };                                                      // see if passed-in format specification matches most general valid type
+
+
+    // if format spec is not valid here, don't bother looking for *.* -- one of the more specific tests down below will fail (and the error will be reported then)
+
+    if (foundv)
+    {
+        // format spec looks fairly good -- proceed with getting variable width/precision
+
+         M__(M_out(    L"verb_format_1() -- mv.size()             = %d") % mv.size()                  ;) 
+       
+         for (auto i = 0; i < mv.size(); i++)
+         {
+             M__(M_out(L"verb_format_1() -- mv.length(%d)      = %d")     % i % mv.length(i)           ;)
+             M__(M_out(L"verb_format_1() -- mv.position(%d)    = %d")     % i % mv.position(i)         ;)
+             M__(M_out(L"verb_format_1() -- mv.str(%d)         = \"%S\"") % i % mv.str(i)              ;)   
+         }
+
+ 
+         // process variable width, if specified
+         // ------------------------------------
+
+         if ( (mv.size() >= 3) && (mv.str(2) == L"*") )                                         // check for variable width
+         {
+             // make sure needed positional parm exists
+
+             if (*parm_index_p >= parm_count) 
+             {
+                 count_error(); 
+                 M_out_emsg1(L"verb_format_1() -- variable width ('*') in format spec \"%S\"; refers to non-existent input value -- value needed index = %d   number of input parms = %d") % ws_orig_fmt % *parm_index_p % parm_count;
+                 msgend_loc(fmt_value, expression);
+                 results = error_results();  
+                 return -1;              
+             }
+
+
+             // make sure needed positional parm is of integer type  -- don't check values - let swprintf() do it's checking
+
+             auto parm_val  { expression.rparms.values.at(*parm_index_p) } ;
+             int  v_width   { -1                                         } ;
+
+             if (!is_value_integer(parm_val))
+             {
+                 count_error(); 
+                 M_out_emsg1(L"verb_format_1() -- variable width ('*') in format spec \"%S\"; refers to mismatched positional parm %d of type = \"%S\"") % ws_orig_fmt % *parm_index_p % type_str(parm_val.ty);
+                 msgend_loc(fmt_value, expression);
+                 results = error_results();  
+                 return -1;            
+             }
+             
+             auto gv_rc = get_val(parm_val, v_width);                                           // extract value_S integer type data into C++ int variable, for passing to swprintf() later
+
+             if (gv_rc != 0)
+             {
+                 count_error(); 
+                 M_out_emsg1(L"verb_format_1() -- variable width ('*') in format spec \"%S\"; refers to positional parm %d = %S -- cannot be converted to 31-bit signed integer value") % ws_orig_fmt % *parm_index_p % str_value(parm_val);
+                 msgend_loc(fmt_value, expression);
+                 results = error_results();  
+                 return -1;               
+             }
+ 
+
+             //  valid integer value -- save away for later swprintf() call 
+
+             v_count++;                                                                         // indicate we have at least one variable parm 
+             v_1 = v_width;                                                                     // variable width is always 1st  
+             (*parm_index_p)++;                                                                 // advance to next positional parm for outer verb 
+         }                                                                                      // variable width specified
+        
+
+         // process variable precision, if specified
+         // ----------------------------------------
+
+         if ( (mv.size() >= 4) && (mv.str(3) == L".*") )                                        // check for variable precision
+         {
+             // make sure needed positional parm exists
+
+             if (*parm_index_p >= parm_count) 
+             {
+                 count_error(); 
+                 M_out_emsg1(L"verb_format_1() -- variable precision ('.*') in format spec \"%S\"; refers to non-existent input value -- value needed index = %d   number of input parms = %d") % ws_orig_fmt % *parm_index_p % parm_count;
+                 msgend_loc(fmt_value, expression);
+                 results = error_results();  
+                 return -1;              
+             }
+
+
+             // make sure needed positional parm is of integer type  -- don't check values - let swprintf() do it's checking
+
+             auto parm_val      { expression.rparms.values.at(*parm_index_p) } ;
+             int  v_precision   { -1                                         } ;
+
+             if (!is_value_integer(parm_val))
+             {
+                 count_error(); 
+                 M_out_emsg1(L"verb_format_1() -- variable precision ('*') in format spec \"%S\"; refers to mismatched positional parm %d of type = \"%S\"") % ws_orig_fmt % *parm_index_p % type_str(parm_val.ty);
+                 msgend_loc(fmt_value, expression);
+                 results = error_results();  
+                 return -1;            
+             }
+             
+             auto gv_rc = get_val(parm_val, v_precision);                                       // extract value_S integer type data into C++ int variable, for passing to swprintf() later
+
+             if (gv_rc != 0)
+             {
+                 count_error(); 
+                 M_out_emsg1(L"verb_format_1() -- variable precision ('*') in format spec \"%S\"; refers to positional parm %d = %S -- cannot be converted to 31-bit signed integer value") % ws_orig_fmt % *parm_index_p % str_value(parm_val);
+                 msgend_loc(fmt_value, expression);
+                 results = error_results();  
+                 return -1;               
+             }
+
+
+             //  valid integer value -- save away for later swprintf() call 
+
+             v_count++;                                                                         // indicate we have another variable parm 
+                                                                                       
+             if (v_count == 1)                                                         
+                 v_1 = v_precision;                                                             // no variable width -- variable precision is 1st 
+             else                                                                              
+                 v_2 = v_precision;                                                             // had variable width -- variable precision is 2nd
+                                                                                               
+             (*parm_index_p)++;                                                                 // advance to next positional parm for outer verb 
+         }                                                                                      // variable precision specified
+    }                                                                                           // format spec looks reasonably correct 
+
+    M__(M_out( L"verb_format_1() -- v_count = %d    v_1 = %d      v_2 = %d   *parm_index_p = %d ") % v_count % v_1 % v_2 % *parm_index_p;) 
+
+
+    // ------------------------------------------------------------------------------------------------------------------------------------
+    //
+    //  process this format spec: 
+    //
+    // decode final spec character, verify if rest of spec is OK, then call str_fmt() with the format spec and n-th positional parm value 
+    // (only a subset of printf() functions are supported here)
+    //
+    // note that operand length specifications should not be present (like %lld) -- they will be supplied before wsprintf() is called 
+    // printf() parm numbers (like %1$d) are not supported. %% is not supported.   ' (grouping characters) are not supported
+    //
+    // -------------------------------------------------------------------------------------------------------------------------------------
+
+    auto last_char { ws_fmt.back() };                                                                   // get last chr in format specification  
+    switch ( last_char )
+    {
+        // process string type format specification
+        // ----------------------------------------  
+       
+        case    L's' : 
+        {
+            std::wregex  rpat { LR"(\%([0\-]*)(\*|[[:digit:]]+)?(\.\*|\.[[:digit:]]+)?[s])" };          // pattern for s format specification
+            std::wsmatch mr   { };                                                                      // match results for std::wstring
+
+            auto found { std::regex_match(ws_fmt, mr, rpat) };                                          // see if passed-in format sp[ecification matches
+           
+            if (!found) 
+            {
+                count_error(); 
+                M_out_emsg1(L"verb_format_1() -- string-type format spec \"%S\"; is not valid") % ws_orig_fmt;
+                msgend_loc(fmt_value, expression);
+                results = error_results();  
+                return -1;   
+            }  
+
+          
+            // check the matching positional input parm to see if it matches the spec  
+
+            if (*parm_index_p >= parm_count) 
+            {
+                count_error(); 
+                M_out_emsg1(L"verb_format_1() -- string-type format spec \"%S\"; refers to non-existent input value -- value needed index = %d   number of input parms = %d") % ws_orig_fmt % *parm_index_p % parm_count;
+                msgend_loc(fmt_value, expression);
+                results = error_results();  
+                return -1;              
+            } 
+
+
+            // make sure n-th positional parm is type_E::string
+
+            auto parm_type { expression.rparms.values.at(*parm_index_p).ty } ;
+
+            if (parm_type != type_E::string)
+            {
+                count_error(); 
+                M_out_emsg1(L"verb_format_1() -- string-type format spec \"%S\"; refers to mismatched positional parm %d of type = \"%S\"") % ws_orig_fmt % *parm_index_p % type_str(parm_type);
+                msgend_loc(fmt_value, expression);
+                results = error_results();  
+                return -1;             
+            }  
+
+
+            // pass format spec string and input string to fmt_str() for formatting with this spec
+
+            if (v_count == 0)        ws_out = fmt_str(ws_fmt,           expression.rparms.values.at(*parm_index_p).string);
+            if (v_count == 1)        ws_out = fmt_str(ws_fmt, v_1,      expression.rparms.values.at(*parm_index_p).string);
+            if (v_count == 2)        ws_out = fmt_str(ws_fmt, v_1, v_2, expression.rparms.values.at(*parm_index_p).string);
+
+            (*parm_index_p)++;                                                                             // advance to next positional parm for next time 
+            return 0;
+            break; 
+        }
+
+
+        // process integer type format specification (including character type)
+        // -----------------------------------------
+
+        case    L'c' :
+        case    L'd' : 
+        case    L'i' : 
+        case    L'o' : 
+        case    L'u' :
+        case    L'x' :
+        case    L'X' :
+        {
+            // do basic validity check in integer format specificion
+
+            bool found { false }; 
+
+
+            if ( (last_char == L'x') || (last_char == L'X') )
+            {
+                std::wregex  rpat { LR"(\%([0\-\+\ \#]*)(\*|[[:digit:]]+)?(\.\*|\.[[:digit:]]+)?[xX])" };   // pattern for x, X format specification
+                std::wsmatch mr   { };                                                                      // match results for std::wstring
+
+                found = std::regex_match(ws_fmt, mr, rpat);                                                 // see if passed-in format specification matches the required pattern for x or X specs
+            
+            
+            }
+            else
+            {
+                std::wregex  rpat { LR"(\%([0\-\+\ ]*)(\*|[[:digit:]]+)?(\.\*|\.[[:digit:]]+)?[cdiou])" };  // pattern for c, d, i, o, u format specification   (note # not supported here for o -- would need special code to prepend 0o, not just 0)
+                std::wsmatch mr   { };                                                                      // match results for std::wstring
+
+                found = std::regex_match(ws_fmt, mr, rpat);                                                 // see if passed-in format specification matches the required pattern for d i u specs 
+            }
+
+            if (!found) 
+            {
+                count_error(); 
+                M_out_emsg1(L"verb_format_1() -- integer-type format spec \"%S\"; is not valid") % ws_orig_fmt;
+                msgend_loc(fmt_value, expression);
+                results = error_results();  
+                return -1;   
+            }    
+                
+
+            // check the matching positional input parm to see if it matches the spec  
+
+            if (*parm_index_p >= parm_count) 
+            {
+                count_error(); 
+                M_out_emsg1(L"verb_format_1() -- integer-type format spec \"%S\"; refers to non-existent input value -- value needed index = %d   number of input parms = %d") % ws_orig_fmt % *parm_index_p % parm_count;
+                msgend_loc(fmt_value, expression);
+                results = error_results();  
+                return -1;              
+            }
+
+         
+            // make sure n-th positional parm is valid integer type
+            
+            value_S parm_value { expression.rparms.values.at(*parm_index_p) } ;                                // get n-th positional value into local var 
+            auto    parm_type  { parm_value.ty                              } ;   
+
+            if  (
+                  is_value_integer(parm_value)
+                  ||
+                  ( is_value_float(parm_value) && ((last_char == L'x' ) || (last_char == L'X'))  )             // allow floating point input value with X or x format specification only
+                )
+            {
+                // value/type is OK -- no error at this point
+            }
+            else
+            {
+                count_error(); 
+                M_out_emsg1(L"verb_format_1() -- integer-type  format spec \"%S\"; refers to mismatched positional parm %d of type = \"%S\"") % ws_orig_fmt % *parm_index_p % type_str(parm_type);
+                msgend_loc(fmt_value, expression);
+                results = error_results();  
+                return -1;             
+            }  
+             
+
+            // special processing for wchar_t to be passed in to swprintf() as an int for %c type formatting
+            // ---------------------------------------------------------------------------------------------
+
+            if (last_char == L'c')
+            {
+                int wc_val { };                                                                                      // local integer variable to be passed to swprintf() for %c formatting 
+                                                                                                               
+                auto gv_rc = get_val(parm_value, wc_val);                                                            // convert n-th positional parm value to C++ int type, if possible -- complain if error
+
+                if (gv_rc != 0)
+                {
+                    count_error(); 
+                    M_out_emsg1(L"verb_format_1() -- character-type format spec \"%S\"; refers to positional parm %d = %S -- cannot be converted to 31-bit signed integer value") % ws_orig_fmt % *parm_index_p % str_value(parm_value);
+                    msgend_loc(fmt_value, expression);
+                    results = error_results();  
+                    return -1;             
+                } 
+
+
+                // make sure this is a valid UTF-16 code point 
+                //
+                //   - high or low surrogate allowed -- caller needs to use two adjacent %c specs to format an extended character -- there is no policing of this here 
+                //   - also allow plane-0 non-characters u+FFFE, u+FFFF, etc.
+            
+                if ( (wc_val < 0) || (wc_val > const_N::utf16_plane0_max) )
+                {
+                    count_error(); 
+                    M_out_emsg1(L"verb_format_1() -- character-type format spec \"%S\"; refers to positional parm %d = %d -- UTF-16 code point outside of valid range (u+0000 to u+FFFF)") % ws_orig_fmt % *parm_index_p % wc_val;
+                    msgend_loc(fmt_value, expression);
+                    results = error_results();  
+                    return -1;             
+                } 
+
+
+                // call swprintf() for %c-type formatting 
+
+                if (v_count == 0)        ws_out = fmt_str(ws_fmt,           wc_val);
+                if (v_count == 1)        ws_out = fmt_str(ws_fmt, v_1,      wc_val);
+                if (v_count == 2)        ws_out = fmt_str(ws_fmt, v_1, v_2, wc_val);           
+            }
+            else                                                                                                // all formatting other than %c
+            { 
+                // for int64_t and uint64_t (or float64_ being formatted with X) , change final  d  i  o u  x  or  X  to  lld  lli  llu llx or llX
+            
+                if  ( (parm_type == type_E::int64) || (parm_type == type_E::uint64) || (parm_type == type_E::float64) ) 
+                {
+                    ws_fmt.pop_back();                                                                          // remove final character from format spec (still available in last_char)
+                    ws_fmt.append(std::wstring { L"ll" });                                                      // append "ll" 
+                    ws_fmt.push_back(last_char);                                                                // put back the final char, after the "ll"
+                }
+            
+            
+                // call fmt_str() to format the n-th positional parm using call to swprintf() 
+            
+                switch (parm_type) 
+                {
+                    case type_E::int8    : 
+                        if (v_count == 0)        ws_out = fmt_str(ws_fmt,           parm_value.int8   );
+                        if (v_count == 1)        ws_out = fmt_str(ws_fmt, v_1,      parm_value.int8   );
+                        if (v_count == 2)        ws_out = fmt_str(ws_fmt, v_1, v_2, parm_value.int8   );
+                        break; 
+            
+                    case type_E::int16   :  
+                        if (v_count == 0)        ws_out = fmt_str(ws_fmt,           parm_value.int16  );
+                        if (v_count == 1)        ws_out = fmt_str(ws_fmt, v_1,      parm_value.int16  );
+                        if (v_count == 2)        ws_out = fmt_str(ws_fmt, v_1, v_2, parm_value.int16  );
+                        break; 
+            
+                    case type_E::int32   :  
+                        if (v_count == 0)        ws_out = fmt_str(ws_fmt,           parm_value.int32  );
+                        if (v_count == 1)        ws_out = fmt_str(ws_fmt, v_1,      parm_value.int32  );
+                        if (v_count == 2)        ws_out = fmt_str(ws_fmt, v_1, v_2, parm_value.int32  );
+                        break; 
+
+                    case type_E::int64   :  
+                        if (v_count == 0)        ws_out = fmt_str(ws_fmt,           parm_value.int64  );
+                        if (v_count == 1)        ws_out = fmt_str(ws_fmt, v_1,      parm_value.int64  );
+                        if (v_count == 2)        ws_out = fmt_str(ws_fmt, v_1, v_2, parm_value.int64  );
+                        break; 
+                
+                    case type_E::uint8   :  
+                        if (v_count == 0)        ws_out = fmt_str(ws_fmt,           parm_value.uint8  );
+                        if (v_count == 1)        ws_out = fmt_str(ws_fmt, v_1,      parm_value.uint8  );
+                        if (v_count == 2)        ws_out = fmt_str(ws_fmt, v_1, v_2, parm_value.uint8  );
+                        break; 
+                
+                    case type_E::uint16  :  
+                        if (v_count == 0)        ws_out = fmt_str(ws_fmt,           parm_value.uint16 );
+                        if (v_count == 1)        ws_out = fmt_str(ws_fmt, v_1,      parm_value.uint16 );
+                        if (v_count == 2)        ws_out = fmt_str(ws_fmt, v_1, v_2, parm_value.uint16 );
+                        break; 
+                
+                    case type_E::uint32  :  
+                        if (v_count == 0)        ws_out = fmt_str(ws_fmt,           parm_value.uint32 );
+                        if (v_count == 1)        ws_out = fmt_str(ws_fmt, v_1,      parm_value.uint32 );
+                        if (v_count == 2)        ws_out = fmt_str(ws_fmt, v_1, v_2, parm_value.uint32 );
+                        break; 
+                
+                    case type_E::uint64  :  
+                        if (v_count == 0)        ws_out = fmt_str(ws_fmt,           parm_value.uint64 );
+                        if (v_count == 1)        ws_out = fmt_str(ws_fmt, v_1,      parm_value.uint64 );
+                        if (v_count == 2)        ws_out = fmt_str(ws_fmt, v_1, v_2, parm_value.uint64 );
+                        break; 
+                
+                    case type_E::float32 :                                          // format floating point number as unsigned integer (X or x type only)
+                        if (v_count == 0)        ws_out = fmt_str(ws_fmt,           parm_value.float32);
+                        if (v_count == 1)        ws_out = fmt_str(ws_fmt, v_1,      parm_value.float32);
+                        if (v_count == 2)        ws_out = fmt_str(ws_fmt, v_1, v_2, parm_value.float32);
+                        break;      
+               
+                    case type_E::float64 :                                          // format floating point number as unsigned integer (X or x type only)
+                        if (v_count == 0)        ws_out = fmt_str(ws_fmt,           parm_value.float64);
+                        if (v_count == 1)        ws_out = fmt_str(ws_fmt, v_1,      parm_value.float64);
+                        if (v_count == 2)        ws_out = fmt_str(ws_fmt, v_1, v_2, parm_value.float64);
+                        break;         
+                
+                    default: 
+                    {
+                        count_error(); 
+                        M_out_emsg1(L"verb_format_1() -- internal error -- unknown integer parm type = \"%S\"") % type_str(parm_type);
+                        msgend_loc(fmt_value, expression);                                                                                                              
+                        M_throw_v(   "verb_format_1() -- internal error -- unknown integer parm type = \"%S\"") % out_ws(type_str(parm_type)) )); 
+                        break;                                                      // should not get here
+                    }
+                
+                }
+            }
+
+
+            // control gets here after valid fomatting spec is processed 
+
+            (*parm_index_p)++;                                                  // advance to next positional parm for next time 
+            return 0;
+            break;
+        }
+  
+
+        // process floating-point type format specification
+        // ------------------------------------------------ 
+
+        case    L'a' : 
+        case    L'A' :
+        case    L'e' : 
+        case    L'E' : 
+        case    L'f' :
+        case    L'F' :
+        case    L'g' :
+        case    L'G' :
+        {
+            std::wregex  rpat { LR"(\%([0\-\+\ \#]*)(\*|[[:digit:]]+)?(\.\*|\.[[:digit:]]+)?[aAeEfFgG])" };   // pattern for a A e E f F g G format specification
+            std::wsmatch mr   { };                                                                            // match results for std::wstring
+
+            auto found { std::regex_match(ws_fmt, mr, rpat) };                                                // see if passed-in format sp[ecification matches
+
+            if (!found) 
+            {
+                count_error(); 
+                M_out_emsg1(L"verb_format_1() -- floating point-type format spec \"%S\"; is not valid") % ws_orig_fmt;
+                msgend_loc(fmt_value, expression);
+                results = error_results();  
+                return -1;   
+            } 
+
+          
+            // check the matching positional input parm to see if it matches the spec  
+
+            if (*parm_index_p >= parm_count) 
+            {
+                count_error(); 
+                M_out_emsg1(L"verb_format_1() -- floating-point-type format spec \"%S\"; refers to non-existent input value -- value needed index = %d   number of input parms = %d") % ws_orig_fmt % *parm_index_p % parm_count;
+                msgend_loc(fmt_value, expression);
+                results = error_results();  
+                return -1;              
+            }
+
+
+            // make sure n-th positional parm is valid floating-point type
+            
+            auto parm_type { expression.rparms.values.at(*parm_index_p).ty } ;
+
+            if  (
+                  (parm_type != type_E::float32 )
+                  &&
+                  (parm_type != type_E::float64 )
+                )
+            {
+                count_error(); 
+                M_out_emsg1(L"verb_format_1() -- floating-point-type  format spec \"%S\"; refers to mismatched positional parm %d of type = \"%S\"") % ws_orig_fmt % *parm_index_p % type_str(parm_type);
+                msgend_loc(fmt_value, expression);
+                results = error_results();  
+                return -1;             
+            } 
+
+
+            // pass format spec string and input floating point value to fmt_str() for formatting with this spec
+
+            if (parm_type == type_E::float32)
+            {
+               if (v_count == 0)        ws_out = fmt_str(ws_fmt,           expression.rparms.values.at(*parm_index_p).float32);
+               if (v_count == 1)        ws_out = fmt_str(ws_fmt, v_1,      expression.rparms.values.at(*parm_index_p).float32);
+               if (v_count == 2)        ws_out = fmt_str(ws_fmt, v_1, v_2, expression.rparms.values.at(*parm_index_p).float32);
+            }
+            else
+            {
+               if (v_count == 0)        ws_out = fmt_str(ws_fmt,           expression.rparms.values.at(*parm_index_p).float64);
+               if (v_count == 1)        ws_out = fmt_str(ws_fmt, v_1,      expression.rparms.values.at(*parm_index_p).float64);
+               if (v_count == 2)        ws_out = fmt_str(ws_fmt, v_1, v_2, expression.rparms.values.at(*parm_index_p).float64);
+            }
+
+            (*parm_index_p)++;                                                                                        // advance to next positional parm for next time 
+            return 0;                                                                                               
+            break; 
+         }
+
+
+        // all other types are not supported -- 'p'  'n' , for example
+        // -----------------------------------------------------------
+
+        default : 
+        {
+            count_error(); 
+            M_out_emsg1(L"verb_format_1() -- final character ('%c') in format spec \"%S\"; is unsupported -- must be:  'a'  'A'  'd'  'e'  'E'  'f'  'F'  'g'  'G'  'i'  'o'  's'  'u'  'x'  or  'X'") % ws_orig_fmt.back() % ws_fmt;
+            msgend_loc(fmt_value, expression);
+            results = error_results();  
+            return -1; 
+            break;
+        }
     }
+ 
 
-              
-    // normal return with interpolated string
+    // should not get here
 
-    results = to_results(string_val(ws_out));   
     return 0; 
 }
 M_endf
 
+
+
+
+// -------------------------------
+// outer function for @FORMAT verb
+// -------------------------------
+
+int verb_format(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+{
+    // already known there is required   fmt:   kw parm, and optional   begin:  and   end:  keyword parms + likely positional parms (not looked at here, but passed through to called function) 
+    M__(M_out(L"verb_format() called");)
+
+    /*
+    int8_t    i8  { }; 
+    int16_t   i16 { }; 
+    int32_t   i32 { }; 
+    int64_t   i64 { }; 
+    uint8_t   u8  { }; 
+    uint16_t  u16 { }; 
+    uint32_t  u32 { }; 
+    uint64_t  u64 { }; 
+
+
+    int rc {1};  
+    value_S { }; 
+
+    rc = get_val( type_val(( int64_t)111          ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % 111     %  i8  % rc ;
+    rc = get_val( type_val(( int64_t)222          ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % 222     %  i8  % rc ;
+    rc = get_val( type_val(( int64_t)-111         ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % -111    %  i8  % rc ;
+    rc = get_val( type_val(( int64_t)-222         ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % -222    %  i8  % rc ;
+    rc = get_val( type_val(( int64_t)33333        ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % 33333   %  i8  % rc ;
+    rc = get_val( type_val(( int64_t)-33333       ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % -33333  %  i8  % rc ;
+    rc = get_val( type_val(( int64_t)77777        ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % 77777   %  i8  % rc ;
+
+    rc = get_val( type_val(( int64_t)111          ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % 111     %  u8  % rc ;
+    rc = get_val( type_val(( int64_t)222          ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % 222     %  u8  % rc ;
+    rc = get_val( type_val(( int64_t)-111         ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % -111    %  u8  % rc ;
+    rc = get_val( type_val(( int64_t)-222         ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % -222    %  u8  % rc ;
+    rc = get_val( type_val(( int64_t)33333        ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % 33333   %  u8  % rc ;
+    rc = get_val( type_val(( int64_t)-33333       ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % -33333  %  u8  % rc ;
+    rc = get_val( type_val(( int64_t)77777        ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % 77777   %  u8  % rc ;
     
+    rc = get_val( type_val(( int64_t)111          ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % 111     %  i16  % rc ;
+    rc = get_val( type_val(( int64_t)222          ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % 222     %  i16  % rc ;
+    rc = get_val( type_val(( int64_t)-111         ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % -111    %  i16  % rc ;
+    rc = get_val( type_val(( int64_t)-222         ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % -222    %  i16  % rc ;
+    rc = get_val( type_val(( int64_t)33333        ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % 33333   %  i16  % rc ;
+    rc = get_val( type_val(( int64_t)-33333       ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % -33333  %  i16  % rc ;
+    rc = get_val( type_val(( int64_t)77777        ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % 77777   %  i16  % rc ;
+
+    rc = get_val( type_val(( int64_t)111          ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % 111     %  u16  % rc ;
+    rc = get_val( type_val(( int64_t)222          ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % 222     %  u16  % rc ;
+    rc = get_val( type_val(( int64_t)-111         ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % -111    %  u16  % rc ;
+    rc = get_val( type_val(( int64_t)-222         ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % -222    %  u16  % rc ;
+    rc = get_val( type_val(( int64_t)33333        ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % 33333   %  u16  % rc ;
+    rc = get_val( type_val(( int64_t)-33333       ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % -33333  %  u16  % rc ;
+    rc = get_val( type_val(( int64_t)77777        ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % 77777   %  u16  % rc ;
+
+
+    add_separators_w(-123456789.789);
+    add_separators_w( 123456789.789);
+    add_separators_w( 123456789.);
+    add_separators_w(-123456789.);
+    add_separators_w( 123456789.E+66);
+    add_separators_w(-123456789.E+66);
+
+    add_separators_w(L"-1"                  ,  L',' , 3);
+    add_separators_w(L"-12"                 ,  L',' , 3);
+    add_separators_w(L"-123"                ,  L',' , 3);
+    add_separators_w(L"-1234"               ,  L',' , 3);
+    add_separators_w(L"-12345"              ,  L',' , 3);
+    add_separators_w(L"-123456"             ,  L',' , 3);
+    add_separators_w(L"-1234567"            ,  L',' , 3);
+    add_separators_w(L"-12345678"           ,  L',' , 3);
+    add_separators_w(L"-123456789"          ,  L',' , 3);
+    add_separators_w(L"-1234567890"         ,  L',' , 3);
+    add_separators_w(L"1"                   ,  L',' , 3);
+    add_separators_w(L"12"                  ,  L',' , 3);
+    add_separators_w(L"123"                 ,  L',' , 3);
+    add_separators_w(L"1234"                ,  L',' , 3);
+    add_separators_w(L"12345"               ,  L',' , 3);
+    add_separators_w(L"123456"              ,  L',' , 3);
+    add_separators_w(L"1234567"             ,  L',' , 3);
+    add_separators_w(L"12345678"            ,  L',' , 3);
+    add_separators_w(L"123456789"           ,  L',' , 3);
+    add_separators_w(L"1234567890"          ,  L',' , 3);
+
+
+    add_separators_w(L" 123456789");
+    add_separators_w(L"-123456789");
+    add_separators_w(L"+123456789");
+    add_separators_w( L"123456789");
+
+    add_separators_w(L"-123456789.789");
+    add_separators_w(L"+123456789.789");
+    add_separators_w(L" 123456789.789");
+    add_separators_w( L"123456789.789");
+
+    add_separators_w(L" 123456789.");
+    add_separators_w(L"-123456789.");
+    add_separators_w(L"+123456789.");
+    add_separators_w( L"123456789.");
+
+    add_separators_w(L" .123456789");
+    add_separators_w(L"-.123456789");
+    add_separators_w(L"+.123456789");
+    add_separators_w( L".123456789");
+
+
+    add_separators_w(L" 123456789E+66");
+    add_separators_w(L"-123456789e+66");
+    add_separators_w(L"+123456789E+66");
+    add_separators_w( L"123456789e+66");
+
+    add_separators_w(L" 123456789.E+66");
+    add_separators_w(L"-123456789.e+66");
+    add_separators_w(L"+123456789.E+66");
+    add_separators_w( L"123456789.e+66");
+
+    add_separators_w(L" .123456789E+66");
+    add_separators_w(L"-.123456789e+66");
+    add_separators_w(L"+.123456789E+66");
+    add_separators_w( L".123456789e+66");
+    return 0; 
+    */
+
+    // get strings from verb parms -- main string, and optional begin marker/end marker strings
+
+    value_S      verb_in_value {      };                               // get full value_S for location messages
+    std::wstring ws_verb_in    {      };                               // main format string for verb
+   
+    get_right_keyword(expression, L"fmt"   , verb_in_value );          // main format string, as a value -- with location for error messages
+    get_right_keyword(expression, L"fmt"   , ws_verb_in    );          // main format string
+ 
+                                                                 
+  
+    // just call string_interpolate() with specialized function to process each interpolated segment
+
+    int  parm_index { 0 };                                             // work value for verb_format_1() to save current parameter number to process next time
+ 
+    i_parm_S iparm { };
+
+    iparm.frame_p      =      &frame;
+    iparm.expression_p =      &expression;
+    iparm.ws_begin     =      L"%";                                     // format spec start s with %
+    iparm.ws_end       =      L"%aAcdeEfFgGiosuxX";                     // format spec ends with any one of these characters
+    iparm.ws_message   =      L"@FORMAT string";
+    iparm.begin_any    =      false;                                    // whole string is start delimiter
+    iparm.end_any      =      true;                                     // any single char in ws_end is the end delimiter for the format spec
+    iparm.keep_begin   =      true;                                     // pass through start delimiter (%)
+    iparm.keep_end     =      true;                                     // pass through end delimiter (d x u, F, etc.)
+
+
+    return interpolate_string( iparm
+                             , verb_in_value
+                             , results
+                             , &verb_format_1
+                             , (void *)&parm_index
+                             ); 
+   }
+M_endf   
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -3834,23 +4761,21 @@ int verb_display(frame_S& frame, const e_expression_S& expression, const verbdef
 
     // get locale: and numerics: keywords (if present)  
 
-    value_S unwanted_value  { };                                                                        // don't need this vlue  
-
-    auto locale_rc           = get_right_keyword(expression, L"locale"           , unwanted_value);     // r/c = 0, if locale:             keyword is present 
-    auto numerics_rc         = get_right_keyword(expression, L"numerics"         , unwanted_value);     // r/c = 0, if numerics:           keyword is present
-    auto stack_rc            = get_right_keyword(expression, L"stack"            , unwanted_value);     // r/c = 0, if stack:              keyword is present
-    auto all_vars_rc         = get_right_keyword(expression, L"all_vars"         , unwanted_value);     // r/c = 0, if all_vars:           keyword is present
-    auto builtin_verbs_rc    = get_right_keyword(expression, L"builtin_verbs"    , unwanted_value);     // r/c = 0, if builtin_verbs:      keyword is present
-    auto added_verbs_rc      = get_right_keyword(expression, L"added_verbs"      , unwanted_value);     // r/c = 0, if added_verbs:        keyword is present
-    auto all_verbs_rc        = get_right_keyword(expression, L"all_verbs"        , unwanted_value);     // r/c = 0, if all_verbs:          keyword is present
-    auto builtin_types_rc    = get_right_keyword(expression, L"builtin_types"    , unwanted_value);     // r/c = 0, if builtin_types:      keyword is present
-    auto added_types_rc      = get_right_keyword(expression, L"added_types"      , unwanted_value);     // r/c = 0, if added_types:        keyword is present
-    auto all_types_rc        = get_right_keyword(expression, L"all_types"        , unwanted_value);     // r/c = 0, if all_types:          keyword is present
-    auto id_cache_rc         = get_right_keyword(expression, L"id_cache"         , unwanted_value);     // r/c = 0, if id_cache:           keyword is present
+    auto locale_rc           = get_right_keyword(expression, L"locale"           );     // r/c = 0, if locale:             keyword is present 
+    auto numerics_rc         = get_right_keyword(expression, L"numerics"         );     // r/c = 0, if numerics:           keyword is present
+    auto stack_rc            = get_right_keyword(expression, L"stack"            );     // r/c = 0, if stack:              keyword is present
+    auto all_vars_rc         = get_right_keyword(expression, L"all_vars"         );     // r/c = 0, if all_vars:           keyword is present
+    auto builtin_verbs_rc    = get_right_keyword(expression, L"builtin_verbs"    );     // r/c = 0, if builtin_verbs:      keyword is present
+    auto added_verbs_rc      = get_right_keyword(expression, L"added_verbs"      );     // r/c = 0, if added_verbs:        keyword is present
+    auto all_verbs_rc        = get_right_keyword(expression, L"all_verbs"        );     // r/c = 0, if all_verbs:          keyword is present
+    auto builtin_types_rc    = get_right_keyword(expression, L"builtin_types"    );     // r/c = 0, if builtin_types:      keyword is present
+    auto added_types_rc      = get_right_keyword(expression, L"added_types"      );     // r/c = 0, if added_types:        keyword is present
+    auto all_types_rc        = get_right_keyword(expression, L"all_types"        );     // r/c = 0, if all_types:          keyword is present
+    auto id_cache_rc         = get_right_keyword(expression, L"id_cache"         );     // r/c = 0, if id_cache:           keyword is present
                                                                              
-    auto vars_rc             = get_right_keyword(expression, L"vars"             , unwanted_value);     // r/c = 0, if vars:[ ... ]        keyword is present
-    auto verbs_rc            = get_right_keyword(expression, L"verbs"            , unwanted_value);     // r/c = 0, if verbs:[ ... ]       keyword is present
-    auto types_rc            = get_right_keyword(expression, L"types"            , unwanted_value);     // r/c = 0, if types:[ ... ]       keyword is present
+    auto vars_rc             = get_right_keyword(expression, L"vars"             );     // r/c = 0, if vars:[ ... ]        keyword is present
+    auto verbs_rc            = get_right_keyword(expression, L"verbs"            );     // r/c = 0, if verbs:[ ... ]       keyword is present
+    auto types_rc            = get_right_keyword(expression, L"types"            );     // r/c = 0, if types:[ ... ]       keyword is present
 
   
     M_out(L"\n------------------------------------------------------------------------------------------------------------------------------------------");

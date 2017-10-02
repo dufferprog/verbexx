@@ -45,7 +45,7 @@
 
 namespace static_N
 {
-static pre_parse_C                            pp_main          {     };     // default (static) pre-parse stream for parse_input()
+//static pre_parse_C                            pp_main          {     };     // default (static) pre-parse stream for parse_input()
 static frame_S                               *main_frame_p     {     };     // non-owning pointer to top-level stack frame for parser evaluation phase 
 static symtab_S                               symtab_global    {     };     // default (static) global symtab_S -- global verbs and variables  
 static uint64_t                               error_ct         {0    };     // global parser and evaluation error counter (does not include pre-parser errors)
@@ -82,9 +82,7 @@ frame_S *get_main_frame() try
      // allocate new frame_S, if none is currently allocated -- fill in self-pointer field, while the shared pointer is accessable
 
      if (static_N::main_frame_p == nullptr)
-         static_N::main_frame_p = add_frame();                             // allocate new main stack frame -- will be only one on stack, for now 
-
-     M__(M_out(L"get_main_frame() -- after allocation -- main_frame_p = %p") % static_N::main_frame_p;) 
+         static_N::main_frame_p = add_new_frame();                         // allocate new main stack frame -- will be only one on stack, for now 
 
 
      // pass back address, as requested
@@ -117,7 +115,9 @@ symtab_S *get_global_symtab() try
 }
 M_endf
 
-   
+
+
+
 
 
 ////_____________________________________________________________________________________________________________________
@@ -126,7 +126,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   get_main_preparse() -- pass back address of main (static) pre_parse_C  
+////   process_main_ext() -- call process_main_file() with main (static) stack frame -- main input only 
 ////                   
 ////
 ////_____________________________________________________________________________________________________________________
@@ -135,9 +135,32 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 M_EX_IMPEXP 
-pre_parse_C *get_main_preparse() try
+uint64_t process_main_ext(const std::wstring& main_pathname) try
 {
-     return &(static_N::pp_main); 
+    return process_main_file(*(static_N::main_frame_p), main_pathname); 
+}
+M_endf
+
+
+
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   process_cmdline_ext() -- call process_cmdline() with default static variables -- stub for external callers  
+////                   
+////
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+M_EX_IMPEXP 
+std::wstring process_cmdline_ext(int argc, wchar_t *argv[]) try
+{
+     return process_cmdline(*get_main_frame(), static_N::symtab_global, argc, argv); 
 }
 M_endf
 
@@ -150,7 +173,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   parse_setup_default() -- call parse_setup() with default static variables  
+////   import_dll() -- load DLL and call do_import(prefix-parm) function in DLL 
 ////                   
 ////
 ////_____________________________________________________________________________________________________________________
@@ -158,34 +181,28 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-M_EX_IMPEXP 
-uint64_t parse_setup_default() try
+M_EX_IMPEXP
+int import_dll(const std::wstring& dll_name, const std::wstring& prefix) try
 {
-     return parse_setup(static_N::pp_main, *get_main_frame()); 
-}
-M_endf
+    HMODULE      hmodule   { nullptr };
+    void        *fcn_p     { nullptr };    
 
 
+    // load DLL -- load_dll() should put out any needed error messages
+
+    auto ldrc = load_dll(dll_name, hmodule);  
+    if (ldrc != 0) return ldrc; 
 
 
-////_____________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-////
-////
-////   process_input_default() -- call process_input() with default static variables  
-////                   
-////
-////_____________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    // locate do_import() function in loaded DLL-- get_dll_function() should put out any needed error messages
 
-M_EX_IMPEXP 
-uint64_t process_input_default() try
-{
-     return process_input(static_N::pp_main, *(static_N::main_frame_p)); 
+    auto gfrc = get_dll_function(hmodule, std::wstring { L"do_import" }, fcn_p);
+    if (gfrc != 0) return gfrc;
+
+
+    // call located do_import() function in loaded DLL, and return with R/C from that function call
+
+    return (*(do_import_T)fcn_p)(prefix); 
 }
 M_endf
 
@@ -197,8 +214,9 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   process_cmdline_default() -- call process_cmdline() with default static variables  
-////                   
+////   set_skip_ext() -- set up skip mode ant label in newest pre)parse_C -- stub for external callers  
+////                     (note: preprocessor must be active) 
+//// 
 ////
 ////_____________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
@@ -206,13 +224,81 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 M_EX_IMPEXP 
-uint64_t process_cmdline_default(int argc, wchar_t *argv[]) try
+int set_skip_ext(const std::wstring& to_label) try
 {
-     return process_cmdline(static_N::pp_main, *get_main_frame(), static_N::symtab_global, argc, argv); 
+    // make sure current-level pre_parse_C instance exists - return with error, if not
+
+     pre_parse_C *pp_p = current_pp(); 
+     if (pp_p == nullptr)
+         return -1; 
+
+
+     // add passed-in filename to the pending attach stack for current pp instance
+
+     pp_p->set_skip(to_label); 
+     return 0; 
 }
 M_endf
 
 
+
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   attach_file_ext() -- set up pending attach for passed-in filename -- stub for external callers  
+////                        (note: preprocessor must be active) 
+//// 
+////
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+// file version -- 1 parm
+// ----------------------
+
+M_EX_IMPEXP 
+int pending_attach_ext(const std::wstring& pathname) try
+{
+    // make sure current-level pre_parse_C instance exists - return with error, if not
+
+     pre_parse_C *pp_p = current_pp(); 
+     if (pp_p == nullptr)
+         return -1; 
+
+
+     // add passed-in filename to the pending attach stack for current pp instance
+
+     pp_p->add_pending_attach(pathname); 
+     return 0; 
+}
+M_endf
+ 
+
+// string version -- 2 parms
+// -------------------------
+
+M_EX_IMPEXP 
+int pending_attach_ext(const std::wstring& text, const std::wstring& id) try
+{
+    // make sure current-level pre_parse_C instance exists - return with error, if not
+
+     pre_parse_C *pp_p = current_pp(); 
+     if (pp_p == nullptr)
+         return -1; 
+
+
+     // add passed-in filename to the pending attach stack for current pp instance
+
+     pp_p->add_pending_attach(text, id); 
+     return 0; 
+}
+M_endf
+
+ 
 
 
 ////_____________________________________________________________________________________________________________________
@@ -245,7 +331,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   error_count() -- return combined number of parser and pre-parser errors  
+////   error_count() -- return combined number errors
 ////                   
 ////
 ////_____________________________________________________________________________________________________________________
@@ -256,7 +342,7 @@ M_endf
 M_EX_IMPEXP 
 uint64_t error_count() try
 {
-    return static_N::error_ct + static_N::pp_main.errors(); 
+    return static_N::error_ct; 
 }
 M_endf
 

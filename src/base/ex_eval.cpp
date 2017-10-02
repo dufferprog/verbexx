@@ -221,6 +221,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 // version with passed-back value parm 
+// -----------------------------------
 
 int get_right_keyword(const e_expression_S& expression, const std::wstring& keyword_name, value_S& value, uint32_t n) try
 {
@@ -241,7 +242,110 @@ int get_right_keyword(const e_expression_S& expression, const std::wstring& keyw
 M_endf
 
 
+// version with passed-back string parm 
+// ------------------------------------
+
+int get_right_keyword(const e_expression_S& expression, const std::wstring& keyword_name, std::wstring& ws, uint32_t n) try
+{
+    // return  R/C = -1, if n-th right keyword is not present -- don't modify caller's string
+
+    if (expression.rparms.eval_kws.count(keyword_name) <= n)
+        return -1; 
+
+
+    // n-th keyword is present -- find keyword value
+
+    auto value = multimap_at(expression.rparms.eval_kws, keyword_name, n);
+
+    if (value.ty == type_E::string)
+    {
+        ws = value.string;
+    }
+    else
+    {
+        count_error(); 
+        M_out_emsg1(L"get_right_keyword() -- verb= %s -- right keyword \"%S\" (%d) was not a string value, as expected") % verb_name(expression) % keyword_name % n;
+        msgend_loc(value, expression);
+        M_throw_v(   "get_right_keyword() -- verb= %s -- right keyword \"%S\" (%d) was not a string value, as expected") % out_ws(verb_name(expression)) % out_ws(keyword_name) % n ));  
+        return -1;     
+    }
+                 
+    return 0; 
+}
+M_endf
+
+
+// version with passed-back int64_t parm 
+// -------------------------------------
+
+int get_right_keyword(const e_expression_S& expression, const std::wstring& keyword_name, int64_t& int64, uint32_t n) try
+{
+    // return  R/C = -1, if n-th right keyword is not present -- don't modify caller's string
+
+    if (expression.rparms.eval_kws.count(keyword_name) <= n)
+        return -1; 
+
+
+    // n-th keyword is present -- find keyword value
+
+    auto value = multimap_at(expression.rparms.eval_kws, keyword_name, n);
+
+    if (value.ty == type_E::int64)
+    {
+        int64 = value.int64;
+    }
+    else
+    {
+        count_error(); 
+        M_out_emsg1(L"get_right_keyword() -- verb= %s -- right keyword \"%S\" (%d) was not an int64 value, as expected") % verb_name(expression) % keyword_name % n;
+        msgend_loc(value, expression);
+        M_throw_v(   "get_right_keyword() -- verb= %s -- right keyword \"%S\" (%d) was not an int64 value, as expected") % out_ws(verb_name(expression)) % out_ws(keyword_name) % n ));  
+        return -1;     
+    }
+                 
+    return 0; 
+}
+M_endf
+
+
+// version with passed-back float64_T parm 
+// ---------------------------------------
+
+int get_right_keyword(const e_expression_S& expression, const std::wstring& keyword_name, float64_T& float64, uint32_t n) try
+{
+    // return  R/C = -1, if n-th right keyword is not present -- don't modify caller's string
+
+    if (expression.rparms.eval_kws.count(keyword_name) <= n)
+        return -1; 
+
+
+    // n-th keyword is present -- find keyword value
+
+    auto value = multimap_at(expression.rparms.eval_kws, keyword_name, n);
+
+    if (value.ty == type_E::float64)
+    {
+        float64 = value.float64;
+    }
+    else
+    {
+        count_error(); 
+        M_out_emsg1(L"get_right_keyword() -- verb= %s -- right keyword \"%S\" (%d) was not a float64 value, as expected") % verb_name(expression) % keyword_name % n;
+        msgend_loc(value, expression);
+        M_throw_v(   "get_right_keyword() -- verb= %s -- right keyword \"%S\" (%d) was not a float64 value, as expected") % out_ws(verb_name(expression)) % out_ws(keyword_name) % n ));  
+        return -1;     
+    }
+                 
+    return 0; 
+}
+M_endf
+
+
+
+
+
 // version without passed-back value parm -- just R/C 
+// --------------------------------------------------
 
 int get_right_keyword(const e_expression_S& expression, const std::wstring& keyword_name, uint32_t n) try
 {
@@ -274,13 +378,14 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-// version with passed-back value parm 
+// version with passed-back value parm
+// -----------------------------------
 
 int get_left_keyword(const e_expression_S& expression, const std::wstring& keyword_name, value_S& value, uint32_t n) try
 {
     // return unit value, and R/C = -1, if n-th left keyword is not present
 
-    if (expression.lparms.eval_kws.count(keyword_name) <= 0)
+    if (expression.lparms.eval_kws.count(keyword_name) <= n)
     {
         value = unit_val();  
         return -1; 
@@ -295,7 +400,107 @@ int get_left_keyword(const e_expression_S& expression, const std::wstring& keywo
 M_endf
 
 
-// version without passed-back value parm 
+// version with passed-back string parm 
+// ------------------------------------
+
+int get_left_keyword(const e_expression_S& expression, const std::wstring& keyword_name, std::wstring& ws, uint32_t n) try
+{
+    // return  R/C = -1, if n-th left keyword is not present -- don't modify caller's string
+
+    if (expression.lparms.eval_kws.count(keyword_name) <= n)
+        return -1; 
+
+
+    // n-th keyword is present -- find keyword value
+
+    auto value = multimap_at(expression.lparms.eval_kws, keyword_name, n);
+
+    if (value.ty == type_E::string)
+    {
+        ws = value.string;
+    }
+    else
+    {
+        count_error(); 
+        M_out_emsg1(L"get_left_keyword() -- verb= %s -- left keyword \"%S\" (%d) was not a string value, as expected") % verb_name(expression) % keyword_name % n;
+        msgend_loc(value, expression);
+        M_throw_v(   "get_left_keyword() -- verb= %s -- left keyword \"%S\" (%d) was not a string value, as expected") % out_ws(verb_name(expression)) % out_ws(keyword_name) % n ));  
+        return -1;     
+    }
+                 
+    return 0; 
+}
+M_endf
+
+
+// version with passed-back int64_t parm 
+// -------------------------------------
+
+int get_left_keyword(const e_expression_S& expression, const std::wstring& keyword_name, int64_t& int64, uint32_t n) try
+{
+    // return  R/C = -1, if n-th left keyword is not present -- don't modify caller's string
+
+    if (expression.lparms.eval_kws.count(keyword_name) <= n)
+        return -1; 
+
+
+    // n-th keyword is present -- find keyword value
+
+    auto value = multimap_at(expression.lparms.eval_kws, keyword_name, n);
+
+    if (value.ty == type_E::int64)
+    {
+        int64 = value.int64;
+    }
+    else
+    {
+        count_error(); 
+        M_out_emsg1(L"get_left_keyword() -- verb= %s -- left keyword \"%S\" (%d) was not an int64 value, as expected") % verb_name(expression) % keyword_name % n;
+        msgend_loc(value, expression);
+        M_throw_v(   "get_left_keyword() -- verb= %s -- left keyword \"%S\" (%d) was not an int64 value, as expected") % out_ws(verb_name(expression)) % out_ws(keyword_name) % n ));  
+        return -1;     
+    }
+                 
+    return 0; 
+}
+M_endf
+
+
+// version with passed-back float64_T parm 
+// ----------------------------------------
+
+int get_left_keyword(const e_expression_S& expression, const std::wstring& keyword_name, float64_T& float64, uint32_t n) try
+{
+    // return  R/C = -1, if n-th left keyword is not present -- don't modify caller's string
+
+    if (expression.lparms.eval_kws.count(keyword_name) <= n)
+        return -1; 
+
+
+    // n-th keyword is present -- find keyword value
+
+    auto value = multimap_at(expression.lparms.eval_kws, keyword_name, n);
+
+    if (value.ty == type_E::float64)
+    {
+        float64 = value.float64;
+    }
+    else
+    {
+        count_error(); 
+        M_out_emsg1(L"get_left_keyword() -- verb= %s -- left keyword \"%S\" (%d) was not a float64 value, as expected") % verb_name(expression) % keyword_name % n;
+        msgend_loc(value, expression);                                                            
+        M_throw_v(   "get_left_keyword() -- verb= %s -- left keyword \"%S\" (%d) was not a float64 value, as expected") % out_ws(verb_name(expression)) % out_ws(keyword_name) % n ));  
+        return -1;     
+    }
+                 
+    return 0; 
+}
+M_endf
+
+
+// version without passed-back value 
+// ---------------------------------
 
 int get_left_keyword(const e_expression_S& expression, const std::wstring& keyword_name, uint32_t n) try
 {
@@ -327,8 +532,8 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-// version with passed-in keyword name
-// -----------------------------------
+// version with passed-in keyword name -- passed-in value
+// ------------------------------------------------------
 
 int get_vlist_keyword(const vlist_S& vlist, const std::wstring& keyword_name, value_S& value, uint32_t n) try
 {
@@ -347,6 +552,26 @@ int get_vlist_keyword(const vlist_S& vlist, const std::wstring& keyword_name, va
     return 0; 
 }
 M_endf
+
+
+// version with passed-in keyword name -- no passed-in value -- just R/C only
+// --------------------------------------------------------------------------
+
+int get_vlist_keyword(const vlist_S& vlist, const std::wstring& keyword_name, uint32_t n) try
+{
+    // return unit value, and R/C = -1, if n-th  keyword is not present
+
+    if (vlist.eval_kws.count(keyword_name) <= n)
+        return -1; 
+    
+
+    // n-th keyword is present -- normal R/C
+
+    return 0; 
+}
+M_endf
+
+
 
 
 // version with no passed-in keyword name
@@ -921,9 +1146,9 @@ static int check_verb_vlist(frame_S& frame, const e_expression_S& expression, co
                      if (crc != 0) rc = crc;               
                 }
                 else    // should not occur
-                {
-                    M_throw_v("check_verb_vlist() --  verb= %s %s -- more than one entry in %s expected keyword list -- keyword=%s verb=%s") % out_ws(verb_name(expression)) % out_ws(ws1) %  out_ws(ws2) % out_ws(elem.first) % out_ws(verb_name(expression)) ));
+                {   M_out_emsg1(L"check_verb_vlist() --  verb= %S %S -- more than one entry in %S expected keyword list -- keyword=%S verb=%S") % verb_name(expression) % ws1 % ws2 % elem.first % verb_name(expression); 
                     msgend_loc(vlist, expression); 
+                    M_throw_v(  "check_verb_vlist() --  verb= %s %s -- more than one entry in %s expected keyword list -- keyword=%s verb=%s") % out_ws(verb_name(expression)) % out_ws(ws1) %  out_ws(ws2) % out_ws(elem.first) % out_ws(verb_name(expression)) ));
                     return -2;                                              // should not get here
                 }         
             }   
@@ -1425,7 +1650,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   main_eval() -- special set up main stack frame, etc.
+////   frame_parms() -- special set up of (main) stack frame with cmdline parms
 ////                   
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -1433,16 +1658,56 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-void main_eval(frame_S& main_frame, int argc, wchar_t *argv[]) try
+void frame_parms(frame_S& frame, int argc, wchar_t *argv[]) try
 {
     // stack frame has already been set up with flags, pointers, symbol table, global table, etc. (basic setup)
 
-    // add command line args to top-level stack frame right-side positional parm vector (vlist will have no location data)
+    // add command line args to passed-in stack frame right-side positional parm vector (vlist will have no location data)
 
     for (auto i = 0; i < argc; i++) 
-        add_positional_value( main_frame.rparms, string_val(argv[i]) ); 
+        add_positional_value( frame.rparms, string_val(argv[i]) ); 
     
     return; 
+}
+M_endf
+
+
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   new_frame() -- allocate new stack frame, but don't anchor it anywhere 
+////                   
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+std::shared_ptr<frame_S> new_frame(bool new_symtab) try                      // caller needs to assume responsibility for new frame_S just allocated 
+{
+    // allocate new frame_S, holding onto it with a local shared pointer 
+
+    std::shared_ptr<frame_S> new_frame_sp { new frame_S { } };               // allocate new stack frame and anchor it locally  
+    M__(M_out(L"new_frame() called 1 -- new_frame_sp.use_count() = %d") % new_frame_sp.use_count();)
+
+    // do basic (persistent) setup -- dynamic stack chain pointers will be set up when this stack frame is activated and placed on the stack 
+   
+    new_frame_sp->self_wp          = new_frame_sp;                           // set weak self-ptr for use_count() debugging and later shared_ptr initialization 
+    new_frame_sp->global_p         = get_global_symtab();                    // set new frame's global symbol table pointer 
+
+    new_frame_sp->serial           = ++static_N::frame_serial;               // set unique serial number in new frame_S   
+
+    if (new_symtab)
+    {
+        new_frame_sp->symtab_valid = true;                                   // indicate that symbol table in this frame_S is to be used as newest local symbol table 
+        new_frame_sp->symbols_p    = new_frame_sp.get();                     // set pointer to stack frame with local symbol table to this stack frame -- symtab has local variables for this stack frame   
+    }
+
+    M__(M_out(L"new_frame() called 3 -- new_frame_sp.use_count() = %d") % new_frame_sp.use_count();)
+    return new_frame_sp; 
 }
 M_endf
 
@@ -1450,13 +1715,15 @@ M_endf
 
 
 
+
+
 ////_________________________________________________________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   add_frame() -- alocate new stack frame and add it to to top of stack 
+////   add_new_frame() -- alocate new stack frame and add it to to top of stack 
 ////                   
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -1464,60 +1731,88 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-frame_S *add_frame(bool new_symtab) try
+
+frame_S *add_new_frame(bool new_symtab) try
+{
+    // allocate new frame_S -- anchor it locally for now  
+
+    std::shared_ptr<frame_S> new_frame_sp = new_frame(new_symtab);  
+    M__(M_out(L"add_new_frame() called 1 -- new_frame_sp.use_count() = %d") % new_frame_sp.use_count();)
+
+
+    // add this stack frame to the top of the stack 
+
+    (void)add_frame(new_frame_sp);
+    M__(M_out(L"add_new_frame() called 3 -- new_frame_sp.use_count() = %d") % new_frame_sp.use_count();)
+    return new_frame_sp.get();
+}
+M_endf
+
+
+
+
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   add_frame() -- add passed-in stack frame to to top of stack 
+////                  (stack pointer chain will assume ownership of this stack frame)
+////                   
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+frame_S *add_frame(const std::shared_ptr<frame_S>& frame_sp) try
 {
     // save away pointer to current newest stack frame (called "old frame" here) -- will go out of scope when this routine returns 
 
-    std::shared_ptr<frame_S> old_frame_sp { static_N::newest_frame_sp };     // hold onto current newest stack frame until back chain sahred ptr is set in new stack frems  
+    std::shared_ptr<frame_S> old_frame_sp { static_N::newest_frame_sp };     // hold onto current newest stack frame until back chain shared ptr is set in new stack frems  
 
 
-     // allocate new frame_S, and point static newest frame shared pointer to it  
-
-    std::shared_ptr<frame_S> new_frame_sp { new frame_S { } };              // allocate new stack frame for running this verb (this shared ptr will go out of scope when routine returns)
-    static_N::newest_frame_sp = new_frame_sp;                               // this will hold onto new stack frame after shared pointer in autodata go out of scope 
+    // anchor new stack frame in stck frame queue head -- this will be thte owning pointer for the new stack frame  
+   
+    static_N::newest_frame_sp = frame_sp;                                   // (!!!!!!!!!! owning pointer !!!!!!!!!!!!!) this will hold onto new stack frame after add_frame() returns
 
 
     // fix up various pointers in new frame_S being added to top of stack
     // ------------------------------------------------------------------
-
-    new_frame_sp->self_wp         = new_frame_sp;                           // set weak self-ptr for use_count() debugging and later shared_ptr initialization 
-    new_frame_sp->global_p        = get_global_symtab();                    // set new frame's global symbol table pointer       
-
+ 
     if (old_frame_sp.use_count() > 0)                                       // are we adding 1st stack frame?
     {
         // adding regular (not main) stack frame
             
-        new_frame_sp->parent_sp   = old_frame_sp;                           // set parent pointer in new stack frame  (owning pointer) 
-        new_frame_sp->main_p      = old_frame_sp->main_p;                   // copy old frame's main_p to new frame_S
-        old_frame_sp->child_p     = new_frame_sp.get();                     // set new frame_S as old frame's child   (non-owning pointer)
+        frame_sp    ->parent_sp   = old_frame_sp;                           // set parent pointer in new stack frame  (!!!!!!!!!!!!!!!!!!!! owning pointer !!!!!!!!!!!!!!!!!!!!!!) 
+        frame_sp    ->main_p      = old_frame_sp->main_p;                   // copy old frame's main_p to new frame_S
+        old_frame_sp->child_p     = frame_sp.get();                         // set new frame_S as old frame's child   (non-owning pointer)
     }
     else
     {
-        new_frame_sp->main_p      =  new_frame_sp.get();                    // this is main stack frame -- points to itself -- has no parent pointer  
-        new_frame_sp->is_main     = true;                                   // this is main stack frame   
+        // adding 1st (main) stack frame
+
+        frame_sp->main_p          = frame_sp.get();                         // this is main stack frame -- points to itself -- has no parent pointer  
+        frame_sp->is_main         = true;                                   // this is main stack frame   
     }
 
     
     // set unique serial number in new frame
 
-    new_frame_sp->serial          = ++static_N::frame_serial;               // set unique serial number in new frame_S     
     static_N::frame_depth++;                                                // maintain frame depth counter
     static_N::frame_max_depth     = std::max(static_N::frame_depth, static_N::frame_max_depth); 
 
-    // set up to use symbol table in new frame_S as the local symbol table, -or- inherit current one from parent frame_S
 
-    if (new_symtab)
-    {
-        new_frame_sp->symtab_valid = true;                                   // indicate that symbol table in this frame_S is to be used as newest local symbol table 
-        new_frame_sp->symbols_p    = new_frame_sp.get();                     // set pointer to stack frame with local symbol table to the new frame_S (new set of local variables)                            
-    }                                                                    
-    else                                                                     // continue to use current symbol table as the local one
+    // if this stack frame has no valid symtab_S, set up to inherit current symbol table from parent frame_S
+
+    if (!(frame_sp->symtab_valid))                                                                
     {   
         if (old_frame_sp.use_count() > 0)                                    // don't look at old frame, if none -- assume that main stack frame being added has a valid symbol table
-            new_frame_sp->symbols_p = old_frame_sp->symbols_p;               // copy parent's symbols_p to new frame_S -- don't activate symbol table in new frame_S
+            frame_sp->symbols_p = old_frame_sp->symbols_p;                   // copy parent's symbols_p to new frame_S -- don't activate symbol table in new frame_S
     }                                                                    
-
-    return new_frame_sp.get();                                               // return plain pointer to newly-allocated stack frame
+    
+    return frame_sp.get();                                                   // return pointer to newly-added stack frame
 }
 M_endf
 
@@ -1540,7 +1835,7 @@ M_endf
 void remove_frame() try
 {
     std::shared_ptr<frame_S> removed_frame_sp { static_N::newest_frame_sp   }  ;     // shared ptr to hold onto stack frame being removed
-    std::shared_ptr<frame_S> kept_frame_sp    { removed_frame_sp->parent_sp }  ;     // shared ptr to hold onto stack frame being kept (2nd oldest)
+    std::shared_ptr<frame_S> kept_frame_sp    { removed_frame_sp->parent_sp }  ;     // shared ptr to hold onto stack frame being kept (2nd oldest)  -- may be empty ??????
 
 
     M__(M_out(L"remove_frame() -- called:  removed_frame_p = %p   kept_frame_p = %p") % removed_frame_sp.get() % kept_frame_sp.get();)
@@ -1550,14 +1845,20 @@ void remove_frame() try
   // kept_frame_sp->verb_eval_ct += removed_frame_sp->verb_eval_ct;  // add removed frame's verb count to kept's (statistical counters)
 
 
+    // update symbol table pointer (if required) in removed stack frame (in case it doesn't get deallocated (i.e. is pre-processor or other static stack frame)
+
+    if (!(removed_frame_sp->symtab_valid))
+        removed_frame_sp->symbols_p = nullptr;                                          // will get filled-in again, if this stack frame (static) is reused    
+
+
     // remove newest stack frame from top of stack  (leave any scoping pointers alone -- these may hold onto removed stack frame in case any closures point to it directly or indirectly)
     
-    if (kept_frame_sp.use_count() > 0)                                                               // is there a kept stack frame (i.e. removing main stack frame this time)
-        kept_frame_sp->child_p = nullptr;                                                            // kept stack frame is now childless
+    if (kept_frame_sp.use_count() > 0)                                                  // is there a kept stack frame (i.e. removing main stack frame this time)
+        kept_frame_sp->child_p = nullptr;                                               // kept stack frame is now childless
 
-    removed_frame_sp->parent_sp.reset();                                                             // get rid of removed stack frame's parent pointer (kept frame will not go away, since this routine still holds a shared pointer for it)
-    static_N::newest_frame_sp = kept_frame_sp;                                                       // update newest stack frame pointer (this will hold onto newest stack (if any are left on stack) frame after this routine returns)
-    static_N::frame_depth--;                                                                         // maintain frame depth counter 
+    removed_frame_sp->parent_sp.reset();                                                // get rid of removed stack frame's parent pointer (kept frame will not go away, since this routine still holds a shared pointer for it)
+    static_N::newest_frame_sp = kept_frame_sp;                                          // update newest stack frame pointer (this will hold onto newest stack (if any are left on stack) frame after this routine returns)
+    static_N::frame_depth--;                                                            // maintain frame depth counter 
 
     return; 
 }
@@ -1583,7 +1884,7 @@ int eval_block(frame_S& parent_frame, const vlist_S& left_vlist, const vlist_S& 
 {
     // add new stack frame to the active frame_S queue
 
-    frame_S *new_frame_p = add_frame();  
+    frame_S *new_frame_p = add_new_frame();  
 
 
     // upward scope for a block frame_S is always starts at parent stack frame -- scoping is always lexical
@@ -1615,7 +1916,7 @@ int eval_block(frame_S& parent_frame, const vlist_S& left_vlist, const vlist_S& 
 
     if (block_results.quit_flag)
     {
-        results = unit_results();                                               // pass back unit results -- @QUIT special results are cosnumed 
+        results = unit_results();                                               // pass back unit results -- @QUIT special results are consumed 
         return 0; 
     }
                           
@@ -1648,7 +1949,7 @@ int eval_verb_block(frame_S& parent_frame, const e_expression_S& expression, con
 {
     // add new stack frame to the active frame_S queue (and do basic setup)
 
-    frame_S *new_frame_p = add_frame(); 
+    frame_S *new_frame_p = add_new_frame(); 
 
 
     // parent scope for a verb frame_S is parent stack frame (dynamic scope) -or- stack frame that defined the verb (lexical scope)  
@@ -1863,11 +2164,15 @@ int eval_verb_block(frame_S& parent_frame, const e_expression_S& expression, con
         else if (slist_results.throw_flag)                                                                     // @THROW is expected
         {                                                                                                      
              results = slist_results;                                                                          // percolate @THROW results           
-        }                                                                                                      
+        }   
+        else if (slist_results.skip_flag)                                                                      // @SKIPTO is expected
+        {                                                                                                      
+             results = slist_results;                                                                          // percolate @SKIPTO results           
+        }       
         else                                                                                                   // unexpected special results
         {              
             if (slist_results.goto_flag)
-                M_out_emsg(L"User-defined verb evaluation ended by unconsumed @GOTO «%s»") % slist_results.str;             
+                M_out_emsg(L"User-defined verb evaluation ended by unconsumed @GOTO «%s»") % slist_results.str;         // ?????? long @GOTO not allowed ????? -- config flag ????   
        
             else if (slist_results.leave_flag)
                 M_out_emsg(L"User-defined verb evaluation ended by unconsumed @LEAVE «%s»") % slist_results.str;            
@@ -1918,7 +2223,7 @@ M_endf
 
 int eval_main_block(frame_S& frame, const slist_S& slist) try
 {
-    // run slist under new block frame -- remove frame_S when done
+    // run slist prebuilt main frame_S 
 
     results_S block_results {};
     auto erc = eval_slist(frame, slist, block_results, true);
@@ -1966,6 +2271,13 @@ int eval_main_block(frame_S& frame, const slist_S& slist) try
             return -1;
         }
          
+        if (block_results.skip_flag)
+        {
+            M_out_emsg(L"main slist evaluation ended by unconsumed @SKIPTO %s") % str_value(block_results, true, false, true); 
+            count_error();
+            return -1;
+        }                     
+
         if (block_results.leave_flag)
         {
             M_out_emsg(L"main slist evaluation ended by unconsumed @LEAVE «%s»  -- apparently @LEAVE was issued outside of any block") % block_results.str; 
@@ -2376,7 +2688,7 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
             }                                                                      
 
 
-            // handle multiple results  -- can be 0, 1, or more values in the multiple results vlist
+            // handle multiple results  -- can be 0, 1, or more values in the multiple results vlist (or perhaps no vlist at all)
             // -------------------------------------------------------------------------------------
 
             else
@@ -2388,7 +2700,9 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
                 uint64_t n_results { 0 };                                                                      // number of positional value results -- set to 0 in case vlist_sp is not initialized    
                 uint64_t n_keys    { 0 };                                                                      // number of keyword value    results -- set to 0 in case vlist_sp is not initialized    
                 
-                if (val_results.vlist_sp.use_count() > 0)                                                      // vlist_sp points to vlist (with multiple values)? 
+                
+
+                if ( (!val_results.no_results) && (val_results.vlist_sp.use_count() > 0) )                     // vlist_sp points to vlist (with multiple values)? 
                 {
                     n_results = val_results.vlist_sp->values.size();                                           // number of positional results -- can be 0, 1, 2, ...
 
@@ -2567,7 +2881,7 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
 
                  if (val_results.multiple_results)
                  {
-                     if (val_results.vlist_sp.get() == nullptr)              // if no vlist, assume number of results = 0
+                     if ( (val_results.no_results) || (val_results.vlist_sp.get() == nullptr) )  // if no vlist, assume number of results = 0
                      {
                           M__(M_out(L"eval_vlist() -- handling multiple results (without vlist) from keyword value eval_value() call");)  
                           keyword_value = unit_val();                        // no multiple results (?? should not occur??) -- just use unit keyword value                      
@@ -3187,7 +3501,7 @@ int eval_slist(frame_S& frame, const slist_S& slist, results_S& results, bool is
             }
 
 
-            // any other special results (@RETURN, @XCTL, etc.) will cause slist evaluation to end -- special results flags are passed back to slist evaluator for handling or further percolation
+            // any other special results (@RETURN, @XCTL, @SKIPTO etc.) will cause slist evaluation to end -- special results flags are passed back to slist evaluator for handling or further percolation
 
             M__(M_out(L"eval_slist() -- percolating special results upward");)
             results = slist_results;      // pass back special results   

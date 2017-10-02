@@ -31,6 +31,53 @@
 ////
 ////
 ////   wmain()
+////   -------
+////
+////
+////
+////    main function call flow: 
+////
+////
+////    wmain()                                          -- external entry point for verbexx.exe                                         (in         main.cpp)
+////     ex_main()                                       -- functional top-level code                                                    (in      ex_main.cpp)
+////       process_cmdline_ext()                         -- stub for external callers                                                    (in ex_interface.cpp)
+////                                                        accesses global symtab_S, creates top-level frame_S    
+////         process_cmdline()                           -- processes command line args                                                  (in     ex_parse.cpp)
+////           frame_parms()                             -- puts command line args as (main) block parms                                 (in      ex_eval.cpp)  
+////       process_main_ext()                            -- stub for external callers                                                    (in ex_interface.cpp)
+////                                                        access top-level frame_S 
+////         process_main_file()                         --                                                                              (in     ex_parse.cpp) 
+////           pre_parse_C::attach_file()                -- attaches main input file to top-level  pre_parse_C                           (in  ex_preparse.cpp)
+////           get_unnested_slist()                      -- parse outer slist (input file)                                               (in     ex_parse.cpp)
+////             peek_token() , etc.                     -- get 1st token                                                                (in        parse.cpp) 
+////               pre_parse_C::peek_token()             -- pre-processor -- get next token                                              (in  ex_preparse.cpp)
+////           eval_main_block()                         -- evaluate main block -- main frame, outer slist                               (in      ex_eval.cpp) 
+////
+////
+////
+////
+////      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+////
+////
+////      @INTERPOLATE verb: 
+////
+////
+////      verb_interpolate_l()                           -- does string interpoaltion                                                    (in  ex_verb_util.cpp)  
+////       parse_string()                                -- called with current frame_S -- has local pre_parse_C (nested)                (in     ex_parse.cpp)
+////         get_unnested_slist()                        -- parse outer slist (from attached string)                                     (in     ex_parse.cpp)
+////               etc.
+////
+////
+////
+////      @PARSE verb:     (same as @INTERPOLATE)
+////
+////
+////
+////
+////
+////
+////
+////
 ////
 ////
 ////_____________________________________________________________________________________________________________________

@@ -289,35 +289,35 @@ void display_value(const value_S& value, const std::wstring& ws, const std::wstr
 
     std ::wstring ix = std::to_wstring(value.token_ix1) + L":" + std::to_wstring(value.token_ix2); 
 
-         if (value.ty == type_E::none        ) flags += L"none"         ; 
-    else if (value.ty == type_E::no_value    ) flags += L"no_value "    ;
-    else if (value.ty == type_E::identifier  ) flags += L"identifier "  ;
-    else if (value.ty == type_E::verbname    ) flags += L"verbname "    ;
-    else if (value.ty == type_E::keyname     ) flags += L"keyname "     ;
-    else if (value.ty == type_E::vlist       ) flags += L"vlist ["      + fmt_ptr(value.vlist_sp.get()       ) + L"] "  ;
-    else if (value.ty == type_E::expression  ) flags += L"expression (" + fmt_ptr(value.expression_sp.get()  ) + L") "  ;
-    else if (value.ty == type_E::slist       ) flags += L"slist {"      + fmt_ptr(value.slist_sp.get()       ) + L"} "  ;
-    else if (value.ty == type_E::verbdef     ) flags += L"verbdef <"    + fmt_ptr(value.verbdef_sp.get()     ) + L"> "  ;
-    else if (value.ty == type_E::typdef      ) flags += L"typedef <"    + fmt_ptr(value.typdef_sp.get()      ) + L"> "  ;
-    else if (value.ty == type_E::ref         ) flags += L"ref <"        + fmt_ptr(value.ref_sp.get()         ) + L"> "  ;
-    else if (value.ty == type_E::array       ) flags += L"array <"      + fmt_ptr(value.buffer_sp.get()      ) + L"> "  ;
-    else if (value.ty == type_E::structure   ) flags += L"structure <"  + fmt_ptr(value.buffer_sp.get()      ) + L"> "  ;
-    else if (value.ty == type_E::unit        ) flags += L"unit "        ;
-    else if (value.ty == type_E::boolean     ) flags += L"boolean "     ;
-    else if (value.ty == type_E::int8        ) flags += L"int8 "        ; 
-    else if (value.ty == type_E::int16       ) flags += L"int16 "       ; 
-    else if (value.ty == type_E::int32       ) flags += L"int32 "       ; 
-    else if (value.ty == type_E::int64       ) flags += L"int64 "       ; 
-    else if (value.ty == type_E::uint8       ) flags += L"uint8 "       ; 
-    else if (value.ty == type_E::uint16      ) flags += L"uint16 "      ; 
-    else if (value.ty == type_E::uint32      ) flags += L"uint32 "      ; 
-    else if (value.ty == type_E::uint64      ) flags += L"uint64 "      ;
-    else if (value.ty == type_E::float32     ) flags += L"float32 "     ; 
-    else if (value.ty == type_E::float64     ) flags += L"float64 "     ; 
-    else if (value.ty == type_E::string      ) flags += L"string "      ; 
-    else if (value.ty == type_E::error       ) flags += L"error "       ; 
-    else if (value.ty == type_E::special     ) flags += L"special "     ; 
-    else                                       flags += L" ???unknown value type???  " ; 
+         if (value.ty == type_E::none        ) flags = L"none"         ; 
+    else if (value.ty == type_E::no_value    ) flags = L"no_value "    ;
+    else if (value.ty == type_E::identifier  ) flags = L"identifier "  ;
+    else if (value.ty == type_E::verbname    ) flags = L"verbname "    ;
+    else if (value.ty == type_E::keyname     ) flags = L"keyname "     ;
+    else if (value.ty == type_E::vlist       ) flags = L"vlist ["      + fmt_ptr(value.vlist_sp.get()       ) + L"] "  ;
+    else if (value.ty == type_E::expression  ) flags = L"expression (" + fmt_ptr(value.expression_sp.get()  ) + L") "  ;
+    else if (value.ty == type_E::slist       ) flags = L"slist {"      + fmt_ptr(value.slist_sp.get()       ) + L"} "  ;
+    else if (value.ty == type_E::verbdef     ) flags = L"verbdef <"    + fmt_ptr(value.verbdef_sp.get()     ) + L"> "  ;
+    else if (value.ty == type_E::typdef      ) flags = L"typedef <"    + fmt_ptr(value.typdef_sp.get()      ) + L"> "  ;
+    else if (value.ty == type_E::ref         ) flags = L"ref <"        + fmt_ptr(value.ref_sp.get()         ) + L"> "  ;
+    else if (value.ty == type_E::array       ) flags = L"array <"      + fmt_ptr(value.buffer_sp.get()      ) + L"> "  ;
+    else if (value.ty == type_E::structure   ) flags = L"structure <"  + fmt_ptr(value.buffer_sp.get()      ) + L"> "  ;
+    else if (value.ty == type_E::unit        ) flags = L"unit "        ;
+    else if (value.ty == type_E::boolean     ) flags = L"boolean "     ;
+    else if (value.ty == type_E::int8        ) flags = L"int8 "        ; 
+    else if (value.ty == type_E::int16       ) flags = L"int16 "       ; 
+    else if (value.ty == type_E::int32       ) flags = L"int32 "       ; 
+    else if (value.ty == type_E::int64       ) flags = L"int64 "       ; 
+    else if (value.ty == type_E::uint8       ) flags = L"uint8 "       ; 
+    else if (value.ty == type_E::uint16      ) flags = L"uint16 "      ; 
+    else if (value.ty == type_E::uint32      ) flags = L"uint32 "      ; 
+    else if (value.ty == type_E::uint64      ) flags = L"uint64 "      ;
+    else if (value.ty == type_E::float32     ) flags = L"float32 "     ; 
+    else if (value.ty == type_E::float64     ) flags = L"float64 "     ; 
+    else if (value.ty == type_E::string      ) flags = L"string "      ; 
+    else if (value.ty == type_E::error       ) flags = L"error "       ; 
+    else if (value.ty == type_E::special     ) flags = L"special "     ; 
+    else                                       flags = L" ???unknown value type???  " ; 
  
     M__(M_out(L"display_value() -- point 1 -- value.ty = %S") % type_str(value.ty));
 
@@ -472,6 +472,100 @@ void display_value(const value_S& value, const std::wstring& ws, const std::wstr
 M_endf
  
 
+
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   display_results() -- display passed-in results 
+////
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+void display_results(const results_S& results, const std::wstring& ws, const std::wstring& mod, bool suppress_nesting, const std::wstring& nest) try
+{
+    // display results flags and string
+
+    std::wstring flags { }; 
+
+    if (results.multiple_results             ) flags += L"multiple_results "           ; 
+    if (results.no_results                   ) flags += L"no_results "                 ; 
+    if (results.re_eval_expression_results   ) flags += L"re_eval_expression_results " ;
+    if (results.builtin_verb_results         ) flags += L"builtin_verb_results "       ;
+    if (results.special_results              ) flags += L"special_results "            ; 
+    if (results.error                        ) flags += L"error "                      ; 
+    if (results.break_flag                   ) flags += L"break_flag "                 ;
+    if (results.continue_flag                ) flags += L"continue_flag "              ;
+    if (results.quit_flag                    ) flags += L"quit_flag "                  ; 
+    if (results.end_flag                     ) flags += L"end_flag "                   ;
+    if (results.leave_flag                   ) flags += L"leave_flag "                 ;
+    if (results.goto_flag                    ) flags += L"goto_flag "                  ;
+    if (results.xctl_flag                    ) flags += L"xctl_flag "                  ;
+    if (results.return_flag                  ) flags += L"return_flag "                ;
+    if (results.throw_flag                   ) flags += L"throw_flag "                 ;
+    if (results.skip_flag                    ) flags += L"skip_flag "                  ;
+
+     M_out(L"%s %s%s %|80t|-- results.flags = <%s>"  ) % ws % nest % mod % flags;
+     M_out(L"%s %s%s %|80t|-- results.str   = \"%S\"") % ws % nest % mod % results.str;
+
+    // display the value_S structure imbedded in results_S
+
+    display_value(results, ws, mod, suppress_nesting, nest);    
+    return; 
+}
+M_endf
+
+
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   results_msg_string() -- pass back string fof error messages 
+////
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+std::wstring results_msg_string(const results_S& results) try
+{
+    // display results flags and string
+
+    std::wstring ret_ws { }; 
+
+    if (results.multiple_results             ) ret_ws += L"multiple_results "           ; 
+    if (results.no_results                   ) ret_ws += L"no_results "                 ; 
+    if (results.re_eval_expression_results   ) ret_ws += L"re_eval_expression_results " ;
+    if (results.builtin_verb_results         ) ret_ws += L"builtin_verb_results "       ;
+    if (results.special_results              ) ret_ws += L"special_results "            ; 
+    if (results.error                        ) ret_ws += L"error "                      ; 
+    if (results.break_flag                   ) ret_ws += L"@BREAK "                     ;
+    if (results.continue_flag                ) ret_ws += L"@CONTINUE "                  ;
+    if (results.quit_flag                    ) ret_ws += L"@QUIT "                      ; 
+    if (results.end_flag                     ) ret_ws += L"@END "                       ;
+    if (results.leave_flag                   ) ret_ws += L"@LEAVE "                     ;
+    if (results.goto_flag                    ) ret_ws += L"@GOTO "                      ;
+    if (results.xctl_flag                    ) ret_ws += L"@XCTL "                      ;
+    if (results.return_flag                  ) ret_ws += L"@RETURN "                    ;
+    if (results.throw_flag                   ) ret_ws += L"@THROW "                     ;
+    if (results.skip_flag                    ) ret_ws += L"@SKIP "                      ;
+
+    if (results.str.size() > 0)
+        ret_ws += ( std::wstring { L" string = \""} + results.str + std::wstring { L"\"" });
+    
+    return ret_ws; 
+}
+M_endf
+
+    
 
 ////_________________________________________________________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
@@ -1078,7 +1172,11 @@ void display_all_vars(frame_S& frame_in) try
         if (frame_p->is_verb            ) flags += L"is_verb  "            ;  
         if (frame_p->is_main            ) flags += L"is_main  "            ; 
         if (frame_p->is_block           ) flags += L"is_block  "           ;
+        if (frame_p->is_preparse        ) flags += L"is_preparse  "        ;
         if (frame_p->symtab_valid       ) flags += L"symtab_valid  "       ;
+        if (frame_p->lexical_scope      ) flags += L"lexical_scope  "      ;
+        if (frame_p->dynamic_scope      ) flags += L"dynamic_scope  "      ;
+        if (frame_p->block_scope        ) flags += L"block_scope  "        ;
 
         if (frame_p->is_main)
             M_out(L"Main stack frame:%d %30t-- total number of identifiers = %d %122t -- flags = %s  -- list of variables:\n")   % frame_p->serial   %  (frame_p->symtab.symbols.size()) % flags;
@@ -1208,8 +1306,12 @@ void display_all_verbdefs(frame_S& frame_in, bool show_builtin, bool show_define
         if (frame_p->exports_done       ) flags += L"exports_done  "       ;
         if (frame_p->is_verb            ) flags += L"is_verb  "            ; 
         if (frame_p->is_block           ) flags += L"is_block "            ; 
+        if (frame_p->is_preparse        ) flags += L"is_preparse "         ; 
         if (frame_p->is_main            ) flags += L"is_main  "            ; 
         if (frame_p->symtab_valid       ) flags += L"symtab_valid  "       ;
+        if (frame_p->lexical_scope      ) flags += L"lexical_scope  "      ;
+        if (frame_p->dynamic_scope      ) flags += L"dynamic_scope  "      ;
+        if (frame_p->block_scope        ) flags += L"block_scope  "        ;
 
         if (frame_p->is_main)
             M_out( L"Main stack frame [%d] %30t-- total number of identifiers = %d %122t -- flags = %s  -- list of verbs:\n") 
@@ -1358,8 +1460,12 @@ void display_all_typdefs(frame_S& frame_in, bool show_builtin, bool show_defined
         if (frame_p->exports_done       ) flags += L"exports_done  "       ;
         if (frame_p->is_verb            ) flags += L"is_verb  "            ; 
         if (frame_p->is_block           ) flags += L"is_block "            ; 
+        if (frame_p->is_preparse        ) flags += L"is_preparse "         ; 
         if (frame_p->is_main            ) flags += L"is_main  "            ; 
         if (frame_p->symtab_valid       ) flags += L"symtab_valid  "       ;
+        if (frame_p->lexical_scope      ) flags += L"lexical_scope  "      ;
+        if (frame_p->dynamic_scope      ) flags += L"dynamic_scope  "      ;
+        if (frame_p->block_scope        ) flags += L"block_scope  "        ;
 
         if (frame_p->is_main)
             M_out( L"Main stack frame [%d] %30t-- total number of identifiers = %d %122t -- flags = %s  -- list of typedefs:\n") 
@@ -1506,11 +1612,14 @@ static int find_symtab_ident(frame_S& frame, const std::wstring& ident, symtab_S
 {
     bool exported_only { false };                                    // true means variable is found only if is_exported flag is on
 
+    M__(M_out(L"find_symtab_ident() 1 -- called -- &frame = %X") % &frame;) 
+
 
     // search nested non-global stack frames for requested identifier 
     // --------------------------------------------------------------
 
     frame_S *frame_p  {frame.symbols_p};                             // point to the frame_S containing the active symbol table for the incoming frame_S  
+
 
     for(;;)                                                          // main loop to look at all chained stack frames in the scope chain starting at passed-in frame_S
     {
@@ -1521,7 +1630,6 @@ static int find_symtab_ident(frame_S& frame, const std::wstring& ident, symtab_S
                  symtab_p = &(frame_p->symtab);                      // pass back pointer to located symbol table
                  return 0; 
              }
-        
 
              //  identifiers in this symbol table are visible only if exported 
 

@@ -53,142 +53,53 @@
 
 
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//  constructor with passed-in pathname
+//  ----------------------------------- 
+//
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-// default constructor (defaulted)
-// ------------------- 
-//
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
-infile_C::infile_C()      
-    : m_in_file_p      {nullptr}         
-    , m_in_filename    {}
-    , m_is_open_f      {false}
-    , m_is_utf8        {false}
-    , m_line_ok        {false}
-    , m_eof_seen       {false}
-    , m_error_seen     {false}
-    , m_curr_line      {}
-    , m_curr_wline     {}
-    , m_curr_linenum   {0} 
-    , m_curr_col       {0}
-    , m_curr_pos       {0}
-    , m_end_pos        {0}
+infile_C::infile_C(const std::wstring& pathname, api_err_S& err) try    
 {
-    M_dmsg1("infile_C() called -- default constructor (own=%d) -- \"", (int)is_owner) M_dwide(m_in_filename) M_dmsg2("\"")      
-    return;
-}
-*/
+    M__(M_out(L"infile_C(\"%s\") called -- wstring constructor -- m_in_filename =  \"%s\"") % pathname % m_in_filename;)
 
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-// string constructor
-// ------------------ 
-//
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-infile_C::infile_C(const std::string& str) try    
-{
-    M__(M_out(L"infile_C(%s) called -- string constructor -- m_in_filename = \"%s\"") % to_wstring(str) % m_in_filename;)
-    open(str);
+    (void)open(pathname, err);
     return;
 }
 M_endf
 
 
 
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-// wstring constructor
-// ------------------- 
+//  constructor with passed-in tfile_info_S
+//  --------------------------------------- 
 //
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-infile_C::infile_C(const std::wstring& wstr)  try    
+infile_C::infile_C(const tfile_info_S& info, api_err_S& err) try    
 {
-    M__(M_out(L"infile_C(\"%s\") called -- wstring constructor -- m_in_filename =  \"%s\"") % wstr % m_in_filename;) 
-    open(wstr);
+    M__(M_out(L"infile_C(\"%s\") called -- tfile_info_S constructor -- m_in_filename =  \"%s\"") % info.filename % m_in_filename;) 
+
+    (void)open(info, err);
     return;
 }
 M_endf
 
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-// copy constructor (deleted)
-// ---------------- 
-//
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
-infile_C::infile_C(const infile_C& from)
-    : m_in_file_p      { from.m_in_file_p      }
-    , m_in_filename    { from.m_in_filename    }
-    , m_is_open_f      { from.m_is_open_f      }
-    , m_is_utf8        { from.m_is_utf8        }
-    , m_line_ok        { from.m_line_ok        }
-    , m_eof_seen       { from.m_eof_seen       }
-    , m_error_seen     { from.m_error_seen     }
-    , m_curr_line      { from.m_curr_line      }
-    , m_curr_wline     { from.m_curr_wline     }
-    , m_curr_linenum   { from.m_curr_linenum   }
-    , m_curr_col       { from.m_curr_col       }
-    , m_curr_pos       { from.m_curr_pos       }
-    , m_end_pos        { from.m_end_pos        }
-{
-    M_msg1("infile_C(const infile_C&) called -- copy constructor (own=%d) -- \"", (int)is_owner) M_wide(m_in_filename) M_msg2("\"")  
-    return;
-}
-*/
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-// move constructor (deleted)
-// ---------------- 
-//
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/*
-infile_C::infile_C(infile_C&& from)
-    : m_in_file_p      { from.m_in_file_p              }
-    , m_in_filename    { std::move(from.m_in_filename) }
-    , m_is_open_f      { from.m_is_open_f              }
-    , m_is_utf8        { from.m_is_utf8                }
-    , m_line_ok        { from.m_line_ok                }
-    , m_eof_seen       { from.m_eof_seen               }
-    , m_error_seen     { from.m_error_seen             }
-    , m_curr_line      { std::move(from.m_curr_line)   }
-    , m_curr_wline     { std::move(from.m_curr_wline)  }
-    , m_curr_linenum   { from.m_curr_linenum           }
-    , m_curr_col       { from.m_curr_col               }
-    , m_curr_pos       { from.m_curr_pos               }
-    , m_end_pos        { from.m_end_pos                }
-{
-    M_msg1("infile_C(infile_C&&) called -- move constructor (own=%d) -- \"", (int)is_owner) M_wide(m_in_filename) M_msg2("\"")      
-    from.is_owner = false;    // don't want to close the file in destructor   
-    return; 
-}
- */
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-// destructor
-// ----------
+//  destructor
+//  ----------
 //
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -205,165 +116,113 @@ infile_C::~infile_C()       // destructor -- can't throw exceptions
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-// copy assignment (self-assignment should be OK -- orig file gets closed, copy does not own the file (deleted)
-// ---------------
+//  init() flags to default/initial state
+//  ------
 //
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*
-infile_C& infile_C::operator=(const infile_C& from)
+
+void infile_C::init() try
 {
-    M_msg1("operator=(const infile_C&) called -- copy_assignment (own=%d) -- \"", (int)is_owner) M_wide(from.m_in_filename) M_msg1("\"->\"") M_wide(m_in_filename) M_msg2("\"")
-   
-    infile_C temp {from};        // constructed copy of from -- from still owns the file (if any)
-    std::swap(temp, *this);      // move copy of from into *this -- temp now has old file from *this -- may get closed when temp goes out of scope  
-    return *this;                // *this is a copy of from -- from is still owner of file (if any)
-}
-*/
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-// move assignment (deleted)
-// ---------------
-//
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/*
-infile_C& infile_C::operator=(infile_C&& from)
-{
-    M_msg1("operator=(infile_C&&) called -- move_assignment (own=%d) -- \"", (int)is_owner) M_wide(from.m_in_filename) M_msg1("\"->\"") M_wide(m_in_filename) M_msg2("\"")
-      
-    std::swap(m_in_file_p    , from.m_in_file_p    );
-    std::swap(m_in_filename  , from.m_in_filename  );
-    std::swap(m_is_open_f    , from.m_is_open_f    );
-    std::swap(m_is_utf8      , from.m_is_utf8      );
-    std::swap(m_line_ok      , from.m_line_ok      );
-    std::swap(m_eof_seen     , from.m_eof_seen     );
-    std::swap(m_error_seen   , from.m_error_seen   );
-    std::swap(m_curr_line    , from.m_curr_line    );
-    std::swap(m_curr_wline   , from.m_curr_wline   );
-    std::swap(m_curr_linenum , from.m_curr_linenum );
-    std::swap(m_curr_col     , from.m_curr_col     );
-    std::swap(m_curr_pos     , from.m_curr_pos     );
-    std::swap(m_end_pos      , from.m_end_pos      ); 
-
-    return *this;                
-}
-*/
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-// open() file
-// -----------
-//
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-//  "plain" string version 
-//  ----------------------
-
-int infile_C::open(const std::string& str) try
-{
-    M__(M_out(L"infile-C::open(%s) called -- m_in_filename = \"%s\"") % to_wstring(str) % m_in_filename;)  
- 
-    close();       // make sure any currently opened file is closed 
-
-
     // initialize flags and char position in new file (file name will be set below)
 
-    m_is_utf8        = false;
+    m_is_open        = false;
     m_error_seen     = false;  
     m_eof_seen       = false; 
+    m_line_ok        = false;
+
     m_curr_linenum   = 0; 
     m_curr_col       = 0; 
     m_curr_pos       = 0; 
     m_end_pos        = 0;  
-    
-    m_line_ok        = false;
-    m_curr_line      = std::string{};
-    m_curr_wline     = std::wstring{};
 
+    m_curr_wline     = std::wstring { };
 
-    // open() the file and save away file info  
-
-    m_in_file_p = new std::ifstream(str); 
-   
-    if (!(*m_in_file_p).good())
-    {  
-        M_out_emsg(L"infile_C::open() -- Input file \"%s\" cannot be opened") % to_wstring(str);
-        delete m_in_file_p; 
-        m_in_file_p   = nullptr;
-        m_error_seen  = true; 
-        m_in_filename = std::wstring{}; 
-        m_source_id   = ::add_cached_id(m_in_filename);
-        return -1; 
-    }
-    else
-    {
-        m_in_filename = ::to_wstring(str); 
-        m_is_open_f   = true;
-    }
-
-    return 0; 
+    return; 
 }
 M_endf
 
 
-/////////////////////////////////////////////////////////////////////////
 
-//  wstring version 
-//  ---------------
 
-int infile_C::open(const std::wstring& wstr) try
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//  open() file
+//  ------
+//
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+// -----------------------------------
+// version with passed-in tfile_info_S
+// -----------------------------------
+
+int infile_C::open(const std::wstring& pathname, api_err_S& err) try
 {
-     M__(M_out(L"infile-C::open(%s) called -- m_in_filename = \"%s\"") % wstr % m_in_filename;)  
+     M__(M_out(L"infile_C::open(%s) called  wstring version -- (old) m_in_filename = \"%s\"") % pathname % m_in_filename;)  
 
-    close();       // make sure any currently opened file is closed 
-
-
-    // initialize flags and char position in new file (file name will be set below)
-
-    m_is_utf8        = false;
-    m_error_seen     = false;  
-    m_eof_seen       = false; 
-    m_curr_linenum   = 0; 
-    m_curr_col       = 0; 
-    m_curr_pos       = 0; 
-    m_end_pos        = 0;  
-    
-    m_line_ok        = false;
-    m_curr_line      = std::string{};
-    m_curr_wline     = std::wstring{};
+    close();                                            // make sure any currently opened file is closed -- ignore any error 
+    init();                                             // initialize flags and char position in new file (file name will be set below)
 
 
-    // open() the file and save away file info  
+    // open the tfile_C and check for errors
 
-    m_in_file_p = new std::ifstream(wstr); 
-   
-    if (!(*m_in_file_p).good())
-    {  
-        M_out_emsg(L"infile_C::open() -- Input file \"%s\" cannot be opened") % M_ws(wstr);
-        delete m_in_file_p; 
-        m_in_file_p   = nullptr;
-        m_error_seen  = true; 
-        m_in_filename = std::wstring{}; 
+    auto orc = m_tfile.open(pathname, err); 
+
+    if ( err.error_occurred || (orc != 0) )
+    {
+        m_error_seen = true; 
         return -1; 
     }
-    else
+
+
+    // tfile_C is open -- ready for I/O
+
+    M__(M_out(L"infile_C::open() -- opened std::tfile_C");)
+    m_in_filename  = pathname; 
+    m_source_id    = ::add_cached_id(m_in_filename);
+    m_is_open      = true;
+    return 0;   
+}
+M_endf
+ 
+
+
+// -----------------------------------
+// version with passed-in tfile_info_S
+// -----------------------------------
+
+int infile_C::open(const tfile_info_S& info, api_err_S& err) try
+{
+     M__(M_out(L"infile_C::open(%s) called -- tinfo_C version -- (old) m_in_filename = \"%s\"") % info.fn % m_in_filename;)  
+
+    close();                                            // make sure any currently opened file is closed -- ignore any error 
+    init();                                             // initialize flags and char position in new file (file name will be set below)
+ 
+
+    // open the tfile_C and check for errors
+
+    auto orc = m_tfile.open(info, err); 
+
+    if ( err.error_occurred || (orc != 0) )
     {
-        m_in_filename = wstr; 
-        m_source_id   = ::add_cached_id(m_in_filename);
-        m_is_open_f   = true;
+        m_error_seen = true; 
+        return -1; 
     }
 
-    return 0; 
+
+    // tfile_C is open -- ready for I/O
+
+    M__(M_out(L"infile_C::open() -- opened std::tfile_C");)
+    m_in_filename  = info.filename; 
+    m_source_id    = ::add_cached_id(m_in_filename);
+    m_is_open      = true;
+    return 0;   
 }
 M_endf
 
@@ -374,7 +233,7 @@ M_endf
 //    close() file 
 //    ------------
 //
-//   -- leaves old filename, flage, position, line buffers, etc. from last read()
+//   -- leaves old filename, flags, position, line buffers, etc. from last read()
 //  
 //
 //
@@ -382,23 +241,10 @@ M_endf
 
 int infile_C::close() try
 {
-    M__(M_out(L"infile-C::close() called -- m_in_filename = \"%s\"") % m_in_filename;)
+    M__(M_out(L"infile_C::close() called -- m_in_filename = \"%s\"") % m_in_filename;)
 
-    if (m_is_open_f && (m_in_file_p != nullptr))
-    {
-        M__(M_out(L"infile_C::close() -- close()ing -- m_in_filename = \"%s\"") % m_in_filename;)
-
-        m_in_file_p->close();
-        m_is_open_f = false;       
-    }
-
-    if (m_in_file_p != nullptr) 
-    {       
-        delete m_in_file_p; 
-        m_in_file_p = nullptr;       
-    }
-   
-    return 0; 
+    m_is_open = false;  
+    return m_tfile.close();       // ignore any errors during close()
 }
 M_endf
 
@@ -406,15 +252,15 @@ M_endf
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-// is_open()
-// ---------
+//   is_open()
+//   ---------
 //
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool infile_C::is_open() const try
 {
-   return m_is_open_f;
+   return m_is_open;
 }
 M_endf
 
@@ -422,8 +268,8 @@ M_endf
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-// get_filename()
-// --------------
+//   get_filename()
+//   --------------
 //
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -441,8 +287,8 @@ M_endf
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-// get_source_id()
-// ---------------
+//   get_source_id()
+//   ---------------
 //
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -453,11 +299,7 @@ uint64_t infile_C::get_source_id() const try
 }
 M_endf
 
-
-
-
-
-
+ 
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -646,7 +488,7 @@ int infile_C::get_char(in_char_S& in_char, bool advance) try
     //  Need to go out to file to refill the line buffer -- error if file is not open
     //  -----------------------------------------------------------------------------
     
-    if (!(m_is_open_f))
+    if (!(m_is_open))
     {
         M_out_emsg(L"infile_C::get_char() called when file is not open  -- \"%s\"") %  m_in_filename;
         out_char(in_char, char_E::error, advance);         
@@ -654,117 +496,47 @@ int infile_C::get_char(in_char_S& in_char, bool advance) try
     }       
 
 
-    //  Read in next line of file -- handle EOF, I/O error -- maintain states, etc.
-    //  ---------------------------------------------------------------------------
+    //  =================================================================================
+    //  Read in next line of input file -- handle EOF, I/O error -- maintain states, etc.
+    //  =================================================================================
 
-    m_curr_line  = std::string{}; 
-    m_curr_wline = std::wstring{};
-    m_end_pos    = 0; 
+    m_curr_wline.clear();                                                     // clear out any leftovers in converted UTF-16 input line    
+    m_end_pos = 0;                                                            // reset ending position back to 0
 
-    std::getline(*m_in_file_p, m_curr_line); 
+    api_err_S err { };                                                        // local error data for reporting getline() errors 
+    auto grc = m_tfile.getline(m_curr_wline,  err);
 
-    if (m_in_file_p->bad())
+    if (grc == 0)                                                             // EOF seen ?
     {
-        M_out_emsg(L"infile_C::get_char(): bad() on after doing getline(), file -- \"%s\"") %  m_in_filename;
-        m_error_seen = true;          // fetch_char() will return the error down below 
-        close();                      // make sure no more I/O on this file
+        m_eof_seen = true;                                                    // fetch_char() will return the EOF down below 
+        m_line_ok  = false;                                                   // indicate than m_curr_wline() data is not valid
+        close();                                                              // make sure no more I/O on this file
     }
-    else if ((m_in_file_p->eof()) && m_curr_line.length() == 0)
+    else if (grc == 1)                                                        // data has been read in? (perhaps null line)
     {
-        m_eof_seen = true;            // fetch_char() will return the EOF down below 
-        close();                      // make sure no more I/O on this file
+        m_line_ok = true;                                                     // // indicate than m_curr_wline() data is valid
     }
-    else if (m_in_file_p->fail())
+    else                                                                      // unexpected R/C -- probably -1 = error
     {
-        M_out_emsg(L"infile_C::get_char(): fail() bit is on after doing getline(), before EOF was reached -- file = \"%s\"") %  m_in_filename;
-        m_error_seen = true;          // fetch_char() will return the error down below 
-        close();                      // make sure no more I/O on this file       
+        m_error_seen = true;                                                  // fetch_char() will return the error down below
+        m_line_ok    = false;                                                 // indicate than m_curr_wline() data is not valid
+        close();                                                              // make sure no more I/O on this file
+
+        M_out_emsg(L"infile_C::get_char(): error doing getline() for line %d in file \"%s\" -- error text = \"%S\"") % (m_curr_linenum + 1) %  m_in_filename % err.error_text; 
     }
+
+    // update to start of new line that was just read in and converted to UTF-16 (BOM was removed before input line was converted) 
+
+    if (m_line_ok)                                                                // don't update enything if error seen
+    {                                                                           
+        m_end_pos = m_curr_wline.length();                                        // should be one past end
+        ++m_curr_linenum;                                                         // increment line number in file 
+        m_curr_col = 0;                                                           // start back at first column
+        m_curr_pos = 0;      
+    } 
     
 
-    // read() did not fail -- line is good, but may be empty, etc. -- may have reached EOF
-    
-    if ( m_eof_seen || m_error_seen )
-        m_line_ok  = false;                
-    else
-        m_line_ok  = true;                // line might be empty
-
-
-    //  If this is first line (and no error so far), -- skip past any UTF-8 flag bytes
-    //  ------------------------------------------------------------------------------
-
-    if ( (m_curr_linenum == 0) && m_line_ok )    
-    {
-        M__(M_out(L"0=%02X 1=%02X 2=%02X") % (uint32_t)(uint8_t)(m_curr_line[0]) % (uint32_t)(uint8_t)(m_curr_line[1]) % (uint32_t)(uint8_t)(m_curr_line[2]);)
-
-        if ( 
-            (m_curr_line.length() >= 3)
-            && 
-            ((uint8_t)(m_curr_line[0]) == 0xEFU)
-            && 
-            ((uint8_t)(m_curr_line[1]) == 0xBBU)
-            && 
-            ((uint8_t)(m_curr_line[2]) == 0xBFU)
-            )
-        {
-            m_is_utf8 = true; 
-            m_curr_line = m_curr_line.substr(3);        
-        }
-        else
-        {
-            m_is_utf8 = false; 
-            M__(M_out_note(L"infile_C::get_char() -- UTF-8 BOM not seen at start of file -- plain 7-bit ASCII assumed (not code page 1252) -- \"%s\"") %  m_in_filename;) 
-        }
-    }
-
-
-    //  ------------------------------------------------------------------------------
-    //  Convert just-read string from UTF-8 (or codepage 1252(??)) to wchar_t (UTF-16) -- catch(...) any conversion failures and flag whole file in error
-    //  ------------------------------------------------------------------------------
-
-    if (m_line_ok)                 // bypass, if no valid data in line buffer 
-    {
-        if (m_is_utf8)
-        {
-            try       // do UTF-8 to UTF-16 conversion 
-            {
-                std::wstring_convert<std::codecvt_utf8_utf16<wchar_t> > conv_utf8_utf16; 
-                m_curr_wline = conv_utf8_utf16.from_bytes(m_curr_line);
-                m_end_pos = m_curr_wline.length();                           // should be one past end
-                ++m_curr_linenum;                                            // increment line number in file 
-                m_curr_col = 0;
-                m_curr_pos = 0; 
-            }
-            catch(...)
-            {
-                M_out_emsg(L"infile_C::get_char(): conv_utf8_utf16 failed, file name = \"%s\"  line=%u") %  m_in_filename % (m_curr_linenum + 1); 
-                m_error_seen = true;                                       // fetch_char() will return the error down below 
-                m_line_ok    = false;                                      // line contents are undefined now
-                close();                                                   // make sure no more I/O on this file       
-            }
-        }
-        else       
-        {
-            try       // do codepage 1252 (??) to UTF-16 conversion
-            {
-                m_curr_wline = to_wstring(m_curr_line);                      // use CP_ACP by defaulted 2nd parm -- CP_ACP = default system code page = 1252 (??)
-                m_end_pos = m_curr_wline.length();                           // should be one past end
-                ++m_curr_linenum;                                            // increment line number in file 
-                m_curr_col = 0;
-                m_curr_pos = 0; 
-            }
-            catch(...)
-            {
-                M_out_emsg(L"infile_C::get_char(): to_wstring() failed, file name = \"%s\"  line=%u") %  m_in_filename % (m_curr_linenum + 1); 
-                m_error_seen = true;                                       // fetch_char() will return the error down below 
-                m_line_ok    = false;                                      // line contents are undefined now
-                close();                                                   // make sure no more I/O on this file       
-            }
-        }
-    }
-
-
-    //  At this point, line_OK is on --or-- m_eof_seen/m_error_seen might be on (line can be empty or in bad state in this case) 
+    //  At this point, line_OK is on --or-- m_eof_seen/m_error_seen might be on (m_curr_wline can be empty or in bad state in this case) 
 
     return fetch_char(in_char, advance);
 }

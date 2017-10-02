@@ -39,7 +39,7 @@
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   type_str() -- convert type_E enum value to printable string  
+////   type_str() -- convert type_E enum value to printable string  (free function -- see also type_str() in token_C: 
 ////                   
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -56,6 +56,7 @@ std::wstring type_str(type_E kind) try
         case type_E::special     : return std::wstring { L"special"                   };      break;
         case type_E::error       : return std::wstring { L"error"                     };      break;
         case type_E::unit        : return std::wstring { L"unit"                      };      break;
+        case type_E::boolean     : return std::wstring { L"boolean"                   };      break;
         case type_E::int8        : return std::wstring { L"int8"                      };      break;    
         case type_E::int16       : return std::wstring { L"int16"                     };      break;
         case type_E::int32       : return std::wstring { L"int32"                     };      break;
@@ -339,7 +340,7 @@ std::wstring str_value(const value_S& value, bool debug, bool debugx, bool nest)
         str = str_d1 + str + str_d2; 
 
 
-    return str;             // retuen completed string
+    return str;             // return completed string
 }                                                
 M_endf
 
@@ -534,6 +535,37 @@ M_endf
 
 
 
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   special_results() -- return spacial results_S with the special flag set  -- caller needs to finish setting up 
+////                   
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+results_S special_results() try
+{
+    results_S results { };
+    results.ty              = type_E::special;
+    results.special_results = true;
+
+    // caller needs to finish setting this up
+
+    return results; 
+}
+M_endf
+
+  
+
+
+
+
 
 ////_________________________________________________________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
@@ -551,8 +583,10 @@ M_endf
 
 results_S no_results() try
 {
-    results_S results { };                    // leave type = none
+    results_S results { }; 
+    results.ty               = type_E::no_value;
     results.multiple_results = true; 
+    results.no_results       = true;                       // no vlist_sp -- no empty vlist attached
     return results; 
 }
 M_endf
@@ -953,13 +987,434 @@ value_S buffer_val(const buf8_T& v1, const typdef_S& v2, bool move_ok) try
 M_endf  
 
 
+
 ////_________________________________________________________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   type_val() -- overloaded functions to construct new value from input parm
+////   get_val() -- overloaded functions to extract C++ data from input value_S
+////                   
+////
+////      r/c = 0    -- value is OK
+////      r/c = -1   -- input type mismatch
+////      r/c = -2   -- value in value_S is out of range for requested C++ value 
+////      r/c = -3   -- should-not-occur situation has occurred
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+
+////////////////////////////////////////////////////////////////////
+//  int8_t version
+////////////////////////////////////////////////////////////////////
+                  
+int get_val(const value_S& v, int8_t& c) try  
+{
+    // immediately return any exact matching value from value_S 
+
+    if (v.ty == type_E::int8)
+    {
+        c = v.int8;
+        return 0;
+    }
+
+
+    // try to convert value to int64_t -- pass back any errors
+
+    int64_t s { };  
+    
+    auto rc = get_val(v, s);
+
+    if (rc != 0)
+    {
+        c = s; 
+        return rc; 
+    }
+
+
+    // return error, if int64_t value is out of range
+
+    if ((int8_t)s != s)
+    {
+        c = 0; 
+        return -2; 
+    }
+
+
+    //  value must be OK
+
+    c = (int8_t)s;
+    return 0;
+}
+M_endf
+
+
+////////////////////////////////////////////////////////////////////
+//  int16_t version
+////////////////////////////////////////////////////////////////////
+                  
+int get_val(const value_S& v, int16_t& c) try  
+{
+    // immediately return any exact matching value from value_S 
+
+    if (v.ty == type_E::int16)
+    {
+        c = v.int16;
+        return 0;
+    }
+
+
+    // try to convert value to int64_t -- pass back any errors
+
+    int64_t s { };  
+    
+    auto rc = get_val(v, s);
+
+    if (rc != 0)
+    {
+        c = s; 
+        return rc; 
+    }
+
+
+    // return error, if int64_t value is out of range
+
+    if ((int16_t)s != s)
+    {
+        c = 0; 
+        return -2; 
+    }
+
+
+    //  value must be OK
+
+    c = (int16_t)s;
+    return 0;
+}
+M_endf
+
+
+////////////////////////////////////////////////////////////////////
+//  int32_t version
+////////////////////////////////////////////////////////////////////
+                  
+int get_val(const value_S& v, int32_t& c) try  
+{
+    // immediately return any exact matching value from value_S 
+
+    if (v.ty == type_E::int32)
+    {
+        c = v.int32;
+        return 0;
+    }
+
+
+    // try to convert value to int64_t -- pass back any errors
+
+    int64_t s { };  
+    
+    auto rc = get_val(v, s);
+
+    if (rc != 0)
+    {
+        c = s; 
+        return rc; 
+    }
+
+
+    // return error, if int64_t value is out of range
+
+    if ((int32_t)s != s)
+    {
+        c = 0; 
+        return -2; 
+    }
+
+
+    //  value must be OK
+
+    c = (int32_t)s;
+    return 0;
+}
+M_endf
+ 
+
+//////////////////////////////////////////////////////////////////////////
+//     int64_t version
+//////////////////////////////////////////////////////////////////////////
+
+int get_val(const value_S& v, int64_t& c) try  
+{
+    // immediately return any exact matching value from value_S 
+
+    if (v.ty == type_E::int64)
+    {
+        c = v.int64;
+        return 0;
+    }
+
+
+    // return with -1, if this value is not an integer type at all (includes boolean, unit, float) 
+
+    if (!is_value_integer(v)) 
+    {
+        c = 0;   
+        return -1;
+    }
+
+
+    //  if this is a signed value, just extract value into int64_t and pass back    
+
+    if (is_value_signed(v))             // because of prior checks, must be int8, int16, or int32 
+    {
+        if (v.ty == type_E::int8  ) { c = (int64_t)(v.int8 ); return 0; }        
+        if (v.ty == type_E::int16 ) { c = (int64_t)(v.int16); return 0; } 
+                                      c = (int64_t)(v.int32); return 0; 
+    }
+
+
+    // for unsigned values, make sure thay are not too large for int64_t
+
+    else                                // must be uint8, uint16, uint32, or uint64
+    {
+        uint64_t u{ }; 
+
+             if (v.ty == type_E::uint8 ) u = (uint64_t)(v.uint8 );        
+        else if (v.ty == type_E::uint16) u = (uint64_t)(v.uint16); 
+        else if (v.ty == type_E::uint32) u = (uint64_t)(v.uint32); 
+        else                             u =            v.uint64 ;
+
+        // see if uint64_t value is too large for int64_t
+
+        if ( (int64_t)u < 0)
+        {
+            c = 0; 
+            return -2; 
+        }
+
+        // extrated value is OK
+
+        c = u; 
+        return 0; 
+    } 
+
+    return -3;                    // should not get here
+}
+M_endf
+
+
+////////////////////////////////////////////////////////////////////
+//  uint8_t version
+////////////////////////////////////////////////////////////////////
+                  
+int get_val(const value_S& v, uint8_t& c) try  
+{
+    // immediately return any exact matching value from value_S 
+
+    if (v.ty == type_E::uint8)
+    {
+        c = v.uint8;
+        return 0;
+    }
+
+
+    // try to convert value to uint64_t -- pass back any errors
+
+    uint64_t s { };  
+    
+    auto rc = get_val(v, s);
+
+    if (rc != 0)
+    {
+        c = s; 
+        return rc; 
+    }
+
+
+    // return error, if uint64_t value is out of range
+
+    if ((uint8_t)s != s)
+    {
+        c = 0; 
+        return -2; 
+    }
+
+
+    //  value must be OK
+
+    c = (uint8_t)s;
+    return 0;
+}
+M_endf
+
+
+////////////////////////////////////////////////////////////////////
+//  uint16_t version
+////////////////////////////////////////////////////////////////////
+                  
+int get_val(const value_S& v, uint16_t& c) try  
+{
+    // immediately return any exact matching value from value_S 
+
+    if (v.ty == type_E::uint16)
+    {
+        c = v.uint16;
+        return 0;
+    }
+
+
+    // try to convert value to uint64_t -- pass back any errors
+
+    uint64_t s { };  
+    
+    auto rc = get_val(v, s);
+
+    if (rc != 0)
+    {
+        c = s; 
+        return rc; 
+    }
+
+
+    // return error, if uint64_t value is out of range
+
+    if ((uint16_t)s != s)
+    {
+        c = 0; 
+        return -2; 
+    }
+
+
+    //  value must be OK
+
+    c = (uint16_t)s;
+    return 0;
+}
+M_endf
+
+
+////////////////////////////////////////////////////////////////////
+//  uint32_t version
+////////////////////////////////////////////////////////////////////
+                  
+int get_val(const value_S& v, uint32_t& c) try  
+{
+    // immediately return any exact matching value from value_S 
+
+    if (v.ty == type_E::uint32)
+    {
+        c = v.uint16;
+        return 0;
+    }
+
+
+    // try to convert value to uint64_t -- pass back any errors
+
+    uint64_t s { };  
+    
+    auto rc = get_val(v, s);
+
+    if (rc != 0)
+    {
+        c = s; 
+        return rc; 
+    }
+
+
+    // return error, if uint64_t value is out of range
+
+    if ((uint32_t)s != s)
+    {
+        c = 0; 
+        return -2; 
+    }
+
+
+    //  value must be OK
+
+    c = (uint32_t)s;
+    return 0;
+}
+M_endf
+
+
+//////////////////////////////////////////////////////////////////////////
+//     uint64_t version
+//////////////////////////////////////////////////////////////////////////
+
+int get_val(const value_S& v, uint64_t& c) try  
+{
+    // immediately return any exact matching value from value_S 
+
+    if (v.ty == type_E::uint64)
+    {
+        c = v.uint64;
+        return 0;
+    }
+
+
+    // return with -1, if this value is not an integer type at all (includes boolean, unit, float) 
+
+    if (!is_value_integer(v)) 
+    {
+        c = 0;   
+        return -1;
+    }
+
+
+    //  if this is an unigned value, extract value into uint64_t and pass back    
+
+    if (is_value_unsigned(v))             // because of prior checks, must be uint8, uint16, or uint32 
+    {
+        if (v.ty == type_E::uint8  ) { c = (uint64_t)(v.uint8 ); return 0; }        
+        if (v.ty == type_E::uint16 ) { c = (uint64_t)(v.uint16); return 0; } 
+                                       c = (uint64_t)(v.uint32); return 0; 
+    }
+
+
+    // for signed values, make sure they are not negative
+
+    else                                // must be int8, int16, int32, or int64
+    {
+        int64_t s{ }; 
+
+             if (v.ty == type_E::int8 ) s = (int64_t)(v.int8 );        
+        else if (v.ty == type_E::int16) s = (int64_t)(v.int16); 
+        else if (v.ty == type_E::int32) s = (int64_t)(v.int32); 
+        else                            s =           v.int64 ;
+
+
+        // error, if int64_t value is negative
+
+        if (s < 0)
+        {
+            c = 0; 
+            return -2; 
+        }
+
+
+        // extrated value is OK -- return it as uint64_t
+
+        c = (uint64_t)s; 
+        return 0; 
+    } 
+
+    return -3;                    // should not get here
+}
+M_endf
+ 
+
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   type_val() -- overloaded functions to construct new value from C++ input parm
 ////                   
 ////
 ////_________________________________________________________________________________________________________________________________________________________________

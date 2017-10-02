@@ -29,6 +29,194 @@
 #include "h_ex_parse.h"
 
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+ 
+//    static variables 
+//    ----------------
+
+namespace static_N
+{
+    // pre-parse statistics and counters
+
+uint64_t                        pp_serial       {0};                  // serial number of most-recently allocated (or filld-in) pre_parse_C item
+uint64_t                        pp_depth        {0};                  // current number of pre_parse_C items on stack 
+uint64_t                        pp_max_depth    {0};                  // maximum number of pre_parse_C items on stack (high-water mark) 
+
+std::shared_ptr<pre_parse_C>    newest_pp_sp  { };                    // owning pointer to newest pre_parse_C on stack (keeps ref-count positive)  
+}
+
+
+
+
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   add_new_pp() -- allocate new pre_parse_C and place on top of stack  
+////                   
+////
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+pre_parse_C *add_new_pp()
+{
+    // add newly-allocated (default-initialized) pre_parse_C object to top of pre_parse stack  
+                                                                                                             
+    auto new_pp_sp              = std::make_shared<pre_parse_C>();                               // allocate new pp item
+    new_pp_sp->m_upward_sp      = static_N::newest_pp_sp;                                        // set new pp's upward stack pointer to current newest pp (owning ptr !!!!!!!!!!!!!!!!!!!!!)
+    static_N::newest_pp_sp      = new_pp_sp;                                                     // update newest PP pointer to point to this one (owning ptr !!!!!!!!!!!!!!!!!!!!!!!!!!)  
+
+    static_N::pp_depth++;                                                                        // increment PP nesting depth
+    if (static_N::pp_depth > static_N::pp_max_depth)
+        static_N::pp_max_depth = static_N::pp_depth;                                             // set new high-watermark 
+
+
+    // add new stack frame for the pre-processor to the active frame_S queue
+
+    frame_S *new_frame_p = add_new_frame();  
+    new_pp_sp->m_frame_p = new_frame_p;                                                          // save address of pre-parse frame for easy reference 
+
+
+    // upward scope for a block frame_S is always starts at parent stack frame -- scoping is always lexical
+
+    new_frame_p->is_preparse    = true;                                                          // indicate this stack frame was created by block evaluation
+    new_frame_p->block_scope    = true;                                                          // blocks always have unrestricted dynamic (lexical, effectively) scope upwards to parent  
+    new_frame_p->scope_sp       = std::shared_ptr<frame_S> { new_frame_p->parent_sp->self_wp };  // initialize shared ptr from weak self-ptr in parent frame_S
+    
+
+    // initialize/customize  new pre_parse_C                                                   
+                                                                                               
+    new_pp_sp->m_serial   = ++static_N::pp_serial;                                               // put new serial number in new preparse_C 
+    new_pp_sp->m_pp_depth = static_N::pp_depth;                                                  // capture PP depth, for debugging
+
+    preparse_setup(*(new_pp_sp.get()));                                                          // initialize/customize new pre_parse_C object    (must be done after m_upward_sp is filled in)    
+
+    return new_pp_sp.get();                                                                      // pass back plain pointer to new pre_parse_C object
+}
+
+
+
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   remove_pp() -- remove (and free) newest pre_parse_C object at top of pre_parse stack  
+////                   
+////
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+void remove_pp() try
+{
+    remove_frame();                                                                              // get rid of stack frame added by add_new_pp()
+    static_N::newest_pp_sp = static_N::newest_pp_sp->m_upward_sp;                                // remove top pre_parse_C from queue (should cause it to get freed, too)
+    static_N::pp_depth--;                                                                        // decrement PP nesting depth
+    return;                                                                                     
+}
+M_endf
+
+
+
+
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   current_pp() -- return pointer current (latest) pre_parse_C on stack  
+////                   
+////
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+pre_parse_C *current_pp() try
+{
+    return static_N::newest_pp_sp.get();                                                                                     
+}
+M_endf
+            
+
+
+
+
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   preparse_setup() -- set up preparsing environment with custom configuration flags, etc.
+////
+////
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+uint64_t preparse_setup(pre_parse_C& pp) try
+{
+    // inherit skipping state from upward pre_parse_C (if any)
+
+    pp.inherit_state();
+
+
+    // do additional pre-parser setup, with parse-oriented options 
+                                                                             // note that ch_sigil_keyword and ch_sigil_label are the same character // 
+    std::vector<char32_t> leading_sigils         { const_N::ch_sigil_verb,   const_N::ch_sigil_label,   const_N::ch_sigil_parm, const_N::ch_sigil_keyword  }; //  leading verb, parm, and label sigils (combined list)
+    std::vector<char32_t> leading_ident_sigils   { const_N::ch_sigil_verb,   const_N::ch_sigil_label,   const_N::ch_sigil_parm                             }; //  leading verb, parm, and label sigils (for identifiers)
+    std::vector<char32_t> leading_oper_sigils    {                                                      const_N::ch_sigil_parm                             }; //  leading       parm,           sigil  (for operators)
+    std::vector<char32_t> trailing_ident_sigils  { const_N::ch_sigil_keyword                                                                               }; //  trailing keyword sigils              (for identifiers)
+    std::vector<char32_t> paren_sigils           { const_N::ch_sigil_verb,   const_N::ch_sigil_keyword                                                     }; //  leading/trailing verb sigil          (for parenthesis)
+                                                                                                                                                           
+    pp.set_combine_strings(        false                );                                                                                                    // don't combine adjacent strings separated by whitespace    
+    pp.set_allow_attached_paren(   true                 );                                                                                                    // allow attached parens to identifier tokens
+
+    pp.set_leading_sigils(                leading_sigils );                                                                                                   // add combined list of leading sigils          (in addition to any pre-parser sigils)
+    pp.set_leading_ident_sigils(    leading_ident_sigils );                                                                                                   // add list of leading sigils  for identifiers  (in addition to any pre-parser sigils)
+    pp.set_trailing_ident_sigils(  trailing_ident_sigils );                                                                                                   // add list of trailing sigils for identifiers  (in addition to any pre-parser sigils)
+    pp.set_leading_oper_sigils(      leading_oper_sigils );                                                                                                   // add list of leading sigils  for operators    (in addition to any pre-parser sigils)
+    pp.set_paren_sigils(                    paren_sigils );                                                                                                   // add list of sigils for parenthesis           (in addition to any pre-parser sigils)
+    
+    return error_count(); 
+}
+M_endf
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
 ////_____________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
@@ -41,7 +229,7 @@
 ////_____________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 pre_parse_C::pre_parse_C() try
 {
@@ -63,22 +251,41 @@ pre_parse_C::pre_parse_C() try
     m_token_stream.set_combine_whitespace(    true ); 
     m_token_stream.set_combine_strings(       true ); 
     m_token_stream.set_skip_whitespace(       true );
-  
-
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // !!   Don't forget to make corresponding changes to   pre_parse_C::set_leading_sigils()  
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    std::vector<char32_t> leading_sigils  { const_N::ch_pp_sigil_action };
-  
-    m_token_stream.set_leading_sigils(  leading_sigils);
-  
-
+ 
     return;
 }
 M_endf
 
 
+
+
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   inherit_state() -- inhert skipping state upwardpp
+////
+////
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+void pre_parse_C::inherit_state() try
+{
+    // inherit skipping state from 2 generations upwrd -- upward pre_parse_C (if any)
+
+    if (m_upward_sp.get() != nullptr) 
+    {
+        m_inherited_skipping = m_upward_sp->m_skipping;            // indicate parent PP is skipping (but not this one, for now)
+        m_skipto_label       = m_upward_sp->m_skipto_label;
+    }
+    return;  
+}
+M_endf
+           
 
 
 ////_____________________________________________________________________________________________________________________
@@ -93,14 +300,13 @@ M_endf
 ////_____________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////""
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 void pre_parse_C::close() try
 {
     M__(M_out(L"Pre_parse_C::close() -- called");)
 
     m_token_stream.close();      // close out token_stream() 
-    m_symbol_table.clear();      // get rid of all variables
 
 
     // reset state
@@ -127,7 +333,7 @@ M_endf
 ////_____________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////""
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 void pre_parse_C::reuse(bool refresh) try
 {
@@ -175,12 +381,10 @@ M_endf
 void pre_parse_C::display_settings() try
 {
     //M_out(L"---------------------------------------------------------------------------------------");
-    M_out(L"pre_parse_C::m_imbed folder      = [%S]") % m_imbed_folder;
-    M_out(L"pre_parse_C::m_error_ct          = %d"  ) % m_error_ct; 
-    M_out(L"pre_parse_C::m_substitution_ct   = %d"  ) % m_substitution_ct; 
-    M_out(L"pre_parse_C::m_max_substitutions = %d"  ) % m_max_substitutions; 
-    M_out(L"pre_parse_C::m_skipping          = %S"  ) % M_bool_cstr(m_skipping);
-    M_out(L"pre_parse_C::m_skipto label      = [%S]") % m_skipto_label;
+    M_out(L"pre_parse_C::m_imbed folder         = [%S]") % m_imbed_folder;
+    M_out(L"pre_parse_C::m_skipping             = %S"  ) % M_bool_cstr(m_skipping);
+    M_out(L"pre_parse_C::m_inherited_skipping   = %S"  ) % M_bool_cstr(m_inherited_skipping);
+    M_out(L"pre_parse_C::m_skipto label         = [%S]") % m_skipto_label;
     //M_out(L"---------------------------------------------------------------------------------------");
 
     return; 
@@ -195,247 +399,8 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   display_all_vars() -- displays all variables currently in the symbol table 
-////                   
-////
-////_____________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-void pre_parse_C::display_all_vars() try
-{
-    int n = 0; 
-
-    M_out(L"---------------------------------------------------------------------------------------");
-    M_out(L"All %d variables in pre-parser symbol table:") % m_symbol_table.size();
-
-    for (auto elem : m_symbol_table)
-    {
-        M_out(L"n= %-4d   ID= %-20S    Value= [%S]") % n % elem.first % shorten_str(elem.second.value, 100); 
-        n++;
-    }
-
-    M_out(L"");
-    display_settings(); 
-
-    M_out(L"---------------------------------------------------------------------------------------");
-
-    return; 
-}
-M_endf
-
-
-
-////_____________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-////
-////
-////   set_var() -- sets value of passed-in variable -- overwrites/defines whatever is there 
-////                   
-////
-////_____________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-void pre_parse_C::set_var(const std::wstring& ident, const std::wstring& value, bool is_const) try
-{
-    var_S var { };
-
-    var.value    = value;
-    var.is_const = is_const;
-    auto ct      = m_symbol_table.count(ident);
-
-
-    // see if identifier already exists, and is constant
-
-    if (ct > 1)     // something wrong -- should never be more than 1 in table
-        M_throw_v("pre_parse_C::set_var() --  %d entries in symbol table found for variable %s") % ct % out_ws(ident) ));
-    
-    if (ct > 0)
-    {
-       if (m_symbol_table.at(ident).is_const)
-       {
-           M_out_emsg(L"pre_parse-C::set_var() -- cannot alter constant %s with new value \"%s\"") % ident % value; 
-           return;
-       }
-
-       m_symbol_table.erase(ident);                   // get rid of old value before adding new one
-    }
-
-    // add in new variable/constant to symbol table
-
-    auto rc = m_symbol_table.emplace(ident, var);     // add as variable (non-constant) 
-
-    if (!rc.second)
-        M_throw_v("pre_parse_C::set_var() -- unexpected m_symbol_table.emplace(%s, var) failure") % out_ws(ident) ));
-    return; 
-}
-M_endf
-
-
-
-////_____________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-////
-////
-////   unset_var() -- removes passed-in variable (if it is present in symbol table) 
-////                   
-////
-////_____________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-void pre_parse_C::unset_var(const std::wstring& ident) try
-{
-    // see if identifier already exists, and is constant
-
-    auto ct = m_symbol_table.count(ident);
-
-    if (ct > 1)     // something wrong -- should never be more than 1 in table
-        M_throw_v("pre_parse_C::unset_var() --  %d entries in symbol table found for variable %s") % ct % out_ws(ident) ));
-    
-    if (ct > 0)
-    {
-       if (m_symbol_table.at(ident).is_const)
-       {
-           M_out_emsg(L"pre_parse_C::unset_var() -- cannot remove constant %s") % ident; 
-           return;
-       }
-
-       m_symbol_table.erase(ident);                   // get rid of old value 
-    }
-    return;
-}
-M_endf
-
-
-
-////_____________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-////
-////
-////   get_var() -- gets value of passed-in variable (-1 if not in symbol table) 
-////                   
-////
-////_____________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-int pre_parse_C::get_var(const std::wstring& ident, std::wstring& value) try
-{
-    auto ct = m_symbol_table.count(ident); 
-
-    if (ct > 1)     // something wrong -- should never be more than 1 in table
-        M_throw_v("pre_parse_C::get_var() --  %d entries in symbol table found for variable %s") % ct % out_ws(ident) )); 
-
-
-    if (ct == 0)   // return with R/C = -1 and empty string, if variable is not there 
-    {
-        value.clear();
-        return -1;
-    }
-
-    // 1 value found -- pass it back
-
-    value = m_symbol_table.at(ident).value;
-    return 0; 
-}
-M_endf
-
-
-
-
-////_____________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-////
-////
-////   is_set_var() -- returns true if variable/constant is currently set 
-////                   
-////
-////_____________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-bool pre_parse_C::is_set_var(const std::wstring& ident) try
-{
-    auto ct = m_symbol_table.count(ident); 
-
-    if (ct > 1)            // something wrong -- should never be more than 1 in table
-        M_throw_v("pre_parse_C::is_set_var() --  %d entries in symbol table found for variable %s") % ct % out_ws(ident) )); 
-    
-    if (ct == 0)          // true/false, depending on whether or not variable is set 
-        return false;
-    else
-        return true;
-}
-M_endf
-
-
-
-////_____________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-////
-////
-////   import_dll() -- load DLL and call do_import(prefix-parm) function in DLL 
-////                   
-////
-////_____________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-int import_dll(const std::wstring& dll_name, const std::wstring& prefix) try
-{
-    HMODULE      hmodule   { nullptr };
-    void        *fcn_p     { nullptr };    
-
-
-    // load DLL -- load_dll() should put out any needed error messages
-
-    auto ldrc = load_dll(dll_name, hmodule);  
-    if (ldrc != 0) return ldrc; 
-
-
-    // locate do_import() function in loaded DLL-- get_dll_function() should put out any needed error messages
-
-    auto gfrc = get_dll_function(hmodule, std::wstring { L"do_import" }, fcn_p);
-    if (gfrc != 0) return gfrc;
-
-
-    // call located do_import() function in loaded DLL, and return with R/C from that function call
-
-    return (*(do_import_T)fcn_p)(prefix); 
-}
-M_endf
-
-
-
-
-
-
-////_____________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-////
-////
 ////  peek_raw_token() -- peek next token from token_stream, and add user type field  
-////  ==============      (consume invalid pre-parser tokens, with error message)
+////  ================      (consume invalid pre-parser tokens, with error message)
 ////
 ////
 ////      only errors, passback tokens, and valid pre-parse tokens get beyond this screening routine
@@ -447,7 +412,7 @@ M_endf
 
 int pre_parse_C::peek_raw_token(token_C& t, size_t peek_level)
 {
-    M__(M_out(L"pre_parse_C::peek_raw_token(): called <------------------------");)
+    M__(M_out(L"pre_parse_C::peek_raw_token():1 called <------------------------");)
 
     token_C token; 
 
@@ -457,27 +422,39 @@ int pre_parse_C::peek_raw_token(token_C& t, size_t peek_level)
     for(;;)       
     {
         auto prc = m_token_stream.peek_token(token, peek_level);
-        M__(token.display(L"pre_parse_C::peek_raw_token() -- calling token_stream_C::peek_token():");)
+        M__(token.display(L"pre_parse_C::peek_raw_token() -- token_stream_C::peek_token() returned");)
         if (prc != 0)
         {
-               M_out_emsg(L"pre_parse_C::peek_raw_token() -- error R/C from peek token -- returning immediately");
+               M_out_emsg(L"pre_parse_C::peek_raw_token():2 -- error R/C from peek_token() -- returning immediately");
                t = token;       // probably invalid
-               m_error_ct++; 
+               count_error();
                return -1;
         }
-      
+     
 
         // special handling for END token from token_stream
 
         if (token.type == token_E::end)
         {
-             token.utype1 = tok_u1_E::end;     // pre-parser end token
+             token.utype1 = tok_u1_E::end;                           // pre-parser end token
              t = token; 
              M__(t.display(L"pre_parse_C::peek_raw_token() END:");)
              return 0;
         }
 
-      
+        
+        // pass back retained comments
+
+        if  ( (token.type == token_E::retained_line_comment) || (token.type == token_E::retained_block_comment) )
+        {
+            M__(M_out(L"pre_parse_C::peek_raw_token():2 -- processing retained comment");)   
+            token.utype1 = tok_u1_E::evaluate;                      // text for evaluation by pre-processor
+            t = token; 
+            M__(t.display(L"pre_parse_C::peek_raw_token() evaluate:");)
+            return 0;
+        }          
+
+
         // provisionally accept no-sigil identifiers and quoted strings -- may get passed back later, if they are of no interest to pre-parser
       
         if ( (!token.has_leading_sigil) && (!token.has_trailing_sigil) )
@@ -499,45 +476,6 @@ int pre_parse_C::peek_raw_token(token_C& t, size_t peek_level)
         }
 
 
-        // check for pre-parser action tokens ( leading sigil = ?, and trailing sigil = none, ?,  !,  or : ) -- restart loop to consume all invalid pre-parser tokens and loop back for next one
-                   
-        if (
-             (token.has_leading_sigil)
-             &&
-             (token.leading_sigil == const_N::ch_pp_sigil_action)
-           )
-        {   
-            // check for trailing sigil -- labels, variable substitution, or variable quoted string substitution 
-
-            if (token.has_trailing_sigil)
-            {
-                     if (token.trailing_sigil == const_N::ch_pp_sigil_label        ) token.utype1 = tok_u1_E::label         ;
-                else if (token.trailing_sigil == const_N::ch_pp_sigil_subst        ) token.utype1 = tok_u1_E::subst         ;
-                else if (token.trailing_sigil == const_N::ch_pp_sigil_quote_subst  ) token.utype1 = tok_u1_E::subst_quote   ;
-                else                                                                
-                {   // leading ? sigil and unexpected trailing sigil -- bad token 
-               
-                    M_out_emsg1(L"pre_parse_C::peek_raw_token(): unexpected trailing sigil (%08X) present for pre-parser token:") % (uint32_t)(token.trailing_sigil); 
-                    token.display( L"bad token"); 
-                    M_out_emsg2(L"Invalid token will be discarded -- this may cause subsequent errors."); 
-                    m_error_ct++;
-                    m_token_stream.discard_token(peek_level);            // get rid of this invalid pre-parse token, so as to peek at the next one 
-                    continue;                                            // loop back and get next token
-                }
-            }
-            else                                                         // leading ? sigil, no trailing sigil -- must be pre-processor verb
-            {
-                 token.utype1 = tok_u1_E::verb;
-            }
-
-
-            // pass back pre-processor action token and return
-            
-            t = token; 
-            M__(t.display(L"pre_parse_C::peek_raw_token():");)
-            return 0; 
-        }
-
 
         // other, non-pre-parser token (except for END) -- has trailing sigil only, or has non-pre-parser leading sigil -- may be invalid, error, etc.
 
@@ -545,7 +483,7 @@ int pre_parse_C::peek_raw_token(token_C& t, size_t peek_level)
         t = token;
         M__(t.display(L"pre_parse_C::peek_raw_token():");)
         return 0;
-   
+
     }  // end of main for(;;) loop
 
 
@@ -554,99 +492,6 @@ int pre_parse_C::peek_raw_token(token_C& t, size_t peek_level)
 }
 
 
-
-////_____________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-////
-////
-////   peek_subst_token() -- peeks next token, handing any substititions 
-////                   
-////
-////    - consumes any substitution tokens, leaves others queued up for caller to discard or re-peek()
-////
-////_____________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-int pre_parse_C::peek_subst_token(token_C& t, size_t peek_level) try
-{
-    M__(M_out(L"pre_parse_C::peek_subst_token(): called <------------------------");)
-
-    token_C token; 
-    int     sub_ct {0};         // local substitution loop counter
-
-
-    // main loop until text token that is not a variable substitution is seen
-    // ----------------------------------------------------------------------
-
-    for(;;)
-    {
-        // peek at next char in token stream -- immediate end if error -- leave error token unconsumed
-
-        auto prc = peek_raw_token(token, peek_level);
-        if (prc != 0)
-        {
-           t = token; 
-           return -1;
-        }
-        
-
-        // see if substititution-type token
-
-        if ( (token.utype1 == tok_u1_E::subst) || (token.utype1 == tok_u1_E::subst_quote) )
-        {
-            m_token_stream.discard_token(peek_level);          // get rid of peek()ed token, since it's going to be processed here, or flagged as an error
-        
-            // end immediately, if apparent substitution loop
-        
-            if (++sub_ct > m_max_substitutions)
-                M_throw_v("pre_parse_C::substitute_vars(): more than %d consecutive variable substitutions") % m_max_substitutions )); 
-        
-        
-            // complain, if variable is not set
-        
-            std::wstring value { };
-            auto grc = get_var(token.str, value);
-            if (grc != 0)
-            {
-                M_out_emsg(L"pre_parse_C::substitute_vars(): variable \"%s\" not found") % token.orig_str;
-                m_error_ct++; 
-                continue;                    // loop back and do next token
-            }
-            else   // OK -- do the substitution
-            {
-                sub_ct++;                    // local consecutive substitutions counter
-                m_substitution_ct++;         // total number of substitutions
-
-                if (token.utype1 == tok_u1_E::subst_quote)    // quoted substitution ?
-                {
-                    M__(M_out(L"pre_parse_C::substitute_vars(): substituting: var=\"%s\"   value = \"«%s»\"") % token.orig_str % value;)
-                    m_token_stream.attach_string( std::wstring(L"«") + value + std::wstring(L"»")
-                                                , get_cached_id(token.source_id1) + std::wstring(L"[") + std::to_wstring(token.lineno1) + std::wstring(L":") + std::to_wstring(token.linepos1) + std::wstring(L"]-> var:«") + token.orig_str + std::wstring(L"»"));
-                }
-                else                                           // must be plain (unquoted) substitution    
-                {
-                    M__(M_out(L"pre_parse_C::substitute_vars(): substituting: var=\"%s\"   value = \"%s\"") % token.orig_str % value; )
-                    m_token_stream.attach_string( value
-                                                , get_cached_id(token.source_id1) + std::wstring(L"[") + std::to_wstring(token.lineno1) + std::wstring(L":") + std::to_wstring(token.linepos1) + std::wstring(L"]-> var:")  + token.orig_str);
-                }
-            }    
-            continue;                       // loop back back and do next token 
-        }
-        else    // not variable substitution -- return to caller with unconsumed token (may be error, end, etc.)
-        {
-            t = token; 
-            return 0;  
-        }
-    }
-
-    t = token;
-    return 0;      // should not get here 
-}
-M_endf
 
 
 
@@ -662,208 +507,17 @@ M_endf
 ////
 ////   rc = 0  -- normal token passed back
 ////   rc = -1 -- error
-////   rc = 1  -- simulated token_E::end token from ?END processing is passed back
-////
-////
-////
-//// 
-////      Sigils:       ?XXXX  verb                                                   const_N::ch_pp_sigil_action
-////                    ?xXxx: label                                                  const_N::ch_pp_sigil_label
-////                    ?xXxx?  substitute                                            const_N::ch_pp_sigil_subst  
-////                    ?xXxx!  substitute with added quotes «»                       const_N::ch_pp_sigil_quote_subst
-////
+////   rc = 1  -- simulated token_E::end token from @END special results processing is passed back
 ////
 ////
 ////_____________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-
-////////////////////////////////////////
-// helper functions for pre_parse_token: 
-////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//  get_parm() -- R/C = 0 if parm-type found (consume token), R/C = -1 otherwise (don't consume token)  
-//  ==========
-//
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int pre_parse_C::get_parm(token_C& parm_token, const token_C& verb_token, const std::wstring& verb_text, int parm_num, size_t peek_level) try
-{
-    token_C token {};
-
-    // peek() top token -- should not be another pre-parser token (verb, label, etc.)
-
-     auto prc = peek_subst_token(token, peek_level);      // should have been left unconsumed (unless error R/C??) 
-     if (prc != 0)
-     {
-         M_out_emsg1(L"pre_parse_C::get_parm(): error from token_stream_C::peek_token() prevented parm %d fetch for verb \"%s\":") % parm_num % verb_text; 
-         verb_token.display(L"verb_token");     
-         M_out_emsg2(L"");
-         return -1;          // token, if any, is unconsumed for pass back 
-     }
-
-
-     // error if peek()ed token is error, end, or another pre-parser token
-
-     if ( (token.utype1 != tok_u1_E::identifier) && (token.utype1 != tok_u1_E::string) )
-     {
-         M_out_emsg1(L"pre_parse_C::get_parm(): unexpected token seen instead of parm %d for verb \"%s\":") % parm_num % verb_text; 
-         verb_token.display( L"verb_token"); 
-         token.display(      L"parm_token"); 
-         M_out_emsgz(); 
-         m_error_ct++;
-         return -1;         // non-parm token is unconsumed -- might be passed back, or be label, or another verb, etc. 
-     }
-
-
-     // token will be considered a parm for this verb -- may be of unacceptable type
-
-     parm_token = token;                            // pass back the token
-     m_token_stream.discard_token(peek_level);        // consume token before returning it
-     return 0; 
-}
-M_endf
-
-
-
-
-////////////////////////////////////////////////////////////////
-//
-// parameter fetching and checking MACROs
-//
-////////////////////////////////////////////////////////////////
-
-#define M_parm1(t)                                          \
-token_C  parm1 {};                                          \
-auto     grc1 = get_parm(parm1, token, t, 1, peek_level);   \
-if (grc1 != 0)                                              \
-   continue;                                               
-
-
-
-#define M_parm2(t)                                          \
-token_C  parm2 {};                                          \
-auto     grc2 = get_parm(parm2, token, t, 2, peek_level);   \
-if (grc2 != 0)                                              \
-   continue;  
-
-
-#define M_parm3(t)                                          \
-token_C  parm3 {};                                          \
-auto     grc3 = get_parm(parm3, token, t, 3, peek_level);   \
-if (grc3 != 0)                                              \
-   continue;  
-
-
-#define M_parm1_string(t)                                                                                         \
-token_C  parm1 {};                                                                                                \
-auto     grc1 = get_parm(parm1, token, t, 1, peek_level);                                                         \
-if (grc1 != 0)                                                                                                    \
-   continue;                                                                                                      \
-if (parm1.utype1 != tok_u1_E::string)                                                                             \
-{                                                                                                                 \
-    m_error_ct++;                                                                                                 \
-    M_out_emsg1(L"pre_parse_C::pre_parse_token(): 1st parameter for " t L" verb is not a quoted string literal:");\
-    parm1.display(L"parm1_token");                                                                                \
-    M_out_emsg2(t L" is ignored -- parm token is consumed");                                                      \
-    continue;                                                                                                     \
-}
-
-
-
-                                                                                                                  
-#define M_parm1_identifier(t)                                                                                     \
-token_C  parm1 {};                                                                                                \
-auto     grc1 = get_parm(parm1, token, t, 1, peek_level);                                                         \
-if (grc1 != 0)                                                                                                    \
-   continue;                                                                                                      \
-if (parm1.utype1 != tok_u1_E::identifier)                                                                         \
-{                                                                                                                 \
-    m_error_ct++;                                                                                                 \
-    M_out_emsg1(L"pre_parse_C::pre_parse_token(): 1st parameter for " t L" verb is not an identifier:");          \
-    parm1.display(L"parm1_token");                                                                                \
-    M_out_emsg2(t L" is ignored -- parm token is consumed");                                                      \
-    continue;                                                                                                     \
-}
-
-
-
-
-#define M_parm2_string(t)                                                                                         \
-token_C  parm2 {};                                                                                                \
-auto     grc2 = get_parm(parm2, token, t, 2, peek_level);                                                         \
-if (grc2 != 0)                                                                                                    \
-   continue;                                                                                                      \
-if (parm2.utype1 != tok_u1_E::string)                                                                             \
-{                                                                                                                 \
-    m_error_ct++;                                                                                                 \
-    M_out_emsg1(L"pre_parse_C::pre_parse_token(): 2nd parameter for " t L" verb is not a quoted string literal:");\
-    parm2.display(L"parm2_token");                                                                                \
-    M_out_emsg2(t L" is ignored -- parm token is consumed");                                                      \
-    continue;                                                                                                     \
-}
-
-
-
-
-#define M_parm2_identifier(t)                                                                                     \
-token_C  parm2 {};                                                                                                \
-auto     grc2 = get_parm(parm2, token, t, 2, peek_level);                                                         \
-if (grc2 != 0)                                                                                                    \
-   continue;                                                                                                      \
-if (parm2.utype1 != tok_u1_E::identifier)                                                                         \
-{                                                                                                                 \
-    m_error_ct++;                                                                                                 \
-    M_out_emsg1(L"pre_parse_C::pre_parse_token(): 2nd parameter for " t L" verb is not an identifier:");          \
-    parm2.display(L"parm2_token");                                                                                \
-    M_out_emsg2(t L" is ignored -- parm token is consumed");                                                      \
-    continue;                                                                                                     \
-}
-
-
-
-
-#define M_parm3_string(t)                                                                                         \
-token_C  parm3 {};                                                                                                \
-auto     grc3 = get_parm(parm3, token, t, 3, peek_level);                                                         \
-if (grc3 != 0)                                                                                                    \
-   continue;                                                                                                      \
-if (parm3.utype1!= tok_u1_E::string)                                                                              \
-{                                                                                                                 \
-    m_error_ct++;                                                                                                 \
-    M_out_emsg1(L"pre_parse_C::pre_parse_token(): 3rd parameter for " t L" verb is not a quoted string literal:");\
-    parm3.display(L"parm3_token");                                                                                \
-    M_out_emsg2(t L" is ignored -- parm token is consumed");                                                      \
-    continue;                                                                                                     \
-}
-
-
-
-#define M_parm3_identifier(t)                                                                                     \
-token_C  parm3 {};                                                                                                \
-auto     grc3 = get_parm(parm3, token, t, 3, peek_level);                                                         \
-if (grc3 != 0)                                                                                                    \
-   continue;                                                                                                      \
-if (parm3.utype1 != tok_u1_E::identifier)                                                                         \
-{                                                                                                                 \
-    m_error_ct++;                                                                                                 \
-    M_out_emsg1(L"pre_parse_C::pre_parse_token(): 3rd parameter for " t L" verb is not an identifier:");          \
-    parm3.display(L"parm3_token");                                                                                \
-    M_out_emsg2(t L" is ignored -- parm token is consumed");                                                      \
-    continue;                                                                                                     \
-}
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 int pre_parse_C::pre_parse_token(token_C& t, size_t peek_level) try
 {
-    M__(M_out(L"pre_parse_token() called <--------------------------");)
+    M__(M_out(L"pre_parse_token() called <-------------------------- serial = %d  depth = %d -- skipping = %d  inh_skipping = %d") % m_serial % m_pp_depth % m_skipping % m_inherited_skipping;)
 
     // =========    ------------------------------------------------- 
     // main loop -- ends when pre-parser finds something to pass back
@@ -875,43 +529,44 @@ int pre_parse_C::pre_parse_token(token_C& t, size_t peek_level) try
         // -----------------------------------------------
       
         token_C token { };
-        auto prc = peek_subst_token(token, peek_level);
-        M__(M_out(L"pre_parse_token() peek_subst_token() returned -------------------------->");)
-        M__(token.display(L"subst_token");)
+        auto prc = peek_raw_token(token, peek_level);
+        M__(M_out(L"pre_parse_token() peek_raw_token() returned -------------------------->");)
+        M__(token.display(L"pp token");)
         M__(M_out(L"<-------------------------------");)
       
 
-        // =========================
-        // peek_susbt_token() failed -- return with error from peek_token()
-        // =========================
+        // =======================
+        // peek_raw_token() failed -- return with error from peek_raw_token()
+        // =======================
                         
         if (prc != 0)    
         {       
-            M__(M_out(L"pre_parse_token(): error R/C from token_stream_C::peek_token()");)
+            M__(M_out(L"pre_parse_token(): error R/C from token_stream_C::peek_raw_token()");)
             m_skipping = false;                           // error ends any active skipping mode 
             t          = token;                           // might be a filled-in token (or not) -- don't consume token
-            return -1;                                    // return immediately -- lower routines should have incremented m_error_ct                          
+            count_error(); 
+            return -1;                                    // return immediately -- lower routines should have done count_error()                         
         }
 
 
-        // =========================
-        // peek_subst_token() OK -- need to process token
-        // =========================
+        // ===================
+        // peek_raw_token() OK -- need to process token
+        // ===================
 
 
         // special handling for END tokens, in skipping mode
         // -------------------------------------------------
 
-        if (token.utype1 == tok_u1_E::end)      // END token? 
+        if (token.utype1 == tok_u1_E::end)                // END token? 
         {            
-            if (m_skipping)
+            if (m_skipping && !m_inherited_skipping)
             {
                 m_skipping = false;
                 M_out_emsg(L"pre_parse_C::pre_parse_token():  end of input reached while skipping to label = \"%s\"") % m_skipto_label;                      
-                m_error_ct++; 
+                count_error();
             }
             t = token; 
-            m_token_stream.discard_token(peek_level);   //   consume the END token before returning
+            m_token_stream.discard_token(peek_level);     //   consume the END token before returning
             return 0; 
         }
 
@@ -920,14 +575,14 @@ int pre_parse_C::pre_parse_token(token_C& t, size_t peek_level) try
         // -------------------------------
 
         if (
-             (token.utype1 == tok_u1_E::passback  )      // non-pre-parser token 
+             (token.utype1 == tok_u1_E::passback  )        // non-pre-parser token 
              ||
-             (token.utype1 == tok_u1_E::string    )      // string which is not a ?VERB parm
+             (token.utype1 == tok_u1_E::string    )        // string 
              ||
-             (token.utype1 == tok_u1_E::identifier)      // identifier which is not a ?VERB parm
+             (token.utype1 == tok_u1_E::identifier)        // identifier 
            )
         {
-            if (!m_skipping)
+            if (!m_skipping) 
             {
                 m_token_stream.discard_token(peek_level);  //   consume token before returning
                 t = token; 
@@ -935,567 +590,166 @@ int pre_parse_C::pre_parse_token(token_C& t, size_t peek_level) try
             }
             else
             {   
-                m_token_stream.discard_token(peek_level); // consume token before looping back
-                continue;                               // loop back to process next token   
+                m_token_stream.discard_token(peek_level);  // consume token before looping back
+                continue;                                  // loop back to process next token   
             }
         }
 
-
-        // ================
-        // label processing  -- end skip, if this is the SKIPTO target label
-        // ================  
-
-        if (token.utype1 == tok_u1_E::label)
+                    
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //        process retained comments (now converted to tok_u1_E::evaluate tokens)
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      
+        if  (token.utype1 == tok_u1_E::evaluate)
         {
-            if ( (m_skipping) && (token.str == m_skipto_label) )
+            M__(M_out(L"pre_parse_C::pre_parse_token():1 -- processing evaluate token");)   
+      
+
+            // bypass both parsing and evaluating slist if upward PP is in skipping mode
+                
+            if (m_inherited_skipping)
             {
-                M__(M_out(L"ending ?SKIPTO %s") % m_skipto_label;)                             
-                m_skipping = false;
-                set_suppress_echo(false);    /// re-enable whole-line echoed comments
-                m_skipto_label = L"";             
+                m_token_stream.discard_token(peek_level);    
+                continue;  
             }
-            m_token_stream.discard_token(peek_level);   // get rid of label token  
-            continue;                                 // loop back to process next token
-        }
 
 
-        // handle any non-verb tokens that get here -- should not happen
-        // ----------------------------------------
-
-        if (token.utype1 != tok_u1_E::verb)
-        {
-             m_error_ct++; 
-             M_out_emsg1(L"pre_parse_C::pre_parse_token(): unexpected token type seen -- internal error:");
-             token.display(L"bad token");
-             M_out_emsg2(L"pre-parser will end now");
-             M_throw("pre_parse_C:pre_parse_token() received an unexpected token type");
-             return -1;              // should not get here
-        }
+            // parse the retained comment, even in local skipping mode (to check for matching @SKIPTO target labels)
+            
+            slist_S out_slist{ };                                                                                                 // slist_s to be filled in by parse_string()  
+            auto src = parse_string(*m_frame_p, out_slist, token.str, L"text for preprocessor", false);                           // don't continue after error
+            m_token_stream.discard_token(peek_level);                                                                             // always consume token after parsing
 
 
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        //
-        //                                  =========
-        //                                  V E R B S
-        //                                  =========
-        //
-        ///////////////////////////////////////////////////////////////////////////////////////////
+            // handle error results from parse phase
 
-        m_token_stream.discard_token(peek_level);   //   consume the valid or invalid verb token
-
-
-
-        // ======================
-        // ?ABORT verb processing  -- issue do_abort() = abort() with message 
-        // ======================
-  
-        if (token.str == std::wstring(L"ABORT"))
-        {
-            if (!m_skipping)
-                do_abort(); 
-            continue;                     
-        }   
-     
+            if (src != 0)                                                                                                         // return with error, if parse_string() failed
+            {
+                M_out_emsg(L"pre_parse_C::pre_parse_token() -- parse_string() failed for pre-processor text");
+                token.display();
+                M_out_emsg2(L"    pre-processing ends"); 
+                count_error(); 
+                return -1;    
+            }  
 
 
-        // ======================
-        // ?CONST verb processing -- define constant "variable" -- must not already exist 
-        // ======================
+            // need to check main (first token) label in slist -- end skipping mode if match
 
-        else if (token.str == std::wstring(L"CONST"))
-        {
-            // get two parms for ?SET -- 1st should be identifier and 2nd ishould be quoted string (after any substitution) 
-
-            M_parm1_identifier(L"?CONST")
-            M_parm2_string(L"?CONST")
-
-
-            // parms are OK -- set the constant (if not skipping)
-
-            if (!m_skipping)
-                if (is_set_var(parm1.str))   // make sure this identifier is not already in use
+            if (m_skipping)  
+            {
+                M__(M_out(L"pre_parse_C::pre_parse_token() -- serial= %d  --  M_skipto_label = \"%S\" -- out_slist.label = \"%S\"") % m_serial % m_skipto_label % out_slist.label;) 
+                if (m_skipto_label == out_slist.label)              // @SKIPTO target label is at start of this retained comment? tar
                 {
-                    m_error_ct++;                                                                                            
-                    M_out_emsg1(L"pre_parse_C::pre_parse_token(): can't define ?CONST \"%s\" (with value \"%s\"), since identifier is already in use:") % parm1.str % parm2.str ; 
-                    token.display();
-                    parm1.display();    
-                    parm2.display(); 
-                    M_out_emsg2(L" ?CONST is ignored -- all ?CONST parm tokens are consumed"); 
-                }
-                else
-                {
-                    set_var(parm1.str, parm2.str, true);
-                }
-            continue;
-        }
-
-
-
-        // =================================
-        // ?DISPLAY_ALL_VARS verb processing
-        // =================================
-
-        else if (token.str == std::wstring(L"DISPLAY_ALL_VARS"))
-        {
-            if (!m_skipping)
-                display_all_vars();
-            continue;                    
-        }
-
-
-
-        // =====================
-        // ?END verb processing  -- close() pre_parse_C object and pass back token_E::end -- caller should not come back  
-        // =====================
-     
-        else if (token.str == std::wstring(L"END"))
-        {
-            if (!m_skipping)
-            {
-                close();                                    // should free up everything
-                token.type               = token_E::end;
-                token.has_leading_sigil  = false;           // no complaints from token_C::display()
-                token.has_trailing_sigil = false; 
-                t                        = token;           // pass back token (consumed already) 
-                return 1;                                   // special R/C to indicate tokn is already consumed -- passing back simulated END token
+                    m_skipping = false;                             // end skipping mode 
+                    m_skipto_label.clear() ; 
+                }   
             }
-            continue;                      
-        }   
-        
-         
-
-        // ========================
-        // ?END_DEF verb processing  -- if identifier is def, close() pre_parse_C object and pass back toekn_E::end -- caller should not come back  
-        // ========================
-     
-        else if (token.str == std::wstring(L"END_DEF"))
-        {
-            M_parm1_identifier(L"?END_DEF")
-          
-            if ( (!m_skipping) &&  is_set_var(parm1.str) )
-            {
-                close();                                    // should free up everything
-                token.type               = token_E::end;
-                token.has_leading_sigil  = false;           // no complaints from token_C::display()
-                token.has_trailing_sigil = false; 
-                t                        = token;           // pass back token (consumed already) 
-                return 1;                                   // special R/C to indicate tokn is already consumed -- passing back simulated END token
-            }
-            continue;                      
-        }   
-
-
-        
-        // ==========================
-        // ?END_UNDEF verb processing  -- if identifier is not defined, close() pre_parse_C object and pass back toekn_E::end -- caller should not come back  
-        // ==========================
-     
-        else if (token.str == std::wstring(L"END_UNDEF"))
-        {
-            M_parm1_identifier(L"?END_UNDEF")
-          
-            if ( (!m_skipping) &&  (!is_set_var(parm1.str)) )
-            {
-                close();                                    // should free up everything
-                token.type               = token_E::end;
-                token.has_leading_sigil  = false;           // no complaints from token_C::display()
-                token.has_trailing_sigil = false; 
-                t                        = token;           // pass back token (consumed already) 
-                return 1;                                   // special R/C to indicate tokn is already consumed -- passing back simulated END token
-            }
-            continue;                      
-        }   
-  
-          
-
-        // ======================
-        // ?ERROR verb processing  -- just increment error counter 
-        // ======================
-  
-        else if (token.str == std::wstring(L"ERROR"))
-        {
-            if (!m_skipping)
-                m_error_ct++;                    
-            continue;                    
-        }  
-           
-
-
-        // =====================
-        // ?EXIT verb processing  -- issue do_exit() = exit(-1) with message 
-        // =====================
-     
-        else if (token.str == std::wstring(L"EXIT"))
-        {
-            if (!m_skipping)
-                do_exit(); 
-            continue;                     
-        }   
-     
-
-
-        // ======================
-        // ?_EXIT verb processing  -- issue do__exit() = _exit(-1) with message 
-        // ======================
-     
-        else if (token.str == std::wstring(L"_EXIT"))
-        {
-            if (!m_skipping)
-                do__exit(); 
-            continue;                     
-        }  
-
              
 
-        // ======================
-        // ?IMBED verb processing 
-        // ======================
- 
-        else if (token.str == std::wstring(L"IMBED"))
-        {
-            // get 1st (and only) parm for ?IMBED -- should be quoted string (after any substitution) 
- 
-            M_parm1_string(L"?IMBED")
- 
- 
-            // process the ?IMBED, if not in skipping mode
- 
-            if (!m_skipping)
-            {
-                auto arc = m_token_stream.attach_file(m_imbed_folder + parm1.str);   
-                if (arc != 0)
-                {
-                     M__(M_out(L"pre_parse_C::pre_parse_token() : returning immediately due to bad R/C from token_stream_C::attach_file()");) 
- 
-                     token.type = token_E::error;              // pass back error token and -1 R/C
-                     t = token; 
-                     return arc; 
-                }
-            }      
-            continue;   
-        }
-         
-
-
-        // =======================
-        // ?IMPORT verb processing 
-        // =======================
- 
-        else if (token.str == std::wstring(L"IMPORT"))
-        {
-            // get 1st (and only) parm for ?IMPORT -- should be quoted string (after any substitution) = DLL name = "xxxx" means xxxx.dll in current order of search
- 
-            M_parm1_string(L"?IMPORT")
- 
- 
-            // process the ?IMPORT, if not in skipping mode
- 
-            if (!m_skipping)
-            {
-                std::wstring dll_name { L"verbexx_" + parm1.str };
-
-
-
-                auto irc = import_dll(dll_name, L"");   
-                if (irc != 0)
-                {
-                     M__(M_out(L"pre_parse_C::pre_parse_token() : returning immediately due to bad R/C from import_dll(\"%S\", \"%s\")") % parm1.str % L"";) 
- 
-                     token.type = token_E::error;              // pass back error token and -1 R/C
-                     t = token; 
-                     return irc; 
-                }
-            }      
-            continue;   
-        }
-
-
-
-
-        // ===========================
-        // ?QUICK_EXIT verb processing  -- issue do_quick_exit() = exit(-1) with message 
-        // ===========================
-     
-        else if (token.str == std::wstring(L"QUICK_EXIT"))
-        {
-            if (!m_skipping)
-                do_quick_exit(); 
-            continue;                     
-        }   
-
-           
-   
-        // ====================
-        // ?SAY verb processing  -- write out string, if not skipping 
-        // ====================
-
-        else if(token.str == std::wstring(L"SAY"))
-        {
-            // get 1st (and only) parm for ?SAY -- should be quoted string (after any substitution) 
-
-            M_parm1_string(L"?SAY")
-
-            if (!m_skipping)
-                M_out(L"%s" ) % parm1.str;   // put out ?SAY text (if not skipping)                       
-            continue;                    
-        }
-
-
-
-        // ===========================
-        // ?SAY_ALWAYS verb processing -- write out string always, if skipping, or not
-        // ===========================
-
-         else if(token.str == std::wstring(L"SAY_ALWAYS"))
-        {
-            // get 1st (and only) parm for ?SAY_ALWAYS -- should be quoted string (after any substitution) 
-
-            M_parm1_string(L"?SAY_ALWAYS")
-                  
-            M_out(L"%s" ) % parm1.str;               // put out ?SAY_SKIP always -- skipping or not                       
-            continue;                    
-        }
-
-
-
-        // =========================
-        // ?SAY_SKIP verb processing -- write out string, only if skipping
-        // =========================
-
-        else if(token.str == std::wstring(L"SAY_SKIP"))
-        {
-            // get 1st (and only) parm for ?SAY_SKIP -- should be quoted string (after any substitution) 
-
-            M_parm1_string(L"?SAY_SKIP")
-
+            // bypass evaluating slist resulting from the parse, if still in skipping mode, or upward PP is in skipping mode
+                
             if (m_skipping)
-                M_out(L"%s" ) % parm1.str;         // put out ?SAY_SKIP text (only if skipping)                       
-            continue;                    
-        }
+                continue;                                                                                                         // loop back to process next token 
 
 
+            // not in skipping mode -- evaluate slist from the retained comment
 
-        // ====================
-        // ?SET verb processing -- set variables -- defines variable, if needed (can't alter a constant)
-        // ====================
-
-        else if (token.str == std::wstring(L"SET"))
-        {
-            // get two parms for ?SET -- 1st should be identifier and 2nd ishould be quoted string (after any substitution) 
-
-            M_parm1_identifier(L"?SET")
-            M_parm2_string(L"?SET")
-
-
-            // parms are OK -- set the variable (if not skipping)
-
-            if (!m_skipping)
-                set_var(parm1.str, parm2.str, false); 
-            continue;
-        }
-
- 
-
-        // =======================
-        // ?SKIPTO verb processing 
-        // =======================
-        
-        else if (token.str == std::wstring(L"SKIPTO"))
-        {
-            // get parm for ?SKIPTO -- should be identifier 
-
-            M_parm1_identifier(L"?SKIPTO")
-
-
-            // parms are OK -- start skipping 
-
-            if (!m_skipping)
-            {
-                m_skipto_label = parm1.str; 
-                set_suppress_echo();         /// shut off whole-line echoed comments
-                m_skipping     = true; 
-            }
-            continue;
-        }
-
-
-
-        // ===========================
-        // ?SKIPTO_DEF verb processing -- skip to label (parm1), if variable (parm2) is set
-        // ===========================
-        
-        else if (token.str == std::wstring(L"SKIPTO_DEF"))
-        {
-            // get parms for ?SKIPTO_SET -- should be identifiers 
-
-            M_parm1_identifier(L"?SKIPTO_DEF")
-            M_parm2_identifier(L"?SKIPTO_DEF")
-
-            // parms are OK -- start skipping 
-
-            if (!m_skipping)
-            {
-                if ( is_set_var(parm2.str) )
-                {
-                    m_skipto_label = parm1.str;
-                    set_suppress_echo();         /// shut off whole-line echoed comments
-                    m_skipping     = true;
-                }
-            }
-            continue;
-        }
-                    
-
-
-        // =============================
-        // ?SKIPTO_UNDEF verb processing -- skip to label (parm1), if variable (parm2) is not set
-        // =============================
-        
-        else if (token.str == std::wstring(L"SKIPTO_UNDEF"))
-        {
-            // get parms for ?SKIPTO_SET -- should be identifiers 
-
-            M_parm1_identifier(L"?SKIPTO_UNDEF")
-            M_parm2_identifier(L"?SKIPTO_UNDEF")
-
-            // parms are OK -- start skipping 
-
-            if (!m_skipping)
-            {
-                if ( !is_set_var(parm2.str)  )
-                {
-                    m_skipto_label = parm1.str;
-                    set_suppress_echo();         /// shut off whole-line echoed comments
-                    m_skipping     = true;
-                }
-            }
-            continue;
-        }
-
-
-
-        // ==========================
-        // ?SKIPTO_EQ verb processing -- skip to label (parm1), if string parms 2 and 3 are equal
-        // ==========================
-        
-        else if (token.str == std::wstring(L"SKIPTO_EQ"))
-        {
-            // get parms for ?SKIPTO_SET -- should be identifier and 2 stringss 
-
-            M_parm1_identifier(L"?SKIPTO_EQ")
-            M_parm2_string(L"?SKIPTO_EQ")
-            M_parm3_string(L"?SKIPTO_EQ")
-
-            // parms are OK -- start skipping 
-
-            if (!m_skipping)
-            {
-                if (parm2.str == parm3.str)
-                {
-                    m_skipto_label = parm1.str;
-                    set_suppress_echo();         /// shut off whole-line echoed comments
-                    m_skipping     = true;
-                }
-            }
-            continue;
-        }
+            results_S out_results {}; 
     
-
-
-        // ==========================
-        // ?SKIPTO_NE verb processing -- skip to label (parm1), if string parms 2 and 3 are not equal
-        // ==========================
-        
-        else if (token.str == std::wstring(L"SKIPTO_NE"))
-        {
-            // get parms for ?SKIPTO_SET -- should be identifier and 2 stringss 
-
-            M_parm1_identifier(L"?SKIPTO_NE")
-            M_parm2_string(L"?SKIPTO_NE")
-            M_parm3_string(L"?SKIPTO_NE")
-
-            // parms are OK -- start skipping 
-
-            if (!m_skipping)
+            M__(M_out(L"pre_parse_C::pre_parse_token()  -- calling eval_slist() ************************");)
+            auto erc = eval_slist(*m_frame_p, out_slist, out_results);                                                        // results (with any special flags) will be cause preparse error
+            M__(M_out(L"pre_parse_C::pre_parse_token()  -- eval_slist() returned -- rc=%d *****************") % erc;)  
+                       
+             
+            // return immediately, if error returned by eval_slist()
+            
+            if (erc != 0)
             {
-                if (parm2.str != parm3.str)
+                M__(M_out(L"pre_parse_C::pre_parse_token() -- eval_slist() returned error");)
+                M_out_emsg1(L"pre_parse_C::pre_parse_token() -- eval_slist() failed for preprocessor text");
+                token.display();
+                M_out_emsg2(L"    pre-processing ends"); 
+                count_error(); 
+                return -1;
+            }
+
+
+            // return immediately, if unexpected special results (like @GOTO) returned by eval_slist())
+            // ----------------------------------------------------------------------------------------
+                 
+            if (out_results.special_results)
+            {
+                if (out_results.end_flag)
                 {
-                    m_skipto_label = parm1.str;
-                    set_suppress_echo();         /// shut off whole-line echoed comments
-                    m_skipping     = true;
+                    close();                                    // should free up everything
+                    token.type               = token_E::end;
+                    token.has_leading_sigil  = false;           // no complaints from token_C::display()
+                    token.has_trailing_sigil = false; 
+                    t                        = token;           // pass back token (consumed already) 
+                    return 1;                                   // special R/C to indicate tokn is already consumed -- passing back simulated END token
+                }
+                else if (out_results.skip_flag)
+                {
+                                                                // skip results are expected here, as normal exit from retained comment
+                }
+                else                                            // not @END or @SKIP/@SKIPTO -- unexpected special results
+                {                               
+                    M_out_emsg1(L"pre_parse_C::pre_parse_token() -- eval_slist() for preprocessor text returned unexpected special results: %S") % results_msg_string(out_results); 
+                    token.display();
+                    M_out_emsg2(L"    pre-processing ends"); 
+                    count_error(); 
+                    return -1;
                 }
             }
-            continue;
-        }
+                        
 
+            // process any filenames/strings on the pending_attach_stack
+            // ---------------------------------------------------------
 
+            while (m_pending_attach_stack.size() > 0)
+            {
+                auto pend = m_pending_attach_stack.top();
+                m_pending_attach_stack.pop();
 
-        // ======================
-        // ?UNDEF verb processing 
-        // ======================
- 
-        else if (token.str == std::wstring(L"UNDEF"))
-        {
-            // get parm for ?UNDEF -- should be identifier 
- 
-            M_parm1_identifier(L"?UNDEF")                                                 
- 
- 
-            // parms are OK -- unset the variable (if not skipping)
- 
-            if (!m_skipping)                      
-                unset_var(parm1.str); 
-            continue;
-            
-        }
-
-            
-
-        // ====================
-        // ?VAR verb processing -- define variable -- must not already exist 
-        // ====================
-
-        else if (token.str == std::wstring(L"VAR"))
-        {
-            // get two parms for ?SET -- 1st should be identifier and 2nd ishould be quoted string (after any substitution) 
-
-            M_parm1_identifier(L"?VAR")
-            M_parm2_string(L"?VAR")
-
-
-            // parms are OK -- set the variable (if not skipping)
-
-            if (!m_skipping)
-                if (is_set_var(parm1.str))   // make sure this identifier is not already in use
+                if (pend.is_file)
                 {
-                    m_error_ct++;                                                                                            
-                    M_out_emsg1(L"pre_parse_C::pre_parse_token(): can't define ?VAR \"%s\" (with value \"%s\"), since identifier is already in use:") % parm1.str % parm2.str ; 
-                    token.display();
-                    parm1.display();    
-                    parm2.display(); 
-                    M_out_emsg2(L" ?VAR is ignored -- all ?VAR parm tokens are consumed"); 
+                    M__(M_out(L"pre_parse_C::pre_parse_token() -- file from m_pending_attach_stack = \"%S\"") % pend.name;) 
+                    auto arc = attach_file(pend.name);
+
+                    if (arc != 0)
+                    {
+                        M_out_emsg(L"pre_parse_C::pre_parse_token() -- attach_file() failed, trying to attach file \"%S\" requested by pre-processor text") % pend.name;
+                        token.display();
+                        M_out_emsg2(L"    pre-processing ends"); 
+                        count_error(); 
+                        return -1;    
+                    } 
                 }
-                else
+                else                  // must be attaching a string
                 {
-                    set_var(parm1.str, parm2.str, true);
+                    M__(M_out(L"pre_parse_C::pre_parse_token() -- string ID from m_pending_attach_stack = \"%S\"") % pend.name;) 
+                    auto arc = attach_string(pend.text, pend.name);
+
+                    if (arc != 0)
+                    {
+                        M_out_emsg(L"pre_parse_C::pre_parse_token() -- attach_string() failed, trying to attach string ID \"%S\" requested by pre-processor text") % pend.name;
+                        token.display();
+                        M_out_emsg2(L"    pre-processing ends"); 
+                        count_error(); 
+                        return -1;    
+                    } 
                 }
-            continue;
-        }
+            }
 
 
+            // normal results (or @SKIP) from eval_slist() -- just keep looping
 
-        // ========================
-        // unknown verb -- complain -- don't consume any parm tokens, since number of parms is unknown
-        // ========================
+            continue; 
 
-        else        // error -- not one of the known verbs
-        {
-            M_out_emsg1(L"pre_parse_token(): unknown pre-parse verb (\"%s\") seen:") % token.orig_str; 
-            token.display();
-            M_out_emsg2(L"unknown verb is not processed, any parms are not consumed"); 
-            m_error_ct++; 
-            continue;                    
-        }
+        }   // retained comment for preparse evaluation
+
+ 
+
           // ----------------
     }     // end of main loop
           // ----------------
@@ -1522,6 +776,7 @@ M_endf
 ////_____________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
   
 int pre_parse_C::get_token(token_C& token) try               // get (and consume) next token from stream  
 {
@@ -1560,6 +815,7 @@ M_endf
 ////_____________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
   
 int pre_parse_C::peek_token(token_C& token, size_t n) try              // get (and consume) next character from stream  
 {
@@ -1592,10 +848,10 @@ int pre_parse_C::peek_token(token_C& token, size_t n) try              // get (a
         // leave token on stack
 
         if (token.type == token_E::error)
-            return -1;                                         // if returning prior error, return with error R/C
+            return -1;                                           // if returning prior error, return with error R/C
         else
-            return 0;                                          // else returned token is OK             
-    }                                                          // do we need to pass back R/C = 1 here for simulated end????
+            return 0;                                            // else returned token is OK             
+    }                                                            // do we need to pass back R/C = 1 here for simulated end????
        
 
     // Loop to add enough tokens to new end of putback stack, so that n-th oldest token is on the putback stack
@@ -1606,9 +862,9 @@ int pre_parse_C::peek_token(token_C& token, size_t n) try              // get (a
 
     for (auto i = 0;  i < (n - sz); ++i)
     {
-        int rci = pre_parse_token(tok);           // get next composite token     
-        if (rci < 0) rc = rci;                    // remember any bad R/C   -- do we need to handle +1 R/C too ??????????????????????????????
-        m_token_stack.push_back(tok);             // add newest composite token to back end of putback stack
+        int rci = pre_parse_token(tok);                          // get next composite token     
+        if (rci < 0) rc = rci;                                   // remember any bad R/C   -- do we need to handle +1 R/C too ??????????????????????????????
+        m_token_stack.push_back(tok);                            // add newest composite token to back end of putback stack
     }
 
     if (m_token_stack.size() != n)
@@ -1620,8 +876,8 @@ int pre_parse_C::peek_token(token_C& token, size_t n) try              // get (a
 
     //  Desired token should be at the back of the stack now -- return it but leave it on the stack 
 
-    m_token_stack.back().peek_count ++;            // increment peek counter
-    token = m_token_stack.back();                  // passing back last (newest) token on stack -- should be the right one, if R/C is 0  
+    m_token_stack.back().peek_count ++;                          // increment peek counter
+    token = m_token_stack.back();                                // passing back last (newest) token on stack -- should be the right one, if R/C is 0  
     M__(M_out(L"pre_parse_C::peek_token() ---------------------------------------------------->");)
     M__(token.display();)
     M__(M_out(L"<------------------------------------");)
@@ -1646,6 +902,7 @@ M_endf
 ////_____________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 void pre_parse_C::putback_token(const token_C& token) try      // putback token to stream -- no need to be connected to a file
 {
@@ -1668,6 +925,7 @@ M_endf
 ////_____________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 int pre_parse_C::discard_token(size_t n) try                      
 {
@@ -1736,6 +994,136 @@ M_endf
 
 
 
+
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   set_skip() -- set pre-processor skipping mode (with target label)
+////                   
+////
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+void pre_parse_C::set_skip(const std::wstring& to_label) try    
+{
+    m_skipto_label = to_label;           // don't bother checking to see if we are already skipping
+    m_skipping     = true; 
+}
+M_endf
+
+
+
+
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   attach_file() -- validate requested input file and attach it to the token stream 
+////                   
+////
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+
+int pre_parse_C::attach_file(const std::wstring& wn) try
+{
+    std::wstring final_pathname { }; 
+
+
+    // get final filename for imbed -- prepend m_imbed_folder, if passed-in filename appears not to be an absolute pathname 
+
+    if ( (wn.size() >= 1) && ((wn.at(0) == L'\\') || (wn.at(0) == L'/')) )
+        final_pathname = wn; 
+
+    else if ( (wn.size() >= 2) &&  (wn.at(1) == L':' ) ) 
+        final_pathname = wn; 
+    else
+        final_pathname = m_imbed_folder + wn; 
+    
+
+    // attach this file to the token stream -=- complain if errors passed back
+
+    api_err_S    err  { }; 
+    auto arc = m_token_stream.attach_file(final_pathname, err);  
+
+    if ( (arc != 0) || (err.error_occurred) )
+    {
+        M_out_emsg(L"pre_parse_C::attach_file() -- input file \"%S\" cannot be used -- error text = <<%S>>") % wn % err.error_text;     
+        return -1; 
+    }  
+
+   // arc = m_token_stream.attach_file(m_imbed_folder + L"test_attach1.txt", err);  
+   // arc = m_token_stream.attach_file(m_imbed_folder + L"test_attach2.txt", err);  
+   // arc = m_token_stream.attach_file(m_imbed_folder + L"test_attach3.txt", err);    
+
+    return 0;                            // attach is OK
+}
+M_endf
+
+
+
+
+
+
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   add_pending_attach() -- add filename/string to pending attach stack (at front) 
+////                   
+////
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+                 
+// version that adds a file to the pending attach stack
+// ----------------------------------------------------
+
+void pre_parse_C::add_pending_attach(const std::wstring& filename) try
+{
+    // add this filename to front of pending attach stack (order of attach()ed file reading will be reversed when attach()es are actioned later
+
+    pending_attach_S pend { };
+    pend.name      = filename;
+    pend.is_file   = true;
+
+    m_pending_attach_stack.push(pend);  
+    return;      
+}
+M_endf
+
+
+// version that adds a string to the pending attach stack
+// ------------------------------------------------------
+
+void pre_parse_C::add_pending_attach(const std::wstring& text, const std::wstring& id) try
+{
+    // add this string to front of pending attach stack (order of attach()ed string processing will be reversed when attach()es are actioned later
+
+    pending_attach_S pend { };
+    pend.text      = text;
+    pend.name      = id;
+    pend.is_file   = false;
+
+    m_pending_attach_stack.push(pend);  
+    return;      
+}
+M_endf
+  
+
+
 ////_____________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
@@ -1749,20 +1137,6 @@ M_endf
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-
-int pre_parse_C::attach_file(const std::wstring& wn) try
-{
-    return m_token_stream.attach_file(m_imbed_folder + wn); 
-}
-M_endf
-
-int pre_parse_C::attach_file(const std::string& n) try
-{
-    return m_token_stream.attach_file(n); 
-}
-M_endf
-
 
 int pre_parse_C::attach_string(const std::wstring& ws, const std::wstring& wn) try
 {
@@ -1790,7 +1164,6 @@ M_endf
 
 bool     pre_parse_C::is_empty(    ) const try { return              m_token_stream.is_empty(    ) ; }  M_endf
 size_t   pre_parse_C::putback_size() const try { return              m_token_stream.putback_size() ; }  M_endf
-uint64_t pre_parse_C::errors(      ) const try { return m_error_ct + m_token_stream.errors(      ) ; }  M_endf
 
 
 // subset of token_string_C configuration functions (other setings are required by pre-parse)
@@ -1854,8 +1227,7 @@ void pre_parse_C::set_retained_block_comment_4th_char( char32_t ch32         ) t
 void pre_parse_C::set_leading_sigils(const std::vector<char32_t>& ls) try 
 {
     std::vector<char32_t> leading_sigils = ls; 
-    leading_sigils.push_back(const_N::ch_pp_sigil_action);               // add on required leading sigil for pre-parser actions -- '?'
-
+   
     return m_token_stream.set_leading_sigils(leading_sigils); 
 }
 M_endf
@@ -1864,8 +1236,7 @@ M_endf
 void pre_parse_C::set_leading_ident_sigils(const std::vector<char32_t>& ls) try 
 {
     std::vector<char32_t> leading_sigils = ls; 
-    leading_sigils.push_back(const_N::ch_pp_sigil_action);               // add on required leading sigil for pre-parser actions -- '?'
-                                                                                                                          
+                                                                                                                              
     if (leading_sigils.size() > 0)
         m_token_stream.set_allow_leading_id_sigils(true );               // need to allow leading identifier sigils
     else
@@ -1894,10 +1265,6 @@ M_endf
 void pre_parse_C::set_trailing_ident_sigils(const std::vector<char32_t>& ts) try 
 {
     std::vector<char32_t> trailing_sigils = ts; 
-
-    trailing_sigils.push_back(const_N::ch_pp_sigil_subst                );    // add on required traliing sigil for pre-parser  -- '?' = pre-parser variable substitution        trailing sigil
-    trailing_sigils.push_back(const_N::ch_pp_sigil_quote_subst          );    // add on required traliing sigil for pre-parser  -- '!' = pre-parser string variable substitution trailing sigil
-    trailing_sigils.push_back(const_N::ch_pp_sigil_label                );    // add on required traliing sigil for pre-parser  -- ':' = pre-parser label                        trailing sigil  
     
     if (trailing_sigils.size() > 0)
         m_token_stream.set_allow_trailing_id_sigils(true );                   // need to allow trailing identifier sigils

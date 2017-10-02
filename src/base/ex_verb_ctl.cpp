@@ -43,7 +43,8 @@
 ////     @SHELL
 ////
 ////
-////
+////     @IMBED
+////     @SKIPTO
 ////     @PARSE
 ////     @SEP   -or-  ,
 ////
@@ -67,6 +68,7 @@
 ////     @_EXIT
 ////     @QUICK_EXIT
 ////     @ABORT
+////     @ERROR
 ////
 ////
 ////
@@ -270,32 +272,30 @@ static void build_verb_parmtype(frame_S& frame, const e_expression_S expression,
     // get keyword parms from caller's vlist
     // -------------------------------------
 
-    value_S unwanted_value {};                  // no value from type-parms 
-
-    auto unit_rc         = get_vlist_keyword(vlist, L"unit"            , unwanted_value); // r/c = -1 if not present
-    auto int8_rc         = get_vlist_keyword(vlist, L"int8"            , unwanted_value); // r/c = -1 if not present
-    auto int16_rc        = get_vlist_keyword(vlist, L"int16"           , unwanted_value); // r/c = -1 if not present
-    auto int32_rc        = get_vlist_keyword(vlist, L"int32"           , unwanted_value); // r/c = -1 if not present
-    auto int64_rc        = get_vlist_keyword(vlist, L"int64"           , unwanted_value); // r/c = -1 if not present
-    auto uint8_rc        = get_vlist_keyword(vlist, L"uint8"           , unwanted_value); // r/c = -1 if not present
-    auto uint16_rc       = get_vlist_keyword(vlist, L"uint16"          , unwanted_value); // r/c = -1 if not present
-    auto uint32_rc       = get_vlist_keyword(vlist, L"uint32"          , unwanted_value); // r/c = -1 if not present
-    auto uint64_rc       = get_vlist_keyword(vlist, L"uint64"          , unwanted_value); // r/c = -1 if not present
-    auto float32_rc      = get_vlist_keyword(vlist, L"float32"         , unwanted_value); // r/c = -1 if not present
-    auto float64_rc      = get_vlist_keyword(vlist, L"float64"         , unwanted_value); // r/c = -1 if not present
-    auto string_rc       = get_vlist_keyword(vlist, L"string"          , unwanted_value); // r/c = -1 if not present
-    auto raw_ident_rc    = get_vlist_keyword(vlist, L"raw_ident"       , unwanted_value); // r/c = -1 if not present
-    auto var_ident_rc    = get_vlist_keyword(vlist, L"var_ident"       , unwanted_value); // r/c = -1 if not present
-    auto const_ident_rc  = get_vlist_keyword(vlist, L"const_ident"     , unwanted_value); // r/c = -1 if not present
-    auto undef_ident_rc  = get_vlist_keyword(vlist, L"undef_ident"     , unwanted_value); // r/c = -1 if not present
-    auto vlist_rc        = get_vlist_keyword(vlist, L"vlist"           , unwanted_value); // r/c = -1 if not present
-    auto expression_rc   = get_vlist_keyword(vlist, L"expression"      , unwanted_value); // r/c = -1 if not present
-    auto slist_rc        = get_vlist_keyword(vlist, L"slist"           , unwanted_value); // r/c = -1 if not present
-    auto verbdef_rc      = get_vlist_keyword(vlist, L"verbdef"         , unwanted_value); // r/c = -1 if not present
-    auto typedef_rc      = get_vlist_keyword(vlist, L"typedef"         , unwanted_value); // r/c = -1 if not present
-    auto array_rc        = get_vlist_keyword(vlist, L"array"           , unwanted_value); // r/c = -1 if not present
-    auto struct_rc       = get_vlist_keyword(vlist, L"struct"          , unwanted_value); // r/c = -1 if not present
-    auto ref_rc          = get_vlist_keyword(vlist, L"ref"             , unwanted_value); // r/c = -1 if not present
+    auto unit_rc         = get_vlist_keyword(vlist, L"unit"            ); // r/c = -1 if not present
+    auto int8_rc         = get_vlist_keyword(vlist, L"int8"            ); // r/c = -1 if not present
+    auto int16_rc        = get_vlist_keyword(vlist, L"int16"           ); // r/c = -1 if not present
+    auto int32_rc        = get_vlist_keyword(vlist, L"int32"           ); // r/c = -1 if not present
+    auto int64_rc        = get_vlist_keyword(vlist, L"int64"           ); // r/c = -1 if not present
+    auto uint8_rc        = get_vlist_keyword(vlist, L"uint8"           ); // r/c = -1 if not present
+    auto uint16_rc       = get_vlist_keyword(vlist, L"uint16"          ); // r/c = -1 if not present
+    auto uint32_rc       = get_vlist_keyword(vlist, L"uint32"          ); // r/c = -1 if not present
+    auto uint64_rc       = get_vlist_keyword(vlist, L"uint64"          ); // r/c = -1 if not present
+    auto float32_rc      = get_vlist_keyword(vlist, L"float32"         ); // r/c = -1 if not present
+    auto float64_rc      = get_vlist_keyword(vlist, L"float64"         ); // r/c = -1 if not present
+    auto string_rc       = get_vlist_keyword(vlist, L"string"          ); // r/c = -1 if not present
+    auto raw_ident_rc    = get_vlist_keyword(vlist, L"raw_ident"       ); // r/c = -1 if not present
+    auto var_ident_rc    = get_vlist_keyword(vlist, L"var_ident"       ); // r/c = -1 if not present
+    auto const_ident_rc  = get_vlist_keyword(vlist, L"const_ident"     ); // r/c = -1 if not present
+    auto undef_ident_rc  = get_vlist_keyword(vlist, L"undef_ident"     ); // r/c = -1 if not present
+    auto vlist_rc        = get_vlist_keyword(vlist, L"vlist"           ); // r/c = -1 if not present
+    auto expression_rc   = get_vlist_keyword(vlist, L"expression"      ); // r/c = -1 if not present
+    auto slist_rc        = get_vlist_keyword(vlist, L"slist"           ); // r/c = -1 if not present
+    auto verbdef_rc      = get_vlist_keyword(vlist, L"verbdef"         ); // r/c = -1 if not present
+    auto typedef_rc      = get_vlist_keyword(vlist, L"typedef"         ); // r/c = -1 if not present
+    auto array_rc        = get_vlist_keyword(vlist, L"array"           ); // r/c = -1 if not present
+    auto struct_rc       = get_vlist_keyword(vlist, L"struct"          ); // r/c = -1 if not present
+    auto ref_rc          = get_vlist_keyword(vlist, L"ref"             ); // r/c = -1 if not present
 
     int  type_ct = 1 + unit_rc     
                  + 1 + int8_rc      + 1 + int16_rc       + 1 + int32_rc       + 1 + int64_rc 
@@ -306,9 +306,9 @@ static void build_verb_parmtype(frame_S& frame, const e_expression_S expression,
 
     // evaluation flags
 
-    auto no_eval_ident_rc      = get_vlist_keyword(vlist, L"no_eval_ident"       , unwanted_value); // r/c = -1 if not present
-    auto no_eval_expression_rc = get_vlist_keyword(vlist, L"no_eval_expression"  , unwanted_value); // r/c = -1 if not present
-    auto no_eval_vlist_rc      = get_vlist_keyword(vlist, L"no_eval_vlist"       , unwanted_value); // r/c = -1 if not present
+    auto no_eval_ident_rc      = get_vlist_keyword(vlist, L"no_eval_ident"       ); // r/c = -1 if not present
+    auto no_eval_expression_rc = get_vlist_keyword(vlist, L"no_eval_expression"  ); // r/c = -1 if not present
+    auto no_eval_vlist_rc      = get_vlist_keyword(vlist, L"no_eval_vlist"       ); // r/c = -1 if not present
         
 
     // arithmetic range parms
@@ -1264,6 +1264,160 @@ M_endf
 
 
 
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//    @IMBED file:"filename"   -or-     @IMBED string:"text to be imbedded"                                                                                                            
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int verb_imbed(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+{
+    // already known that either string: or file: string keywords are present (but not both)
+    M__(M_out(L"verb_imbed() called");)
+ 
+    value_S file_value   {};                                                          // file:   should be string 
+    value_S string_value {};                                                          // string: should be string 
+
+
+    // imbed file, if file: was present
+    // --------------------------------
+
+    if (0 == get_right_keyword(expression, L"file", file_value))                    // file: keyword  present? 
+    {
+        M__(M_out(L"verb_imbed() -- file= \"%S\"") % file_value.string; )
+
+        auto arc = pending_attach_ext(file_value.string); 
+        if (arc != 0)
+        {
+            M_out_emsg1(L"verb_imbed() -- error from pending_attach_ext() for file \"%S\" -- @IMBED called outside of pre-processor text (in plain code)") % file_value.string; 
+            msgend_loc(expression);
+            results = error_results();                                                               // return error
+            return -1;     
+        }
+    }
+
+
+    // imbed string, if file: was present
+    // --------------------------------
+
+    if (0 == get_right_keyword(expression, L"string", string_value))                    // string: keyword  present? 
+    {
+        M__(M_out(L"verb_imbed() -- string= \"%S\"") % string_value.string; )
+
+        auto arc = pending_attach_ext(string_value.string, L"string from @IMBED"); 
+        if (arc != 0)
+        {
+            M_out_emsg1(L"verb_imbed() -- error from pending_attach_ext() for string id = \"%S\" -- @IMBED called outside of pre-processor text (in plain code)") % L"ID not supported yet"; 
+            msgend_loc(expression);
+            results = error_results();                                                               // return error
+            return -1;     
+        } 
+    }
+
+
+    // pending_attach_ext() OK -- all this means is that we are within pre-processor text -- any file I/O errors will be detected later
+
+    results = no_results(); 
+    return 0; 
+}
+M_endf
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//    @SKIP                                                                                                             
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int verb_skip(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+{
+    M_y(M_out(L"verb_skip() called");)
+ 
+        
+    // return with special @SKIP results -- will cause blocks, slists, etc. to be ended until pre-processor sees/handles it
+
+    results = special_results();
+    results.skip_flag       = true;
+                                                       // don't set target label
+    return 0; 
+}
+M_endf
+         
+ 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//    @SKIPTO "label"                                                                                                             
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int verb_skipto(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+{
+    // already known that there is one right positional string parm = target label
+    M__(M_out(L"verb_skipto() called");)
+
+    auto to_label = M_get_right_pos_string(expression, 0);   
+    set_skip_ext(to_label);                                  // maybe let pre-processor do this ???????????????????????? 
+    
+
+    // return with special @SKIPTO results -- will cause blocks, slists, etc. to be ended until pre-processor sees/handles it
+
+    results = special_results();
+    results.skip_flag       = true;
+    results.str             = to_label;                      // @SKIPTO target label
+    return 0; 
+}
+M_endf
+         
+   
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//    @IMPORT "DLL name" (without "verbexx_" prefix, and without .dll filetype)                                                                                                            
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int verb_import(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+{
+    // already known that there is one right positional string parm = DLL name 
+    M__(M_out(L"verb_import() called");)
+ 
+
+    // extract DLL name from parms and put in "verbexx_" prefix
+    // --------------------------------------------------------
+    
+    std::wstring dll_name { L"verbexx_" + M_get_right_pos_string(expression, 0) };
+   
+
+    // import the DLL, and complain about any errors
+    // ---------------------------------------------
+
+    auto irc = import_dll(dll_name, L"");   
+    if (irc != 0)
+    {
+         M__(M_out(L"verb_import() -- error: bad R/C from import_dll(\"%S\", \"\"") % dll_name;) 
+         M_out_emsg1(L"verb_import() -- error from import_dll() for dll = \"%S\"") % dll_name; 
+         msgend_loc(expression);
+         results = error_results();          
+         return -1;   
+    }
+
+
+    // DLL load was OK -- return no results
+    // ------------------------------------
+
+    results = no_results();
+    return 0; 
+}
+M_endf
+                                           
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //    @PARSE "string" name:"debug name string" -- parse "string"into slist_S                                                                                                            
@@ -1289,7 +1443,7 @@ int verb_parse(frame_S& frame, const e_expression_S& expression, const verbdef_S
                                                                                                              
                                                                                                              
     slist_S out_slist{ };                                                                                      // slist_s to be filled in by parse_string()  
-    auto prc = parse_string(*get_main_preparse(), frame, out_slist, parse_ws, debug_name, continue_running);   // if "continue"option, make sure to refresh eevrything after any error
+    auto prc = parse_string(frame, out_slist, parse_ws, debug_name, continue_running);                         // if "continue" option, make sure to refresh everything after any error
 
 
     // if error occurred, pass back normal results or error results, based on continue: keyword 
@@ -1428,9 +1582,7 @@ int verb_break(frame_S& frame, const e_expression_S& expression, const verbdef_S
 
     M__(M_out(L"verb_break() called");)
 
-    results                 = results_S { }; 
-    results.ty              = type_E::special;
-    results.special_results = true;
+    results                 = special_results(); 
     results.break_flag      = true;
     return 0; 
 }
@@ -1450,9 +1602,7 @@ int verb_goto(frame_S& frame, const e_expression_S& expression, const verbdef_S&
 
     M__(M_out(L"verb_goto() called");)
 
-    results                 = results_S { }; 
-    results.ty              = type_E::special;
-    results.special_results = true;
+    results                 = special_results(); 
     results.goto_flag       = true;
     results.str             = M_get_right_pos_string(expression, 0); // @GOTO target label = 1st right string parm
 
@@ -1474,9 +1624,7 @@ int verb_leave(frame_S& frame, const e_expression_S& expression, const verbdef_S
 
     M__(M_out(L"verb_leave() called");)
 
-    results                 = results_S { }; 
-    results.ty              = type_E::special;
-    results.special_results = true;
+    results                 = special_results(); 
     results.leave_flag      = true;
 
     if (expression.rparms.value_ct > 0)                      // @LEAVE target supplied?  
@@ -1746,9 +1894,7 @@ int verb_continue(frame_S& frame, const e_expression_S& expression, const verbde
 
     M__(M_out(L"verb_continue() called");)
 
-    results                 = results_S { };
-    results.ty              = type_E::special;
-    results.special_results = true;
+    results                 = special_results(); 
     results.continue_flag   = true;
     return 0; 
 }
@@ -1767,9 +1913,7 @@ int verb_quit(frame_S& frame, const e_expression_S& expression, const verbdef_S&
 
     M__(M_out(L"verb_quit() called");)
 
-    results                 = results_S { };
-    results.ty              = type_E::special;
-    results.special_results = true;
+    results                 = special_results(); 
     results.quit_flag       = true;
     return 0; 
 }
@@ -1788,9 +1932,7 @@ int verb_end(frame_S& frame, const e_expression_S& expression, const verbdef_S& 
 
     M__(M_out(L"verb_end() called");)
 
-    results                 = results_S { };
-    results.ty              = type_E::special; 
-    results.special_results = true;
+    results                 = special_results(); 
     results.end_flag        = true;
     return 0; 
 }
@@ -1817,9 +1959,7 @@ int verb_exit(frame_S& frame, const e_expression_S& expression, const verbdef_S&
     // following code is not reached
     // -----------------------------
 
-    results                 = results_S { };
-    results.ty              = type_E::special; 
-    results.special_results = true;
+    results                 = special_results(); 
     results.end_flag        = true;
     return 0; 
 }
@@ -1846,9 +1986,7 @@ int verb__exit(frame_S& frame, const e_expression_S& expression, const verbdef_S
     // following code is not reached
     // -----------------------------
 
-    results                 = results_S { };
-    results.ty              = type_E::special; 
-    results.special_results = true;
+    results                 = special_results(); 
     results.end_flag        = true;
     return 0; 
 }
@@ -1875,9 +2013,7 @@ int verb_quick_exit(frame_S& frame, const e_expression_S& expression, const verb
     // following code is not reached
     // -----------------------------
 
-    results                 = results_S { };
-    results.ty              = type_E::special; 
-    results.special_results = true;
+    results                 = special_results(); 
     results.end_flag        = true;
     return 0; 
 }
@@ -1905,13 +2041,39 @@ int verb_abort(frame_S& frame, const e_expression_S& expression, const verbdef_S
     // following code is not reached
     // -----------------------------
 
-    results                 = results_S { };
-    results.ty              = type_E::special; 
-    results.special_results = true;
+    results                 = special_results(); 
     results.end_flag        = true;
     return 0; 
 }
 M_endf
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//    @ERROR -- increment error counter
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int verb_error(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+{
+    // already known that there is no parms at all
+
+    M__(M_out(L"verb_error() called");)  
+
+    count_error();      
+    results                 = no_results(); 
+    return 0; 
+}
+M_endf
+
+
+
+
+
+
+
+
 
 
 

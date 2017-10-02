@@ -167,6 +167,22 @@ M_endf
 
 
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////
@@ -268,7 +284,17 @@ M_endf
 
 
 
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -292,34 +318,6 @@ M_endf
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-/*
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-// default constructor   (defaulted)
-// ------------------- 
-//
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-token_C::token_C()
-    : type       {token_E::none}      // start out with no type specified
-    , str        {}         
-    , orig_str   {}
-    , lineno1    {0}
-    , lineno2    {0}
-    , linepos1   {0}
-    , linepos2   {0}
-    , filename1  {}
-    , filename2  {}   
-{
-    M_dmsg("token_C() called -- default constructor")      
-    return;
-}
-*/
 
 
 
@@ -518,7 +516,17 @@ M_endf
 
 
 
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -545,107 +553,6 @@ M_endf
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-// default constructor (defaulted)
-// ------------------- 
-//
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/*
-token_stream_C::token_stream_C()      
-    : m_instream_stack         {}         
-    , m_in_filename            {}
-    , m_char_stream_p          {nullptr}
-    , m_token_stack            {}
-    , m_raw_token_stack        {}
-    , m_error_seen             {false}    // no errors so far
-    , m_attach_mode            {true}     // starts out in prefix mode, since first token will be 1st operand
-    , m_quiet_mode             {false}
-    , m_eol_is_whitespace      {false}
-    , m_comment_is_whitespace  {true}    
-    , m_combine_whitespace     {true}
-    , m_combine_strings        {false}
-    , m_skip_whitespace        {false}
-    , m_allow_num_identifier   {false}
-    , m_error_ct               {0}
-{
-    M_dmsg("token_stream_C() called -- default constructor")
-    return;
-}
-*/
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-// copy constructor (deleted)
-// ---------------- 
-//
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/*
-token_stream_C::token_stream_C(const token_stream_C& from)
-    : m_instream_stack         {                               }       // leave open files with the original -- copy will have none
-    , m_in_filename            {                               }       // copy gets empty filename string
-    , m_char_stream_p          { nullptr                       }       // copy has no active char_stream 
-    , m_token_stack            { from.m_token_stack            }       // copy gets copy of putback token stack 
-    , m_raw_token_stack        { from.m_raw_token_stack        }       // copy gets copy of raw token stack 
-    , m_error_seen             { from.m_error_seen             }       // propagate flag 
-    , m_attach_mode            { from.m_attach_mode            }       // propagate flag 
-    , m_quiet_mode             { from.m_quiet_mode             }       // propagate flag 
-    , m_eol_is_whitespace      { from.m_eol_is_whitespace      }       // propagate flag 
-    , m_comment_is_whitespace  { from.m_comment_is_whitespace  }       // propagate flag 
-    , m_combine_whitespace     { from.m_combine_whitespace     }       // propagate flag 
-    , m_combine_strings        { from.m_combine_strings        }       // propagate flag 
-    , m_skip_whitespace        { from.m_skip_whitespace        }       // propagate flag 
-    , m_allow_num_identifier   { from.m_allow_num_identifier   }       // propagate flag 
-    , m_error_ct               { from.m_error_ct               }       // propagate m_error_ct 
-{
-    M_msg1("token_stream_C(const token_stream_C&) called -- copy constructor -- \"") M_wide(from.m_in_filename) M_msg2("\"")
-    return;
-}
-*/
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-// move constructor (deleted)
-// ---------------- 
-//
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-/*
-token_stream_C::token_stream_C(token_stream_C&& from)
-    : m_instream_stack         { std::move(from.m_instream_stack)       }
-    , m_in_filename            { std::move(from.m_in_filename)          }
-    , m_char_stream_p          { std::move(from.m_char_stream_p)        }
-    , m_token_stack            { std::move(from.m_token_stack)          }
-    , m_raw_token_stack        { std::move(from.m_raw_token_stack)      }
-    , m_error_seen             {           from.m_error_seen            }
-    , m_attach_mode            {           from.m_attach_mode           }
-    , m_quiet_mode             {           from.m_quiet_mode            }
-    , m_eol_is_whitespace      {           from.m_eol_is_whitespace     }       // propagate flag 
-    , m_comment_is_whitespace  {           from.m_comment_is_whitespace }       // propagate flag 
-    , m_combine_whitespace     {           from.m_combine_whitespace    }       // propagate flag 
-    , m_combine_strings        {           from.m_combine_strings       }       // propagate flag 
-    , m_skip_whitespace        {           from.m_skip_whitespace       }       // propagate flag 
-    , m_allow_num_identifier   {           from.m_allow_num_identifier  }       // propagate flag 
-    , m_error_ct               {           from.m_error_ct              }
-{
-    M_msg1("token_stream_C(token_stream_C&&) called -- move constructor -- \"") M_wide(from.m_in_filename) M_msg2("\"")
-
-    while (!from.m_instream_stack.empty())  from.m_instream_stack.pop();     // make sure no open files get closed/freed when from is destroyed, in case move semantics not honored ????
-    return; 
-}
-*/
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
 // destructor
 // ----------
 //
@@ -666,88 +573,6 @@ token_stream_C::~token_stream_C()       // destructor -- can't throw
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-// copy assignment (self-assignment ???) -- will lose file_stack and char_stream)   (deleted)
-// ---------------
-//
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/*
-token_stream_C& token_stream_C::operator=(const token_stream_C& from)
-{
-    M_msg1("operator=(const token_stream_C &) called -- copy assignment -- \"") M_wide(from.m_in_filename) M_msg1("\" -> \"") M_wide(m_in_filename) M_msg2("\"")
-
-    token_stream_C temp {from};  // constructed copy of from -- should be empty except for m_token_stack
-
-
-    // need to individually swap all members -- get compile error with whole swap
-
-    std::swap(temp.m_instream_stack  , this->m_instream_stack); // this.file_stack   should be empty
-    std::swap(temp.m_in_filename     , this->m_in_filename);    // this.m_in_filename  should be empty
-    std::swap(temp.m_token_stack     , this->m_token_stack);    // this.m_token_stack  should be a copy of from.m_token_stack 
-    std::swap(temp.m_raw_token_stack , this->m_raw_token_stack);// this.m_raw_token_stack  should be a copy of from.m_raw_token_stack 
-    
-    m_char_stream_p         = nullptr;                          // copy gets no active char_stream
-
-    m_error_seen            = from.m_error_seen;                // propagate flag into copy  
-    m_attach_mode           = from.m_attach_mode;               // propagate flag
-    m_quiet_mode            = from.m_quiet_mode;                // propagate flag
-    m_eol_is_whitespace     = from.m_eol_is_whitespace;         // propagate flag 
-    m_comment_is_whitespace = from.m_comment_is_whitespace;     // propagate flag 
-    m_combine_whitespace    = from.m_combine_whitespace;        // propagate flag 
-    m_combine_strings       = from.m_combine_strings;           // propagate flag 
-    m_skip_whitespace       = from.m_skip_whitespace;           // propagate flag 
-    m_allow_num_identifier  = from.m_allow_num_identifier;      // propagate flag 
-    m_error_ct              = from.m_error_ct;                  // propagate error count
-
-    // temp now has original stuff from *this and will go through destructors
-
-    // following line will not compile
-    // std::swap(temp, *this);      // move copy of from into *this -- temp now stuff from *this   
-
-    return *this;                // *this is a copy of from 
-}
-*/
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-// move assignment (deleted)
-// ---------------
-//
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/*
-token_stream_C& token_stream_C::operator=(token_stream_C&& from)
-{
-    M_msg1("operator=(token_stream_C &&) called -- move assignment -- \"") M_wide(from.m_in_filename) M_msg1("\" -> \"") M_wide(m_in_filename) M_msg2("\"")
-        
-    std::swap(m_instream_stack   , from.m_instream_stack   );
-    std::swap(m_in_filename      , from.m_in_filename      );
-    std::swap(m_token_stack      , from.m_token_stack      );
-    std::swap(m_raw_token_stack  , from.m_raw_token_stack  );
-
-    m_char_stream_p         = from.m_char_stream_p;              
-    m_error_seen            = from.m_error_seen;                // propagate flag into copy  
-    m_attach_mode           = from.m_attach_mode;               // propagate flag
-    m_quiet_mode            = from.m_quiet_mode;                // propagate flag
-    m_eol_is_whitespace     = from.m_eol_is_whitespace;         // propagate flag 
-    m_comment_is_whitespace = from.m_comment_is_whitespace;     // propagate flag 
-    m_combine_whitespace    = from.m_combine_whitespace;        // propagate flag 
-    m_combine_strings       = from.m_combine_strings;           // propagate flag 
-    m_skip_whitespace       = from.m_skip_whitespace;           // propagate flag 
-    m_allow_num_identifier  = from.m_allow_num_identifier;      // propagate flag 
-    m_error_ct              = from.m_error_ct;                  // propagate error count
-    return *this;                
-}
-*/
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //public:
 //
 //
@@ -757,101 +582,43 @@ token_stream_C& token_stream_C::operator=(token_stream_C&& from)
 //               -- allocates new instream_C and infile_C + char_steam_C for the new file and associates them
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-// "plain" string version 
-
-int token_stream_C::attach_file(const std::string& s) try   
+                            
+int token_stream_C::attach_file(const std::wstring& pathname, api_err_S& err) try    
 {
-    M__(M_out(L"token_stream_C::attach_file(\"%s\") called -- putback stack size = %d      raw token stack size = %d ") % to_wstring(s) % m_token_stack.size() % m_raw_token_stack.size();)
-  
-    if (m_error_seen)
-    {
-        M_out_emsg(L"token_stream_C::attach_file() called after error had been reported -- \"%s\"") %  m_in_filename;
-        ++m_error_ct; 
-        return -1;
-    }
-
-    
-    //  Create new infile_C object -- check if file is open -- return with error if open() failed
-
-    infile_C* infile_p = new infile_C {s};                    
-
-    if (!(infile_p->is_open()))
-    {
-        delete infile_p; 
-        m_error_seen = true;                              // stop any further input
-        return -1;
-    }
-
-    m_in_filename = to_wstring(s);                        // file is open -- set active filename for use in token error messages
-    m_source_id   = infile_p->get_source_id();            // capture source id for error messages 
-
-    //  Allocate new char_stream to be stacked, and attach the pre-opened iput file
-
-    m_char_stream_p = new char_stream_C {};               // get new char_stream to be associated with this file -- anchor it as the active/current char_stream a -- this pointer does not own the char_stream  
-    m_char_stream_p->attach_file(infile_p);               // attach the new file to the new char_stream
-    m_char_stream_p->set_trigraph_char(m_trigraph_char);  // propogate current trigraph char to new char_stream_S
-
-
-    //  Allocate new instream_C structure, fill it in with the new infile_p and new m_char_stream_p, than add instream_C structure to m_instream_stack  
-
-    m_instream_p = new instream_C {};                     // allocate a new instream_C structure to be added to stack  (overwrite old pointer)
-    m_instream_p->infile_p = infile_p;                    // save pointer to pre-opened file in instream_C structure  
-    m_instream_p->char_stream_p = m_char_stream_p;        // anchor the new char_stream in the instream_C structure  
-    m_instream_stack.push(m_instream_p);                  // add to top of instream stack  
-      
-
-    // save current token stack and raw token stack in new instream-C object (for later restoration)
-
-    m_instream_p->token_stack     = m_token_stack;
-    m_instream_p->raw_token_stack = m_raw_token_stack;   // should swap() be used here ????????????????????????????????????????????????????????????????????
-    m_token_stack.clear();
-    m_raw_token_stack.clear();
-     
-
-    if (m_instream_stack.size() > m_max_instream_nest)
-        M_throw_v("token_stream_C::attach_file(): number of nested instream_C objects is more than %d") % m_max_instream_nest)); 
-
-    return 0; 
-}
-M_endf
-
-/////////////////////////////////////////////////////////////////////////////////////////
-
-// wstring version 
-
-int token_stream_C::attach_file(const std::wstring& ws) try    
-{
-    M__(M_out(L"token_stream_C::attach_file(\"%s\") called -- putback stack size = %d      raw token stack size = %d ") % ws % m_token_stack.size() % m_raw_token_stack.size();)
+    M__(M_out(L"token_stream_C::attach_file(\"%s\") called -- putback stack size = %d      raw token stack size = %d ") % info.filename % m_token_stack.size() % m_raw_token_stack.size();)
    
+    err = api_err_S { };                               // clean out passback error structure before starting
 
     if (m_error_seen)
     {
+        api_err_non_system( err 
+                          , non_syserr_E::token_stream_attach_error
+                          , L"token_stream_C::attach_file() was called to attach a file to the token_stream_C after a prior error had been reported"
+                          );
         M_out_emsg(L"token_stream_C::attach file() called after error had been reported -- \"%s\"") %  m_in_filename;
-        ++m_error_ct; 
+        count_error();
         return -1;
     }
 
     
     //  Create new infile_C object -- check if file is open -- return with error if open() failed
 
-    infile_C* infile_p = new infile_C {ws};                    
+    infile_C* infile_p = new infile_C { pathname, err }; // passed-in pathname info causes open() to be done                  
 
     if (!(infile_p->is_open()))
     {
         delete infile_p; 
         m_error_seen = true;                             // stop any further input
-        return -1;
+        return -1;                                       // infile_C constructor should have filled in the api_err_S data
     }
 
-    m_in_filename = ws;                                  // file is open -- set active filename for use in token error messages
+    m_in_filename = pathname;                            // file is open -- set active filename for use in token error messages
     m_source_id   = infile_p->get_source_id();           // capture source id for error messages 
 
 
-    //  Allocate new char_stream to be stacked, and attach the pre-opened iput file
+    //  Allocate new char_stream to be stacked, and attach the pre-opened input file
 
-    m_char_stream_p = new char_stream_C {};              // get new char_stream to be associated with this file -- anchor it as the active/current char_stream a -- this pointer does not own the char_stream  
+    m_char_stream_p = new char_stream_C {};              // get new char_stream to be associated with this file -- anchor it as the active/current char_stream -- this pointer does not own the char_stream  
     m_char_stream_p->attach_file(infile_p);              // attach the new file to the new char_stream
     m_char_stream_p->set_trigraph_char(m_trigraph_char); // propogate current trigraph char to new char_stream_S
 
@@ -959,7 +726,7 @@ int token_stream_C::attach_string(const std::string& s, const std::string& n) tr
     if (m_error_seen)
     {
         M_out_emsg(L"token_stream_C::attach_string(std::string) called after error had been reported -- \"%s\"") %  m_in_filename;
-        ++m_error_ct; 
+        count_error();
         return -1;
     }
 
@@ -984,7 +751,7 @@ int token_stream_C::attach_string(const std::string& s, const std::wstring& n) t
     if (m_error_seen)
     {
         M_out_emsg(L"token_stream_C::attach_string(std::string) called after error had been reported -- \"%s\"") %  m_in_filename;
-        ++m_error_ct; 
+        count_error();
         return -1;
     }
 
@@ -1009,7 +776,7 @@ int token_stream_C::attach_string(const std::wstring& s, const std::wstring& n) 
     if (m_error_seen)
     {
         M_out_emsg(L"token_stream_C::attach_string(std::wstring) called after error had been reported -- \"%s\"") %  m_in_filename;
-        ++m_error_ct; 
+        count_error(); 
         return -1;
     }
 
@@ -1562,20 +1329,6 @@ size_t token_stream_C::putback_size() const try
 M_endf
 
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-// errors() -- return number of errors seen so far  (includes errors not yet passwed back, or on the putback queue)
-// --------
-//
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   
-uint64_t token_stream_C::errors() const try
-{     
-    return m_error_ct; 
-}
-M_endf
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1849,7 +1602,7 @@ void token_stream_C::invalid_token(token_C& token, const wchar_t *text_p) try
                   % M_wsl(token.orig_str, 55)
                   ;  
 
-    ++m_error_ct;
+    count_error();
     return;
 }
 M_endf
@@ -1924,7 +1677,7 @@ int token_stream_C::addto_token(token_C& token, const in_char_S& ch) try
      if (ch.type == char_E::error)
      {
          token.type = token_E::error;
-         ++m_error_ct;
+         count_error();
          m_error_seen = true; 
          return -1;
      }
@@ -2898,18 +2651,18 @@ int token_stream_C::retained_block_comment(token_C& token)  try
             if (ch1.ch32 == m_retained_block_comment_2nd_ch)  // "/{" found -- increment nest level
             {                                          
                 addto_token(token, ch);                       // add the "/" to end of retained comment string 
-                addto_token(token, ch1);                      // add the "/{" to end of retained comment string
+                addto_token(token, ch1);                      // add the "{" to end of retained comment string
                 discard_char();                               // discard the peek()ed "{"   ( "/" was consumed earlier)
                 ++nest_level;                                 
             }                                                 
             else                                              // not "/{" -- not start of nested comment
-            {                                                 
-                addto_orig_token(token, ch);                  // add "/" to original comment string
+            {   
+                addto_token(token, ch);                       // add "/" to retained comment string
             }                                                 
         }                                                     
         else if (ch.ch32 == m_retained_block_comment_3rd_ch)  // "}" found -- might be end of comment 
         {                                                     
-            peek_char(ch1);                                   // look at character following the ">"
+            peek_char(ch1);                                   // look at character following the "}"
             if (ch1.ch32 == m_retained_block_comment_4th_ch)  // "}/" ends the nested comment 
             {   
                 --nest_level;                                 // reduce nest level by one
@@ -2927,9 +2680,9 @@ int token_stream_C::retained_block_comment(token_C& token)  try
                     break;                                    // end the for(;;) loop
                 }
             }                                                 
-            else                                              // not ">/" -- not end of comment
+            else                                              // not "}/" -- not end of comment
             {                                                 
-                addto_token(token, ch);                       // add ">" to output retained comment string
+                addto_token(token, ch);                       // add "}" to output retained comment string
             }                                                 
         }
         else if (ch.subtype == char_E::eof)
@@ -2948,7 +2701,8 @@ int token_stream_C::retained_block_comment(token_C& token)  try
             addto_token(token, ch);                           // add char to retained  token string only
         }                                                
     }
-        
+    
+    M__(token.display(L"token_stream_C::retained_block_comment() returning");)
     return rc; 
 }
 M_endf
@@ -4166,6 +3920,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
     else if  ( std::find(m_leading_sigils.begin(), m_leading_sigils.end(), ch.ch32) != m_leading_sigils.end() )
        ch_subtype = char_E::f_leading_sigil; 
 
+    M__(M_out(L"token_stream_C::fetch_raw_token() -- ch_orig_subtype = %d -- ch_subtype = %d   f_leading_sigil = %d    ") % (int)ch_orig_subtype % (int)ch_subtype % (int)(char_E::f_leading_sigil);)
 
     // ---------------------------------------
     // decode ch_subtype at start of raw token
@@ -4187,9 +3942,9 @@ int token_stream_C::fetch_raw_token(token_C& token) try
             // ------------------------------------------------------------------------------------------------------------
        
             case char_E::end : 
-                M__(M_out(L"fetch_raw_token() -- char_E::end seen");)
+                M__(M_out(L"token_stream_C::fetch_raw_token() -- char_E::end seen");)
                 one_char_token(token, token_E::end, ch);
-                M__(M_out(L"fetch_raw_token() -- ch.source_id = %d   ch.lineno=%d   ch.linepos=%d") % ch.source_id % ch.lineno % ch.linepos; )
+                M__(M_out(L"token_stream_C::fetch_raw_token() -- ch.source_id = %d   ch.lineno=%d   ch.linepos=%d") % ch.source_id % ch.lineno % ch.linepos; )
                 break;
        
        
@@ -4310,24 +4065,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
             case char_E::f_vanishing_separator :
                 one_char_token(token, token_E::vanishing_separator , ch);
                 break;
-       
-
-            // --------------------
-            // comma operator token --  ,   ,,   ,,,   ,,,,   etc.
-            // --------------------
-
-            case char_E::comma                 :
-                same_operator_token(token, ch);
-                break;
-       
-
-            // --------------------
-            // colon operator token --  :   ::   :::   ::::   etc.
-            // --------------------
-
-            case char_E::colon                 :                            
-                same_operator_token(token, ch);
-                break;
+    
 
 
             // --------------------------------------------------------
@@ -4339,7 +4077,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
             {
                 in_char_S ch1 {}; 
                 peek_char(ch1, 2);                                            // look at char following the paren -- 2nd oldest one -- leave it in the char stream  
-                M__(M_out(L"fetch_raw_token() -- parenthesis token -- following char = %08X") % (int)(ch1.ch32)); 
+                M__(M_out(L"token_stream_C::fetch_raw_token() -- parenthesis token -- following char = %08X") % (int)(ch1.ch32)); 
 
                 one_char_token(token, token_E::close_paren, ch);              // set up basic close parenthesis token 
 
@@ -4352,7 +4090,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                     ( std::find(m_paren_sigils.begin(), m_paren_sigils.end(), ch1.ch32) != m_paren_sigils.end() ) 
                    ) 
                 {
-                    M__(M_out(L"fetch_raw_token() -- parenthesis token -- adding trailing sigil");)
+                    M__(M_out(L"token_stream_C::fetch_raw_token() -- parenthesis token -- adding trailing sigil");)
                     add_trailing_sigil(token, ch1); 
                     discard_char();                                          // consume trailing sigil char taht was peek()ed earlier 
                 }      
@@ -4551,7 +4289,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                 }
 
                 M_out_emsg(L"Internal error -- Unexpected open (double) quote codepoint (%08X) at line=%u column=%u in file = \"%s\"") % (uint32_t)(ch.ch32) % ch.lineno % ch.linepos % m_in_filename; 
-                ++m_error_ct;
+                count_error();
                 break; 
        
        
@@ -4576,7 +4314,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
             case char_E::alpha4     :
             case char_E::underscore :
                
-                M__(M_out(L"fetch_raw_token() -- ch.ch32 = %08X     m_raw_string_prefix_ch = %08X") % (uint32_t)(ch.ch32) %  (uint32_t)(m_raw_string_prefix_ch); )
+                M__(M_out(L"token_stream_C::fetch_raw_token() -- ch.ch32 = %08X     m_raw_string_prefix_ch = %08X") % (uint32_t)(ch.ch32) %  (uint32_t)(m_raw_string_prefix_ch); )
 
                 if  (
                      (ch.ch32 == m_raw_string_prefix_ch      )                                                                  //    R ?
@@ -4587,7 +4325,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                     in_char_S ch1 {};                                                                                      
                     peek_char(ch1, 2);                                                                                          // look at char following the raw string prefix char, to check for quotes -- 2nd oldest one -- leave it in the char stream  
                 
-                    M__(M_out(L"fetch_raw_token() -- modified string  -- ch1.subtype = %08X      char_E::open_quote2 = %08X") % (uint32_t)(ch1.subtype) % (uint32_t)(char_E::both_quote2); )
+                    M__(M_out(L"token_stream_C::fetch_raw_token() -- modified string  -- ch1.subtype = %08X      char_E::open_quote2 = %08X") % (uint32_t)(ch1.subtype) % (uint32_t)(char_E::both_quote2); )
 
                     // see if next char is start of a string
 
@@ -4605,7 +4343,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                         get_char(ch0);                                                                                          // consume modified string prefix char, which simple_string()/escaped_string() does not expect to see
                         addto_orig_token(token, ch0);                                                                           // add the modified string prefix char to original token text for error messages only   
 
-                        M__(M_out(L"fetch_raw_token() -- modified string  -- ch1.ch32 = %08X") % (uint32_t)(ch1.ch32); )
+                        M__(M_out(L"token_stream_C::fetch_raw_token() -- modified string  -- ch1.ch32 = %08X") % (uint32_t)(ch1.ch32); )
 
                         if (ch1.ch32 == m_type1_string_start_ch)
                         {
@@ -4625,7 +4363,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                         }
 
                         M_out_emsg(L"Internal error -- Unexpected open (double) quote codepoint (%08X) following raw string prefix char at line=%u column=%u in file = \"%s\"") % (uint32_t)(ch1.ch32) % ch1.lineno % ch1.linepos % m_in_filename; 
-                        ++m_error_ct;
+                        count_error();
                         break; 
                     }
                 }
@@ -4636,19 +4374,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                 identifier_token(token, false);
                 break;  
 
-            
-            //  -----------------------------------------------------------------------------------------------------------------------
-            //  currency char -- could be start of an extended identifier, if allowed, or else is reported as a special character token (probably an error)
-            //  -----------------------------------------------------------------------------------------------------------------------
-
-            case char_E::currency : 
-
-                if (m_allow_extd_identifier)
-                     identifier_token(token);
-                else
-                     one_char_token(token, token_E::special_char        , ch);   
-
-                break; 
+    
 
 
             //  -----------------------------------------------------------------------------------------------
@@ -4659,6 +4385,8 @@ int token_stream_C::fetch_raw_token(token_C& token) try
 
             case char_E::f_leading_sigil : 
             {
+                 M__(M_out(L"token_stream_C::fetch_raw_token() -- possible leading sigil found");)
+
                 in_char_S ch1 {};    
                 peek_char(ch1, 2);                                              // look at char following the possible sigil -- 2nd oldest one -- leave it in the char stream  
 
@@ -4671,7 +4399,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                     ( std::find(m_leading_oper_sigils.begin(), m_leading_oper_sigils.end(), ch.ch32) != m_leading_oper_sigils.end() )
                    )
                 {
-                    M__(M_out(L"fetch_raw_token() -- leading operator sigil found");)
+                    M__(M_out(L"token_stream_C::fetch_raw_token() -- leading operator sigil found");)
 
                     // handle sigil followed by comment      
 
@@ -4683,7 +4411,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                     {
                             // this is sigil followed immediately by comment -- treat as isolated sigil 
 
-                            M__(M_out(L"fetch_raw_token() -- dangling sigil found before comment -- restarting loop with default interpretation");)
+                            M__(M_out(L"token_stream_C::fetch_raw_token() -- dangling sigil found before comment -- restarting loop with default interpretation");)
 
                             ch_subtype = ch_orig_subtype;                        // treat this character as non-sigil
                             continue;                         
@@ -4719,7 +4447,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                         {
                             // this is sigil followed immediately by comment -- treat as isolated sigil 
 
-                            M__(M_out(L"fetch_raw_token() -- dangling sigil found before comment -- restarting loop with default interpretation");)
+                            M__(M_out(L"token_stream_C::fetch_raw_token() -- dangling sigil found before comment -- restarting loop with default interpretation");)
 
                             ch_subtype = ch_orig_subtype;                       // treat this character as non-sigil
                             continue;     
@@ -4729,11 +4457,11 @@ int token_stream_C::fetch_raw_token(token_C& token) try
 
                     // handle sigil followed by general operator character  (includes operator starting with solidus)
 
-                    M__(M_out(L"fetch_raw_token() -- ch1.type=%d  oper1=%d  oper2=%d") % (int)(ch1.type) % (int)(char_E::oper1) % (int)(char_E::oper2);)  
+                    M__(M_out(L"token_stream_C::fetch_raw_token() -- ch1.type=%d  oper1=%d  oper2=%d") % (int)(ch1.type) % (int)(char_E::oper1) % (int)(char_E::oper2);)  
 
                     if ( ch1.type == char_E::oper )
                     {    
-                        M__(M_out(L"fetch_raw_token() -- sigil + operator found");)
+                        M__(M_out(L"token_stream_C::fetch_raw_token() -- sigil + operator found");)
 
                         operator_token(token, true);               // start operator token -- indicate that 1st char left in stream is sigil -- can cause - to be stripped off numeric literal
                         break;
@@ -4750,7 +4478,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                              (ch1.subtype == char_E::colon    )     // sigil followed by : 
                             )  
                     {    
-                        M__(M_out(L"fetch_raw_token() -- sigil + dot/comma/colon, etc. operator found");)
+                        M__(M_out(L"token_stream_C::fetch_raw_token() -- sigil + dot/comma/colon, etc. operator found");)
 
                         same_operator_token(token, ch1, true);     // start operator token -- indicate that 1st char left in stream is sigil -- can cause . to be stripped off numeric literal
                         break;
@@ -4760,13 +4488,15 @@ int token_stream_C::fetch_raw_token(token_C& token) try
 
                 // check for leading sigils for identifier
 
+                M__(M_out(L"token_stream_C::fetch_raw_token() --check for leading identifier sigil");)
+
                 if (
                     m_allow_leading_id_sigils
                     &&
                     ( std::find(m_leading_ident_sigils.begin(), m_leading_ident_sigils.end(), ch.ch32) != m_leading_ident_sigils.end() )
                    )
                 {
-                    M__(M_out(L"fetch_raw_token() -- leading identifier sigil found");)
+                    M__(M_out(L"token_stream_C::fetch_raw_token() -- leading identifier sigil found");)
 
                     if (  
                         ( ch1.subtype == char_E::alpha1     )
@@ -4786,7 +4516,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                         )
                        )
                     {   
-                        M__(M_out(L"fetch_raw_token() -- sigil + identifier found");)
+                        M__(M_out(L"token_stream_C::fetch_raw_token() -- sigil + identifier found");)
 
                         identifier_token(token, true);               // start identifier token -- indicate that 1st char left in stream is sigil
                         break;
@@ -4804,7 +4534,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                     ( std::find(m_paren_sigils.begin(), m_paren_sigils.end(), ch.ch32) != m_paren_sigils.end() )
                    )
                 {
-                    M__(M_out(L"fetch_raw_token() -- open parenthesis sigil found");) 
+                    M__(M_out(L"token_stream_C::fetch_raw_token() -- open parenthesis sigil found");) 
 
                     start_token(token, token_E::open_paren);          // start new (empty) open_paren token
                     add_leading_sigil(token, ch);                     // save leading sigil in new token 
@@ -4818,13 +4548,45 @@ int token_stream_C::fetch_raw_token(token_C& token) try
 
                 // sigils not allowed, or this is not a valid leading sigil / token combination
 
-                M__(M_out(L"fetch_raw_token() -- dangling sigil found -- restarting loop with default interpretation");)
+                M__(M_out(L"token_stream_C::fetch_raw_token() -- dangling sigil found -- restarting loop with default interpretation");)
 
                 ch_subtype = ch_orig_subtype;                       // treat this character as non-sigil
                 continue;                                           // loop back with unconsumed sigil character
             }
-                                                                                  
+         
 
+            //  -----------------------------------------------------------------------------------------------------------------------
+            //  currency char -- could be start of an extended identifier, if allowed, or else is reported as a special character token (probably an error)
+            //  -----------------------------------------------------------------------------------------------------------------------
+
+            case char_E::currency : 
+
+                if (m_allow_extd_identifier)
+                     identifier_token(token);
+                else
+                     one_char_token(token, token_E::special_char        , ch);   
+
+                break; 
+    
+
+            // --------------------
+            // comma operator token --  ,   ,,   ,,,   ,,,,   etc.
+            // --------------------
+
+            case char_E::comma                 :
+                same_operator_token(token, ch);
+                break;
+       
+
+            // --------------------
+            // colon operator token --  :   ::   :::   ::::   etc.    (must be after leading sigile test ) 
+            // --------------------
+
+            case char_E::colon                 :                            
+                same_operator_token(token, ch);
+                break;
+
+            
             //  -----------------------------------------------------------------------------------------------------------------
             //  handle unsupported character at start of new token -- all other character types are unexpected at start of tokens
             //  -----------------------------------------------------------------------------------------------------------------
@@ -4833,7 +4595,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
        
                 if (!m_quiet_mode)
                     M_out_emsg(L"Unsupported char (%08X) at line=%u column=%u in file = \"%s\"") % (uint32_t)(ch.ch32) % ch.lineno % ch.linepos % m_in_filename; 
-                ++m_error_ct;
+                count_error();
                 one_char_token(token, token_E::unsupported, ch);
                 break;
 
@@ -4899,12 +4661,12 @@ int token_stream_C::fetch_raw_token(token_C& token) try
     }
     
 
-    //  Set "error seen" flag and R/C, if returning an error token
+    //  Set "error seen" flag and R/C, if returning an error token or unsupported character token
 
-    if (token.type == token_E::error)
+    if ( (token.type == token_E::error) || (token.type == token_E::unsupported) )
     {
         m_error_seen = true; 
-        M__(M_out(L"closing all files");)
+        M__(M_out(L"token_stream_C::fetch_raw_token() -- closing all files");)
         close_all_instreams();    
         return -1;
     }

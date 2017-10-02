@@ -376,6 +376,50 @@ void add_predefined_verbs() try
 
 
 
+    // ================================================================================================
+    // @IMBED file:"name of file"   -or   @IMBED string:"text of string to be imbedded"
+    // ================================================================================================
+   
+    {
+        M_vt_nofix(                         vt                        )  
+        M_vt_string_optional_right_kw(      vt, L"string"             )                      // optional string to imbed
+        M_vt_string_optional_right_kw(      vt, L"file"               )                      // optional file to imbed
+        M_vt_right_choice_pair(             vt, L"string", L"file"    )                      // must have one or the other
+        M_vt_add(L"IMBED",                  vt, verb_imbed            )
+    }   
+
+
+    // ================================================================================================
+    // @SKIPTO "target label"  -- skip to next pro-processor block containing this label
+    // ================================================================================================
+   
+    {
+        M_vt_unary_prefix(                  vt                        )  
+        M_vt_add(L"SKIPTO",                 vt, verb_skipto           )
+    }   
+                                                           
+   
+    // ================================================================================================
+    // @SKIP   -- skip to end if pre-processor text block 
+    // ================================================================================================
+   
+    {
+        M_vt_nofix(                         vt                        )  
+        M_vt_add(L"SKIP",                   vt, verb_skip             )
+    }   
+
+
+    
+    // ================================================================================================
+    // @IMPORT "name of DLL" 
+    // ================================================================================================
+   
+    {
+        M_vt_unary_prefix(                  vt                        )  
+        M_vt_add(L"IMPORT",                 vt, verb_import           )
+    }   
+
+
 
     // ================================================================================================
     // @PARSE "string"   name:"name of string -- for debugging"  continue: -or- end: (if parsing error)
@@ -477,7 +521,7 @@ void add_predefined_verbs() try
 
         vt.priority = verb_priority_separate; 
         M_vt_add(L","  ,   vt, verb_separate)
-        M_vt_add(L"SEP",   vt, verb_separate)
+     // M_vt_add(L"SEP",   vt, verb_separate)
     }
 
     
@@ -488,6 +532,7 @@ void add_predefined_verbs() try
     // @QUIT       -- end evaluation of lowest enclosing block 
     // @RETHROW    -- do @THROW with current block 1st positional parm 
     // @ABORT      -- do abort()
+    // @ERROR      -- increment error count
     // @EXIT       -- do exit(-1)
     // @QUICK_EXIT -- do quick_exit(-1)
     // @_EXIT      -- do _exit(-1)
@@ -501,6 +546,7 @@ void add_predefined_verbs() try
         M_vt_add(L"QUIT"          , vt, verb_quit           )
         M_vt_add(L"RETHROW"       , vt, verb_rethrow        )
         M_vt_add(L"ABORT"         , vt, verb_abort          )
+        M_vt_add(L"ERROR"         , vt, verb_error          )
         M_vt_add(L"EXIT"          , vt, verb_exit           )
         M_vt_add(L"_EXIT"         , vt, verb__exit          )
         M_vt_add(L"QUICK_EXIT"    , vt, verb_quick_exit     )
@@ -819,9 +865,10 @@ void add_predefined_verbs() try
         vt.priority        = verb_priority_assign; 
         vt.right_associate = true; 
         M_vt_add(L"="  ,                  vt, verb_left_assign      )
-        M_vt_add(L"<=<",                  vt, verb_left_assign      )               
+     // M_vt_add(L"<=<",                  vt, verb_left_assign      )               
     }
 
+ #if 0 
     {                                     /* 1 or more vars */
         M_vt_anyfix(                      vt, 0, -1, 1, -1          ) 
 
@@ -835,7 +882,8 @@ void add_predefined_verbs() try
         vt.priority  = verb_priority_assign;
         M_vt_add(L">=>",                  vt, verb_right_assign     )              
     }
-      
+#endif     
+
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //   arithmetic and string assignment operators
@@ -870,9 +918,9 @@ void add_predefined_verbs() try
         M_vt_add(L"+=" ,         vt, verb_add_eq        )
         M_vt_add(L"-=" ,         vt, verb_subtract_eq   )
         M_vt_add(L"*=" ,         vt, verb_multiply_eq   )
-        M_vt_add(L"×=" ,         vt, verb_multiply_eq   )
+     // M_vt_add(L"×=" ,         vt, verb_multiply_eq   )
         M_vt_add(L"/=" ,         vt, verb_divide_eq     )
-        M_vt_add(L"÷=" ,         vt, verb_divide_eq     )
+     // M_vt_add(L"÷=" ,         vt, verb_divide_eq     )
         M_vt_add(L"**=",         vt, verb_power_eq      )        
     }
 
@@ -889,7 +937,7 @@ void add_predefined_verbs() try
         vt.priority               = verb_priority_assign; 
         vt.right_associate        = true; 
         M_vt_add(L"%="     ,     vt, verb_remainder_eq   )
-        M_vt_add(L"REM_EQ" ,     vt, verb_remainder_eq   )
+     // M_vt_add(L"REM_EQ" ,     vt, verb_remainder_eq   )
     }
 
 
@@ -948,28 +996,28 @@ void add_predefined_verbs() try
         M_vt_compare_left_pos( vt         )
 
         vt.priority = verb_priority_compare;
-        M_vt_add(L"EQ",        vt, verb_eq)
+     // M_vt_add(L"EQ",        vt, verb_eq)
         M_vt_add(L"==",        vt, verb_eq)
-        M_vt_add(L"≡" ,        vt, verb_eq)
+     // M_vt_add(L"≡" ,        vt, verb_eq)
 
-        M_vt_add(L"NE",        vt, verb_ne)
-        M_vt_add(L"¬=",        vt, verb_ne)
+     // M_vt_add(L"NE",        vt, verb_ne)
+     // M_vt_add(L"¬=",        vt, verb_ne)
         M_vt_add(L"!=",        vt, verb_ne)
-        M_vt_add(L"≠" ,        vt, verb_ne)
+     // M_vt_add(L"≠" ,        vt, verb_ne)
 
-        M_vt_add(L"LT",        vt, verb_lt)
+     // M_vt_add(L"LT",        vt, verb_lt)
         M_vt_add(L"<" ,        vt, verb_lt)
 
-        M_vt_add(L"GT",        vt, verb_gt)
+     // M_vt_add(L"GT",        vt, verb_gt)
         M_vt_add(L">" ,        vt, verb_gt)
 
-        M_vt_add(L"LE",        vt, verb_le)
+     // M_vt_add(L"LE",        vt, verb_le)
         M_vt_add(L"<=",        vt, verb_le)
-        M_vt_add(L"≤" ,        vt, verb_le)
+     // M_vt_add(L"≤" ,        vt, verb_le)
 
-        M_vt_add(L"GE",        vt, verb_ge)
+     // M_vt_add(L"GE",        vt, verb_ge)
         M_vt_add(L">=",        vt, verb_ge)
-        M_vt_add(L"≥" ,        vt, verb_ge)
+     // M_vt_add(L"≥" ,        vt, verb_ge)
     }
 
 
@@ -990,8 +1038,8 @@ void add_predefined_verbs() try
         M_vt_int_left_pos(  vt           ) 
       
         vt.priority = verb_priority_boolean;
-        M_vt_add(L"XOR"  ,  vt, verb_xor )
-        M_vt_add(L"⊻"    ,  vt, verb_xor )
+        M_vt_add(L"XOR"  ,  vt, verb_xor )          // ????????????????????
+        M_vt_add(L"⊻"    ,  vt, verb_xor )          // ????????????????????
     }
 
 
@@ -1022,11 +1070,11 @@ void add_predefined_verbs() try
         }
       
         vt.priority = verb_priority_boolean;
-        M_vt_add(L"AND"  , vt, verb_and)
-        M_vt_add(L"∧"    , vt, verb_and)
+     // M_vt_add(L"AND"  , vt, verb_and)
+     // M_vt_add(L"∧"    , vt, verb_and)
         M_vt_add(L"&&"   , vt, verb_and)
-        M_vt_add(L"OR"   , vt, verb_or )
-        M_vt_add(L"∨"    , vt, verb_or )
+     // M_vt_add(L"OR"   , vt, verb_or )
+     // M_vt_add(L"∨"    , vt, verb_or )
         M_vt_add(L"||"   , vt, verb_or )
     }
 
@@ -1042,8 +1090,8 @@ void add_predefined_verbs() try
         vt.priority         = verb_priority_not;
         vt.right_associate  = true; 
 
-        M_vt_add(L"NOT" ,   vt, verb_not)
-        M_vt_add(L"¬"   ,   vt, verb_not)
+     // M_vt_add(L"NOT" ,   vt, verb_not)
+     // M_vt_add(L"¬"   ,   vt, verb_not)
         M_vt_add(L"!"   ,   vt, verb_not)
     }
    
@@ -1088,7 +1136,7 @@ void add_predefined_verbs() try
         vt.priority         = verb_priority_bitnot;
         vt.right_associate  = true; 
 
-        M_vt_add(L"BITNOT" ,   vt, verb_bitnot)
+     // M_vt_add(L"BITNOT" ,   vt, verb_bitnot)
         M_vt_add(L"~"      ,   vt, verb_bitnot) 
     }
 
@@ -1109,7 +1157,7 @@ void add_predefined_verbs() try
 
         M_vt_add(L"<<"    ,    vt, verb_shift_left            )
         M_vt_add(L">>"    ,    vt, verb_shift_right_logical   )
-        M_vt_add(L">->"   ,    vt, verb_shift_right_arithmetic)
+        M_vt_add(L">->"   ,    vt, verb_shift_right_arithmetic)        // ???????????
     } 
 
 
@@ -1156,7 +1204,7 @@ void add_predefined_verbs() try
 
         vt.priority = verb_priority_multiply; 
         M_vt_add(L"%"  ,    vt, verb_remainder)
-        M_vt_add(L"REM",    vt, verb_remainder)
+     // M_vt_add(L"REM",    vt, verb_remainder)
     }
 
 
@@ -1187,7 +1235,7 @@ void add_predefined_verbs() try
         M_vt_string_left_pos(  vt                  )
         M_vt_string_right_pos( vt                  )
 
-        M_vt_add(L"|",         vt, verb_concatenate)
+        M_vt_add(L"|",         vt, verb_concatenate)   // ???? needs to be overloaded with bitwise logical OR
     }
 
 
@@ -1223,8 +1271,8 @@ void add_predefined_verbs() try
     //  @TYPE name:typedef_name 
     //        global:
     //        export:
-    //       // unit:
-    //       // bool:
+    //        unit:
+    //        bool:
     //        int8:
     //        uint8:
     //        int16:
@@ -1725,17 +1773,31 @@ void add_predefined_verbs() try
     }
 
 
-    // ==========================
-    // @INTERPOLATE "string"
-    // ==========================
+    // ===========================================
+    // @INTERPOLATE "string"   begin:"{"   end:"}"
+    // ===========================================
 
     {
-        M_vt_unary_prefix(            vt                        )      
-        M_vt_string_right_pos(        vt                        )      
-        M_vt_add(L"INTERPOLATE",      vt, verb_interpolate      );        
+        M_vt_unary_prefix(                    vt                        )      
+        M_vt_string_right_pos(                vt                        )  
+        M_vt_string_optional_right_kw(        vt, L"begin"              )  
+        M_vt_string_optional_right_kw(        vt, L"end"                )   
+        M_vt_add(L"INTERPOLATE",              vt, verb_interpolate      );        
     }
 
 
+    // ===================================================================================
+    // @FORMAT fmt:"string"   value_1 value_2 ... value_N                  begin:"{"   end:"}"
+    // ===================================================================================
+
+    {
+        M_vt_nary_prefix(                     vt                        )      
+        M_vt_any_right_pos(                   vt                        )  
+        M_vt_string_required_right_kw(        vt, L"fmt"                )  
+        M_vt_add(L"FORMAT",                   vt, verb_format           );        
+    }
+
+  
     // ==========================
     // @STDIN  (no parms)
     // @STDOUT string-parm
