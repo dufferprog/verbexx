@@ -40,7 +40,7 @@ public:
                   textfile_C()                      = default;      // default constructor
     explicit      textfile_C(const std::wstring&);                  // wstring constructor
                   textfile_C(const textfile_C&)     = delete;       // copy constructor
-                  textfile_C(infile_C&&)            = delete;       // move constructor
+                  textfile_C(textfile_C&&)          = delete;       // move constructor
                  ~textfile_C()                      = default;      // destructor
     textfile_C&   operator=(const textfile_C&)      = delete;       // copy assignment
     textfile_C&   operator=(textfile_C&&)           = delete;       // move assignment

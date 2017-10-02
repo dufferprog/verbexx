@@ -6,9 +6,9 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////
 ////
-////            ============
+////            =============
 ////            h_map_types.h -- common map-oriented types and equates needed in many places 
-////            ============
+////            =============
 //// 
 ////    
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -17,19 +17,21 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include "h__types.h"             // maps are dependent on common types
+#include "h_draw_types.h"         // maps are dependent on draw types, too
 
 
-#define THREAD_MAX 250   // max number of threads to kick off
-#define MAX_SLICES 5000  // maximum number of slices in thpa array -- must be more than THREAD_MAX 
-
+#define THREAD_MAX 250            // max number of threads to kick off
+#define MAX_SLICES 5000           // maximum number of slices in thpa array -- must be more than THREAD_MAX 
+                                 
 
 // special heights in the raster data -- all other heights are valid elevations (hopefully)
 // ----------------------------------------------------------------------------------------
 
-#define RASTER_EMPTY -17477   // 0xBBBB -- unfilled data point in raster
-#define RASTER_OUT   -17478   //        -- requested point is out of bounds of raster
-#define RASTER_VOID  -32768   // directly from .hgt files -- void in .hgt data
-
+#define RASTER_EMPTY -17477       // 0xBBBB -- unfilled data point in raster
+#define RASTER_OUT   -17478       //        -- requested point is out of bounds of raster
+#define RASTER_VOID  -32768       // directly from .hgt files -- void in .hgt data
+                                
 
 // types specific to maps 
 // ----------------------
@@ -72,20 +74,23 @@ typedef enum class projection_E { rectangular, mercator, polar, stereographic, o
 // forward type declarations (incomplete structure/union/class/enum types)
 // -----------------------------------------------------------------------
 
+struct                       color_parm_S;
 struct                       create_raster_parm_S;
+struct                       dbf_hdr_S;
 struct                       demfile_parm_S;            // ??????
+struct                       draw_parm_S;
 struct                       fileinfo_S;
 struct                       fill_raster_parm_S;
-struct                       writeout_raster_parm_S;
 struct                       graticule_file_parm_S;
 struct                       grid_S;
 struct                       hgt_S;
+struct                       lrgb_S;
+struct                       map_parm_S;               // need to rename ??
+struct                       mapdata_S;
+struct                       mapparm_S;                // need to rename ??
 struct                       outimage_parm_S;          // ????????
 struct                       outimage_S;
-struct                       map_parm_S;
-struct                       mapdata_S;
 struct                       output_parm_S;
-struct                       mapparm_S;
 union                        project_U; 
 struct                       ramp_S;
 struct                       ramp_parm_S;               // ??????
@@ -101,6 +106,7 @@ struct                       thread_parm_S;
 struct                       tile_S;
 struct                       tile_parm_S;               // ?????
 struct                       water_parm_S;
+struct                       writeout_raster_parm_S;
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
