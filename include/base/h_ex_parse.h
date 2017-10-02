@@ -18,6 +18,7 @@
 
 
 #pragma once
+#include "h_ex_types.h"         
 #include "h_ex_lex.h"
 
 
@@ -78,13 +79,12 @@ struct var_S
 enum class tok_u1_E { none              // not classified yet 
                     , end               // END token from token_stream 
                     , passback          // not recognized -- pass back up to caller
-                    , verb              // pre-parser ?VERB 
-                    , label             // ?SKIPTO ¶label
+                    , evaluate          // text to be executed/evaluated by pre-parser
                     , identifier        // name of identifier -- usually lvalue (no leading sigil) -- may get passed back 
                     , string            // may get passed back
-                    , subst             // substitute !identifier with its current value 
-                    , subst_quote       // substitute ‼identifier with its current value -- add surrounding «» quotes
                     };
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,6 +97,21 @@ enum class tok_u1_E { none              // not classified yet
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+// pending_attach_S  structure -- these are the elements on the m_pending_attach_stack   
+// -----------------------------------------------------------------------------------
+
+struct pending_attach_S
+{   
+    bool                 is_file     { false };        // true, if this is a pending attach of a file -- false, if this is a pending attach of a string 
+    std::wstring         text        {       };        // string text  
+    std::wstring         name        {       };        // filename or string name for error messages  
+};
+
+                    
+// pre_parse_C class
+// ------------------------------------------------------------------------------------
+                                                                                       
 class pre_parse_C
 {
 public:   
@@ -110,13 +125,16 @@ public:
 
     // passthru or semi-passthru functions to imbedded token_string_C
 
+    void              inherit_state(                                                                          );  // initialize skipping state from *m_upward_sp pre_parse_C 
     void              close(                                                                                  );  // free up everything and reset states   
-    void              reuse(                               bool     = false                                   );  // reset leftover states to pre_parse can be reused   
-    int               attach_file(  const std::wstring&                                                       );  // add new file to this token stream -- placed on top of filestack -- wide string filename version
-    int               attach_file(  const std::string&                                                        );  // add new file to this token stream -- placed on top of filestack -- "plain" string filename version
-    int               attach_string(const std::wstring&, const std::wstring&                                  );  // add new string to this token stream -- placed on top of filestack -- wide string version
-    int               attach_string(const std::string& , const std::wstring&                                  );  // add new string to this token stream -- placed on top of filestack -- wide string name version
-    int               attach_string(const std::string& , const std::string&                                   );  // add new string to this token stream -- placed on top of filestack -- "plain" string name version
+    void              reuse(              bool = false                                                        );  // reset leftover states to pre_parse can be reused   
+    int               attach_file(        const std::wstring&                                                 );  // add new file to this token stream -- placed on top of filestack -- wide string filename version
+    void              add_pending_attach( const std::wstring&                                                 );  // add new filename to pending attach stack,for later file_attach() processing
+    void              add_pending_attach( const std::wstring&, const std::wstring&                            );  // add new string to pending attach stack,for later file_attach() processing
+
+    int               attach_string(      const std::wstring&, const std::wstring&                            );  // add new string to this token stream -- placed on top of filestack -- wide string version
+    int               attach_string(      const std::string& , const std::wstring&                            );  // add new string to this token stream -- placed on top of filestack -- wide string name version
+    int               attach_string(      const std::string& , const std::string&                             );  // add new string to this token stream -- placed on top of filestack -- "plain" string name version
                                                                                                               
     int               get_token(          token_C&                                                            );  // get (and consume) next composite token from stream  
     int               peek_token(         token_C&, size_t = 1ULL                                             );  // return n-th composite token from stream/stack but do not consume it -- leave for next time  
@@ -125,8 +143,7 @@ public:
                                                                                                              
     bool              is_empty()     const;                                                                       // return true, if put-back token queue is empty
     size_t            putback_size() const;                                                                       // return number of put-back tokens currently queued up 
-    uint64_t          errors()       const;                                                                       // return number of errors so far  
-                                                                                            
+                                                                                               
     void              set_quiet_mode(                      bool     = true                                    );  // set/reset quiet mode to suppress/show error messages 
     void              set_suppress_echo(                   bool     = true                                    );  // set/reset line comment echo suppression
     void              set_combine_strings(                 bool     = true                                    );  // set/reset combine adjacent strings flag
@@ -187,21 +204,24 @@ public:
                              
     // non-passthru external functions
 
-    void              set_var(                     const std::wstring&, const std::wstring&, bool = false     );   // directly set variable 
-    void              unset_var(                   const std::wstring&                                        );   // remove variable setting from symbol table (if present) 
-    bool              is_set_var(                  const std::wstring&                                        );   // directly set variable 
-    int               get_var(                     const std::wstring&,       std::wstring&                   );   // get current value of variable
-    void              display_all_vars(                                                                       );   // display all current variables
+    void              set_skip(                    const std::wstring&                                        );   // set skipping mode with label                  
     void              set_imbed_folder(            const std::wstring&                                        );   // set base folder for imbed files -- form with passed-in string
     void              set_imbed_folder(                                                                       );   // set default base folder for imbed files -- use envar if set
     void              display_settings(                                                                       );   // display pre-parser settings
 
-    // parsing/pre-parsing configuration flags
+
+    // parsing/pre-parsing configuration flags (public)
 
     bool                                   m_allow_verbless_kws                       { true       };              // true -- allows keywords to be present in a verbless expression
     bool                                   m_allow_verbless_multi_parms               { true       };              // true -- allows more than one positional parm to be present in a verbless expression
 
 
+    // pre-parse stack-oriented public data items
+
+    std::shared_ptr<pre_parse_C>           m_upward_sp                                {             };             // pointer to next (upward) pre_parse_C on pre-parser stack
+    frame_S                               *m_frame_p                                  {             };             // pointer to stack frame for this pre_parse_C object
+    uint64_t                               m_serial                                   {             };             // serial number for this PP               
+    uint64_t                               m_pp_depth                                 {             };             // queue depth for this PP
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -209,20 +229,16 @@ public:
 private:
 
     token_stream_C                         m_token_stream                             {            };              // stream of incoming tokens    
-    std::map<std::wstring, var_S>          m_symbol_table                             {            };              // defined pre-processor symbols 
     std::deque<token_C>                    m_token_stack                              {            };              // stack of tokens (that have been put back or peek()ed) 
-    bool                                   m_skipping                                 { false      };              // true -- compiler is in skipping mode 
-    std::wstring                           m_skipto_label                             {            };              // label that pre-parse is skipping to            
-                                                                                                                  
+    std::stack<pending_attach_S>           m_pending_attach_stack                     {            };              // stack of filenames waiting to be attached (when pre-processor text section ends)    
+    bool                                   m_skipping                                 { false      };              // true -- pre-processor is in skipping mode 
+    bool                                   m_inherited_skipping                       { false      };              // true -- pre-processor inherited skipping mode from upward pre_parse_C  
+    std::wstring                           m_skipto_label                             {            };              // label that pre-parse is skipping to         
     std::wstring                           m_imbed_folder                             { IMBED_PATH };              // folder for imbedding files                               
-    uint64_t                               m_error_ct                                 { 0          };              // accumulatyed pre-parse error counter  
-    uint64_t                               m_max_substitutions                        { 1000       };              // maximum consecutive substitutions -- loop detection
-    uint64_t                               m_substitution_ct                          { 0          };              // accumulated number of variable substitutions
                                                                                                            
                                                                                                                   
     // internal (private) functions                                                                               
                                                                                                                   
-    int      peek_subst_token( token_C&,   size_t = 1ULL                                            );             // peek next token, handling any sustitution-type values in token string 
     int      peek_raw_token(   token_C&,   size_t = 1ULL                                            );             // get token trom token stream and do initial processing
     int      pre_parse_token(  token_C&,   size_t = 1ULL                                            );             // process any pre-parse values in token string
     int      get_parm(         token_C&, const token_C&, const std::wstring&, int, size_t = 1       );             // see if next token is stream is considered a parm for preceeding verb
@@ -441,20 +457,21 @@ struct frame_S
     //tracker_C                                   tracker                    {         };     // for debug only
 
     std::weak_ptr<frame_S>                        self_wp                    {         };     // non-owning self-pointer -- for use_count() tracking   
-    std::shared_ptr<frame_S>                      scope_sp                   {         };     // shared owning pointer to parent scope stack frame
+    std::shared_ptr<frame_S>                      scope_sp                   {         };     // shared owning pointer to parent scope stack frame  (need for closures ?????? to be changed ??????)
 
-	   frame_S                                      *main_p                     { nullptr };     // pointer to main (topmost) stack frame -- non-owning pointer (top/main env points to itself) 
+	frame_S                                      *main_p                     { nullptr };     // pointer to main (topmost) stack frame -- non-owning pointer (top/main env points to itself) 
     frame_S                                      *symbols_p                  { nullptr };     // pointer to next upper frame_S that has valid local symbol table (can point to self, if symtab_valid is true) -- non-owning pointer
     std::shared_ptr<frame_S>                      parent_sp                  {         };     // shared pointer to parent stack frame -- owning pointer (not initialized, if this is top/main stack frame)
-	   frame_S                                      *child_p                    { nullptr };     // pointer to child stack frame -- non-owning pointer (0, if this is most deeply-nested stack frame 
+	frame_S                                      *child_p                    { nullptr };     // pointer to child stack frame -- non-owning pointer (0, if this is most deeply-nested stack frame 
     symtab_S                                     *global_p                   { nullptr };     // pointer to global symbol table  -- same in all stack frames 
                                              
     bool                                          is_main                    { false   };     // true -- this is topmost/main stack frame
-    bool                                          is_block                   { false   };     // true -- this eval env started because of block execution -- false, started by verb  execution
-    bool                                          is_verb                    { false   };     // true -- this eval env started because of verb execution  -- false, started by block execution
-    bool                                          lexical_scope              { false   };     // true -- this block has lexical scope upwards to parent stack frame  
-    bool                                          dynamic_scope              { false   };     // true -- this block has dynamic scope upwards to parent stack frame -- only exported variables are visible 
-    bool                                          block_scope                { false   };     // true -- this block has dynamic scope upwards to parent stack frame -- all variables visible  
+    bool                                          is_preparse                { false   };     // true -- this stack frame belongs to pre-parser 
+    bool                                          is_block                   { false   };     // true -- this stack frame started because of block execution 
+    bool                                          is_verb                    { false   };     // true -- this stack frame env started because of verb execution  
+    bool                                          lexical_scope              { false   };     // true -- this stack_frame has lexical scope upwards to parent stack frame  
+    bool                                          dynamic_scope              { false   };     // true -- this stack_frame has dynamic scope upwards to parent stack frame -- only exported variables are visible 
+    bool                                          block_scope                { false   };     // true -- this stack_frame has dynamic scope upwards to parent stack frame -- all variables visible  
     bool                                          symtab_valid               { false   };     // true -- search this stack frame's symbol table when looking up names 
     bool                                          exports_done               { false   };     // true -- one or more exports have been done
                                              
@@ -464,7 +481,8 @@ struct frame_S
     std::wstring                                  verbname                   {         };     // name of verb being run (if frame_S started by verb) in this stack frame
     vlist_S                                       lparms                     {         };     // left-side  parameters for this block  
     vlist_S                                       rparms                     {         };     // right-side parameters for this block 
-    symtab_S                                      symtab                     {         };     // local symbol table -- map with verb names variable names for this block (if symtab_valid flag is on) 
+    symtab_S                                      symtab                     {         };     // local symbol table -- has with verb names and variable names for this block (if symtab_valid flag is on) 
+ // tracker_C                                     tracker                    { 111     };     // temp 
 };
 
 
@@ -482,7 +500,11 @@ struct frame_S
 
 struct results_S : public value_S
 {
-    bool                                  multiple_results                 {false};     // multiple individual results are returned in vlist positional values  (value type may be none, since values are in vlist)
+    bool                                  multiple_results                 {false};     // multiple individual results (if any) are returned in vlist positional values  (value type may be none, since values are in vlist)
+                                                                                        // this flag is also on when the no_results flag is on (meaning there is no vlist_sp at all) 
+                                                                                        // this flag is on if there is a single result (or none) in the vlist 
+                                                                                        // this lfag is off if the results value is returned toe notmal way -- in the imbedded value_S structure
+    bool                                  no_results                       {false};     // no results -- vlist_sp is not initialized  (value type is "none")
     bool                                  re_eval_expression_results       {false};     // need to call eval_value() again after 1st call to eval_value() returned a vlist or identifier from evaluating a nested expression  
     bool                                  builtin_verb_results             {false};     // true, if these results came from a builtin verb   
 
@@ -497,6 +519,7 @@ struct results_S : public value_S
     bool                                  xctl_flag                        {false};     // @XCTL pending to some verb -- new expression with verb to xctl-to is in value_S base struct
     bool                                  return_flag                      {false};     // @RETURN from lowest enclosing user-defined verb -- value is in value_S base struct
     bool                                  throw_flag                       {false};     // @THROW to nearest @TRY catch: verb              -- value is in value_S base struct
+    bool                                  skip_flag                        {false};     // @SKIPTO -- special forward-only pre-processor branch  
 
     std::wstring                          str                                     ;     // @LEAVE or @GOTO label string, @XCTL verb name
 
@@ -529,7 +552,10 @@ struct results_S : public value_S
 
 /////////////////// external setup and processing functions
 
-int import_dll(const std::wstring &, const std::wstring &); 
+pre_parse_C *add_new_pp();                  // add new pre_parse_C to top of pre-parser stack 
+void         remove_pp();                   // remove newest pre_parse_C on stack and free it 
+pre_parse_C *current_pp();                  // return pointer to newest (current) pre_parse_C instance 
+
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -542,13 +568,16 @@ int import_dll(const std::wstring &, const std::wstring &);
 /////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// pre-parser control
+
+uint64_t     preparse_setup(pre_parse_C&);  // customize configuration settings in pre_parse_C object
+
 
 /////////////////// external setup and processing functions
 
-uint64_t  parse_setup(             pre_parse_C&, frame_S&                                                                                         );
-uint64_t  process_input(           pre_parse_C&, frame_S&                                                                                         );
-uint64_t  process_cmdline(         pre_parse_C&, frame_S&, symtab_S&, int, wchar_t *[]                                                            ); 
-int       parse_string(            pre_parse_C&, frame_S&, slist_S&, const std::wstring&, const std::wstring& = L"parsed string", bool = false    );
+uint64_t      process_main_file(   frame_S& ,                               const std::wstring&                                     );
+std::wstring  process_cmdline(     frame_S&, symtab_S&, int, wchar_t *[]                                                            ); 
+int           parse_string(        frame_S&, slist_S&, const std::wstring&, const std::wstring& = L"parsed string", bool = false    );
 
 
 ///////////////// location string and other debug-message-oriented routines
@@ -622,13 +651,16 @@ void    add_keyword_value(   vlist_S&, const value_S&, const value_S&           
 
 //////////////// display , debug, and string_oriented functions (usually displaying symtab values)
 
-void    display_vlist(      const  vlist_S&       , const std::wstring& = L"vlist"        , const std::wstring& = L"",               bool = false, const std::wstring& = L"");
-void    display_slist(      const  slist_S&       , const std::wstring& = L"slist"        , const std::wstring& = L"", bool = false, bool = false, const std::wstring& = L"");
+void    display_vlist(      const vlist_S&        , const std::wstring& = L"vlist"        , const std::wstring& = L"",               bool = false, const std::wstring& = L"");
+void    display_slist(      const slist_S&        , const std::wstring& = L"slist"        , const std::wstring& = L"", bool = false, bool = false, const std::wstring& = L"");
 void    display_expression( const a_expression_S& , const std::wstring& = L"expression"   , const std::wstring& = L"",               bool = true , const std::wstring& = L"");
 void    display_expression( const e_expression_S& , const std::wstring& = L"expression"   , const std::wstring& = L"",               bool = true , const std::wstring& = L"");
-void    display_value(       const value_S&       , const std::wstring& = L"value"        , const std::wstring& = L"",               bool = false, const std::wstring& = L"");
+void    display_value(      const value_S&        , const std::wstring& = L"value"        , const std::wstring& = L"",               bool = false, const std::wstring& = L"");
+void    display_results(    const results_S&      , const std::wstring& = L"results"      , const std::wstring& = L"",               bool = false, const std::wstring& = L"");
 void    display_buffer( const std::wstring&       , const buf8_T&     ,  size_t           , const std::wstring& = L""                                                       ); 
 
+std::wstring results_msg_string( const results_S&);
+               
 void    display_ref(                          const ref_S&                                            );
 void    display_verbdef(                      const verbdef_S&                                        );
 void    display_typdef(  const std::wstring&, const typdef_S&   ,            const std::wstring& = L""); 
@@ -768,8 +800,8 @@ struct fieldparm_S
 
 //////////////// display , debug, and string_oriented functions
 
-std::wstring str_value( const value_S&, bool, bool, bool);
-std::wstring str_vlist( const vlist_S&, bool, bool, bool);
+std::wstring str_value( const value_S&, bool = false, bool = false, bool = false);
+std::wstring str_vlist( const vlist_S&, bool = false, bool = false, bool = false);
 
 std::wstring type_str(  type_E); 
 
@@ -779,13 +811,14 @@ std::wstring verb_name(     const e_expression_S&);
 
 //////////////////////////////// results-oriented functions /////////////////////////////////////////////////////////////////
 
-results_S    to_results( const value_S& );    
-results_S error_results(                ); 
-results_S    no_results(                );
-results_S  unit_results(                );
-results_S  true_results(                );
-results_S false_results(                );
-results_S    tf_results( bool tf        );    
+results_S       to_results( const value_S& );    
+results_S    error_results(                ); 
+results_S  special_results(                ); 
+results_S       no_results(                );
+results_S     unit_results(                );
+results_S     true_results(                );
+results_S    false_results(                );
+results_S       tf_results( bool tf        );    
 
 
 //////////////////////////////// value-oriented functions /////////////////////////////////////////////////////////////////
@@ -837,6 +870,17 @@ value_S   type_val(        const verbdef_S&                        , int64_t = -
 value_S   type_val(        const typdef_S&                         , int64_t = -1, int64_t = -1 ); 
 value_S   type_val(        const ref_S&                            , int64_t = -1, int64_t = -1 ); 
 value_S   type_val(        const buf8_T&,        const typdef_S&   , int64_t = -1, int64_t = -1 );
+
+
+int       get_val(         const value_S&,   int8_t&  );  
+int       get_val(         const value_S&,  uint8_t&  );
+int       get_val(         const value_S&,  int16_t&  );  
+int       get_val(         const value_S&, uint16_t&  );
+int       get_val(         const value_S&,  int32_t&  );  
+int       get_val(         const value_S&, uint32_t&  );
+int       get_val(         const value_S&,  int64_t&  );  
+int       get_val(         const value_S&, uint64_t&  );
+
 
 
 ///////////////////  value setting and unsharing functions
@@ -942,26 +986,37 @@ uint64_t   get_eval_frame_depth(     void);
 uint64_t   get_eval_frame_max_depth( void);
                                                                               
 
-/////////////////////////////////// verb parameter-oriented external functions
+/////////////////////////////////// verb parameter-oriented external functions   ---- can these be moved over to interface.h ???????? (functions to ex_interface.cpp)
 
-int get_right_positional(      const e_expression_S& ,                       value_S&, uint32_t = 0);
-int get_left_positional(       const e_expression_S& ,                       value_S&, uint32_t = 0);
-int get_vlist_positional(      const vlist_S&        ,                       value_S&, uint32_t = 0);
+int get_right_positional(      const e_expression_S& ,                       value_S&      , uint32_t = 0);
+int get_left_positional(       const e_expression_S& ,                       value_S&      , uint32_t = 0);
+int get_vlist_positional(      const vlist_S&        ,                       value_S&      , uint32_t = 0);
   
-int get_right_keyword(         const e_expression_S& ,  const std::wstring&, value_S&, uint32_t = 0);
-int get_left_keyword(          const e_expression_S& ,  const std::wstring&, value_S&, uint32_t = 0);
-int get_right_keyword(         const e_expression_S& ,  const std::wstring&,           uint32_t = 0);
-int get_left_keyword(          const e_expression_S& ,  const std::wstring&,           uint32_t = 0);
-int get_vlist_keyword(         const vlist_S&        ,  const std::wstring&, value_S&, uint32_t = 0);
-int get_vlist_keyword(         const vlist_S&        ,                       value_S&, uint32_t = 0);
+int get_right_keyword(         const e_expression_S& ,  const std::wstring&, value_S&      , uint32_t = 0);
+int get_right_keyword(         const e_expression_S& ,  const std::wstring&, std::wstring& , uint32_t = 0);
+int get_right_keyword(         const e_expression_S& ,  const std::wstring&, int64_t&      , uint32_t = 0);
+int get_right_keyword(         const e_expression_S& ,  const std::wstring&, float64_T&    , uint32_t = 0);
+int get_right_keyword(         const e_expression_S& ,  const std::wstring&,                 uint32_t = 0);
+
+int get_left_keyword(          const e_expression_S& ,  const std::wstring&, value_S&      , uint32_t = 0);
+int get_left_keyword(          const e_expression_S& ,  const std::wstring&, std::wstring& , uint32_t = 0);
+int get_left_keyword(          const e_expression_S& ,  const std::wstring&, int64_t&      , uint32_t = 0);
+int get_left_keyword(          const e_expression_S& ,  const std::wstring&, float64_T&    , uint32_t = 0);
+int get_left_keyword(          const e_expression_S& ,  const std::wstring&,                 uint32_t = 0);
+
+int get_vlist_keyword(         const vlist_S&        ,  const std::wstring&, value_S&      , uint32_t = 0);
+int get_vlist_keyword(         const vlist_S&        ,                       value_S&      , uint32_t = 0);
+int get_vlist_keyword(         const vlist_S&        ,  const std::wstring&,                 uint32_t = 0);
 
 
 ///////////////////////////////// principal evaluation functions
 
-void           main_eval(      frame_S&, int, wchar_t *[] );
+void         frame_parms(      frame_S&, int, wchar_t *[] );
 
-frame_S       *add_frame(bool = true);
-void        remove_frame(           );
+frame_S             *add_new_frame(      bool = true                           );
+std::shared_ptr<frame_S> new_frame(      bool                                  );
+frame_S                 *add_frame(      const std::shared_ptr<frame_S>&       );
+void                  remove_frame(                                            );
                          
 int           eval_block(      frame_S&,           const      vlist_S&, const vlist_S&, const   slist_S&, results_S&);
 int      eval_main_block(      frame_S&,                                                const   slist_S&            );

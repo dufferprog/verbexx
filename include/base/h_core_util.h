@@ -11,7 +11,7 @@
 ////     =============
 //// 
 //// 
-////     contains utility items and functions in core_util.cpp -and- core_msdn.cpp
+////     contains utility items and functions in    core_util.cpp    -and-    core_msdn.cpp    -and-    core_file.cpp
 //// 
 ////    
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -20,6 +20,7 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include "h__types.h"
                                
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -119,8 +120,8 @@ constexpr real_T    real_min    { std::numeric_limits<real_T    >::min() };     
 
 namespace const_N
 {                                                                        
-constexpr uint32_t utf16_max             { 0x0010FFFFU };                             // maximum code point allowed for UTF-16 
-constexpr uint32_t utf16_plane0_max      { 0x0000FFFFU };                             // maximum code point in BMP for UTF-16 
+constexpr uint32_t utf16_max             { 0x0010FFFFU };                             // maximum UTF-32 code point allowed for UTF-16 encoding  
+constexpr uint32_t utf16_plane0_max      { 0x0000FFFFU };                             // maximum UTF-32 code point in BMP for UTF-16 (really UCS-2) 
 constexpr uint32_t utf16_plane1_base     { 0x00010000U };                             // Subtract this from value from char32_t before extracting hi and low 10 bit fields
 constexpr int      utf16_shift10         { 10          };                             // 10-bit shift for converting to/from char32_t and wchar_t 
 constexpr uint32_t utf16_mask_lo10       { 0x000003FFU };                             // Apply this mask to char32_t to extract lo 10 bits
@@ -130,6 +131,25 @@ constexpr uint32_t utf16_surrogate_hi    { 0x0000DFFFU };                       
 constexpr uint32_t utf16_surrogate_mask  { 0x0000DC00U };                             // Mask for isolating UTF-16 surrogate range (D800 - DFFF)
 constexpr uint32_t utf16_leading_base    { 0x0000D800U };                             // starting code point for leading surrogates (D800 - DBFF)
 constexpr uint32_t utf16_trailing_base   { 0x0000DC00U };                             // starting code point for trailing surrogates (DC00 - DFFF)
+}
+
+#define M_is_lead_surrogate( wch) ( (((uint32_t)wch) & const_N::utf16_surrogate_mask) == const_N::utf16_leading_base  )
+#define M_is_trail_surrogate(wch) ( (((uint32_t)wch) & const_N::utf16_surrogate_mask) == const_N::utf16_trailing_base )
+
+
+
+// -------------------
+// text file BOM items
+// -------------------
+
+namespace const_N
+{ 
+constexpr char    *utf32_le_bom    { "\xFF\xFE\x00\x00"            };                             // UTF-32-LE BOM  
+constexpr char    *utf32_be_bom    { "\x00\x00\xFE\xFF"            };                             // UTF-32-BE BOM 
+constexpr char    *utf16_le_bom    { "\xFF\xFE"                    };                             // UTF-16-LE BOM  
+constexpr char    *utf16_be_bom    { "\xFE\xFF"                    };                             // UTF-16-BE BOM  
+constexpr char    *utf8_bom        { "\xEF\xBB\xBF"                };                             // UTF-8     BOM  
+constexpr char    *utf8_bom_w      { "\xEF\00\xBB\x00\xBF\00"      };                             // UTF-8     BOM   erroneously converted to wchar_t  
 }
 
 
@@ -977,7 +997,18 @@ t1 = c.now();
 
 
 
-//⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -1294,8 +1325,158 @@ F_roundup(const T& x, const T& r)
 }
 
 
-//⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///
+///
+///    api_err_S -- consolidated error info and message text  
+///
+///
+///
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ 
+
+// --------------------------------------------------------------------------------------------------------------------
+//     non_syserr_E -- code value to indicate what local or non-API function was issued just before the error 
+// --------------------------------------------------------------------------------------------------------------------
+
+typedef enum class non_syserr_E                                                        // which non-system error was detected
+{                                                                                    
+    none                               ,                                               // default value -- for initialization 
+    unexpected_directory               ,                                               // directory name passed in as filename for I/O operation
+    unsupported_encoding               ,                                               // UTF-32 BOM seen in input file 
+    tfile_open_wfopen_s_utf16_be       ,                                               // tried to use _wfopen_s() with UTF16-BE file encoding
+    tfile_open_wfopen_s_utf32          ,                                               // tried to use _wfopen_s() with UTF32    file encoding
+    tfile_open_wfopen_unknown_encoding ,                                               // tried to use _wfopen_s() with unknown  file encoding
+    tfile_open_stream_utf32            ,                                               // tried to use C++ stream with UTF-32 file encoding
+    tfile_open_default_utf32           ,                                               // tried to use default I/O method with UTF-32 file encoding  
+    tfile_open_no_encoding             ,                                               // File encoding not passed into       tfile_C:: open()
+    tfile_open_multiple_encodings      ,                                               // Multiple file encodings passed into tfile_C:: open()
+    tfile_open_no_io_method            ,                                               // I/O method not passed into          tfile_C:: open()
+    tfile_open_multiple_io_methods     ,                                               // Multiple I/O methods passed into    tfile_C:: open()
+    tfile_getline_error                ,                                               // tfile_C::getline() called after prior error reported, and no close()/re-open() done  
+    tfile_getline_closed               ,                                               // tfile_C::getline() called when file is not open() 
+    token_stream_attach_error                                                          // token_stream_C::attach_file() called to attach a file after prior error was returned 
+} non_syserr_T; 
+ 
+
+
+// --------------------------------------------------------------------------------------------------------------------
+//     api_op_E -- code value to indicate what API was issued just before the error 
+// --------------------------------------------------------------------------------------------------------------------
+
+typedef enum class api_op_E                                                           // last API operation being performed
+{                                                                                  
+    none                   ,                                                          // default value -- for initialization 
+    non_system             ,                                                          // used after internally detected error (like bad encoding, file not open)
+    GetFileAttributesExW   ,                                        
+    _wfopen_s              ,
+    fclose                 ,
+    fread_s                ,
+    fgetws                 ,
+    ifstream_constructor   ,
+    ifstream_open          ,
+    ifstream_close         ,
+    ifstream_getline       ,
+    wifstream_constructor  ,
+    wifstream_open         ,
+    wifstream_imbue        ,
+    wifstream_close        ,
+    wifstream_getline      ,
+    wstring_convert        ,
+    MultiByteToWideChar    ,
+    getline           
+} api_op_T; 
+
+
+
+// --------------------------------------------------------------------------------------------------------------------
+//     api_err_S -- consolidated error info and message etxt for various API errors 
+// --------------------------------------------------------------------------------------------------------------------
+
+
+struct api_err_S                                                                           // error messages and error codes, etc. from file operations
+{
+    // consolidated error status
+
+    bool                        error_occurred                  { false              };    // set when any type of error (system-detected or internally-detected) occurred
+    std::wstring                error_text                      {                    };    // consolidated error message for this error  
+                                                                                     
+                                                                                     
+    // I/O error flags -- describes what type of I/O error occurred                  
+                                                                                     
+    bool                        system_error_occurred           { false              };    // error from ::GetFileAttributes()  (or other win32 API)  has occurred
+    bool                        errno_error_occurred            { false              };    // set when ::_wopen_s() or ::fread_s() ::close() etc.
+    bool                        stream_error_occurred           { false              };    // set when std::ifstream or std::wifstream error occurs
+    bool                        exception_caught                { false              };    // exception was thrown by an invoked C++ service and caught
+    bool                        non_system_error_occurred       { false              };    // set when error detected other than ones from called system functions
+
+    api_op_T                    api_op                          { api_op_E::none     };    // indicates which I/O operation (or other operation) got this error   
+
+
+    // error info from non-system errors
+
+    non_syserr_T                non_syserr                      { non_syserr_E::none };    // indicates which non-system error was found
+
+
+    // error info from system errors (GetFileAttributes() or other WIN32 APIs, etc.)
+
+    uint32_t                    system_error_code               { 0                   };    // Windows DWORD type from GetLastError() 
+    std::wstring                system_error_text               {                     };    // Windows system message text for this system_error_code
+                                                                                      
+                                                                                      
+    // error info from error-based errors (from FILE I/O operations, etc.)                                  
+                                                                                      
+    int                         errno_code                      { 0                   };    // Windows errno_t type 
+    std::wstring                errno_text                      {                     };    // error text from _wcstrerror() for this errno 
+    
+
+    // error info from C++ exception                                  
+
+    std::wstring                exception_text                  {                     };    // text from .what() converted to std::wstring 
+                                                                        
+
+    // error info from C++ stream-based errors                                                                  
+                                                                                      
+    uint32_t                    stream_state                    { 0                   };    // stream state reported by rdflags()
+                                                                                      
+    bool                        stream_goodbit                  { false               };    // goodbit as reported by good()  
+    bool                        stream_eofbit                   { false               };    // eofbit  as reported by eof()
+    bool                        stream_failbit                  { false               };    // failbit as reported by fail()
+    bool                        stream_badbit                   { false               };    // badbit  as reported by bad()   
+};
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -1303,7 +1484,7 @@ F_roundup(const T& x, const T& r)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///
 ///
-///    buffer_C<T> class 
+///    buffer_C<T> class    -- template functions -- compiler generated -- no need to DLL import/export
 ///
 ///
 ///
@@ -1412,11 +1593,11 @@ class databuf_C : public buf8_T
 public:
 
     M_CORE_IMPEXP                     databuf_C(                ) = default     ;       // default contructor
-    M_CORE_IMPEXP                     databuf_C(const databuf_C&) = delete      ;       // copy constructor
-    M_CORE_IMPEXP                     databuf_C(databuf_C&&     ) = delete      ;       // move constructor
+                                      databuf_C(const databuf_C&) = delete      ;       // copy constructor      (deleted)
+                                      databuf_C(databuf_C&&     ) = delete      ;       // move constructor      (deleted)
     M_CORE_IMPEXP                    ~databuf_C(                ) = default     ;       // destructor
-    M_CORE_IMPEXP  filebuf_C          operator=(const databuf_C&) = delete      ;       // copy assignment
-    M_CORE_IMPEXP  filebuf_C&         operator=(databuf_C&&     ) = delete      ;       // move assignment
+                   filebuf_C          operator=(const databuf_C&) = delete      ;       // copy assignment        deleted)
+                   filebuf_C&         operator=(databuf_C&&     ) = delete      ;       // move assignment        deleted)
    
                    uint64_t           ct                          { 0 }         ;       // number of bytes of data contained in buffer
 };
@@ -1438,11 +1619,11 @@ class filebuf_C : public buf8_T
 {
 public: 
     M_CORE_IMPEXP                     filebuf_C(                ) = default     ;       // default contructor
-    M_CORE_IMPEXP                     filebuf_C(const filebuf_C&) = delete      ;       // copy constructor
-    M_CORE_IMPEXP                     filebuf_C(filebuf_C&&     ) = delete      ;       // move constructor
+    M_CORE_IMPEXP                     filebuf_C(const filebuf_C&) = delete      ;       // copy constructor      (deleted)
+    M_CORE_IMPEXP                     filebuf_C(filebuf_C&&     ) = delete      ;       // move constructor      (deleted)
     M_CORE_IMPEXP                    ~filebuf_C(                ) = default     ;       // destructor
-    M_CORE_IMPEXP  filebuf_C          operator=(const filebuf_C&) = delete      ;       // copy assignment
-    M_CORE_IMPEXP  filebuf_C&         operator=(filebuf_C&&     ) = delete      ;       // move assignment
+    M_CORE_IMPEXP  filebuf_C          operator=(const filebuf_C&) = delete      ;       // copy assignment       (deleted)
+    M_CORE_IMPEXP  filebuf_C&         operator=(filebuf_C&&     ) = delete      ;       // move assignment       (deleted)
 
     M_CORE_IMPEXP  int64_t            getsize(const std::wstring&, bool = true) ;       // return size of file, or -1 if stat() fails -- sets error_flag 
     M_CORE_IMPEXP  int                readin( const std::wstring&             ) ;       // open file, read in file, close file (all data from file in buffer)
@@ -1457,34 +1638,174 @@ public:
 
 
 
-//⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫
-//⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫
-//⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫
-//⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫
-//⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫                                                                                                                                                                                                        
-//⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫
-//⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫
-//⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫
-//⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫
-//⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫
-//⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫                                                                                                                                                                                                        
-//⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫
-//⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+///
+///
+///   tfile_C -- class for reading in encoded text files, one line at a time
+///   =======    -----------------------------------------------------------
+///
+///
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+// --------------------------------------------------------------------------------------------------------------------
+//     tfile_parm_S -- I/O operation request/configuration parms
+// --------------------------------------------------------------------------------------------------------------------
+
+struct tfile_parm_S                                                                   // parameters to control type of I/O routines to use
+{                                                                                  
+    bool                        use_file                 { false };                   // true -- use C FILE*                              -and-   fgets() or fgetws()
+    bool                        use_stream               { false };                   // true -- use C++ std:ifstream or std::wifstream   -and-   std::fstream::getline()   or  std::getline() 
+    bool                        use_default              { false };                   // true -- pick use_file or use_stream based on input file info 
+    bool                        remove_line_end          { false };                   // true -- remove \r or \n at end of passsed-back line            
+};
+
+
+// --------------------------------------------------------------------------------------------------------------------
+//     tfile_info_S -- pre-determined information about a text file
+// --------------------------------------------------------------------------------------------------------------------
+
+struct tfile_info_S                                                    // output from pathname_info() and 
+{
+    std::wstring                filename                 {       };    // pathname -- filled in if file (not directory) found
+
+    bool                        is_directory             { false }; 
+    bool                        is_file                  { false };    
+    WIN32_FILE_ATTRIBUTE_DATA   file_attrs               { 0     };    // raw file attributes from Windows -- filled in from call to GetFileAttributes() 
+
+    size_t                      length                   { 0     };
+                                
+    bool                        is_ascii                 { false };    // no BOM found, so ACII (1252?) assumed
+    bool                        is_utf8                  { false };
+    bool                        is_utf16_le              { false };
+    bool                        is_utf16_be              { false };
+    bool                        is_utf32_le              { false };
+    bool                        is_utf32_be              { false };
+                                
+    size_t                      bom_length               { 0     }; 
+};
 
 
 
-// ----------------------------------------------
-// functions from MSDN (Microsoft) -- in msdn.cpp
-// ----------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
+//     tfile_C::  --  text file I/O class
+// --------------------------------------------------------------------------------------------------------------------
+
+class tfile_C
+{
+public: 
+    M_CORE_IMPEXP                     tfile_C(                      ) = default                                   ;     // default contructor
+                                      tfile_C(const tfile_C&        ) = delete                                    ;     // copy constructor    (deleted)
+                                      tfile_C(tfile_C&&             ) = delete                                    ;     // move constructor    (deleted)
+    M_CORE_IMPEXP                    ~tfile_C(                      )                                             ;     // destructor
+                   filebuf_C          operator=(const tfile_C&      ) = delete                                    ;     // copy assignment     (deleted)
+                   filebuf_C&         operator=(tfile_C&&           ) = delete                                    ;     // move assignment     (deleted)
+    
+    M_CORE_IMPEXP  int                open(                     const std::wstring&,    api_err_S&)               ;     // open  file or stream -- default options -- input text file -- pass in pathname
+    M_CORE_IMPEXP  int                open(                     const tfile_info_S&,    api_err_S&)               ;     // open  file or stream -- default options -- input text file -- pass in file info
+    M_CORE_IMPEXP  int                open(const tfile_parm_S&, const tfile_info_S&,    api_err_S&)               ;     // open  file or stream -- custom options
+    M_CORE_IMPEXP  int                close(                                            api_err_S&)               ;     // close file or stream
+    M_CORE_IMPEXP  int                close(                                                      )               ;     // close file or stream -- don't fill in any api_err_S
+    M_CORE_IMPEXP  int                getline(         std::wstring&,                   api_err_S&)               ;     // get one line of input data
+
+private:
+                   int                get_stream_state(  api_op_T,                      api_err_S&, bool=false)   ;     // get stream state after I/O operation
+                   int                get_exception_info(api_op_T,                      api_err_S&)               ;     // get info from exception thrown after I/O-oriented operation 
+                   int                get_file_state(    api_op_T,  int, errno_t,       api_err_S&)               ;     // get FILE   state after I/O operation
+
+
+
+    ///////////////////////// data members ////////////////////////////////////
+
+
+    //             saved option settings and file info from open() 
+
+                   tfile_parm_S       m_parm          {         };                                                      // saved tfile_parm_S input to open() 
+                   tfile_info_S       m_info          {         };                                                      // saved tfile_info_S input to open() 
+                                                                                                                     
+                                                                                                                     
+    //             file controls                                                                                     
+                                                                                                                     
+                   std::wstring       m_filename      {         };                                                      // name for current input file
+                   uint64_t           m_lineno        { 0       };                                                      // line numberf in file -- for error messages
+                                                                                                                     
+                   bool               m_file_open     { false   };                                                      // true: *m_file_p    is open
+                   bool               m_stream_open   { false   };                                                      // true: *m_stream_p  is open
+                   bool               m_wstream_open  { false   };                                                      // true: *m_wstream_p is open
+                                                                                                                     
+                   FILE              *m_file_p        { nullptr };                                                      // current input file FILE     
+                   std::ifstream     *m_stream_p      { nullptr };                                                      // current input file (for ASCII or UTF-8 input)
+                   std::wifstream    *m_wstream_p     { nullptr };                                                      // current input file (for UTF-16 input)
+                                                                                                                     
+                   bool               m_goodbit       { false   };                                                      // std:ios::goodbit after last I/O operation 
+                   bool               m_eofbit        { false   };                                                      // std:ios::eofbit  after last I/O operation
+                   bool               m_failbit       { false   };                                                      // std:ios::failbit after last I/O operation
+                   bool               m_badbit        { false   };                                                      // std:ios::badbit  after last I/O operation
+                                                                                                                     
+                   int                m_io_rc         { 0       };                                                      // R/C from    last FILE I/O operation
+                   errno_t            m_errno         { 0       };                                                      // errno after last FILE I/O operation
+                                                                                                                     
+                                                                                                                     
+     //            file state and status                                                                             
+                                                                                                                     
+                   bool               m_is_open       { false   };                                                       // true: file is open -- either as C++ stream or C file
+                   bool               m_1st_line_done { false   };                                                       // true -- 1st line already processed (passed back)
+                   bool               m_eof_seen      { false   };                                                       // EOF: seen on read()
+                   bool               m_error_seen    { false   };                                                       // fail() bit set after read()
+
+
+     //            persistent buffer for fgetws()
+
+                   buffer_C<wchar_t>  m_readbuf       {         };                                                       // empty buffer, until fopen()
+                   size_t             m_readbuf_l     { 0       };                                                       // length of read buffer   
+};
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///
+///
+///
+///    Functions from MSDN (Microsoft) -- in msdn.cpp
+///
+///
+///
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 M_CORE_IMPEXP  int GetEncoderClsid(const WCHAR*, CLSID*);
 
 
 
 
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///
 ///
 ///
 ///    Utility functions in core_util.cpp
@@ -1493,15 +1814,6 @@ M_CORE_IMPEXP  int GetEncoderClsid(const WCHAR*, CLSID*);
 ///
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   
-
-// --------------------------
-// logging-oriented functions
-// --------------------------
-
-M_CORE_IMPEXP  log_T         log_verbs(void  );
-M_CORE_IMPEXP  void          log_verbs(log_T );
-
 
 // -------------------------
 // string-oriented functions
@@ -1512,16 +1824,14 @@ M_CORE_IMPEXP  std::wstring    to_wstring(const char *         , UINT = CP_ACP);
 M_CORE_IMPEXP  std::string     to_string( const std::wstring&  , UINT = CP_ACP);
 M_CORE_IMPEXP  std::string     to_string( const wchar_t *      , UINT = CP_ACP);
 
-
-#define M_is_lead_surrogate( wch) ( (((uint32_t)wch) & const_N::utf16_surrogate_mask) == const_N::utf16_leading_base  )
-#define M_is_trail_surrogate(wch) ( (((uint32_t)wch) & const_N::utf16_surrogate_mask) == const_N::utf16_trailing_base )
+M_CORE_IMPEXP  std::wstring    to_wstring(                  unit_T   );  // substitute for std::to_wstring() for unit_T type
+M_CORE_IMPEXP  std::wstring    to_wstring(                  bool     );  // substitute for std::to_wstring() for bool type
 
 M_CORE_IMPEXP  int             to_char32( wchar_t, wchar_t    , char32_t&,           bool = true);
 M_CORE_IMPEXP  int             to_wchars( char32_t            , wchar_t&, wchar_t&              ); 
-                
-M_CORE_IMPEXP  std::string     out_ws(     std::wstring         );
-M_CORE_IMPEXP  std::string     shorten_str(std::string  , size_t);
-M_CORE_IMPEXP  std::wstring    shorten_str(std::wstring , size_t);
+       
+M_CORE_IMPEXP  std::wstring    to_wstring(                  unit_T   );  // substitute for std::to_wstring() for unit_T type
+M_CORE_IMPEXP  std::wstring    to_wstring(                  bool     );  // substitute for std::to_wstring() for bool type
 
 
 // string to/from conversion
@@ -1537,39 +1847,99 @@ M_CORE_IMPEXP  int             to_uint64(  const std::wstring&,  uint64_t&, int 
 M_CORE_IMPEXP  int             to_float32( const std::wstring&, float32_T&          );
 M_CORE_IMPEXP  int             to_float64( const std::wstring&, float64_T&          );       
 
-M_CORE_IMPEXP  std::wstring    fmt_ptr(const void *                   ); 
 
-M_CORE_IMPEXP  std::wstring    fmt_str(                     bool     );  // substitute for std::to_wstring() for bool type
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, bool     );
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int8_t   );
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int16_t  );
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int32_t  );
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int64_t  );
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, uint8_t  );
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, uint16_t );
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, uint32_t );
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, uint64_t );
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, float32_T);
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, float64_T);
-M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, const std::wstring&);
-                                              
-M_CORE_IMPEXP std::wstring    deg_to_d_m_s(real_T, int32_t);
+// string insert formatting functions (using swprintf) 
+// ---------------------------------------------------
+
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, unit_T                        );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, bool                          );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int8_t                        );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int16_t                       );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int32_t                       );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int64_t                       );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, uint8_t                       );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, uint16_t                      );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, uint32_t                      );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, uint64_t                      );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, float32_T                     );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, float64_T                     );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, const std::wstring&           );
+
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int, unit_T                   );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int, bool                     );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int, int8_t                   );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int, int16_t                  );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int, int32_t                  );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int, int64_t                  );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int, uint8_t                  );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int, uint16_t                 );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int, uint32_t                 );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int, uint64_t                 );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int, float32_T                );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int, float64_T                );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&, int, const std::wstring&      );
+
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&,int, int, unit_T               );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&,int, int, bool                 );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&,int, int, int8_t               );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&,int, int, int16_t              );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&,int, int, int32_t              );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&,int, int, int64_t              );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&,int, int, uint8_t              );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&,int, int, uint16_t             );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&,int, int, uint32_t             );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&,int, int, uint64_t             );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&,int, int, float32_T            );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&,int, int, float64_T            );
+M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&,int, int, const std::wstring&  );
 
 
-// numeric formatting
+// miscellaneous string formatting functions
+// -----------------------------------------
 
-M_CORE_IMPEXP  std::string     add_separators_a(uint32_t, char = 0xAF);
-M_CORE_IMPEXP  std::string     add_separators_a( int32_t, char = 0xAF);
-M_CORE_IMPEXP  std::string     add_separators_a(uint64_t, char = 0xAF);
-M_CORE_IMPEXP  std::string     add_separators_a( int64_t, char = 0xAF);
+M_CORE_IMPEXP  std::wstring    fmt_ptr(const void *); 
 
-M_CORE_IMPEXP  std::wstring    add_separators_w(uint32_t, wchar_t = 0x00AF);
-M_CORE_IMPEXP  std::wstring    add_separators_w( int32_t, wchar_t = 0x00AF);
-M_CORE_IMPEXP  std::wstring    add_separators_w(uint64_t, wchar_t = 0x00AF);
-M_CORE_IMPEXP  std::wstring    add_separators_w( int64_t, wchar_t = 0x00AF);
+M_CORE_IMPEXP  std::string     out_ws(     std::wstring         );
+M_CORE_IMPEXP  std::string     shorten_str(std::string  , size_t);
+M_CORE_IMPEXP  std::wstring    shorten_str(std::wstring , size_t);
+
+M_CORE_IMPEXP std::wstring     deg_to_d_m_s(real_T, int32_t);
+                                                             
+M_CORE_IMPEXP int              remove_line_end(wchar_t *    );
+M_CORE_IMPEXP int              remove_line_end( char   *    );
+M_CORE_IMPEXP int              remove_line_end(std::wstring&);
+M_CORE_IMPEXP int              remove_line_end(std::string& );
 
 
-// switchable occult MACROs to use wchar_t or char add_separators_x() routine (above) 
+
+// functions to insert separator/grouping characters in (numeric) strings
+// ----------------------------------------------------------------------
+
+#define M_SEP_STRIDE         3
+#define M_MAX_LENGTH_NO_SEP  5
+           
+M_CORE_IMPEXP  std::string     add_separators_a(  uint16_t           , char    = 0xAF   , uint32_t = M_MAX_LENGTH_NO_SEP, uint32_t = M_SEP_STRIDE);
+M_CORE_IMPEXP  std::string     add_separators_a(   int16_t           , char    = 0xAF   , uint32_t = M_MAX_LENGTH_NO_SEP, uint32_t = M_SEP_STRIDE);
+M_CORE_IMPEXP  std::string     add_separators_a(  uint32_t           , char    = 0xAF   , uint32_t = M_MAX_LENGTH_NO_SEP, uint32_t = M_SEP_STRIDE);
+M_CORE_IMPEXP  std::string     add_separators_a(   int32_t           , char    = 0xAF   , uint32_t = M_MAX_LENGTH_NO_SEP, uint32_t = M_SEP_STRIDE);
+M_CORE_IMPEXP  std::string     add_separators_a(  uint64_t           , char    = 0xAF   , uint32_t = M_MAX_LENGTH_NO_SEP, uint32_t = M_SEP_STRIDE);
+M_CORE_IMPEXP  std::string     add_separators_a(   int64_t           , char    = 0xAF   , uint32_t = M_MAX_LENGTH_NO_SEP, uint32_t = M_SEP_STRIDE);
+M_CORE_IMPEXP  std::string     add_separators_a( float32_T           , char    = 0xAF   , uint32_t = M_MAX_LENGTH_NO_SEP, uint32_t = M_SEP_STRIDE);
+M_CORE_IMPEXP  std::string     add_separators_a( float64_T           , char    = 0xAF   , uint32_t = M_MAX_LENGTH_NO_SEP, uint32_t = M_SEP_STRIDE);
+                                                                                        
+M_CORE_IMPEXP  std::wstring    add_separators_w(  uint16_t           , wchar_t = 0x00AF , uint32_t = M_MAX_LENGTH_NO_SEP, uint32_t = M_SEP_STRIDE);
+M_CORE_IMPEXP  std::wstring    add_separators_w(   int16_t           , wchar_t = 0x00AF , uint32_t = M_MAX_LENGTH_NO_SEP, uint32_t = M_SEP_STRIDE);
+M_CORE_IMPEXP  std::wstring    add_separators_w(  uint32_t           , wchar_t = 0x00AF , uint32_t = M_MAX_LENGTH_NO_SEP, uint32_t = M_SEP_STRIDE);
+M_CORE_IMPEXP  std::wstring    add_separators_w(   int32_t           , wchar_t = 0x00AF , uint32_t = M_MAX_LENGTH_NO_SEP, uint32_t = M_SEP_STRIDE);
+M_CORE_IMPEXP  std::wstring    add_separators_w(  uint64_t           , wchar_t = 0x00AF , uint32_t = M_MAX_LENGTH_NO_SEP, uint32_t = M_SEP_STRIDE);
+M_CORE_IMPEXP  std::wstring    add_separators_w(   int64_t           , wchar_t = 0x00AF , uint32_t = M_MAX_LENGTH_NO_SEP, uint32_t = M_SEP_STRIDE);
+M_CORE_IMPEXP  std::wstring    add_separators_w( float32_T           , wchar_t = 0x00AF , uint32_t = M_MAX_LENGTH_NO_SEP, uint32_t = M_SEP_STRIDE);
+M_CORE_IMPEXP  std::wstring    add_separators_w( float64_T           , wchar_t = 0x00AF , uint32_t = M_MAX_LENGTH_NO_SEP, uint32_t = M_SEP_STRIDE);
+                                                                     
+M_CORE_IMPEXP  std::wstring    add_separators_w( const std::wstring& , wchar_t = 0x00AF , uint32_t = M_MAX_LENGTH_NO_SEP, uint32_t = M_SEP_STRIDE);
+
+
+// switchable occult MACROs to use wchar_t or char add_separators_x() routines (above) 
 
 #ifndef M_OUT_NARROW
 #define         M_add_separators(x) add_separators_w((x))  
@@ -1577,49 +1947,6 @@ M_CORE_IMPEXP  std::wstring    add_separators_w( int64_t, wchar_t = 0x00AF);
 #define         M_add_separators(x) add_separators_a((x))  
 #endif
  
-
-// string input/output
-
-M_CORE_IMPEXP  void           write_stdout(const std::wstring&     ); 
-M_CORE_IMPEXP  void           write_stdout(const wchar_t *         ); 
-M_CORE_IMPEXP  void           write_stderr(const std::wstring&     ); 
-M_CORE_IMPEXP  void           write_stderr(const wchar_t *         );
-
-M_CORE_IMPEXP  int            read_stdin(        std::wstring&     );
-            
-M_CORE_IMPEXP  void           write_note_stdout(const std::wstring&);
-M_CORE_IMPEXP  void           write_note_stdout(const wchar_t *    );
-
-
-// --------------------------------
-// system and environment functions
-// --------------------------------
-
-M_CORE_IMPEXP  int64_t         query_performance_counter();
-M_CORE_IMPEXP  float64_T       performance_counter_interval(int64_t);
- 
-M_CORE_IMPEXP  int             find_files(   const std::wstring&, std::vector<std::wstring>&, bool = false);  
-
-M_CORE_IMPEXP  std::string     get_env(      const  char *       );
-M_CORE_IMPEXP  std::wstring    get_env(      const wchar_t *     );
-M_CORE_IMPEXP  std::wstring    get_env(      const std::wstring& );
-M_CORE_IMPEXP  bool            is_env_set(   const  char   *     );
-M_CORE_IMPEXP  bool            is_env_set(   const wchar_t *     );
-M_CORE_IMPEXP  bool            is_env_set(   const std::wstring& ); 
-
-M_CORE_IMPEXP  int             load_dll(                  const std::wstring&  , HMODULE&);
-M_CORE_IMPEXP  int             get_dll_function(HMODULE,  const std::string&   , void *& );
-M_CORE_IMPEXP  int             get_dll_function(HMODULE,  const std::wstring&  , void *& );
-M_CORE_IMPEXP  int             free_dll(        HMODULE                                  );
-
-M_CORE_IMPEXP  int             do_system(    const std::wstring&                );
-M_CORE_IMPEXP  int             do_popen(     const std::wstring&, std::wstring& );
-
-M_CORE_IMPEXP  void            do_exit(      int = -1);
-M_CORE_IMPEXP  void            do__exit(     int = -1);
-M_CORE_IMPEXP  void            do_abort(             );
-M_CORE_IMPEXP  void            do_quick_exit(int = -1); 
-
 
 // ---------------------------------------------------
 // bigendian <-> little endian byte swapping functions
@@ -1648,7 +1975,7 @@ M_CORE_IMPEXP  uint16_t        ipow(uint16_t  , uint16_t );
 M_CORE_IMPEXP  uint32_t        ipow(uint32_t  , uint32_t );
 M_CORE_IMPEXP  uint64_t        ipow(uint64_t  , uint64_t );
                 
-M_CORE_IMPEXP  int8_t          power(int8_t   , int8_t   );         // overloaded power functions
+M_CORE_IMPEXP  int8_t          power(int8_t   , int8_t   );         // complete set of overloaded power functions
 M_CORE_IMPEXP  int16_t         power(int16_t  , int16_t  );
 M_CORE_IMPEXP  int32_t         power(int32_t  , int32_t  );
 M_CORE_IMPEXP  int64_t         power(int64_t  , int64_t  );
@@ -1659,21 +1986,163 @@ M_CORE_IMPEXP  uint64_t        power(uint64_t , uint64_t );
 M_CORE_IMPEXP  float32_T       power(float32_T, float32_T);
 M_CORE_IMPEXP  float64_T       power(float64_T, float64_T);
 
+ 
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///
+///
+///
+///    File-oriented, I/O-oriented, and other system-oriented functions in core_sys.cpp
+///
+///
+///
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   
+
+// --------------------------
+// logging-oriented functions
+// --------------------------
+
+M_CORE_IMPEXP  log_T         log_verbs(      void  );
+M_CORE_IMPEXP  void          log_verbs(      log_T );
+
+M_CORE_IMPEXP  log_T         log_statistics( void  );
+M_CORE_IMPEXP  void          log_statistics( log_T );
+
+
+
+// -------------------
+// string input/output
+// -------------------
+
+M_CORE_IMPEXP  void           write_stdout(const std::wstring&     ); 
+M_CORE_IMPEXP  void           write_stdout(const wchar_t *         ); 
+M_CORE_IMPEXP  void           write_stderr(const std::wstring&     ); 
+M_CORE_IMPEXP  void           write_stderr(const wchar_t *         );
+
+M_CORE_IMPEXP  int            read_stdin(        std::wstring&     );
+            
+M_CORE_IMPEXP  void           write_note_stdout(const std::wstring&);
+M_CORE_IMPEXP  void           write_note_stdout(const wchar_t *    );
+
+
+
+// --------------------------------
+// filesystem functions
+// --------------------------------
+
+M_CORE_IMPEXP  int            pathname_info(const std::wstring&, tfile_info_S&, api_err_S&      );
+M_CORE_IMPEXP  int               tfile_info(const std::wstring&, tfile_info_S&, api_err_S&, bool);            // bool = true if UTF-32 file encoding is allowed, bool = false if UTF-32 is not allowed
+M_CORE_IMPEXP  int               find_files(const std::wstring&, std::vector<std::wstring>&, bool = false); 
+
+M_CORE_IMPEXP  int            detect_bom(void *, size_t, size_t&, bool=false );                               // default is not to check for erroneous 6-byte BOMs (UTF-8 converted to wchar_t)
+
+M_CORE_IMPEXP  int            remove_bom( std::wstring&,          bool=false );                               // default is not to check for erroneous 6-byte BOMs (UTF-8 converted to wchar_t)
+M_CORE_IMPEXP  int            remove_bom( std:: string&                      ); 
+M_CORE_IMPEXP  int            remove_bom( wchar_t *    ,          bool=false );                               // default is not to check for erroneous 6-byte BOMs (UTF-8 converted to wchar_t)
+M_CORE_IMPEXP  int            remove_bom( char    *                          ); 
+
+
+
+
+// ----------------------
+// DLL-oriented functions
+// ---------------------- 
+
+M_CORE_IMPEXP  int             load_dll(                  const std::wstring&  , HMODULE&);
+M_CORE_IMPEXP  int             get_dll_function(HMODULE,  const std::string&   , void *& );
+M_CORE_IMPEXP  int             get_dll_function(HMODULE,  const std::wstring&  , void *& );
+M_CORE_IMPEXP  int             free_dll(        HMODULE                                  );
+
+
 
 // ---------------------------
 // debug and display functions
 // ---------------------------
 
+M_CORE_IMPEXP  void            display_api_err(   const api_err_S&   );  
+M_CORE_IMPEXP  void            display_tfile_info(const tfile_info_S&); 
 M_CORE_IMPEXP  void            show_hex(void *, size_t, const std::wstring& = L"", bool = true);
 M_CORE_IMPEXP  void            display_locale(); 
 M_CORE_IMPEXP  void            display_numerics(); 
 
 
+
+// --------------------------------
+// system and environment functions
+// --------------------------------
+
+M_CORE_IMPEXP  int64_t         query_performance_counter();
+M_CORE_IMPEXP  float64_T       performance_counter_interval(int64_t);
+
+M_CORE_IMPEXP  std::string     get_env(      const  char *       );
+M_CORE_IMPEXP  std::wstring    get_env(      const wchar_t *     );
+M_CORE_IMPEXP  std::wstring    get_env(      const std::wstring& );
+
+M_CORE_IMPEXP  bool            is_env_set(   const  char   *     );
+M_CORE_IMPEXP  bool            is_env_set(   const wchar_t *     );
+M_CORE_IMPEXP  bool            is_env_set(   const std::wstring& ); 
+
+M_CORE_IMPEXP  int             do_system(    const std::wstring& );
+M_CORE_IMPEXP  int             do_popen(     const std::wstring&, std::wstring& );
+
+M_CORE_IMPEXP  void            setup_environment(); 
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///
+///
+///
+///    error handling functions in core_error.cpp
+///
+///
+///
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   
+
+// ----------------------------
+// API error-oriented functions
+// ----------------------------
+
+M_CORE_IMPEXP  std::wstring   system_error_message(DWORD);
+M_CORE_IMPEXP  std::wstring   format_api_op(api_op_T);
+M_CORE_IMPEXP  std::wstring   format_non_syserr(non_syserr_T);
+M_CORE_IMPEXP  void           api_err_system(    api_err_S&, api_op_T ,  uint32_t     , const std::wstring&);
+M_CORE_IMPEXP  void           api_err_non_system(api_err_S&           ,  non_syserr_T , const std::wstring&);
+M_CORE_IMPEXP  void           api_err_errno     (api_err_S&, api_op_T ,  errno_t      , const std::wstring&);
+
+
+
+// ------------------------------
+// system error message functions
+// ------------------------------
+
+M_CORE_IMPEXP  errno_t         get_current_errno(); 
+M_CORE_IMPEXP  std::wstring    errno_string(errno_t);  
+
+
+
+// -----------------------
+// exit-oriented functions
+// -----------------------
+
+M_CORE_IMPEXP  void            do_exit(      int = -1);
+M_CORE_IMPEXP  void            do__exit(     int = -1);
+M_CORE_IMPEXP  void            do_abort(             );
+M_CORE_IMPEXP  void            do_quick_exit(int = -1); 
+
+ 
+
 // --------------------------------------------
 // exception handling and other setup functions
 // --------------------------------------------  
-
-M_CORE_IMPEXP  void setup_environment(); 
 
 struct se_exception_S
 {
@@ -1682,18 +2151,21 @@ struct se_exception_S
     CONTEXT               context_record         ;
 };
 
-M_CORE_IMPEXP  void  setup_exception(bool = false); 
+M_CORE_IMPEXP  void setup_exception(bool = false); 
+
+M_CORE_IMPEXP  std::wstring exception_string(); 
 
 M_CORE_IMPEXP  void handle_invalid_parm(const wchar_t*, const wchar_t*, const wchar_t*, unsigned int, uintptr_t);
-
 M_CORE_IMPEXP  void handle_exception();
 M_CORE_IMPEXP  void handle_terminate();
-M_CORE_IMPEXP  void handle_unexpected();
-
+M_CORE_IMPEXP  void handle_unexpected(); 
 M_CORE_IMPEXP  void handle_se(unsigned int, EXCEPTION_POINTERS *);
 
 extern "C" 
 M_CORE_IMPEXP  void handle_signal(int);
+
+ 
+
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

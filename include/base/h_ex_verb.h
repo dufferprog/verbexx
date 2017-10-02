@@ -17,6 +17,7 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include "h_ex_types.h"            
 
 
                                                                                                                           
@@ -80,8 +81,8 @@ static const int verb_priority_separate            { -1000 };
 //    external functions -- ex_addverb.cpp 
 //////////////////////////////////////////////////////////////////////////
 
-void add_predefined_typdefs();
-void add_predefined_verbs(); 
+//void add_predefined_typdefs();        in ex_interface.h
+//void add_predefined_verbs();          in ex_interface.h
 
 
 
@@ -102,6 +103,10 @@ int verb_fn(                          frame_S& eval, const e_expression_S&, cons
 int verb_unverb(                      frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_call(                        frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_xctl(                        frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
+int verb_imbed(                       frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
+int verb_skip(                        frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
+int verb_skipto(                      frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
+int verb_import(                      frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_parse(                       frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_shell(                       frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_separate(                    frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
@@ -119,6 +124,7 @@ int verb_exit(                        frame_S& eval, const e_expression_S&, cons
 int verb__exit(                       frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_quick_exit(                  frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_abort(                       frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
+int verb_error(                       frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);  
 int verb_do(                          frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_block(                       frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_case(                        frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
@@ -281,6 +287,7 @@ int verb_vl_ct(                       frame_S& eval, const e_expression_S&, cons
 //  Console Input/Output-oriented and output string-oriented verbs  -- verb_util.cpp
 
 int verb_interpolate(                 frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
+int verb_format(                      frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_str(                         frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_say(                         frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_stdin(                       frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);

@@ -207,7 +207,10 @@
 
 // ----------------- Use windows.h, if requested -----------------------------------------
 //
-//    note: windows.h is in Program files (x86)\Windows Kits\10\INCLUDE\10.X.X.X\um 
+//    note: Windows.h      is in     Program files (x86)\Windows Kits\10\Include\10.X.X.X\um 
+//    note: windowsx.h     is in     Program files (x86)\Windows Kits\10\Include\10.X.X.X\shared 
+//    note: SDKDDKVer.h    is in     Program Files (x86)\Windows Kits\10\Include\10.X.X.X\shared 
+//    note: gdiplus.h      is in     Program files (x86)\Windows Kits\10\Include\10.X.X.X\um 
 //
 //    Windows.h includes:
 //
@@ -353,10 +356,14 @@
   #pragma message("#include windows.h")
   #ifndef NOMINMAX
     #define NOMINMAX                                  // Don't want min() or max() MACROs -- conflict with STL
+    #include <SDKDDKVer.h>
     #include <Windows.h>
+    #include <windowsx.h>
     #undef  NOMINMAX
   #else
+    #include <SDKDDKVer.h>
     #include <Windows.h>
+    #include <windowsx.h>
   #endif
 #endif
 
@@ -378,7 +385,7 @@
     #include <afxext.h>
   #endif
 #endif
-
+                                           
 // -------------------------------------------------------------
 
 #ifndef _MANAGED
@@ -393,73 +400,76 @@
 
   namespace Gdiplus
   {
-    using std::min;             // Gdiplus needs min and max -- usually MACROs defined by including Windows.h
-    using std::max;             // replace the MACROs with std::min and std:max in the Gdiplus namespace
+    using std::min;              // Gdiplus needs min and max -- usually MACROs defined by including Windows.h
+    using std::max;              // replace the MACROs with std::min and std:max in the Gdiplus namespace
   }
 
   #include <gdiplus.h>
 #endif
 
-// -------------------------------------------------------------
+//------------------------------------------------------------------------------------
+// Other Windows headers 
+//------------------------------------------------------------------------------------
 
 #ifndef _MANAGED
-  #pragma message("#include DirectXMath, Direct2D, DirectWrite, WIC, etc. headers")   
+  //#pragma message("#include DirectXMath, Direct2D, DirectWrite, WIC, etc. headers")   
 
-  #include <DirectXMath.h>              // DirectXMath headers
-  #include <DirectXPackedVector.h> 
-  #include <DirectXColors.h> 
-  #include <DirectXCollision.h>
+  //#include <DirectXMath.h>              // DirectXMath headers
+  //#include <DirectXPackedVector.h> 
+  //#include <DirectXColors.h> 
+  //#include <DirectXCollision.h>
 
-  #include <d3d12.h>                    // Direct3D -- needed for direct2d
-  #include <d2d1_1.h>                   // Direct2D headers
-  #include <d2d1_1helper.h>
-  #include <d2d1effects.h>
-  #include <d2d1effecthelpers.h>
+  //#include <d3d12.h>                    // Direct3D -- needed for direct2d
+  //#include <d2d1_1.h>                   // Direct2D headers
+  //#include <d2d1_1helper.h>
+  //#include <d2d1effects.h>
+  //#include <d2d1effecthelpers.h>
 
-  #include <DXGI.h>                     // DXGI headers 
+  //#include <DXGI.h>                     // DXGI headers 
 
-  #include <Dshow.h>                    // DirectShow headers 
+  //#include <Dshow.h>                    // DirectShow headers 
 
-  #ifndef DIRECTINPUT_VERSION
-    #define DIRECTINPUT_VERSION 0x800   // prevent compiler message
-  #endif                                                           
-  #include <dinput.h>                   // DirectInput headers               (deprecated)
+  //#ifndef DIRECTINPUT_VERSION
+  //  #define DIRECTINPUT_VERSION 0x800   // prevent compiler message
+  //#endif  
 
-  #include <dsound.h>                   // DirectSound headers               (deprecated)
-  #include <Dmusicc.h>                  // DirectMusic headers               (deprecated)
-  #include <dwrite_1.h>                 // DirectWrite headers
-  #include <dcomp.h>                    // DirectComposition headers (COM)
+  //#include <dinput.h>                   // DirectInput headers               (deprecated)
 
-  #include <audioclient.h>              // WASAPI headers
-  #include <audiopolicy.h>
+  //#include <dsound.h>                   // DirectSound headers               (deprecated)
+  //#include <Dmusicc.h>                  // DirectMusic headers               (deprecated)
+  //#include <dwrite_1.h>                 // DirectWrite headers
+  //#include <dcomp.h>                    // DirectComposition headers (COM)
 
-  #include <wincodec.h>                 // WIC headers  (COM)
-  #include <wincodecsdk.h> 
+  //#include <audioclient.h>              // WASAPI headers
+  //#include <audiopolicy.h>
 
-  #include <comdef.h>                   // COM headers  
-  #include <amp.h>                      // C++AMP headers  
+  //#include <wincodec.h>                 // WIC headers  (COM)
+  //#include <wincodecsdk.h> 
 
-  #include <commctrl.h>                 // windows common controls
+  //#include <comdef.h>                   // COM headers  
+  //#include <amp.h>                      // C++AMP headers  
 
-  #include <agents.h>                   // concurrency runtime 
-  #include <concrt.h>
-  #include <concrtrm.h>
-  #include <concurrent_queue.h> 
-  #include <concurrent_priority_queue.h> 
-  #include <concurrent_unordered_map.h> 
-  #include <concurrent_unordered_set.h>
-  #include <concurrent_vector.h>
-  #include <ppl.h>
-  #include <pplcancellation_token.h>
-  //#include <pplconcrt.h>
-  #include <pplinterface.h>
-  #include <ppltasks.h>
+  //#include <commctrl.h>                 // windows common controls
 
-  #include <process.h>                  // legacy multi-threading support  
+  //#include <agents.h>                   // concurrency runtime 
+  //#include <concrt.h>
+  //#include <concrtrm.h>
+  //#include <concurrent_queue.h> 
+  //#include <concurrent_priority_queue.h> 
+  //#include <concurrent_unordered_map.h> 
+  //#include <concurrent_unordered_set.h>
+  //#include <concurrent_vector.h>
+  //#include <ppl.h>
+  //#include <pplcancellation_token.h>
+  //#include <pplconcrt.h>              // trouble ??
+  //#include <pplinterface.h>
+  //#include <ppltasks.h>
 
-  #include <omp.h>                      // Open MP
+  //#include <process.h>                  // legacy multi-threading support  
 
-  #include <conio.h>                    // old console I/O 
+  //#include <omp.h>                      // Open MP
+
+  #include <conio.h>                      // old console I/O 
 
 #endif
 
@@ -675,7 +685,7 @@
 #ifdef NOAPISET                              
 #pragma message("---- NOAPISET                  - ****Defined****")
 #else                                       
-#pragma message("---- NOAPISET                   - (not defined)")
+#pragma message("---- NOAPISET                  - (not defined)")
 #endif 
 
 #ifdef NOCRYPT                              
@@ -798,41 +808,41 @@
 #pragma message("---- _WIN64                    - (not defined)")
 #endif                                        
 
-// #ifdef WINAPI_FAMILY_DESKTOP_APP                                 
-// #pragma message("---- WINAPI_FAMILY_DESKTOP_APP - ****defined****")
-// #else                                         
-// #pragma message("---- WINAPI_FAMILY_DESKTOP_APP - (not defined)")
-// #endif 
-// 
-// #ifdef WINAPI_FAMILY_ONECORE_APP                                 
-// #pragma message("---- WINAPI_FAMILY_ONECORE_APP - ****defined****")
-// #else                                         
-// #pragma message("---- WINAPI_FAMILY_ONECORE_APP - (not defined)")
-// #endif 
-// 
-// #ifdef WINAPI_FAMILY_PC_APP                                 
-// #pragma message("---- WINAPI_FAMILY_PC_APP      - ****defined****")
-// #else                                         
-// #pragma message("---- WINAPI_FAMILY_PC_APP      - (not defined)")
-// #endif 
-// 
-// #ifdef WINAPI_FAMILY_PHONE_APP                                 
-// #pragma message("---- WINAPI_FAMILY_PHONE_APP   - ****defined****")
-// #else                                         
-// #pragma message("---- WINAPI_FAMILY_PHONE_APP   - (not defined)")
-// #endif 
-// 
-// #ifdef WINAPI_FAMILY_SERVER                                 
-// #pragma message("---- WINAPI_FAMILY_SERVER      - ****defined****")
-// #else                                         
-// #pragma message("---- WINAPI_FAMILY_SERVER      - (not defined)")
-// #endif 
-// 
-// #ifdef WINAPI_FAMILY_SYSTEM                                 
-// #pragma message("---- WINAPI_FAMILY_SYSTEM      - ****defined****")
-// #else                                         
-// #pragma message("---- WINAPI_FAMILY_SYSTEM      - (not defined)")
-// #endif 
+#ifdef WINAPI_FAMILY_DESKTOP_APP                                 
+#pragma message("---- WINAPI_FAMILY_DESKTOP_APP - ****defined****")
+#else                                         
+#pragma message("---- WINAPI_FAMILY_DESKTOP_APP - (not defined)")
+#endif 
+
+#ifdef WINAPI_FAMILY_ONECORE_APP                                 
+#pragma message("---- WINAPI_FAMILY_ONECORE_APP - ****defined****")
+#else                                         
+#pragma message("---- WINAPI_FAMILY_ONECORE_APP - (not defined)")
+#endif 
+
+#ifdef WINAPI_FAMILY_PC_APP                                 
+#pragma message("---- WINAPI_FAMILY_PC_APP      - ****defined****")
+#else                                         
+#pragma message("---- WINAPI_FAMILY_PC_APP      - (not defined)")
+#endif 
+
+#ifdef WINAPI_FAMILY_PHONE_APP                                 
+#pragma message("---- WINAPI_FAMILY_PHONE_APP   - ****defined****")
+#else                                         
+#pragma message("---- WINAPI_FAMILY_PHONE_APP   - (not defined)")
+#endif 
+
+#ifdef WINAPI_FAMILY_SERVER                                 
+#pragma message("---- WINAPI_FAMILY_SERVER      - ****defined****")
+#else                                         
+#pragma message("---- WINAPI_FAMILY_SERVER      - (not defined)")
+#endif 
+
+#ifdef WINAPI_FAMILY_SYSTEM                                 
+#pragma message("---- WINAPI_FAMILY_SYSTEM      - ****defined****")
+#else                                         
+#pragma message("---- WINAPI_FAMILY_SYSTEM      - (not defined)")
+#endif 
 
 #ifdef WINVER                                 
 #pragma message("---- WINVER                    = " M_str1(WINVER))

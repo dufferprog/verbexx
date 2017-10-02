@@ -17,6 +17,7 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include "h_ex_types.h"            
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -656,7 +657,7 @@
     M_vt_add_r_choice_set(v, cs)           \
 }
 
-// 3-way right-side conflict
+// 3-way right-side choice
 
 #define M_vt_right_choice_3way(v, n1, n2, n3) \
 {                                             \
@@ -668,7 +669,7 @@
 }
 
 
-// 4-way right-side conflict
+// 4-way right-side choice
 
 #define M_vt_right_choice_4way(v, n1, n2, n3, n4) \
 {                                                 \
@@ -763,7 +764,7 @@
 }
 
 
-// 4-way nested conflict
+// 4-way nested choice
 
 #define M_vt_nest_choice_4way(pl, n1, n2, n3, n4) \
 {                                                 \

@@ -22,32 +22,20 @@
 // general types/typedefs
 // ----------------------
 
-#define M_real_T_IS_double    1   // indicate that real_T is defined double 
+//#define M_real_T_IS_double    1          // indicate that real_T is defined double              ?????????? ?????????
 
-typedef double     real_T;        // set to float or double for performance vs. accuracy
-typedef float      real32_T;
-typedef double     real64_T;
-typedef float      float32_T;     // simulated  inttypes.h  type
-typedef double     float64_T;     // simulated  inttypes.h  type
+typedef double             real_T;       // set to float or double for performance vs. accuracy
+typedef float            real32_T;
+typedef double           real64_T;
+typedef float           float32_T;       // simulated  inttypes.h  type
+typedef double          float64_T;       // simulated  inttypes.h  type 
 
 
 // function types
 // --------------
 
 typedef   int (CALLBACK* do_import_T)(const std::wstring &);      // do_import() function in DLLs
-//typedef int (__cdecl  *do_import_T)(const std::wstring &);      // do_import() function in DLLs
 
-
-
-// types specific to windows, drawing, images, rasters, etc.
-// ---------------------------------------------------------
-
-typedef int32_t    rc_T;          // type for rows, cols, linear dimensions, etc.
-typedef real_T     rcf_T;         // type for fractional rows, cols, linear dimensions, etc. (real_T)
-typedef real_T     xy_T;          // type for X and Y coordinates on window
-typedef uint64_t   sz_T;          // type for sizes and areas, pixel_counts, etc.  
-typedef uint8_t    bitmask8_T;    // type for 8-bit bitmasks used for drawing letters
-typedef uint8_t    alpha_T;       // type for alpha-channel parm 
 
 
 // int16_U -- area for reversing bytes in a 2-byte integer 
@@ -65,83 +53,35 @@ union  int16_U             // area for reversing bytes in 16-bit integer
 };
 
 
-// rgb_S -- rgb values i outimage_S, etc. 
-// --------------------------------------
-
-struct rgb_S                    // r, g, b triple in outimage file and elsewhere
-{
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
-}; 
-
-#define M_make_rgb(v, x, y, z) {v.r = (uint8_t)(x); v.g = (uint8_t)(y); v.b = (uint8_t)(z);}
-
-
 // class enum with logging levels
 // ------------------------------
 
 typedef enum class log_E  {none, few, some, most, all} log_T;    
 
 
+// dummy type for unit values -- no data -- for function overloading only
+// ----------------------------------------------------------------------
+
+struct unit_T { };                                                                      
+
+
 // -----------------------------------------------------------------------
 // forward type declarations (incomplete structure/union/class/enum types)
 // -----------------------------------------------------------------------
 
-struct                       a_expression_S;
+
 template<typename T> class   buffer_C; 
-struct                       cache_S; 
-class                        canvas_C;
-enum class                   char_E;
-class                        char_stream_C;
-struct                       color_parm_S;
-struct                       dbf_hdr_S;
-struct                       draw_parm_S;
-struct                       e_expression_S; 
-struct                       fieldef_S; 
+class                        databuf_C;
 class                        filebuf_C;
-struct                       font_S; 
-struct                       frame_S; 
-struct                       slist_S;
-class                        infile_C;
-class                        instream_C;
-class                        instring_C;
-struct                       in_char_S;
-struct                       lrgb_S;
-struct                       output_parm_S;
-struct                       parmtype_S;
-struct                       plist_S;
-class                        pre_parse_C; 
-struct                       results_S; 
-struct                       symtab_S;
-struct                       symval_S;
-struct                       text_format_S; 
-enum class                   tok_ut_E;
-enum class                   tok_u1_E; 
-enum class                   tok_u2_E; 
-enum class                   tok_u3_E; 
-enum class                   tok_u4_E; 
-enum class                   tok_u5_E; 
-enum class                   tok_u6_E; 
-enum class                   tok_u7_E; 
-enum class                   tok_u8_E; 
-enum class                   tok_u9_E; 
-class                        token_C;
-enum class                   token_E;
-class                        token_stream_C;
+struct                       api_err_S;
+struct                       pathinfo_S; 
+class                        tfile_C;
+struct                       tfile_info_S;
+struct                       tfile_parm_S;
 class                        tracker_C;
-struct                       transform_S; 
-enum class                   type_E;
-struct                       typdef_S;
-struct                       value_S; 
-struct                       var_S; 
-struct                       verbdef_S; 
-struct                       vlist_S; 
-class                        window_C;
 
 
-
-///////// general use typedef's in Windows //////////////////////////////////////////////////
+///////// general use typedefs in Windows //////////////////////////////////////////////////
 //
 //
 //  note: int8_t, etc, come from inttypes.h

@@ -18,10 +18,9 @@
   
 #pragma once
 
+#include "h__types.h"
 #include "h__dll.h"
-#include "h__types.h" 
-#include "h__global.h" 
-
+#include "h__global.h"   
 
 #include "h_core_util.h" 
 #include "h_core_template.h"
