@@ -43,7 +43,7 @@ like an operator ("+", "-", etc.) needs to be passed to another verb as a parame
 #### Hello world (Rosetta Code version)
 
 ```
-@STDOUT "Hello world!";
+@STDOUT "Hello world!\n";
 ```
 
 #### Fizzbuzz 
@@ -70,7 +70,7 @@ like an operator ("+", "-", etc.) needs to be passed to another verb as a parame
 #### Fibonacci (recursive) 
 
 ```
-fib1 @FCN [n] 
+fib1 @FN [n] 
 {
   @IF (n <= 0) then: { @RETURN 0; }; 
   @IF (n == 1) then: { @RETURN 1; };
@@ -90,11 +90,11 @@ fib1 @FCN [n]
 #### Fibonacci (using tail call)
 
 ```
-fib2 @FCN [n]
+fib2 @FN [n]
 {
    @VAR fibx value:
    (
-      @FCN [a b n] 
+      @FN [a b n] 
       {
          @IF (n <= 0) then:{ @RETURN a };
          
@@ -120,18 +120,18 @@ i = -1;
 // --------------------------------------------------------
 
 @VAR y_comb value:
-( @FCN [f] 
+( @FN [f] 
   {
     @RETURN ( @(                         // @ sigil causes expression output to be treated as a verb
-                 @FCN [x]
+                 @FN [x]
                  { 
-                   @RETURN ( @f ( @FCN [y] { @RETURN (@( @x x ) y); } ) );
+                   @RETURN ( @f ( @FN [y] { @RETURN (@( @x x ) y); } ) );
                  }
                )
                (                         // This is the argument for the above function
-                 @FCN [x] 
+                 @FN [x] 
                  {
-                   @RETURN ( @f ( @FCN [y] { @RETURN (@( @x x ) y); } ) );
+                   @RETURN ( @f ( @FN [y] { @RETURN (@( @x x ) y); } ) );
                  }
                )
             );
@@ -143,9 +143,9 @@ i = -1;
 // ------------------------------------------------------------------------
 
 @VAR fact_gen value:
-( @FCN [fact]
+( @FN [fact]
   { 
-    @RETURN ( @FCN [n]                // Simple (non tail-recursive) factorial function
+    @RETURN ( @FN [n]                // Simple (non tail-recursive) factorial function
               {
                 @IF (n <= 0)
                   then:{ @RETURN 1;                     } 
