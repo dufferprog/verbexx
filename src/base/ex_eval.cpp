@@ -49,8 +49,8 @@ namespace static_N
 
 uint64_t                   verb_count      {0};                  // number of verbs executed
 uint64_t                   value_count     {0};                  // number of values evaluated
-uint64_t                   slist_count     {0};                  // number of slists executed
-uint64_t                   statement_count {0};                  // number of slists executed
+uint64_t                   block_count     {0};                  // number of blocks executed
+uint64_t                   statement_count {0};                  // number of blocks executed
 
 uint64_t                   frame_serial    {0};                  // serial number of most-recently allocated (or filld-in) frame_S 
 uint64_t                   frame_depth     {0};                  // current number of stack frames on stack 
@@ -81,7 +81,7 @@ std::shared_ptr<frame_S>   newest_frame_sp { };                  // owning point
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////     frame statistics functions
+////     frame statistics/utility functions
 ////
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -89,15 +89,16 @@ std::shared_ptr<frame_S>   newest_frame_sp { };                  // owning point
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-uint64_t get_eval_verb_count(      void) {return static_N::verb_count      ;}
-uint64_t get_eval_value_count(     void) {return static_N::value_count     ;}
-uint64_t get_eval_slist_count(     void) {return static_N::slist_count     ;}
-uint64_t get_eval_statement_count( void) {return static_N::statement_count ;}
+uint64_t get_eval_verb_count(      void) {return static_N::verb_count            ;}
+uint64_t get_eval_value_count(     void) {return static_N::value_count           ;}
+uint64_t get_eval_block_count(     void) {return static_N::block_count           ;}
+uint64_t get_eval_statement_count( void) {return static_N::statement_count       ;}
+                                                                                 
+uint64_t get_eval_frame_serial(    void) {return static_N::frame_serial          ;}
+uint64_t get_eval_frame_depth(     void) {return static_N::frame_depth           ;}
+uint64_t get_eval_frame_max_depth( void) {return static_N::frame_max_depth       ;} 
 
-uint64_t get_eval_frame_serial(    void) {return static_N::frame_serial    ;}
-uint64_t get_eval_frame_depth(     void) {return static_N::frame_depth     ;}
-uint64_t get_eval_frame_max_depth( void) {return static_N::frame_max_depth ;}
-
+frame_S *get_newest_sf(            void) {return static_N::newest_frame_sp.get() ;}
 
 
 
@@ -596,6 +597,50 @@ int get_vlist_keyword(const vlist_S& vlist, value_S& value, uint32_t n) try
 M_endf
 
 
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+//╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+//║╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳
+//║╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳
+//║╳╳╳╳╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+//║╳╳╳╳║
+//║╳╳╳╳║
+//║╳╳╳╳║
+//║╳╳╳╳║                                           CCCCCCCC         HH      HH        EEEEEEEEEE         CCCCCCCC          KK      KK
+//║╳╳╳╳║                                          CCCCCCCCCC        HH      HH        EEEEEEEEEE        CCCCCCCCCC         KK     KK     
+//║╳╳╳╳║                                          CC      CC        HH      HH        EE                CC      CC         KK    KK  
+//║╳╳╳╳║                                          CC                HH      HH        EE                CC                 KK   KK   
+//║╳╳╳╳║                                          CC                HHHHHHHHHH        EEEEEEEE          CC                 KKKKKK    
+//║╳╳╳╳║                                          CC                HHHHHHHHHH        EEEEEEEE          CC                 KKKKKK    
+//║╳╳╳╳║                                          CC                HH      HH        EE                CC                 KK   KK   
+//║╳╳╳╳║                                          CC      CC        HH      HH        EE                CC      CC         KK    KK  
+//║╳╳╳╳║                                          CCCCCCCCCC        HH      HH        EEEEEEEEEE        CCCCCCCCCC         KK     KK 
+//║╳╳╳╳║                                           CCCCCCCC         HH      HH        EEEEEEEEEE         CCCCCCCC          KK      KK
+//║╳╳╳╳║
+//║╳╳╳╳║
+//║╳╳╳╳║
+//║╳╳╳╳╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+//║╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳
+//║╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳
+//╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+
+
+
 ////_________________________________________________________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
@@ -858,7 +903,7 @@ static int check_verb_value(frame_S& frame, const e_expression_S& expression, co
     }                   // identifier
 
 
-    // check vlist, slist, expression, verbdef, etc.
+    // check vlist, block, expression, verbdef, etc.
     // ---------------------------------------------
 
     M__(M_out(L"check_verb_value() -- value.ty = %d = %S") % (int)(value.ty) % type_str(value.ty);)
@@ -879,15 +924,15 @@ static int check_verb_value(frame_S& frame, const e_expression_S& expression, co
         rc = -1;  
     }
     
-    if ( (!parmtype.slist_ok) && (value.ty == type_E::slist) )
+    if ( (!parmtype.block_ok) && (value.ty == type_E::block) )
     {
         count_error(); 
-        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected slist parm") % verb_name(expression) % ws;
+        M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected block parm") % verb_name(expression) % ws;
         msgend_loc(value, expression);
         rc = -1;  
     }
 
-    if ( (!parmtype.verbdef_ok) && (value.ty == type_E::verbdef) )
+    if ( (!parmtype.verbset_ok) && (value.ty == type_E::verbset) )
     {
         count_error(); 
         M_out_emsg1(L"check_verb_value() -- verb= %s %s -- unexpected verbdef parm") % verb_name(expression) % ws;
@@ -1025,13 +1070,11 @@ static int check_verb_vlist(frame_S& frame, const e_expression_S& expression, co
         }
 
 
-        // set up default parmtype_S to use if vector does not have any parmtype_S elements
+        // set up default parmtype_S to use if vector does not have any parmtype_S elements (note this code is not executed during verb overload set pre-expansion)
       
         parmtype_S default_parmtype {};                                                                                                              // default parmtype
-        default_parmtype.no_eval_ident = plist.no_eval_ident;                                                                                        // copy in eval flag (set only for verbless expression) 
-        default_parmtype.no_eval_expression = plist.no_eval_expression;                                                                              // copy in eval flag (set only for verbless expression) 
-        default_parmtype.no_eval_vlist = plist.no_eval_vlist;                                                                                        // copy in eval flag (set only for verbless expression) 
-        default_parmtype.anything_ok = true;                                                                                                         // allow anything -- default is no checking 
+        default_parmtype.eval         = plist.eval;                                                                                                  // copy in eval flags (set only for verbless expression)    
+        default_parmtype.anything_ok  = true;                                                                                                        // allow anything -- default is no checking 
       
       
         // loop to look at each positional parm and do parm type checking
@@ -1111,8 +1154,8 @@ static int check_verb_vlist(frame_S& frame, const e_expression_S& expression, co
                     auto kw_vct      = vlist.eval_kws.count(elem.first);     // get number of occurrences of this keyword in vlist (use real kw name -- assume supplied plist allows 0-nnnn occurrences, if names are not being checked)
 
 
-                    M__(M_out(L"check_verb_vlist() -- ++++++++++++++++++++++++++++++++++ find_name = %S  located kw parmtype -- no_eval_ident=%s  no_eval_expression=%s  no_eval_vlist=%s")
-                              % kw_find_name % M_bool_cstr(kw_parmtype.no_eval_ident) % M_bool_cstr(kw_parmtype.no_eval_expression) % M_bool_cstr(kw_parmtype.no_eval_vlist)
+                    M__(M_out(L"check_verb_vlist() -- ++++++++++++++++++++++++++++++++++ find_name = %S  located kw parmtype -- no_eval_ident=%s  no_eval_expression=%s  no_eval_vlist=%s   no_eval_ref=%s")
+                              % kw_find_name % M_bool_cstr(kw_parmtype.eval.no_eval_ident) % M_bool_cstr(kw_parmtype.eval.no_eval_expression) % M_bool_cstr(kw_parmtype.eval.no_eval_vlist)% M_bool_cstr(kw_parmtype.eval.no_eval_ref)
                         ;
                        )
 
@@ -1388,6 +1431,8 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+// this function checks to see if they match those required by a specific verbdef_S 
+
 static int check_verb_parms(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef) try
 {
     int rc {0}; 
@@ -1495,9 +1540,9 @@ static int check_verb_parms(frame_S& frame, const e_expression_S& expression, co
               ||
               (expression.lparms.val_expression     !=  expression.rparms.val_expression  )
               ||
-              (expression.lparms.val_slist          !=  expression.rparms.val_slist       )
+              (expression.lparms.val_block          !=  expression.rparms.val_block       )
               ||
-              (expression.lparms.val_verbdef        !=  expression.rparms.val_verbdef     )
+              (expression.lparms.val_verbset        !=  expression.rparms.val_verbset     )
             )
            )
           )
@@ -1528,121 +1573,6 @@ M_endf
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-////_____________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-////
-////
-////   display_stack()     -- displays chained stack frames starting at the passed-in one  
-////                   
-////
-////_____________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-void display_stack(const frame_S& frame) try
-{
-    const frame_S *frame_p  { &frame };                                        // point to passed-in frame_S as starting point in stack display
-
-
-    // 1st loop to display all stack frames in the upward scope -- follow upward scope chain from passed-in frame_S 
-    // ------------------------------------------------------------------------------------------------------------
-
-    M_out(L"display_stack() -- upward scope stack frame chain, starting with passed-in stack frame\n");
-
-    while (frame_p != nullptr)
-    {
-        std::wstring flags    { };
-        std::wstring verbname { };
-
-        if (frame_p->exports_done       ) flags += L"exports done  "       ;
-        if (frame_p->is_verb            ) flags += L"is_verb "             ;  
-        if (frame_p->is_block           ) flags += L"is_block "            ; 
-        if (frame_p->is_main            ) flags += L"is_main  "            ; 
-        if (frame_p->symtab_valid       ) flags += L"symtab_valid  "       ; 
-        if (frame_p->lexical_scope      ) flags += L"lexical_scope "       ;
-        if (frame_p->dynamic_scope      ) flags += L"dynamic_scope "       ;
-        if (frame_p->block_scope        ) flags += L"block_scope "         ;
-
-        M__(M_out(L"display_stack() -- verbanme.size() = %d") % frame_p->verbname.size();)
-
-        if (frame_p->verbname.size() > 0)
-            verbname = std::wstring {L"verbname= <"} + frame_p->verbname +  std::wstring {L">"};
-
-        M_out(  L"frame_S:%-10d -- use=%-2d addr=%p  parent:%-10d child:%-10d main:%-10d symtab:%-10d scope:%-10d -- called=%-10d symbols=%-5d -- flags: %S  %S" )
-             %  frame_p->serial 
-             %  frame_p->self_wp.use_count()
-             % frame_p 
-             % (frame_p->parent_sp.get() == nullptr ? 0 :  frame_p->parent_sp -> serial ) 
-             % (frame_p->child_p         == nullptr ? 0 :  frame_p->child_p   -> serial )
-             % (frame_p->main_p          == nullptr ? 0 :  frame_p->main_p    -> serial )
-             % (frame_p->symbols_p       == nullptr ? 0 :  frame_p->symbols_p -> serial )
-             % (frame_p->scope_sp.get()  == nullptr ? 0 :  frame_p->scope_sp  -> serial )
-             %  frame_p->verb_eval_ct
-             %  frame_p->symtab.symbols.size()
-             %  flags
-             %  verbname
-             ;        
-    
-
-        // chain upward to next scope
-
-        if (frame_p->scope_sp.use_count() == 0)                      // don't advance past main stack frame (which should have an uninitialized  upward pointer)
-           frame_p = nullptr;                                        // no more frame_S's for this loop
-        else                                                     
-           frame_p = frame_p->scope_sp.get();                        // advance upward to next frame_S that has a symbol table (every frame_S has a synmbol table, for now)
-    }
-
-
-    // 2nd loop to display all active stack frames on the stack -- follow forward chain from main frame_S 
-    // --------------------------------------------------------------------------------------------------
-    
-    M_out(L"\ndisplay_stack() -- active stack forward chain, starting with main stack frame\n");
-
-   frame_p = get_main_frame();                                              // start at main frame_S
-
-    while (frame_p != nullptr)
-    {
-        std::wstring flags    { }; 
-        std::wstring verbname { };
-
-        if (frame_p->exports_done       ) flags += L"exports done  "       ;
-        if (frame_p->is_verb            ) flags += L"is_verb  "            ;
-        if (frame_p->is_block           ) flags += L"is_block "            ;
-        if (frame_p->is_main            ) flags += L"is_main  "            ; 
-        if (frame_p->symtab_valid       ) flags += L"symtab_valid  "       ; 
-        if (frame_p->lexical_scope      ) flags += L"lexical_scope "       ;
-        if (frame_p->dynamic_scope      ) flags += L"dynamic_scope "       ;
-        if (frame_p->block_scope        ) flags += L"block_scope "         ;
-
-        if (frame_p->verbname.size() > 0)
-            verbname = std::wstring {L"verbname= <"} + frame_p->verbname +  std::wstring {L">"}; 
-
-        M_out(  L"frame_S:%-10d -- use=%-2d addr=%p  parent:%-10d child:%-10d main:%-10d symtab:%-10d scope:%-10d -- called=%-10d symbols=%-5d -- flags: %S  %S" )
-             %  frame_p->serial
-             %  frame_p->self_wp.use_count()
-             % frame_p 
-             % (frame_p->parent_sp.get() == nullptr ? 0 :  frame_p->parent_sp -> serial ) 
-             % (frame_p->child_p         == nullptr ? 0 :  frame_p->child_p   -> serial )
-             % (frame_p->main_p          == nullptr ? 0 :  frame_p->main_p    -> serial )
-             % (frame_p->symbols_p       == nullptr ? 0 :  frame_p->symbols_p -> serial )
-             % (frame_p->scope_sp.get()  == nullptr ? 0 :  frame_p->scope_sp  -> serial )
-             %  frame_p->verb_eval_ct
-             %  frame_p->symtab.symbols.size()
-             %  flags
-             %  verbname
-             ;       
-    
-       frame_p = frame_p->child_p;                                          // chain downward to child frame_S 
-    }
-       
-    return; 
-}
-M_endf
-
-
 
 ////_________________________________________________________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
@@ -1650,7 +1580,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   frame_parms() -- special set up of (main) stack frame with cmdline parms
+////   frame_cmdline_parms() -- special set up of (main) stack frame with cmdline parms
 ////                   
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -1658,15 +1588,25 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-void frame_parms(frame_S& frame, int argc, wchar_t *argv[]) try
+void frame_cmdline_parms(frame_S& frame, int argc, wchar_t *argv[]) try
 {
-    // stack frame has already been set up with flags, pointers, symbol table, global table, etc. (basic setup)
+    // note: passed-in stack frame has already been set up with flags, pointers, environment, global envoronment, etc. (basic setup)
+
+    setup_global_environ();                           // initialize global environment before using it
+
 
     // add command line args to passed-in stack frame right-side positional parm vector (vlist will have no location data)
+    // also add global constants with names ARG_C ARG_0 ARG_1 ARG_2 ARG_3 ...
 
     for (auto i = 0; i < argc; i++) 
-        add_positional_value( frame.rparms, string_val(argv[i]) ); 
+    {
+        value_S parm_val = string_val(argv[i]);
+        add_positional_value( frame.rparms, parm_val );
+        def_global_const( std::wstring { L"ARG_" } + std::to_wstring(i), parm_val );
+    }
     
+    def_global_const( std::wstring { L"ARG_C" }, int64_val(argc) );
+
     return; 
 }
 M_endf
@@ -1686,27 +1626,26 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-std::shared_ptr<frame_S> new_frame(bool new_symtab) try                      // caller needs to assume responsibility for new frame_S just allocated 
+std::shared_ptr<frame_S> new_frame() try                                     // caller needs to assume responsibility for new frame_S being allocated 
 {
     // allocate new frame_S, holding onto it with a local shared pointer 
 
     std::shared_ptr<frame_S> new_frame_sp { new frame_S { } };               // allocate new stack frame and anchor it locally  
     M__(M_out(L"new_frame() called 1 -- new_frame_sp.use_count() = %d") % new_frame_sp.use_count();)
 
+
     // do basic (persistent) setup -- dynamic stack chain pointers will be set up when this stack frame is activated and placed on the stack 
-   
-    new_frame_sp->self_wp          = new_frame_sp;                           // set weak self-ptr for use_count() debugging and later shared_ptr initialization 
-    new_frame_sp->global_p         = get_global_symtab();                    // set new frame's global symbol table pointer 
+  
+    new_frame_sp->self_wp            = new_frame_sp;                           // set weak self-ptr for use_count() debugging and later shared_ptr initialization 
+    new_frame_sp->serial             = ++static_N::frame_serial;               // set unique serial number in new frame_S, for debugging   
+    new_frame_sp->env.sernum         = -(new_frame_sp->serial);                // also save negative value in imbedded environ_S, for debugging
+    new_frame_sp->local_sf_p         = new_frame_sp.get();                     // set pointer to stack frame with local environment to this stack frame -- environment has local variables for this stack frame (can be replaced later for same_scope: verbs)
+    new_frame_sp->search_sf_p        = new_frame_sp.get();                     // set pointer to stack frame with local environment to this stack frame -- starting point for identifier search
+    new_frame_sp->environ_p          = &(new_frame_sp->env);                   // set pointer to local environment -- can be replaced by ptr to shared environment by caller
 
-    new_frame_sp->serial           = ++static_N::frame_serial;               // set unique serial number in new frame_S   
-
-    if (new_symtab)
-    {
-        new_frame_sp->symtab_valid = true;                                   // indicate that symbol table in this frame_S is to be used as newest local symbol table 
-        new_frame_sp->symbols_p    = new_frame_sp.get();                     // set pointer to stack frame with local symbol table to this stack frame -- symtab has local variables for this stack frame   
-    }
 
     M__(M_out(L"new_frame() called 3 -- new_frame_sp.use_count() = %d") % new_frame_sp.use_count();)
+
     return new_frame_sp; 
 }
 M_endf
@@ -1732,11 +1671,11 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 
-frame_S *add_new_frame(bool new_symtab) try
+frame_S *add_new_frame() try
 {
     // allocate new frame_S -- anchor it locally for now  
 
-    std::shared_ptr<frame_S> new_frame_sp = new_frame(new_symtab);  
+    std::shared_ptr<frame_S> new_frame_sp = new_frame();  
     M__(M_out(L"add_new_frame() called 1 -- new_frame_sp.use_count() = %d") % new_frame_sp.use_count();)
 
 
@@ -1744,6 +1683,8 @@ frame_S *add_new_frame(bool new_symtab) try
 
     (void)add_frame(new_frame_sp);
     M__(M_out(L"add_new_frame() called 3 -- new_frame_sp.use_count() = %d") % new_frame_sp.use_count();)
+
+
     return new_frame_sp.get();
 }
 M_endf
@@ -1759,7 +1700,18 @@ M_endf
 ////
 ////   add_frame() -- add passed-in stack frame to to top of stack 
 ////                  (stack pointer chain will assume ownership of this stack frame)
-////                   
+//// 
+////
+////               sets:   
+////         
+////                 - parent and child SF pointers
+////                 - main   SF ptr 
+////
+////               does not set: (caller must set)
+//// 
+////                 - shared ptr to upward scope
+////                 - verb main SF pointer
+////                 - persistent SF ptr
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
@@ -1778,40 +1730,23 @@ frame_S *add_frame(const std::shared_ptr<frame_S>& frame_sp) try
     static_N::newest_frame_sp = frame_sp;                                   // (!!!!!!!!!! owning pointer !!!!!!!!!!!!!) this will hold onto new stack frame after add_frame() returns
 
 
-    // fix up various pointers in new frame_S being added to top of stack
+    // fix up various pointers in new frame_S being added to top of stack -- no need to do anything fi adding main SF
     // ------------------------------------------------------------------
  
     if (old_frame_sp.use_count() > 0)                                       // are we adding 1st stack frame?
-    {
-        // adding regular (not main) stack frame
+    {                                                      
+        // stack was not empty -- adding regular/nested (not main) stack frame
             
-        frame_sp    ->parent_sp   = old_frame_sp;                           // set parent pointer in new stack frame  (!!!!!!!!!!!!!!!!!!!! owning pointer !!!!!!!!!!!!!!!!!!!!!!) 
-        frame_sp    ->main_p      = old_frame_sp->main_p;                   // copy old frame's main_p to new frame_S
-        old_frame_sp->child_p     = frame_sp.get();                         // set new frame_S as old frame's child   (non-owning pointer)
+        frame_sp->parent_sp    = old_frame_sp;                              // set parent pointer in new stack frame  (!!!!!!!!!!!!!!!!!!!! owning pointer !!!!!!!!!!!!!!!!!!!!!!) 
+        old_frame_sp->child_p  = frame_sp.get();                            // set new frame_S as old frame's child   (non-owning pointer)
     }
-    else
-    {
-        // adding 1st (main) stack frame
-
-        frame_sp->main_p          = frame_sp.get();                         // this is main stack frame -- points to itself -- has no parent pointer  
-        frame_sp->is_main         = true;                                   // this is main stack frame   
-    }
-
+ 
     
-    // set unique serial number in new frame
+    // maintain frame depth counter, etc.
 
     static_N::frame_depth++;                                                // maintain frame depth counter
     static_N::frame_max_depth     = std::max(static_N::frame_depth, static_N::frame_max_depth); 
 
-
-    // if this stack frame has no valid symtab_S, set up to inherit current symbol table from parent frame_S
-
-    if (!(frame_sp->symtab_valid))                                                                
-    {   
-        if (old_frame_sp.use_count() > 0)                                    // don't look at old frame, if none -- assume that main stack frame being added has a valid symbol table
-            frame_sp->symbols_p = old_frame_sp->symbols_p;                   // copy parent's symbols_p to new frame_S -- don't activate symbol table in new frame_S
-    }                                                                    
-    
     return frame_sp.get();                                                   // return pointer to newly-added stack frame
 }
 M_endf
@@ -1834,24 +1769,15 @@ M_endf
 
 void remove_frame() try
 {
-    std::shared_ptr<frame_S> removed_frame_sp { static_N::newest_frame_sp   }  ;     // shared ptr to hold onto stack frame being removed
-    std::shared_ptr<frame_S> kept_frame_sp    { removed_frame_sp->parent_sp }  ;     // shared ptr to hold onto stack frame being kept (2nd oldest)  -- may be empty ??????
+    std::shared_ptr<frame_S> removed_frame_sp { static_N::newest_frame_sp   }  ;        // shared ptr to hold onto stack frame being removed
+    std::shared_ptr<frame_S> kept_frame_sp    { removed_frame_sp->parent_sp }  ;        // shared ptr to hold onto stack frame being kept (2nd oldest)  -- may be empty ??????
 
 
     M__(M_out(L"remove_frame() -- called:  removed_frame_p = %p   kept_frame_p = %p") % removed_frame_sp.get() % kept_frame_sp.get();)
 
+    // kept_frame_sp->verb_eval_ct += removed_frame_sp->verb_eval_ct;                   // add removed frame's verb count to kept's (statistical counters)
 
-
-  // kept_frame_sp->verb_eval_ct += removed_frame_sp->verb_eval_ct;  // add removed frame's verb count to kept's (statistical counters)
-
-
-    // update symbol table pointer (if required) in removed stack frame (in case it doesn't get deallocated (i.e. is pre-processor or other static stack frame)
-
-    if (!(removed_frame_sp->symtab_valid))
-        removed_frame_sp->symbols_p = nullptr;                                          // will get filled-in again, if this stack frame (static) is reused    
-
-
-    // remove newest stack frame from top of stack  (leave any scoping pointers alone -- these may hold onto removed stack frame in case any closures point to it directly or indirectly)
+    // remove newest stack frame from top of stack  (leave any scoping pointers alone -- these may hold onto removed stack frame in case something points to it directly or indirectly)
     
     if (kept_frame_sp.use_count() > 0)                                                  // is there a kept stack frame (i.e. removing main stack frame this time)
         kept_frame_sp->child_p = nullptr;                                               // kept stack frame is now childless
@@ -1866,13 +1792,54 @@ M_endf
 
 
 
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+//╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+//║╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳
+//║╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳
+//║╳╳╳╳╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+//║╳╳╳╳║
+//║╳╳╳╳║
+//║╳╳╳╳║
+//║╳╳╳╳║                                          EEEEEEEEEE        VV      VV            AA             LL            
+//║╳╳╳╳║                                          EEEEEEEEEE        VV      VV           AAAA            LL        
+//║╳╳╳╳║                                          EE                VV      VV          AA  AA           LL        
+//║╳╳╳╳║                                          EE                VV      VV         AA    AA          LL        
+//║╳╳╳╳║                                          EEEEEEEE           VV    VV         AA      AA         LL        
+//║╳╳╳╳║                                          EEEEEEEE           VV    VV         AAAAAAAAAA         LL        
+//║╳╳╳╳║                                          EE                  VV  VV          AAAAAAAAAA         LL        
+//║╳╳╳╳║                                          EE                  VV  VV          AA      AA         LL        
+//║╳╳╳╳║                                          EEEEEEEEEE           VVVV           AA      AA         LLLLLLLLLL
+//║╳╳╳╳║                                          EEEEEEEEEE            VV            AA      AA         LLLLLLLLLL
+//║╳╳╳╳║
+//║╳╳╳╳║
+//║╳╳╳╳║
+//║╳╳╳╳╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+//║╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳
+//║╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳
+//╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+
+
 ////_________________________________________________________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   eval_block() -- add new frame_S to stack for this block,  and run passed-in slist with that frame_S using passed-in vlists as parms
+////   eval_frame_block() -- add new frame_S to stack for this (non-verb) frameblock,  and run passed-in block with that frame_S using passed-in vlists as parms
 ////                   
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -1880,50 +1847,59 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-int eval_block(frame_S& parent_frame, const vlist_S& left_vlist, const vlist_S& right_vlist, const slist_S& slist, results_S& results) try
+int eval_frame_block(frame_S& parent_frame, const vlist_S& left_vlist, const vlist_S& right_vlist, const block_S& block, results_S& results) try
 {
     // add new stack frame to the active frame_S queue
 
-    frame_S *new_frame_p = add_new_frame();  
+    frame_S *new_frame_p   = add_new_frame();                                                
+
+    new_frame_p->persist_sf_p   = new_frame_p->parent_sp->persist_sf_p;                     // copy parent frame's persistent SF pointer into new SF
+    new_frame_p->verbmain_sf_p  = new_frame_p->parent_sp->verbmain_sf_p;                    // copy parent frame's verb main  SF pointer into new SF
 
 
-    // upward scope for a block frame_S is always starts at parent stack frame -- scoping is always lexical
+    // upward scope for a frameblock frame_S is always starts at parent stack frame -- scoping is always dynall-type (both dynamic and lexical)
 
-    new_frame_p->is_block   = true;                                              // indicate this stack frame was created by block evaluation
-    new_frame_p->block_scope = true;                                             // blocks always have unrestricted dynamic (lexical, effectively) scope upwards to parent  
-    new_frame_p->scope_sp = std::shared_ptr<frame_S> { parent_frame.self_wp };   // initialize shared ptr from weak self-ptr in parent frame_S
+    new_frame_p->is_frameblock      = true;                                                 // indicate this stack frame was created by frameblock evaluation
+#ifdef M_EXPOSE_SUPPORT
+    new_frame_p->dynall_scope       = true;                                                 // frameblocks always have unrestricted dynamic (lexical, effectively) scope upwards to parent 
+#endif
+    new_frame_p->scope_sp           = std::shared_ptr<frame_S> { parent_frame.self_wp };    // initialize shared ptr from weak self-ptr in parent frame_S
+
+    new_frame_p->env.is_frameblock  = true;                                                 // also flag embeded environment as belonging to a frameblock (not verb)
 
 
-    // set up block invocation parms in new stack frame
+    // set up frameblock invocation parms in new stack frame
     
     new_frame_p->lparms =  left_vlist; 
     new_frame_p->rparms = right_vlist;
 
 
-    // run block's slist under new stack frame -- remove frame_S when done
+    // run frameblock's block under new stack frame -- remove frame_S when done
 
-    results_S block_results {};
-    auto erc = eval_slist(*new_frame_p, slist, block_results, true);
-    remove_frame();                                                            // remove new stack frame from stack 
-    if (erc != 0)                                                           
-    {                                                                       
-        results = error_results();                                             // results = error   
-        return erc;                                                            // return with error r/c
-    }
+    results_S frameblock_results {};
+    auto erc = eval_block(*new_frame_p, block, frameblock_results);
+    remove_frame();                                                                         // remove new stack frame from stack 
+    if (erc != 0)                                                                         
+    {                                                                                     
+        results = error_results();                                                          // results = error   
+        return erc;                                                                         // return with error r/c
+    }                                                                                     
 
 
     //  handle @QUIT special results -- percolate any others that get percolated here  
 
-    if (block_results.quit_flag)
-    {
-        results = unit_results();                                               // pass back unit results -- @QUIT special results are consumed 
+    if (frameblock_results.quit_flag)
+    {    
+        frameblock_results.return_flag     = false;                                         // consume the @QUIT         
+        frameblock_results.special_results = false;           
+        results                            = frameblock_results;                            // pass back @QUIT results -- special results are consumed
         return 0; 
     }
                           
 
-    // pass back results (including special results other than @QUIT) from slist evaluation
+    // pass back results (including special results other than @QUIT) from block evaluation
 
-    results = block_results; 
+    results = frameblock_results; 
     return 0; 
 }
 M_endf
@@ -1937,7 +1913,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   eval_verb_block() -- add new frame_S to stack for this verb block,  and run passed-in slist with that new stack frame, using vlists in expression as the block parms
+////   eval_verbinit_block() -- add new frame_S to stack for this verb-block,  and run passed-in block with that new stack frame, using vlists in expression as the verb-block parms
 ////                         
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -1945,71 +1921,343 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+// note: proper verbdef_S from the overload set has already been picked and passed to this funcion
+
+int eval_verbinit_block(const verbdef_S& verbdef, results_S& results) try
+{
+    M__(M_out(L"eval_verbinit_block() -- called");)
+
+    // ---------------------------------------------------------------------------------------------------------------------------
+    //  add new SF pointing to the verbdef_S persistent environment to active frame_S queue, and setup upward scope pointers, etc.
+    // ---------------------------------------------------------------------------------------------------------------------------
+           
+    frame_S *persist_frame_p          = add_new_frame();                                              
+    persist_frame_p->environ_p        = verbdef.persist_env_sp.get();                                     // point new persistent SF to environ_S of verbdef_S's persistent environment
+    persist_frame_p->is_persistent    = true;                                                             // mark new SF as persistent env
+    persist_frame_p->persist_sf_p     = persist_frame_p;                                                  // persistenf SF ptr points to self   
+    persist_frame_p->local_sf_p       = nullptr;                                                          // don't allow non-static variable definitions in the init: block                                                                                                      
+                                                                                                          // no verb main SF pointer in init SF -- leave search_s_p pointing to persistent_sf
+    // set up for dynamic scope to parent SF 
+
+#ifdef M_EXPOSE_SUPPORT
+    persist_frame_p->dynall_scope     = true;
+#elseif
+    persist_frame_p->dynamic_scope    = true;
+#endif
+                                          
+    persist_frame_p->scope_sp = std::shared_ptr<frame_S> { persist_frame_p->parent_sp->self_wp };         // initialize scope ptr from weak self-ptr in parent frame_S -- upward scope starts at parent on call stack, for dynamic or dynall scoping 
+ 
+    M__(M_out(L"eval_verbinit_block() -- SF setup done");)
+
+
+    // -----------------------------------------------------------------------------------------------
+    // run verb's init block in the new/shared stack frame(s) -- remove new frame_S (if any) when done
+    // -----------------------------------------------------------------------------------------------
+
+    M__(M_out(L"eval_verbinit_block() -- calling eval_block block use count = %d") % verbdef.init_block_sp.use_count() ;)
+    results_S block_results {};
+    auto erc = eval_block(*persist_frame_p, *(verbdef.init_block_sp), block_results);
+ 
+
+    // remove the stack frame obtained earlier
+    // ---------------------------------------
+
+    remove_frame();                                                                                       // remove persistent SF from stack -- should go away, but persistent environment should stay around due to shared ptr in verbdef_S 
+                                                                                                        
+                                                                                                                
+                                                                                                                
+    // handle any errors from verb block evaluation                                                             
+    // --------------------------------------------                                                             
+                                                                                                                
+    if (erc != 0)                                                                                               
+    {                                                                                                           
+        results = error_results();                                                                                 // results = error   
+        return erc;                                                                                                // return with error r/c
+    }
+
+
+    // handle any special results -- expect @END, @THROW, @XCTL, and @RETURN -- do not expect uncaught @LEAVE, @GOTO, @CONTINUE, @BREAK, @QUIT, etc.
+
+    if (block_results.special_results)
+    {
+        if (block_results.return_flag)                                                                             // @RETURN is expected -- needs to be consumed here
+        {                                                                                                          
+             block_results.return_flag     = false;                                                                // consume the @RETURN         
+             block_results.special_results = false;                                                                
+             results = unit_results();                                                                             // ignore @RETURN value -- use substitute UNIT value      
+        }                                                                                                       
+        else if (block_results.end_flag)                                                                           // @END is expected
+        {                                                                                                          
+             results = block_results;                                                                              // percolate @END results           
+        }  
+        else if (block_results.throw_flag)                                                                         // @THROW is expected
+        {                                                                                                          
+             results = block_results;                                                                              // percolate @THROW results           
+        }                                                                                                      
+        else if (block_results.skip_flag)                                                                          // @SKIPTO is expected
+        {                                                                                                          
+             results = block_results;                                                                              // percolate @SKIPTO results           
+        }                                                                                                      
+        else                                                                                                       // unexpected special results
+        {              
+            if (block_results.goto_flag)
+                M_out_emsg(L"User-defined verb (\"%S\") init: block evaluation ended by unconsumed @GOTO «%S»")      % verbdef.info % block_results.str;    // ?????? long @GOTO not allowed ????? -- need to add config flag ????   
+       
+            else if (block_results.xctl_flag)
+                M_out_emsg(L"User-defined verb (\"%S\") init: block evaluation ended by unconsumed @XCTL «%S»")      % verbdef.info % block_results.str;  
+
+            else if (block_results.leave_flag)
+                M_out_emsg(L"User-defined verb (\"%S\") init: block evaluation ended by unconsumed @LEAVE «%S»")     % verbdef.info % block_results.str;            
+           
+            else if (block_results.break_flag)
+                M_out_emsg(L"User-defined verb (\"%S\") init: block evaluation ended by unconsumed @BREAK")          % verbdef.info; 
+       
+            else if (block_results.continue_flag)
+                M_out_emsg(L"User-defined verb (\"%S\") init: block evaluation ended by unconsumed @CONTINUE")       % verbdef.info;
+            
+            else if (block_results.quit_flag)                                     
+                M_out_emsg(L"User-defined verb (\"%S\") init: block evaluation ended by unconsumed @QUIT")           % verbdef.info;  
+          
+            else if (block_results.error)                                                   
+                M_out_emsg(L"User-defined verb (\"%S\") init: block evaluation ended by error")                      % verbdef.info;
+
+            else
+                M_out_emsg(L"User-defined verb (\"%S\") init: block evaluation ended by unexpected special results") % verbdef.info;
+
+            count_error(); 
+            results = error_results();                                                                              // error results
+            return -1;                                                                                              // return with error 
+        }                                                                                                          
+    }                                                                                                              
+    else                                                                                                            // block not ended by @RETURN etc. - return value is not set 
+    {                                                                                                              
+        results = unit_results();                                                                                   // ignore normal block results -- pass back unit value instead 
+    }                                                                                                              
+                                                                                                                   
+    return 0;                                                                                                       // return normally -- results have already been passed-back
+}
+M_endf
+
+
+
+
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   eval_verb_block() -- add new frame_S to stack for this verb-block,  and run passed-in block with that new stack frame, using vlists in expression as the verb-block parms
+////                         
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+// note: proper verbdef_S from the overload set has already been picked and passed to this funcion
+
 int eval_verb_block(frame_S& parent_frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
 {
-    // add new stack frame to the active frame_S queue (and do basic setup)
+    M__(M_out(L"eval_verb_block() -- called");)
 
-    frame_S *new_frame_p = add_new_frame(); 
+    frame_S *eval_frame_p { nullptr };  
 
 
-    // parent scope for a verb frame_S is parent stack frame (dynamic scope) -or- stack frame that defined the verb (lexical scope)  
+    // ==================================================================================================================================================
+    // obtain new SF(s) or reuse current SF, depending on same_scope: option on the verb definition 
+    // ==================================================================================================================================================
 
-    new_frame_p->dynamic_scope = verbdef.dynamic_scope;
-    new_frame_p->lexical_scope = verbdef.lexical_scope;
-    new_frame_p->block_scope   = verbdef.block_scope;
+  
+    // figure out upward scope for this verb 
+    // -------------------------------------
+
+    std::shared_ptr<frame_S> scope_sp { };                                                                    // temporary scope shared pointer to be copied into persistent SF (if any) or main verb SF                                                                                           
 
     if (verbdef.lexical_scope)
-        new_frame_p->scope_sp = verbdef.upward_scope_sp;                                                 // start upward scope at stack frame that defined the verb, for lexical scoping
-    else                                                                                                 // dynamic_scope   or   block_scope
-        new_frame_p->scope_sp = std::shared_ptr<frame_S> { parent_frame.self_wp };                       // initialize shared ptr from weak sefl-ptr in parent frame_S -- upward scope starts at parent on call stack, for dynamic or block scoping  
+    {
+        // upward scope pointer for new stack frame is the captured upward scope when verb was defined (if it is still around -- close: option should keep this SF around for life of verb definition) 
+       
+        if (verbdef.defining_scope_wp.expired())                                                              // enclosing SF has gone away? 
+        {                                                                                                    
+            if (verbdef.scope_defaulted)                                                                      // lexical_scope: not coded on verb definition -- use no_scope:, since enclosing scope has gone away
+            {                                                                                                
+                scope_sp.reset();                                                                             // no upward scope for this stack frame (verb must not rely on unbound variables)  
+            }                                                                                                
+            else                                                                                              // error -- explicit lexical_scope and enclosing scope has disappeared (close: must not have been specified) 
+            {
+                count_error(); 
+                M_out_emsg1(L"eval_verb_block() -- the enclosing scope from the time of verb definition no longer exists -- cannot invoke the lexically-scoped verb"); 
+                msgend_loc(expression); 
+                results = error_results();                                                                    // results = error
+                return -1;                                                                                    // r/c     = error
+            }                                                                                               
+        }                                                                                                   
+        else                                                                                                  // enclosing SF still around -- set as upward scope 
+        {                                                                                                   
+            scope_sp = std::shared_ptr<frame_S> { verbdef.defining_scope_wp };                                // start upward scope at stack frame that defined the verb, for lexical scoping
+        }
+    }
+    else if (verbdef.no_scope)                                                                                // verbdef has no_scope: option
+    {
+        scope_sp.reset();                                                                                     // no upward scope for this stack frame (verb must not rely on unbound variables)    
+    }                                                                                                     
+    else                                                                                                      // must be   shared_scope: ,  dynamic_scope:   -or-   dynall_scope: option on verbdef
+    {                                                                                                     
+        scope_sp = std::shared_ptr<frame_S> { parent_frame.self_wp };                                         // initialize shared ptr from weak self-ptr in parent frame_S -- upward scope starts at parent on call stack, for dynamic or dynall scoping 
+    }
+
+    
+    // see if this verbdef has a persistent environment (note: init:{} causes persistent env -- not allowed with shared_scope: )
+    // ------------------------------------------------
+
+    frame_S *persist_frame_p { nullptr };                                                                     // nullptr will be replaced by address of new persistent SF (if any)  
+
+    if (verbdef.persist_env_sp.get() != nullptr)
+    {
+        M__(M_out(L"eval_verb_block() -- has persistent environment");)
+
+        // ---------------------------------------------------------------------------------------------------------------------------
+        //  add new SF pointing to the verbdef_S persistent environment to active frame_S queue, and setup upward scope pointers, etc.
+        // ---------------------------------------------------------------------------------------------------------------------------
+       
+        persist_frame_p                   = add_new_frame();                                                  
+        persist_frame_p->environ_p        = verbdef.persist_env_sp.get();                                     // point new persistent SF to environ_S of verbdef_S's persistent environment
+        persist_frame_p->is_persistent    = true;                                                             // mark new SF as persistent env
+        persist_frame_p->persist_sf_p     = persist_frame_p;                                                  // persistenf SF ptr points to self   
+  
+  
+        // copy over scope flags from verbdef_S into persistent SF frame_S, and save away scope shared ptr as computed earlier (note: same_scope verbs should not have persistent SF)   
+       
+        persist_frame_p->dynamic_scope    = verbdef.dynamic_scope;
+        persist_frame_p->lexical_scope    = verbdef.lexical_scope;
+#ifdef M_EXPOSE_SUPPORT
+        persist_frame_p->dynall_scope     = verbdef.dynall_scope;
+#endif
+        persist_frame_p->no_scope         = verbdef.no_scope;
+       
+        persist_frame_p->scope_sp         = scope_sp;                                                         // set up scope in persistent SF based on verbdef scope: option                                                  
 
 
-    // set up new stack frame for this block, using parms from the passed-in expression
-    // --------------------------------------------------------------------------
+        // replace scope_sp computed above with a shared ptr to the persistenf SF -- this will be the upward scope for the 2nd SF for this verb           
 
-    new_frame_p->is_verb  = true;                                                                        // flag this frame_S as started by verb 
-    new_frame_p->verbname = expression.verb_name; 
-    new_frame_p->lparms   = expression.lparms;                                                                          
-    new_frame_p->rparms   = expression.rparms;                                                                          
-                                           
+        std::shared_ptr<frame_S> temp_sp {persist_frame_p->self_wp};                                          // need to set local shared_ptr from weak self ptr (will soon go out of scope)
+        scope_sp = temp_sp;                                                                                   // upward scope SF for main verb SF is this persistent SF (std::shared_ptr)
+    }
+  
+    M__(M_out(L"eval_verb_block() -- setting up verb main SF");)
 
-    // -------------------------------------                                                                                                         
-    // set up argvars (if any) in new frame_S                                                                  
-    // -------------------------------------                                                                  
+    // ------------------------------------------------------------------------------------------------------------------------
+    // obtain and setup 2nd or only (main) SF for this verb invocation -- chain it after the persistent SF (if any) just set up
+    // ------------------------------------------------------------------------------------------------------------------------
+  
+    // add a new stack frame to the active frame_S queue after the persistent SF (if any) just added (and do basic setup)
+  
+    frame_S *new_frame_p = add_new_frame();                                                                   
                                                                                                              
-    value_S unit_value { unit_val() };                                                                        // unit value, in case arg corresponding to variable name is not present
                                                                                                              
+    // if persistent SF was obtained always mark 2nd SF as dynall scope, pointing upward to persistent SF (note same_scoep: not allowed with persistent SF)                                
+
+    if (persist_frame_p != nullptr)
+    {
+        M__(M_out(L"eval_verb_block() -- verb main SF -- have persistent SF");)
+#ifdef M_EXPOSE_SUPPORT
+        new_frame_p->dynall_scope  = true; 
+#else
+        new_frame_p->dynamic_scope = true; 
+#endif
+        new_frame_p->persist_sf_p      = persist_frame_p;                                                     // set persistent SF pointer in dynamic SF to persistent SF for this verb
+        persist_frame_p->verbmain_sf_p = new_frame_p;                                                         // also set verb main SF pointer in persistent SF to the new verb main SF  
+    }                                                                                                     
+    else                                                                                                      // no persistent SF was set up
+    {   
+        M__(M_out(L"eval_verb_block() -- verb main SF -- have no persistent SF");)
+
+        // set verb main SF scope flags from verbdef flags, as usual                                      
+                                                                                                          
+        new_frame_p->dynamic_scope    = verbdef.dynamic_scope;                                        
+        new_frame_p->lexical_scope    = verbdef.lexical_scope;                                        
+#ifdef M_EXPOSE_SUPPORT                                                                                       
+        new_frame_p->dynall_scope     = verbdef.dynall_scope;                                         
+#endif                                                                                                        
+        new_frame_p->no_scope         = verbdef.no_scope;   
+        new_frame_p->same_scope       = verbdef.same_scope;  
+    }                                                                                                     
+                                                                                                          
+    M__(M_out(L"eval_verb_block() -- verb main SF -- basic setup");) 
+
+
+    //  do basic setup that doesn't depend on presence/absence of persistent SF  -- note that add_new_frame() has already set up the local_sf_p and search_sf_p pointers in the new SF
+    //  -----------------------------------------------------------------------
+                                                                                                          
+    new_frame_p->scope_sp = scope_sp;                                                                         // scope sp = computed scope for this verb, -or- ptr to persistent SF 
+
+    if (new_frame_p->same_scope)                                                                              // is new non-persistent SF for same_scope: verb (parms-only SF)?                                                                                
+    {                                                                                                           
+        new_frame_p->is_parmsonly       = true;                                                               // flag new SF as parms-only SF
+        new_frame_p->env.is_parmsonly   = true;                                                               // also flag the imbedded environment as parms-only
+        new_frame_p->verbmain_sf_p      = parent_frame.verbmain_sf_p;                                         // set verbmain   SF pointer from parent SF  
+        new_frame_p->persist_sf_p       = parent_frame.persist_sf_p;                                          // set persistent SF pointer from parent SF  
+        new_frame_p->local_sf_p         = parent_frame.local_sf_p;                                            // set local      SF pointer from parent SF 
+                                                                                                              //     search     SF pointer stays pointing to the new SF
+    }
+    else                                                                                                      // not setting up parms-only SF for this verb (i.e. same_scope:)
+    {
+        new_frame_p->is_verbmain     = true;                                                                  // flag this frame_S as started by verb 
+        new_frame_p->env.is_verbmain = true;                                                                  // flag imbedded environment as belonging to verb 
+        new_frame_p->verbmain_sf_p   = new_frame_p;                                                           // set verb main  SF pointer in dynamic SF to self 
+                                                                                                              // persistent SF ptr was set above, local SF and search SF pointers stay the same -- set by add_new_frame()
+    }
+    
+    M__(M_out(L"eval_verb_block() -- SF setup done");)
+            
+
+    // ========================================================================================================================================================================================                                                         
+    // set up vlists and argvars (if any) in evaluation frame_S                                                                
+    // ========================================================================================================================================================================================
+    
+
+    // set up verbname and left/right vlists in new stack frame
+
+    new_frame_p->verbname     = expression.verb_name;    
+    new_frame_p->lparms       = expression.lparms;                                                                                  
+    new_frame_p->rparms       = expression.rparms;    
+    
+                                                                                           
                                                                                                              
     // process left-side positional args  -- loop over variable names in left-side argvars list, assigining unit value or value of passed-in corresponding arg 
-    // --------------------------------------------------------------------------------------------------------------------------------------------------------
+    // -------------------------------------------------------------------------------------------------------------------------------------------------------
     //
-    //    note: new_eval should be empty, and there should be no duplicates in the variable names list, so def_local_var() should not fail
-                                                                                                             
-    int var_n = 0;                                                                                             // left-side variable number     
-                                                                                                                  
-    for (auto elem : verbdef.lvars.pos)                                                                        // elem is a std::wstring = variable name 
-    {                                                                                                             
-        int drc { };                                                                                           // return code from def_local_var
-                                                                                                                  
-        if (var_n >= expression.lparms.value_ct)                                                               // this variable is past end of args for this invocation 
-            drc = def_local_var(*new_frame_p, elem, unit_value,                         false, false, true);   // define local non-exported variable with unit value -- make sure values are unshared
-        else
-            drc = def_local_var(*new_frame_p, elem, expression.lparms.values.at(var_n), false, false, true);   // define local non-exported variable with value of passed-in n-th positional arg -- make sure values are unshared 
-        
-
-        // return immediately with error, if def_local_var() failed
-
-        if (drc != 0)                                                                                          // did def_local_var() fail? -- not expected
+    //    note: unless sharing a SF with caller, *eval_frame_p should be empty, and there should be no duplicates in the variable names list, so def_local_var() should not fail
+    
+    value_S unit_value { unit_val() }; 
+    int var_n = 0;                                                                                                 // left-side variable number     
+                                                                                                                 
+    def_parm_S parm {   };                                                                                       
+    parm.unshare = true;                                                                                           // make sure values are unshared
+                                                                                                                 
+    for (auto elem : verbdef.lvars.pos)                                                                            // elem is a std::wstring = variable name 
+    {                                                                                                                 
+        int drc         { 0 };                                                                                     // return code from def_local_var  
+                                                                                                                 
+        if (var_n >= expression.lparms.value_ct)                                                                   // this variable is past end of args for this invocation
+            drc = def_parms_var(*new_frame_p, elem, unit_value,                         parm);                     // define parm variable with unit value -- make sure values are unshared
+        else                                                                                                     
+            drc = def_parms_var(*new_frame_p, elem, expression.lparms.values.at(var_n), parm);                     // define parm variable with value of passed-in n-th positional arg -- make sure values are unshared 
+                                                                                                                 
+                                                                                                                 
+        // return immediately with error, if def_local_var() failed                                              
+                                                                                                                 
+        if (drc != 0)                                                                                              // did def_local_var() fail? -- not expected
         {
             count_error(); 
-            M_out_emsg1(L"eval_verb_block() -- left-side positional argvar -- unexpected error from def_local_var(,%s,)") % elem; 
+            M_out_emsg1(L"eval_verb_block() -- left-side positional argvar -- error from def_local_var(,%s,)") % elem; 
             msgend_loc(expression); 
-
-            results = error_results();                                                                         // results = error
-            return -1;                                                                                         // r/c     = error
-        }                                                                                                    
-                                                                                                             
-        var_n++;                                                                                               // advance to next value in positional invocation parms 
+            results = error_results();                                                                             // results = error
+            return -1;                                                                                             // r/c     = error
+        }                                                                                                       
+                                                                                                                
+        var_n++;                                                                                                   // advance to next value in positional invocation parms 
     }
     
 
@@ -2018,31 +2266,31 @@ int eval_verb_block(frame_S& parent_frame, const e_expression_S& expression, con
     //
     //    note: new_eval should be empty, and there should be no duplicates in the variable names list, so def_local_var() should not fail
                                                                                                              
-    var_n = 0;                                                                                                 // right-side variable number     
-                                                                                                         
-    for (auto elem : verbdef.rvars.pos)                                                                        // elem is a std::wstring = variable name 
-    {                                                                                                    
-        int drc { };                                                                                           // return code from def_local_var
-                                                                                                         
-        if (var_n >= expression.rparms.value_ct)                                                               // this variable is past end of args for this invocation
-            drc = def_local_var(*new_frame_p, elem, unit_value,                         false, false, true);   // define local non-exported variable with unit value -- make sure values are unshared
-        else
-            drc = def_local_var(*new_frame_p, elem, expression.rparms.values.at(var_n), false, false, true);   // define local non-exported variable with value of passed-in n-th positional arg  -- make sure values are unshared
-        
-
-        // return immediately with error, if def_local_var() failed
-
-        if (drc != 0)                                                                                           // did def_local_var() fail? -- not expected
+    var_n = 0;                                                                                                     // right-side variable number     
+                                                                                                                 
+    for (auto elem : verbdef.rvars.pos)                                                                            // elem is a std::wstring = variable name 
+    {                                                                                                            
+        int drc { };                                                                                               // return code from def_local_var
+                                                                                                                 
+        if (var_n >= expression.rparms.value_ct)                                                                   // this variable is past end of args for this invocation
+            drc = def_parms_var(*new_frame_p, elem, unit_value,                         parm);                     // define parm variable with unit value -- make sure values are unshared
+        else                                                                                                     
+            drc = def_parms_var(*new_frame_p, elem, expression.rparms.values.at(var_n), parm);                     // define parm variable with value of passed-in n-th positional arg  -- make sure values are unshared
+                                                                                                                
+                                                                                                                
+        // return immediately with error, if def_local_var() failed                                             
+                                                                                                                
+        if (drc != 0)                                                                                              // did def_local_var() fail? -- not expected
         {
             count_error(); 
-            M_out_emsg1(L"eval_verb_block() -- right-side positional argvar -- unexpected error from def_local_var(,%s,)") % elem; 
+            M_out_emsg1(L"eval_verb_block() -- right-side positional argvar -- error from def_local_var(,%s,)") % elem; 
             msgend_loc(expression); 
 
-            results = error_results();                                                                         // results = error
-            return -1;                                                                                         // r/c     = error
-        }  
-
-        var_n++;                                                                                               // advance to next value in positional invocation parms 
+            results = error_results();                                                                             // results = error
+            return -1;                                                                                             // r/c     = error
+        }                                                                                                         
+                                                                                                                  
+        var_n++;                                                                                                   // advance to next value in positional invocation parms 
     }
 
 
@@ -2051,160 +2299,186 @@ int eval_verb_block(frame_S& parent_frame, const e_expression_S& expression, con
     //
     //    note: new_eval should be empty, and there should be no duplicates in the variable names list, so def_local_var() should not fail
     
-    std::multiset<std::wstring>  lkw_names { };                                                                // multimap with keywords processes so far  
-                                                                                                             
-    for (auto elem : verbdef.lvars.key)                                                                        // elem.first is a std::wstring = keyword name -- elem.second is a std::wstring = variable name 
-    {                                                                                                         
-        lkw_names.insert(elem.first);                                                                          // add this keyword name to combined list of keywords seen so far
-        auto kwvar_ct = lkw_names.count(                 elem.first);                                          // get count of how many times this keyword name has been seen so far in argvar_S
-        auto kwval_ct = expression.lparms.eval_kws.count(elem.first);                                          // get count of how many times this keyword name is seen in the invocation parms 
+    std::multiset<std::wstring>  lkw_names { };                                                                    // multimap with keywords processed so far  
+                                                                                                                 
+    for (auto elem : verbdef.lvars.key)                                                                            // elem.first is a std::wstring = keyword name -- elem.second is a std::wstring = variable name 
+    {                                                                                                             
+        lkw_names.insert(elem.first);                                                                              // add this keyword name to combined list of keywords seen so far
+        auto kwvar_ct = lkw_names.count(                 elem.first);                                              // get count of how many times this keyword name has been seen so far in argvar_S
+        auto kwval_ct = expression.lparms.eval_kws.count(elem.first);                                              // get count of how many times this keyword name is seen in the invocation parms 
 
         M__(M_out(L"eval_verb_block() -- left-side : kw_name = «%S»  kwvar_ct=%d  kwval_ct=%d") % elem.first % kwvar_ct % kwval_ct;) 
   
-        int drc { };                                                                                           // return code from def_local_var
-                                                                                                          
-        if (kwvar_ct > kwval_ct)                                                                               // this kw/variable pair is past end of kw/value pairs in invocation args
-            drc = def_local_var(*new_frame_p, elem.second, unit_value, false, false, true);                    // define local non-exported variable with unit value -- make sure values are unshared
-        else
-            drc = def_local_var(*new_frame_p
-                               , elem.second
-                               , multimap_at(expression.lparms.eval_kws, elem.first, kwvar_ct-1)               // find value for n-th occurrence of this keyword in invocation keyword values multimap
-                               , false, false, true
-                               );                                                                              // define local non-exported variable with value of passed-in n-th positional arg -- make sure values are unshared
-        
-
-        // return immediately with error, if def_local_var() failed
-
-        if (drc != 0)                                                                                          // did def_local_var() fail? -- not expected
+        int drc { };                                                                                               // return code from def_local_var
+                                                                                                               
+        if (kwvar_ct > kwval_ct)                                                                                   // this kw/variable pair is past end of kw/value pairs in invocation args
+            drc = def_parms_var(*new_frame_p, elem.second, unit_value, parm);                                      // define local non-exposed variable with unit value -- make sure values are unshared
+        else                                                                                                   
+            drc = def_parms_var(*new_frame_p                                                                  
+                               , elem.second                                                                   
+                               , multimap_at(expression.lparms.eval_kws, elem.first, kwvar_ct-1)                   // find value for n-th occurrence of this keyword in invocation keyword values multimap
+                               , parm                                                                          
+                               );                                                                                  // define local non-exposed variable with value of passed-in n-th positional arg -- make sure values are unshared
+                                                                                                               
+                                                                                                               
+        // return immediately with error, if def_local_var() failed                                            
+                                                                                                               
+        if (drc != 0)                                                                                              // did def_local_var() fail? -- not expected
         {
             count_error(); 
-            M_out_emsg1(L"eval_verb_block() -- left-side keyword(%S) argvar -- unexpected error from def_local_var(,%S,)") % elem.first % elem.second; 
+            M_out_emsg1(L"eval_verb_block() -- left-side keyword(%S) argvar -- error from def_local_var(,%S,)") % elem.first % elem.second; 
             msgend_loc(expression); 
 
-            results = error_results();                                                                         // results = error
-            return -1;                                                                                         // r/c     = error
+            results = error_results();                                                                             // results = error
+            return -1;                                                                                             // r/c     = error
         }  
     } 
       
 
-    // process right-side keyword args  -- loop over keyword/variable names in right-side argvars list, assigining unit value or value of passed-in corresponding keyword arg 
-    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    // process right-side keyword args  -- loop over keyword/variable names in right-side argvars list, assigning unit value or value of passed-in corresponding keyword arg 
+    // ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
     //
     //    note: new_frame should be empty, and there should be no duplicates in the variable names list, so def_local_var() should not fail
     
-    std::multiset<std::wstring>  rkw_names { };                                                                // multimap with keywords processes so far  
-                                                                                                             
-    for (auto elem : verbdef.rvars.key)                                                                        // elem.first is a std::wstring = keyword name -- elem.second is a std::wstring = variable name 
-    {                                                                                                         
-        rkw_names.insert(elem.first);                                                                          // add this keyword name to combined list of keywords seen so far
-        auto kwvar_ct = rkw_names.count(                 elem.first);                                          // get count of how many times this keyword name has been seen so far in argvar_S
-        auto kwval_ct = expression.rparms.eval_kws.count(elem.first);                                          // get count of how many times this keyword name is seen in the invocation parms 
+    std::multiset<std::wstring>  rkw_names { };                                                                    // multimap with keywords processed so far  
+                                                                                                                 
+    for (auto elem : verbdef.rvars.key)                                                                            // elem.first is a std::wstring = keyword name -- elem.second is a std::wstring = variable name 
+    {                                                                                                             
+        rkw_names.insert(elem.first);                                                                              // add this keyword name to combined list of keywords seen so far
+        auto kwvar_ct = rkw_names.count(                 elem.first);                                              // get count of how many times this keyword name has been seen so far in argvar_S
+        auto kwval_ct = expression.rparms.eval_kws.count(elem.first);                                              // get count of how many times this keyword name is seen in the invocation parms 
 
         M__(M_out(L"eval_verb_block() -- right-side : kw_name = «%S»  kwvar_ct=%d  kwval_ct=%d") % elem.first % kwvar_ct % kwval_ct;) 
   
-        int drc { };                                                                                           // return code from def_local_var
-                                                                                                              
-        if (kwvar_ct > kwval_ct)                                                                               // this kw/variable pair is past end of kw/value pairs in invocation args
-            drc = def_local_var(*new_frame_p, elem.second, unit_value, false, false, true);                    // define local non-exported variable with unit value -- make sure values are unshared
-        else
-            drc = def_local_var(*new_frame_p
-                               , elem.second
-                               , multimap_at(expression.rparms.eval_kws, elem.first, kwvar_ct-1)               // find value for n-th occurrence of this keyword in invocation keyword values multimap
-                               , false, false, true
-                               );                                                                              // define local non-exported variable with value of passed-in n-th positional arg -- make sure values are unshared
+        int drc { };                                                                                               // return code from def_local_var
+                                                                                                                  
+        if (kwvar_ct > kwval_ct)                                                                                   // this kw/variable pair is past end of kw/value pairs in invocation args
+            drc = def_parms_var(*new_frame_p, elem.second, unit_value, parm);                                      // define local non-exposed variable with unit value -- make sure values are unshared
+        else                                                                                                   
+            drc = def_parms_var(*new_frame_p                                                                  
+                               , elem.second                                                                   
+                               , multimap_at(expression.rparms.eval_kws, elem.first, kwvar_ct-1)                   // find value for n-th occurrence of this keyword in invocation keyword values multimap
+                               , parm                                                                          
+                               );                                                                                  // define local non-exposed variable with value of passed-in n-th positional arg -- make sure values are unshared
         
 
         // return immediately with error, if def_local_var() failed
 
-        if (drc != 0)                                                                                          // did def_local_var() fail? -- not expected
+        if (drc != 0)                                                                                              // did def_local_var() fail? -- not expected
         {
             count_error(); 
-            M_out_emsg1(L"eval_verb_block() -- right-side keyword(%S) argvar -- unexpected error from def_local_var(,%S,)") % elem.first % elem.second; 
+            M_out_emsg1(L"eval_verb_block() -- right-side keyword(%S) argvar -- error from def_local_var(,%S,)") % elem.first % elem.second; 
             msgend_loc(expression); 
 
-            results = error_results();                                                                         // results = error
-            return -1;                                                                                         // r/c     = error
+            results = error_results();                                                                             // results = error
+            return -1;                                                                                             // r/c     = error
         }  
     } 
 
 
-    // --------------------------------------------------------
-    // run slist in new stack frame -- remove frame_S when done
-    // --------------------------------------------------------
+    // ------------------------------------------------------------------------------------------
+    // run verb's block in the new/shared stack frame(s) -- remove new frame_S (if any) when done
+    // ------------------------------------------------------------------------------------------
 
-    results_S slist_results {};
-    auto erc = eval_slist(*new_frame_p, *(verbdef.slist_sp), slist_results, true);
-    remove_frame();                                                                                            // remove new frame from stack 
-    if (erc != 0)                                                                                       
-    {                                                                                                   
-        results = error_results();                                                                             // results = error   
-        return erc;                                                                                            // return with error r/c
+    results_S block_results {};
+    auto erc = eval_block(*new_frame_p, *(verbdef.verb_block_sp), block_results);
+ 
+
+    // if not sharing caller's stack frame(s), remove the stack frames obtained earlier
+    // --------------------------------------------------------------------------------
+
+
+    remove_frame();                                                                                                // remove new dynamic    frame from stack -- should go away 
+
+    if (verbdef.persist_env_sp.get() != nullptr)                                                                   // does this verb have a persistent environmnent and persistend SF? 
+        remove_frame();                                                                                            // remove new persistent frame from stack -- should stay around (because of shared ptr to it in the verbdef) 
+                                                                                                         
+                                                                                                                
+                                                                                                                
+    // handle any errors from verb block evaluation                                                             
+    // --------------------------------------------                                                             
+                                                                                                                
+    if (erc != 0)                                                                                               
+    {                                                                                                           
+        results = error_results();                                                                                 // results = error   
+        return erc;                                                                                                // return with error r/c
     }
 
 
-    // handle any special results -- expect @END, @THROW, @XCTL, and @RETURN -- do not expect uncaught @LEAVE, @GOTO, @CONTINUE, @BREAK, @QUIT, etc.
+    // handle any special results -- expect @END, @THROW, @XCTL, and @RETURN -- do not expect uncaught @LEAVE, @GOTO, @CONTINUE, @BREAK, @QUIT, etc. (unless percolating everything)
+    // ---------------------------------------------------------------------------------------------------------------------------------------------
 
-    if (slist_results.special_results)
+    if (block_results.special_results)
     {
-        if (slist_results.return_flag)                                                                         // @RETURN is expected -- neeeds to be consumed 
-        {                                                                                                      
-             slist_results.return_flag     = false;                                                            // consume the @RETURN         
-             slist_results.special_results = false;                                                            
-             results = slist_results;                                                                          // pass back value from @RETURN, with no special flags        
-        }                                                                                                   
-        else if (slist_results.xctl_flag)                                                                      // @XCTL is expected -- needs to be consumed 
-        {   
-             M__(M_out(L"eval_verb_block() -- saw @XCTL results -- verbdef.is_builtin = %d") % ((int)(verbdef.is_builtin));)
-             results = slist_results;                                                                          // percolate @XCTL results    
+        if (verbdef.percolate_all)                                                                                 // is this (same_scope:) verb percolating everything ?  
+        {
+            results = block_results;                                                                               // don't consume anything (especially @RETURN) -- just percolate 
         }
-        else if (slist_results.end_flag)                                                                       // @END is expected
-        {                                                                                                      
-             results = slist_results;                                                                          // percolate @END results           
+
+        // not percolating everything -- do normal verb special results handling (especially @RETURN)
+  
+        else if (block_results.return_flag)                                                                        // @RETURN is expected -- needs to be consumed 
+        {                                                                                                          
+            block_results.return_flag     = false;                                                                 // consume the @RETURN         
+            block_results.special_results = false;                                                                
+            results = block_results;                                                                               // pass back value from @RETURN, with no special flags        
+        }                                                                                                       
+        else if (block_results.xctl_flag)                                                                          // @XCTL is expected -- needs to be consumed as this verb returns, but not right here 
+        {   
+            M__(M_out(L"eval_verb_block() -- saw @XCTL results -- verbdef.is_builtin = %d") % ((int)(verbdef.is_builtin));)
+            results = block_results;                                                                               // percolate @XCTL results    
         }                                                                                                      
-        else if (slist_results.throw_flag)                                                                     // @THROW is expected
-        {                                                                                                      
-             results = slist_results;                                                                          // percolate @THROW results           
-        }   
-        else if (slist_results.skip_flag)                                                                      // @SKIPTO is expected
-        {                                                                                                      
-             results = slist_results;                                                                          // percolate @SKIPTO results           
-        }       
-        else                                                                                                   // unexpected special results
+        else if (block_results.end_flag)                                                                           // @END is expected
+        {                                                                                                          
+            results = block_results;                                                                               // percolate @END results           
+        } 
+        else if (block_results.throw_flag)                                                                         // @THROW is expected
+        {                                                                                                          
+            results = block_results;                                                                               // percolate @THROW results           
+        }                                                                                                      
+        else if (block_results.skip_flag)                                                                          // @SKIPTO is expected
+        {                                                                                                          
+            results = block_results;                                                                               // percolate @SKIPTO results           
+        }                                                                                                      
+        else                                                                                                       // unexpected special results
         {              
-            if (slist_results.goto_flag)
-                M_out_emsg(L"User-defined verb evaluation ended by unconsumed @GOTO «%s»") % slist_results.str;         // ?????? long @GOTO not allowed ????? -- config flag ????   
+            if (block_results.goto_flag)
+                M_out_emsg(L"User-defined verb (\"%S\") evaluation ended by unconsumed @GOTO «%s»") % verbdef.info % block_results.str;    // ?????? long @GOTO not allowed ????? -or- longjump: option 
        
-            else if (slist_results.leave_flag)
-                M_out_emsg(L"User-defined verb evaluation ended by unconsumed @LEAVE «%s»") % slist_results.str;            
-           
-            else if (slist_results.break_flag)
-                M_out_emsg(L"User-defined verb evaluation ended by unconsumed @BREAK"); 
-       
-            else if (slist_results.continue_flag)
-                M_out_emsg(L"User-defined verb evaluation ended by unconsumed @CONTINUE");
-            
-            else if (slist_results.quit_flag)                                     
-                M_out_emsg(L"User-defined verb evaluation ended by unconsumed @QUIT");  
+            else if (block_results.leave_flag)
+                M_out_emsg(L"User-defined verb (\"%S\") evaluation ended by unconsumed @LEAVE «%s»") % verbdef.info % block_results.str;            
+                      
+            else if (block_results.quit_flag)                                     
+                M_out_emsg(L"User-defined verb (\"%S\") evaluation ended by unconsumed @QUIT") % verbdef.info;  
           
-            else if (slist_results.error)                                                   
-                M_out_emsg(L"User-defined verb evaluation ended by error");
+            else if (block_results.break_flag)
+                M_out_emsg(L"User-defined verb (\"%S\") evaluation ended by unconsumed @BREAK") % verbdef.info; 
+       
+            else if (block_results.continue_flag)
+                M_out_emsg(L"User-defined verb (\"%S\") evaluation ended by unconsumed @CONTINUE") % verbdef.info;
+
+            else if (block_results.error)                                                   
+                M_out_emsg(L"User-defined verb (\"%S\") evaluation ended by error") % verbdef.info;
 
             else
-                M_out_emsg(L"User-defined verb evaluation ended by unexpected special results");
+                M_out_emsg(L"User-defined verb (\"%S\") evaluation ended by unexpected special results") % verbdef.info;
 
             count_error(); 
-            results = error_results();                                                                          // error results
-            return -1;                                                                                          // return with error 
-        }                                                                                                      
-    }                                                                                                          
-    else                                                                                                        // slist not ended by @RETURN etc. - return value is not set 
-    {                                                                                                          
-        results = slist_results;                                                                                // pass back normal slist results
-    }                                                                                                          
-                                                                                                               
-    return 0;                                                                                                   // return normally -- results have already been passed-back
+            results = error_results();                                                                              // error results
+            return -1;                                                                                              // return with error 
+        }                                                                                                          
+    }                                                                                                              
+    else                                                                                                            // block not ended by @RETURN etc. - return value is not set 
+    {                                                                                                              
+        results = block_results;                                                                                    // pass back normal block results
+    }                                                                                                              
+                                                                                                                   
+    return 0;                                                                                                       // return normally -- results have already been passed-back
 }
 M_endf
+
+
+
 
 
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -2213,7 +2487,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   eval_main_block() -- using pre-built main frame_S, run passed-in slist (parms already set up for main frame_S) -- no results passed back, just r/c
+////   eval_main_block() -- using pre-built main frame_S, run passed-in block (parms already set up for main frame_S) -- no results passed back, just r/c
 ////                   
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -2221,97 +2495,121 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-int eval_main_block(frame_S& frame, const slist_S& slist) try
+int eval_main_block(frame_S& frame, const block_S& block, int& wmain_rc) try
 {
-    // run slist prebuilt main frame_S 
+    // run block prebuilt main frame_S 
 
-    results_S block_results {};
-    auto erc = eval_slist(frame, slist, block_results, true);
-    if (erc != 0) return erc; 
-
-
-    // handle any percolated special results from main slist evaluation
-
-    if (block_results.special_results)
+    results_S mainblock_results {};
+    auto erc = eval_block(frame, block, mainblock_results);
+    if (erc != 0)
     {
-        if (block_results.end_flag)      // @END flag is supposed to be percolated here for action
-           return 0; 
-    
-        if (block_results.quit_flag)     // @QUIT flag (from inside main block) is supposed to be percolated here for action
-           return 0; 
-         
+        wmain_rc = -1;
+        return erc; 
+    }
 
-        // main frame_S block expects no unmatched @GOTOs, @LEAVEs, @CONTINUEs, @BREAKs, @RETURNs, @THROWs, etc.
-       
-        if (block_results.goto_flag)
+
+    // handle any percolated special results from normal block evaluation of main block
+
+    if (mainblock_results.special_results)
+    {
+        if (mainblock_results.end_flag)                                                 // @END flag is supposed to be percolated here for action
         {
-            M_out_emsg(L"main slist evaluation ended by unconsumed @GOTO «%s»  -- apparently @GOTO target label was not found") % block_results.str; 
+           wmain_rc = mainblock_results.int32;                                          // return code may have been set by "@END wmain_rc"  verb
+           M__(M_out(L"eval_main_block() returning -- wmain_rc = %d") % wmain_rc;) 
+           return 0; 
+        }  
+
+
+        // mainblock expects no unmatched @GOTOs, @LEAVEs, @CONTINUEs, @BREAKs, @RETURNs, @THROWs, @XCTLs, @QUITs, etc. -- (only @END is expected here) 
+       
+        if (mainblock_results.goto_flag)
+        {
+            M_out_emsg(L"main block evaluation ended by unconsumed @GOTO «%s»  -- apparently @GOTO target label was not found") % mainblock_results.str; 
             count_error(); 
+            wmain_rc = -1; 
             return -1;
         }
        
-        if (block_results.return_flag)
+        if (mainblock_results.return_flag)
         {
-            M_out_emsg(L"main slist evaluation ended by unconsumed @RETURN %s -- apparently @RETURN was issued in main slist -- use @QUIT instead") % str_value(block_results, true, false, true); 
+            M_out_emsg(L"main block evaluation ended by unconsumed @RETURN %s -- apparently @RETURN was issued in main block -- use @END instead") % str_value(mainblock_results, true, false, true); 
             count_error();
+            wmain_rc = -1;
             return -1;
         }
 
-        if (block_results.xctl_flag)
+        if (mainblock_results.xctl_flag)
         {
-            M_out_emsg(L"main slist evaluation ended by unconsumed @XCTL -- apparently @XCTL was issued in main slist"); 
+            M_out_emsg(L"main block evaluation ended by unconsumed @XCTL -- apparently @XCTL was issued in main block"); 
             count_error();
+            wmain_rc = -1;
             return -1;
         }   
-       
-        if (block_results.throw_flag)
+
+        if (mainblock_results.quit_flag)
         {
-            M_out_emsg(L"main slist evaluation ended by uncaught @THROW %s") % str_value(block_results, true, false, true); 
+            M_out_emsg(L"main block evaluation ended by unconsumed @QUIT -- apparently @QUIT was issued outdide of any block passed to the @BLOCK verb -- use @END to end the main block"); 
             count_error();
+            wmain_rc = -1;
+            return -1;
+        }   
+
+        if (mainblock_results.throw_flag)
+        {
+            M_out_emsg(L"main block evaluation ended by uncaught @THROW %s") % str_value(mainblock_results, true, false, true); 
+            count_error();
+            wmain_rc = -1;
             return -1;
         }
          
-        if (block_results.skip_flag)
+        if (mainblock_results.skip_flag)
         {
-            M_out_emsg(L"main slist evaluation ended by unconsumed @SKIPTO %s") % str_value(block_results, true, false, true); 
+            M_out_emsg(L"main block evaluation ended by unconsumed @SKIPTO %s") % str_value(mainblock_results, true, false, true); 
             count_error();
+            wmain_rc = -1;
             return -1;
         }                     
 
-        if (block_results.leave_flag)
+        if (mainblock_results.leave_flag)
         {
-            M_out_emsg(L"main slist evaluation ended by unconsumed @LEAVE «%s»  -- apparently @LEAVE was issued outside of any block") % block_results.str; 
+            M_out_emsg(L"main block evaluation ended by unconsumed @LEAVE «%s»  -- apparently @LEAVE was issued outside of any block") % mainblock_results.str; 
             count_error();
+            wmain_rc = -1;
             return -1;
         }
          
-        if (block_results.break_flag)
+        if (mainblock_results.break_flag)
         {
-            M_out_emsg(L"main slist evaluation ended by unconsumed @BREAK -- apparently @BREAK was issued outside of any loop");
+            M_out_emsg(L"main block evaluation ended by unconsumed @BREAK -- apparently @BREAK was issued outside of any loop");
             count_error();
+            wmain_rc = -1;
             return -1;
         }
        
-        if (block_results.continue_flag)
+        if (mainblock_results.continue_flag)
         {
-            M_out_emsg(L"main slist evaluation ended by unconsumed @CONTINUE -- apparently @CONTINUE was issued outside of any loop"); 
+            M_out_emsg(L"main block evaluation ended by unconsumed @CONTINUE -- apparently @CONTINUE was issued outside of any loop"); 
             count_error();
+            wmain_rc = -1;
             return -1;
         }
        
-        if (block_results.error)
+        if (mainblock_results.error)
         {
-            M_out_emsg(L"main slist evaluation ended by error");
+            M_out_emsg(L"main block evaluation ended by error");
             count_error();
+            wmain_rc = -1;
             return -1;
         }
 
-        M_out_emsg(L"main slist evaluation ended by unexpected special results"); 
+        M_out_emsg(L"main block evaluation ended by unexpected special results"); 
         count_error();
+        wmain_rc = -1;
         return -1; 
     }
-            
-    return 0;            // main slist evaluation results are ignored
+    
+    wmain_rc = 0;                                  // normal wmain_rc() -- nothing unusual
+    return 0;                                      // main block evaluation results are ignored
 }
 M_endf
 
@@ -2391,7 +2689,8 @@ int eval_value(frame_S& frame, const value_S& value, results_S& results, const p
 
     if (debug)
     {
-        M__(M_out(L"*************************************** eval_value() -- called  -- parmtype.no_eval_ident=%s  parmtype.no_eval_expression=%s  parmtype.no_eval_vlist=%s") % M_bool_cstr(eval_parmtype.no_eval_ident) % M_bool_cstr(eval_parmtype.no_eval_expression) % M_bool_cstr(eval_parmtype.no_eval_vlist);)
+        M__(M_out( L"*************************************** eval_value() -- called  -- parmtype.no_eval_ident=%s  parmtype.no_eval_expression=%s  parmtype.no_eval_vlist=%s   parmtype.no_eval_ref=%s") 
+                 % M_bool_cstr(eval_parmtype.no_eval_ident) % M_bool_cstr(eval_parmtype.no_eval_expression) % M_bool_cstr(eval_parmtype.no_eval_vlist) % M_bool_cstr(eval_parmtype.no_eval_ref);)
         M__(display_value(value, L"eval_value()");)
     }
 
@@ -2401,7 +2700,7 @@ int eval_value(frame_S& frame, const value_S& value, results_S& results, const p
     // evaluate nested expression, if required 
     // -----------------------------------
 
-    if ( (value.ty == type_E::expression) && (!eval_parmtype.no_eval_expression) )
+    if ( (value.ty == type_E::expression) && (!eval_parmtype.eval.no_eval_expression) )
     {
 
         if (debug)
@@ -2450,7 +2749,7 @@ int eval_value(frame_S& frame, const value_S& value, results_S& results, const p
     // evaluate nested vlist, if required -- need to allocate a new one and attach it to the value -- in nested vlists, expressions, and variables always evaluated (according to flags in default plist_S )
     // -------------------------------------------------------------------------------------------
 
-    else if ( (value.ty == type_E::vlist) && (!eval_parmtype.no_eval_vlist) )
+    else if ( (value.ty == type_E::vlist) && (!eval_parmtype.eval.no_eval_vlist) )
     {  
         if (debug)
         {
@@ -2489,7 +2788,7 @@ int eval_value(frame_S& frame, const value_S& value, results_S& results, const p
     // evaluate identifier, if required -- complain if not defined
     // -----------------------------------------------------------
 
-    else if ( (value.ty == type_E::identifier) && (!eval_parmtype.no_eval_ident) )
+    else if ( (value.ty == type_E::identifier) && (!eval_parmtype.eval.no_eval_ident) )
     {
         if (debug)
         {
@@ -2519,7 +2818,7 @@ int eval_value(frame_S& frame, const value_S& value, results_S& results, const p
     // do auto dereference, if required -- complain if any errors
     // ----------------------------------------------------------
 
-    else if ( (value.ty == type_E::ref) && (value.ref_sp->auto_deref) && (!eval_parmtype.no_eval_ref) )
+    else if ( (value.ty == type_E::ref) && (value.ref_sp->auto_deref) && (!eval_parmtype.eval.no_eval_ref) )
     {
         if (debug)
         {
@@ -2547,7 +2846,7 @@ int eval_value(frame_S& frame, const value_S& value, results_S& results, const p
     }
     else
     {
-        // other values don't need to be evaluated -- int, float, string, slist, unit, verbname etc. -- just copy value to output results
+        // other values don't need to be evaluated -- int, float, string, block, unit, verbname etc. -- just copy value to output results
 
         if (debug)
         {
@@ -2615,19 +2914,19 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
        M__(M_out(L"eval_vlist() -- evaluation is needed");)
 
 
-       // build a temporary default parmtype_S with global evaluation flags -- used if no individual parmtype_S is available for positional parms (this should be the case only when expression has no verb)  
-       //                                                                      also used for keyword evaluation 
+       // build a temporary default parmtype_S with global evaluation flags -- used if no plist is completely empty (contains no parmtypes) for positional parms (this should be the case only when expression has no verb)  
+                                                                  
 
-       parmtype_S default_eval_parmtype {};                                          // default parmtype 
+       parmtype_S default_eval_parmtype {};                                               // default parmtype 
 
-       default_eval_parmtype.no_eval_ident       = eval_plist.no_eval_ident;         // copy in parmtype flag  from passed-in plist_S
-       default_eval_parmtype.no_eval_expression  = eval_plist.no_eval_expression;    // copy in parmtype flag  from passed-in plist_S
-       default_eval_parmtype.no_eval_vlist       = eval_plist.no_eval_vlist;         // copy in parmtype flag  from passed-in plist_S
-       default_eval_parmtype.anything_ok         = true;                             // suppress parm type checking by default  
+       default_eval_parmtype.eval         = eval_plist.eval;                              // copy in parmtype flags from passed-in plist_S
+       default_eval_parmtype.anything_ok  = true;                                         // suppress parm type checking by default  
 
 
        // -------------------------------------------------------------------------------------------
        // loop to look at each positional parm and do evaluation (subject to verb's evaluation flags)
+       // (note: if plist is empty (verbless expression), use default_parmtype just set up)
+       //        if more values in vlist than in parmtypes in plist, use the last the last one for the additional values) 
        // -------------------------------------------------------------------------------------------
 
         for (int i = 0; i < vlist.values.size(); i++)
@@ -2781,12 +3080,10 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
 
      if (vlist.keywords.size() > 0)
      {
-         parmtype_S keyword_parmtype { };                                         // eval_value() looks at only "no_eval" flags, which are off with default initialization
+         // set up special parmtype, used to evaluate any expression for the keyword name itself. 
 
-         keyword_parmtype.no_eval_ident   = eval_plist.no_eval_ident;             // copy in parmtype flag  from passed-in plist_S
-         keyword_parmtype.no_eval_expression  = eval_plist.no_eval_expression;    // copy in parmtype flag  from passed-in plist_S
-         keyword_parmtype.no_eval_vlist   = eval_plist.no_eval_vlist;             // copy in parmtype flag  from passed-in plist_S
-
+         parmtype_S keyword_parmtype { };                                                   // eval_value() looks at only "no_eval" flags, which are off with default initialization
+       //keyword_parmtype.eval = eval_plist.eval;                                           // copy in parmtype flag  from passed-in plist_S -- never suppress KW name expression evaluation ????????
 
          for (auto& elem : vlist.keywords)
          {
@@ -2797,11 +3094,11 @@ int eval_vlist(frame_S& frame, vlist_S& vlist, results_S& results, const plist_S
              // process simple keyword name or evaluate keyword name value, if required
              // -----------------------------------------------------------------------
 
-             if (elem.name.ty == type_E::keyname)                                         // handle simple keyword name value in this keyword_S
+             if (elem.name.ty == type_E::keyname)                                           // handle simple keyword name value in this keyword_S
              {
-                 keyword_name = elem.name.string;                                         // keyword name is in string field   
+                 keyword_name = elem.name.string;                                           // keyword name is in string field   
              }                                                                            
-             else                                                                         // keyword name expression requires evaluation
+             else                                                                           // keyword name expression requires evaluation
              { 
                  M__(M_out(L"eval_vlist() -- evaluating keyword name expression");)
 
@@ -3012,7 +3309,10 @@ int eval_expression_1(frame_S& frame, const a_expression_S& orig_expression, res
     // get verbdef, etc, (if verb is present for this expression)
     // ==========================================================
 
-    verbdef_S verbdef         {       };                                                 // default verbdef_S, in case verb expression is empty string
+    verbdef_S temp            {       }; 
+    verbset_S verbset         {       };                                                 // will be filled in (overwritten), if real verb is present
+    verbset.verbs.push_back(temp);                                                       // default verbset_S, in case verb expression is empty string (and there is no verb)
+
     bool      have_verbdef    { false };                                                 // set to true, once non-empty verbdef found
     
     if (orig_expression.has_verb)
@@ -3027,8 +3327,8 @@ int eval_expression_1(frame_S& frame, const a_expression_S& orig_expression, res
         }                                                                            
         else                                                                             // verb expression requires evaluation
         {                                                                               
-            // need to handle non-simple verbname -- evaluate value and check for verbdef or string that can be converted to verb_name string
-            // ------------------------------------------------------------------------------------------------------------------------------
+            // need to handle non-simple verbname -- evaluate value and check for verbset or string that can be converted to verb_name string
+            // -------------------------------------------------------------------------------------------------------------------------------
 
             results_S  verbname_results  { };                                            // results from verbname value evaluation  (final)
             parmtype_S verbname_parmtype { };                                            // eval_value() uses only "no_eval" flags, which are off by default
@@ -3052,7 +3352,7 @@ int eval_expression_1(frame_S& frame, const a_expression_S& orig_expression, res
             }
 
 
-            // get string for verb name, if evaluation results are string or verbname -- all other types not accepted
+            // get string for verbset_S or verb name, if evaluation results are string or verbname -- all other types not accepted
 
             if ( (verbname_results.ty == type_E::verbname) || (verbname_results.ty == type_E::string) )
             {
@@ -3060,9 +3360,9 @@ int eval_expression_1(frame_S& frame, const a_expression_S& orig_expression, res
                 eval_expression.verb_token_ix1 = orig_expression.verb_value.token_ix1;     // copy over token indexes for debugging
                 eval_expression.verb_token_ix2 = orig_expression.verb_value.token_ix2; 
             }
-            else if (verbname_results.ty == type_E::verbdef)
+            else if (verbname_results.ty == type_E::verbset)
             {
-                verbdef = *(verbname_results.verbdef_sp);                                 // just capture verbdef from verbname expression evaluation
+                verbset = *(verbname_results.verbset_sp);                                 // just capture verbdef from verbname expression evaluation
                 have_verbdef = true;                                                      // suppress verbdef lookup down below, and indicate verbdef is already available
                 eval_expression.verb_token_ix1 = orig_expression.verb_value.token_ix1;    // copy over token indexes for debugging
                 eval_expression.verb_token_ix2 = orig_expression.verb_value.token_ix2; 
@@ -3078,11 +3378,11 @@ int eval_expression_1(frame_S& frame, const a_expression_S& orig_expression, res
         }
    
 
-        // get verbdef for verb_name (if any) to see what type of variable and expression evaluation is needed in left and right parms -- end immediately, if unknown verb
+        // get verbset for verb_name (if any) to see what type of variable and expression evaluation is needed in left and right parms -- end immediately, if unknown verb
 
         if ( (!have_verbdef) && (eval_expression.verb_name.size() > 0) )                    // need to lookup verbdef -and- evaluated verb_name expression is non-empty string? 
         {                                                                                 
-            auto verbdef_rc = get_verb(frame, eval_expression.verb_name, verbdef);          // returns default, if undefined verb  
+            auto verbdef_rc = get_verb(frame, eval_expression.verb_name, verbset);          // returns default, if undefined verb 
            
             if (verbdef_rc != 0)                                                            // undefined verb? 
             {
@@ -3095,46 +3395,47 @@ int eval_expression_1(frame_S& frame, const a_expression_S& orig_expression, res
             have_verbdef = true;                                                            // indicate that verbdef is now available 
         }
     }
-    else                                                                                    // this expression has no verb -- may need to suppress evaluation or values in vlist 
+    else                                                                                    // this expression has no verb -- may need to suppress evaluation of values in vlist 
     {
-       if (noeval_verbless)                                                                 // should vlist ident, sub expression, etc. evaluation be  suppress when verbless? 
+       if (noeval_verbless)                                                                 // should vlist ident, sub expression, etc. evaluation be suppressed when verbless? (configuration flag)
        {
-           verbdef.lparms.no_eval_ident   = true;                                            
-           verbdef.lparms.no_eval_vlist   = true;    
-           verbdef.lparms.no_eval_expression  = true;                                            
-       }
+           verbset.verbs.at(0).lparms.eval.no_eval_ident       = true;                                            
+           verbset.verbs.at(0).lparms.eval.no_eval_vlist       = true;    
+           verbset.verbs.at(0).lparms.eval.no_eval_expression  = true; 
+           verbset.verbs.at(0).lparms.eval.no_eval_ref         = true; 
+       }                              
     }
 
 
     //  Process any nested expressions in left or right vlists -- replace expression with value -- updated value can be another expression or variable -- no double evaluation -- these will be left as-is here (verb checking may complain about them) 
     //  ------------------------------------------------------
 
-    if ( (eval_expression.lparms.value_ct > 0) || (eval_expression.lparms.kw_ct > 0) )       // un-evaluated kw count
+    if ( (eval_expression.lparms.value_ct > 0) || (eval_expression.lparms.kw_ct > 0) )                        // un-evaluated kw count
     {
         M__(M_out(L"eval_expression() -- process left vlist (lparms) -- calling eval_vlist()");) 
         results_S vlist_results {}; 
-        auto erc = eval_vlist(frame, eval_expression.lparms, vlist_results, verbdef.lparms);
+        auto erc = eval_vlist(frame, eval_expression.lparms, vlist_results, verbset.verbs.at(0).lparms);      
 
         if (erc != 0) rc = erc;
 
         if (vlist_results.special_results)
         {
-            results = vlist_results;                                                         // pass back unusual results from vlist evaluation
+            results = vlist_results;                                                                          // pass back unusual results from vlist evaluation
             return rc;                       
         }
     }
 
-    if ( (eval_expression.rparms.value_ct > 0) || (eval_expression.rparms.kw_ct > 0) )       // un-evaluated kw count
+    if ( (eval_expression.rparms.value_ct > 0) || (eval_expression.rparms.kw_ct > 0) )                       // un-evaluated kw count
     {
         M__(M_out(L"eval_expression() -- process right vlist (rparms) -- calling eval_vlist()");) 
         results_S vlist_results {}; 
-        auto erc = eval_vlist(frame, eval_expression.rparms, vlist_results, verbdef.rparms);
+        auto erc = eval_vlist(frame, eval_expression.rparms, vlist_results, verbset.verbs.at(0).rparms);     
 
         if (erc != 0) rc = erc;
 
         if (vlist_results.special_results)
         {
-            results = vlist_results;                                                          // pass back unusual results from vlist evaluation
+            results = vlist_results;                                                                        // pass back unusual results from vlist evaluation
             return rc;                       
         }
     }
@@ -3156,7 +3457,10 @@ int eval_expression_1(frame_S& frame, const a_expression_S& orig_expression, res
     // do preliminary parm checking based on verbdef_S for main verb (if any)
     // ----------------------------------------------------------------------
 
-     
+    // ???????????????????? verbdef_S selection from the verbset_S returned from get_verb() will be required here  ?????? 
+
+    verbdef_S verbdef = verbset.verbs.at(0); 
+
     if (eval_expression.has_verb && have_verbdef)                                             // bypass parm checking if no verbdef is available
     {
       M__(M_out(L"eval_expression() -- doing parm checking -- calling check_verb_parms()");)
@@ -3378,7 +3682,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   eval_slist() -- evaluate all expressions in an slist -- return results from last expression executed (if any)
+////   eval_block() -- evaluate all expressions in an block -- return results from last expression executed (if any)
 ////
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -3386,37 +3690,37 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-int eval_slist(frame_S& frame, const slist_S& slist, results_S& results, bool is_block_slist) try
+int eval_block(frame_S& frame, const block_S& block, results_S& results) try
 {
-    M__(M_out(L"eval_slist() -- called -- is_block_slist = %d") % is_block_slist;)  
+    M__(M_out(L"eval_block() -- called");)  
     int rc = 0; 
-    results_S slist_results {}; 
+    results_S block_results { no_results() };               // start with no results, in case 1st expression is something like @CONTINUE with ignored results
 
-    auto                     expression_max   = slist.expressions.size(); 
+    auto                     expression_max   = block.expressions.size(); 
     decltype(expression_max) expression_ix    = 0; 
 
-    M__(M_out(L"eval_slist() -- expression_max=%d") % expression_max;)
+    M__(M_out(L"eval_block() -- expression_max=%d") % expression_max;)
         
-    static_N::slist_count++; 
+    static_N::block_count++; 
 
 
-    // filter out empty slist -- need to return 0 results from this (not just unit results)
+    // filter out empty block -- need to return 0 results from this (not just unit results)
 
     if (expression_max == 0)
     {
         results = no_results();                  // zero result values
-        M__(M_out(L"eval_slist() -- multiple results = 0 results");)
+        M__(M_out(L"eval_block() -- multiple results = 0 results");)
         return 0; 
     }
 
 
     // --------------------------------------------------------------
-    // main loop to process each statement (expression) in this slist
+    // main loop to process each statement (expression) in this block
     // --------------------------------------------------------------
 
     for (;;)
     { 
-        M__(M_out(L"eval_slist() -- top of for(;;) loop");)
+        M__(M_out(L"eval_block() -- top of for(;;) loop");)
 
         if (expression_ix >= expression_max)
             break; 
@@ -3424,52 +3728,61 @@ int eval_slist(frame_S& frame, const slist_S& slist, results_S& results, bool is
         static_N::statement_count++; 
 
 
-        //   evaluate n-th expression in slist, and handle error r/c
+        //   evaluate n-th expression in block, and handle error r/c
         //   ---------------------------------------------------
 
-        slist_results = results_S { }; 
+        results_S expression_results { }; 
 
-        M__(M_out(L"eval_slist() -- calling eval_expression(%d)") % expression_ix;)
+        M__(M_out(L"eval_block() -- calling eval_expression(%d)") % expression_ix;)
 
-        auto erc = eval_expression(frame, slist.expressions.at(expression_ix), slist_results);
+        auto erc = eval_expression(frame, block.expressions.at(expression_ix), expression_results);
         if (erc != 0)
         {
-            M_out_emsg1(L"eval_slist() -- slist evaluation ending immediately because of errors during expression evaluation at statement %d") % expression_ix;
-            msgend_loc(slist.expressions.at(expression_ix));
-            slist_results = error_results();                       // pass back error results
+            M_out_emsg1(L"eval_block() -- block evaluation ending immediately because of errors during expression evaluation at statement %d") % expression_ix;
+            msgend_loc(block.expressions.at(expression_ix));
             rc = erc; 
             results = error_results(); 
             return -1; 
         }
 
 
-        //   ======================
-        //   handle special results -- @LEAVE and @GOTO and @XCTL are processed at the slist level -- may get consumed if label matches, or percolated otherwise
-        //   ======================
+        // save away expression results as the block results, unless the "ignore results" special flag is set
 
-        if (slist_results.special_results)
+        if (!expression_results.ignore_results)
+            block_results = expression_results;
+
+
+
+        //   ======================
+        //   handle special results -- @LEAVE and @GOTO are processed at the block level -- may get consumed if label matches, or percolated otherwise    --    other special results are passed back  
+        //   ====================== 
+
+        if (expression_results.special_results)
         {
-            M__(M_out(L"eval_slist() -- handling special results");)
+            M__(M_out(L"eval_block() -- handling special results");)
 
-            //  handle     (plain) @LEAVE      -or-       @LEAVE "target slist"
+            //  handle     (plain) @LEAVE      -or-       @LEAVE "target block"
             //  ---------------------------------------------------------------
 
-            if (slist_results.leave_flag)
+            if (expression_results.leave_flag)
             {
-                // if (plain) @LEAVE   -or-   @LEAVE target    matches this slist -- end processing of this slist  
+                // if (plain) @LEAVE   -or-   @LEAVE target    matches this block -- end processing of this block  
 
-                if ( slist_results.str.empty() || (slist_results.str == slist.label) )
+                if ( expression_results.str.empty() || (expression_results.str == block.label) )
                 {
-                    M__(M_out(L"eval_slist() -- @LEAVE target found in current slist -- ending slist with unit results");)
-                    results = unit_results();                   // pass back unit results -- @LEAVE is consumed 
+                    M__(M_out(L"eval_block() -- @LEAVE target found in current block -- ending block with unit results");)
+
+                    expression_results.leave_flag      = false;           // consume the @LEAVE         
+                    expression_results.special_results = false;     
+                    results = expression_results;                         // pass back @LEAVE results -- @LEAVE is consumed 
                     return 0;
                 }
               
                 
-                // @LEAVE is not targetting the current slist -- need to "percolate" @LEAVE results upwards to enclosing slists (if any)
+                // @LEAVE is not targetting the current block -- need to "percolate" @LEAVE results upwards to enclosing blocks (if any)
                 
-                M__(M_out(L"eval_slist() -- @LEAVE target not found in current slist -- percolating upwards");)
-                results = slist_results; 
+                M__(M_out(L"eval_block() -- @LEAVE target not found in current block -- percolating upwards");)
+                results = expression_results; 
                 break;                 
             }
         
@@ -3477,45 +3790,46 @@ int eval_slist(frame_S& frame, const slist_S& slist, results_S& results, bool is
             //  handle @GOTO
             //  ------------
 
-            if (slist_results.goto_flag)
+            if (expression_results.goto_flag)
             {
-                // see if  @GOTO target  matches some label in this slist  
+                // see if  @GOTO target  matches some label in this block  
 
-                auto target_ct = slist.labels.count(slist_results.str);
+                auto target_ct = block.labels.count(expression_results.str);
                 if (target_ct > 0)   
                 {
-                    // matching label found in this slist -- reset expression_ix to label position and continue looping (label may point past last expression in this slist
+                    // matching label found in this block -- reset expression_ix to label position and continue looping (label may point past last expression in this block
                     
-                    expression_ix = slist.labels.at(slist_results.str);
-                    M__(M_out(L"eval_slist() -- @GOTO target found in current slist -- restarting slist evaluation at expression index = %d") % expression_ix;)
+                    expression_ix = block.labels.at(expression_results.str);
+                    M__(M_out(L"eval_block() -- @GOTO target found in current block -- restarting block evaluation at expression index = %d") % expression_ix;)
                     continue;
                 }
 
 
-                //  @GOTO target was not found in this slist -- "percolate" @GOTO results upwards to enclosing slists (if any)   
+                //  @GOTO target was not found in this block -- "percolate" @GOTO results upwards to enclosing blocks (if any)   
 
 
-                M__(M_out(L"eval_slist() -- @GOTO target not found in current slist -- percolating upwards");)
-                results = slist_results; 
+                M__(M_out(L"eval_block() -- @GOTO target not found in current block -- percolating upwards");)
+                results = expression_results; 
                 break; 
             }
 
 
-            // any other special results (@RETURN, @XCTL, @SKIPTO etc.) will cause slist evaluation to end -- special results flags are passed back to slist evaluator for handling or further percolation
+            // any other special results (@RETURN, @XCTL, @QUIT, @SKIPTO etc.) will cause block evaluation to end -- special results flags are passed back to block evaluator for handling or further percolation
 
-            M__(M_out(L"eval_slist() -- percolating special results upward");)
-            results = slist_results;      // pass back special results   
+            M__(M_out(L"eval_block() -- percolating special results upward");)
+            results = block_results;                                   // pass back special results -- don't use expression_results here, since @CONTINUE results are not saved as the block results  
             break; 
         }
 
 
-        // no error -- no special results -- normal advance to next expression in slist
+        // no error -- no special results -- normal advance to next expression in block
 
+        M__(M_out(L"eval_block() -- no special results from expression(%d)") % expression_ix;)
         expression_ix++; 
     }
   
-    results = slist_results;       // return results from last expression evaluated -- no special results get here 
-    M__(M_out(L"eval_slist() -- normal return at end");)
+    results = block_results;                                           // return results from last expression evaluated -- no special results get here 
+    M__(M_out(L"eval_block() -- normal return at end");)
     return rc; 
 }
 M_endf

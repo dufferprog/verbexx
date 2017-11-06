@@ -1084,7 +1084,7 @@ static int verb_compare_check(const e_expression_S& expression, results_S& resul
      // error -- the two values cannot be compared, since they are not the same class
 
       
-     M_out_emsg1(L"verb__compare_check() -- verb=%s, left-side and right-side values cannot ne compared because they are not the same class") % verb_name(expression);
+     M_out_emsg1(L"verb__compare_check() -- verb=%s, left-side and right-side values cannot be compared because they are not the same class") % verb_name(expression);
      msg_loc(expression.lparms.values.at(0), L" left value");  
      msg_loc(expression.rparms.values.at(0), L"right value"); 
      msgend_loc(expression);
@@ -1102,6 +1102,8 @@ static int verb_compare_check(const e_expression_S& expression, results_S& resul
                                                                                                                  \
     if (v1.ty == type_E::unit)                                                                                   \
         vr = type_val(tf);                           /* both values unit -- return true/false (passed in) */     \
+    else if (v1.ty == type_E::boolean)                                                                           \
+        vr = type_val( f(v1.boolean , v2.boolean) );                                                             \
     else if (v1.ty == type_E::string)                                                                            \
         vr = type_val( f(v1.string , v2.string) );                                                               \
     else if (is_value_float(v1))                                                                                 \

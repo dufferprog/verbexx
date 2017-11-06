@@ -12,7 +12,6 @@
 ////
 ////
 ////
-////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -29,423 +28,6 @@
 #include "h_ex_lex.h"
 #include "h_ex_parse.h"
 #include "h_ex_verb.h"
-
-
-
-
-////_________________________________________________________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-////
-////
-////   type_str() -- convert type_E enum value to printable string  (free function -- see also type_str() in token_C: 
-////                   
-////
-////_________________________________________________________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-std::wstring type_str(type_E kind) try
-{
-    switch (kind)
-    {
-        case type_E::none        : return std::wstring { L"none"                      };      break;
-        case type_E::no_value    : return std::wstring { L"no_value"                  };      break;
-        case type_E::special     : return std::wstring { L"special"                   };      break;
-        case type_E::error       : return std::wstring { L"error"                     };      break;
-        case type_E::unit        : return std::wstring { L"unit"                      };      break;
-        case type_E::boolean     : return std::wstring { L"boolean"                   };      break;
-        case type_E::int8        : return std::wstring { L"int8"                      };      break;    
-        case type_E::int16       : return std::wstring { L"int16"                     };      break;
-        case type_E::int32       : return std::wstring { L"int32"                     };      break;
-        case type_E::int64       : return std::wstring { L"int64"                     };      break;
-        case type_E::uint8       : return std::wstring { L"uint8"                     };      break;
-        case type_E::uint16      : return std::wstring { L"uint16"                    };      break;
-        case type_E::uint32      : return std::wstring { L"uint32"                    };      break;
-        case type_E::uint64      : return std::wstring { L"uint64"                    };      break;
-        case type_E::float32     : return std::wstring { L"float32"                   };      break;
-        case type_E::float64     : return std::wstring { L"float64"                   };      break;
-        case type_E::array       : return std::wstring { L"array"                     };      break;
-        case type_E::structure   : return std::wstring { L"structure"                 };      break;
-        case type_E::string      : return std::wstring { L"string"                    };      break;
-        case type_E::identifier  : return std::wstring { L"identifier"                };      break;
-        case type_E::verbname    : return std::wstring { L"verbname"                  };      break;
-        case type_E::keyname     : return std::wstring { L"keyname"                   };      break;
-        case type_E::typdef      : return std::wstring { L"typedef"                   };      break;
-        case type_E::ref         : return std::wstring { L"ref"                       };      break;
-        case type_E::vlist       : return std::wstring { L"vlist"                     };      break;
-        case type_E::expression  : return std::wstring { L"expression"                };      break;
-        case type_E::slist       : return std::wstring { L"slist"                     };      break;
-        case type_E::verbdef     : return std::wstring { L"verbdef"                   };      break; 
-        default                  : return std::wstring { L"???-Unknown_type_E::-???"  };      break; 
-    }
-}
-M_endf
-
-
-
-////_________________________________________________________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-////
-////
-////   verb_name() -- return printable verb name (with sigil, if present) 
-////
-////
-////_________________________________________________________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-std::wstring verb_name(const a_expression_S& expression) try
-{
-    std::wstring name {};
-
-
-    if (expression.verb_value.ty == type_E::verbname)                   // handle simple verbname 
-    {
-        if (expression.has_sigil)
-            name += (wchar_t)(expression.sigil);
-       
-        name += expression.verb_value.string;
-    }
-    else                                                                // handle expression yielding verbname 
-    {
-        name  = L"<"; 
-        name += str_value(expression.verb_value, true, false, false);   // debug formatting for value  
-        name += L">";                          
-    }
-
-
-    return name;
-}
-M_endf
-
-///////////////////////////////////////////////////////////////
-
-std::wstring verb_name(const e_expression_S& eval_expression) try
-{
-    std::wstring name {};
-
-    if (eval_expression.has_sigil)
-        name += (wchar_t)(eval_expression.sigil);
-       
-    name += eval_expression.verb_name;
-
-    return name;
-}
-M_endf
-
-
-
-////_________________________________________________________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-////
-////
-////   str_value() -- create printable string from passed-in value 
-////
-////
-////_________________________________________________________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-std::wstring str_value(const value_S& value, bool debug, bool debugx, bool nest) try
-{
-    std::wstring str        { };          // start with empty main string  
-    std::wstring str_d1     { };          // debug prefix string  
-    std::wstring str_d2     { };          // debug postfix string
-
-    std::wstring fmt_int8   { }; 
-    std::wstring fmt_int16  { }; 
-    std::wstring fmt_int32  { };
-    std::wstring fmt_int64  { };
-    std::wstring fmt_uint8  { }; 
-    std::wstring fmt_uint16 { }; 
-    std::wstring fmt_uint32 { };
-    std::wstring fmt_uint64 { };
-
-
-    // set format strings based on debugx or not (debugx not supported for floating point values)
-
-    if (debugx)
-    {
-        fmt_int8   = L"0x%02hX"     ;
-        fmt_int16  = L"0x%04hX"     ;
-        fmt_int32  = L"0x%08X"      ;
-        fmt_int64  = L"0x%016I64X"  ;
-        fmt_uint8  = L"0x%02hX"     ;
-        fmt_uint16 = L"0x%04hX"     ;
-        fmt_uint32 = L"0x%08X"      ;
-        fmt_uint64 = L"0x%016I64X"  ;
-    }
-    else
-    {
-        fmt_int8   = L"%hd"    ;
-        fmt_int16  = L"%hd"    ;
-        fmt_int32  = L"%d"     ;
-        fmt_int64  = L"%I64d"  ;
-        fmt_uint8  = L"%hu"    ;
-        fmt_uint16 = L"%hu"    ;
-        fmt_uint32 = L"%u"     ;
-        fmt_uint64 = L"%I64u"  ;
-    } 
-
-
-    // create main formatted string and debug mode prefix/suffix string    
-
-    if       (value.ty == type_E::string)
-    {
-        str    = value.string; 
-        str_d1 = std::wstring { const_N::chws_string_start }; 
-        str_d2 = std::wstring { const_N::chws_string_end   };
-    }
-    else if  (value.ty == type_E::int8)
-    {   
-        if (debugx)     
-            str = fmt_str(fmt_int8, (uint16_t)(value.uint8));
-        else
-            str = fmt_str(fmt_int8, (int16_t )(value.int8 ));
-
-        str_d2  = std::wstring {L"_"} + std::wstring {const_N::chws_signed_lower} + std::wstring {L"8"}; 
-    }
-    else if  (value.ty == type_E::int16)
-    {
-        str     = fmt_str(fmt_int16, value.int16);
-        str_d2  = std::wstring {L"_"} + std::wstring {const_N::chws_signed_lower} + std::wstring {L"16"}; 
-    }
-    else if  (value.ty == type_E::int32)
-    {
-        str     = fmt_str(fmt_int32, value.int32);
-        str_d2  = std::wstring {L"_"} + std::wstring {const_N::chws_signed_lower} + std::wstring {L"32"};
-    }
-    else if  (value.ty == type_E::int64)
-    {
-        str     = fmt_str(fmt_int64, value.int64);
-        str_d2  = std::wstring {L"_"} + std::wstring {const_N::chws_signed_lower} + std::wstring {L"64"};
-    }
-    else if  (value.ty == type_E::unit)
-    {
-        str     = L"0"  ; 
-        str_d2  = std::wstring {L"_"} + std::wstring {const_N::chws_unsigned_lower} + std::wstring {L"0"};
-    }
-    else if  (value.ty == type_E::boolean)
-    {
-        if (value.boolean)
-            str  = L"1"; 
-        else
-            str  = L"0"; 
-        
-        str_d2  = std::wstring {L"_"} + std::wstring {const_N::chws_unsigned_lower} + std::wstring {L"1"};
-    }
-    else if  (value.ty == type_E::uint8)
-    {
-        str     = fmt_str(fmt_uint8, (uint16_t)(value.uint8)); 
-        str_d2  = std::wstring {L"_"} + std::wstring {const_N::chws_unsigned_lower} + std::wstring {L"8"};
-    }
-    else if  (value.ty == type_E::uint16)
-    {
-        str    = fmt_str(fmt_uint16, value.uint16); 
-        str_d2 = std::wstring {L"_"} + std::wstring {const_N::chws_unsigned_lower} + std::wstring {L"16"};
-    }
-    else if  (value.ty == type_E::uint32)
-    {
-        str    = fmt_str(fmt_uint32, value.uint32); 
-        str_d2 = std::wstring {L"_"} + std::wstring {const_N::chws_unsigned_lower} + std::wstring {L"32"};
-    }
-    else if  (value.ty == type_E::uint64)
-    {
-        str    = fmt_str(fmt_uint64, value.uint64); 
-        str_d2 = std::wstring {L"_"} + std::wstring {const_N::chws_unsigned_lower} + std::wstring {L"64"};
-    }
-    else if  (value.ty == type_E::float32)
-    {
-        str    = fmt_str(L"%#.9g", (float64_T)(value.float32));
-        str_d2 = std::wstring {L"_"} + std::wstring {const_N::chws_float_lower} + std::wstring {L"32"};;
-    }
-    else if  (value.ty == type_E::float64)
-    {
-        str    = fmt_str(L"%#.18g", value.float64);
-        str_d2 = std::wstring {L"_"} + std::wstring {const_N::chws_float_lower} + std::wstring {L"64"};
-    }
-    else if  (value.ty == type_E::slist) 
-    {
-        str =  L"{slist}";
-    }
-    else if  (value.ty == type_E::verbdef) 
-    {
-        str =  L"<verbdef>";
-    }
-    else if  (value.ty == type_E::typdef) 
-    {
-        str =  std::wstring { L"<typedef:" } + type_str(value.typdef_sp->kind) + L">";
-    }
-    else if  (value.ty == type_E::ref) 
-    {
-        str =  L"<ref>";
-    }
-    else if  (value.ty == type_E::structure) 
-    {
-        str =  L"<struct>";
-    }
-    else if  (value.ty == type_E::array) 
-    {
-        str =  L"<array>";
-    }
-    else if  (value.ty == type_E::expression)
-    {
-        str =  L"(expression)";
-    }
-    else if  (value.ty == type_E::vlist) 
-    {
-        if (nest)
-            str = L"[" + str_vlist(*(value.vlist_sp), debug, debugx, nest) + L"]";
-        else
-            str =  L"[vlist]";
-    }
-    else if  (value.ty == type_E::identifier)
-    {
-        str    = value.string;
-        str_d1 = L"identifier:"; 
-    }
-    else if  (value.ty == type_E::verbname)
-    {
-        str    = value.string;
-        str_d1 = L"verbname:"; 
-    }
-    else if  (value.ty == type_E::keyname)
-    {
-        str    = value.string;
-        str_d1 = L"keyname:"; 
-    }
-    else if  (value.ty == type_E::none)
-    {
-        str    = L"uninitialized value";
-        str_d1 = L"none:"; 
-    }
-    else  
-    {
-        str =  L"??? unknown value type ???";
-    }   
-
-
-    // add prefix and/or suffix debug strings, if this is a debug mode display
-
-    if ( debug || debugx)
-        str = str_d1 + str + str_d2; 
-
-
-    return str;             // return completed string
-}                                                
-M_endf
-
-
-
-
-////_________________________________________________________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-////
-////
-////   str_vlist() -- create printable string from passed-in vlist 
-////
-////
-////_________________________________________________________________________________________________________________________________________________________________
-////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-std::wstring str_vlist(const vlist_S& vlist, bool debug, bool debugx, bool nest) try
-{
-    std::wstring str      {     };       // start with open bracket 
-    bool        add_space {false};       // true -- need to add space before current formatted value 
-
-
-    // add positional values to string 
-
-    if (vlist.value_ct > 0)
-    {
-        for (const auto& value : vlist.values)
-        {
-             if (add_space)    
-                str += L" ";
-    
-             auto strv = str_value(value, debug, debugx, nest);
-
-             if (strv.length() > 0)
-             {
-                 str += str_value(value, debug, debugx, nest);
-                 add_space = true;                         // space before next value is needed 
-             }
-             else
-             {
-                 add_space = false;                        // no space needed if value string is zero-length  
-             }
-        }
-    }
-
-
-    // add evaluated/unevaluated keyword values to string
-    // --------------------------------------------------
-
-    if (vlist.kw_eval_done)                                // keyword evaluation has been done for this vlist ? 
-    {
-        if (vlist.eval_kws.size() > 0)                     // add any evaluated keywords
-        {
-            for (const auto& elem : vlist.eval_kws)
-            {
-                 if (add_space)    
-                    str += L" ";
-        
-                 str +=  elem.first + L":" + str_value(elem.second, debug, debugx, nest);
-                 add_space = true;                         // space before next value is needed    
-            }
-        }
-    }
-    else                                                   // keyword evaluation has not yet been done for this vlist (or there was nothing to evaluate)
-    {
-        if (vlist.keywords.size() > 0)                     // add any unevaluated keywords to string    
-        {
-            for (const auto& elem : vlist.keywords)
-            {
-                if (add_space)    
-                   str += L" ";
-    
-                if (elem.name.ty == type_E::string)
-                    str +=  elem.name.string + L":"           + str_value(elem.value, debug, debugx, nest);
-                else
-                    str +=  L"`( keyword name expression `):" + str_value(elem.value, debug, debugx, nest);
-                                                        
-                add_space = true;                          // space before next value is needed    
-            }
-        }    
-    }  
-
-    return str;                                            // return completed string
-}
-M_endf
-
-
-
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
-//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
-//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
-//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
-//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
-//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
-//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
-//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
-//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -563,10 +145,6 @@ M_endf
 
   
 
-
-
-
-
 ////_________________________________________________________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
@@ -590,6 +168,24 @@ results_S no_results() try
     return results; 
 }
 M_endf
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
 
 ////_________________________________________________________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
@@ -908,11 +504,11 @@ M_endf
 
 /////////////////////////////////////////////////////
 
-value_S slist_val(const slist_S& v, int64_t ix1, int64_t ix2) try
+value_S block_val(const block_S& v, int64_t ix1, int64_t ix2) try
 {
     value_S value {}; 
 
-    set_slist_value(value, v, false);    // std::move is not OK
+    set_block_value(value, v, false);    // std::move is not OK
     value.token_ix1 = v.token_ix1;
     value.token_ix2 = v.token_ix2;
     return value; 
@@ -922,11 +518,11 @@ M_endf
 
 /////////////////////////////////////////////////////
 
-value_S verbdef_val(const verbdef_S& v, int64_t ix1, int64_t ix2) try
+value_S verbset_val(const verbset_S& v, int64_t ix1, int64_t ix2) try
 {
     value_S value {}; 
 
-    set_verbdef_value(value, v, false);    // std::move is not OK
+    set_verbset_value(value, v, false);    // std::move is not OK
     value.token_ix1 = ix1;
     value.token_ix2 = ix2;
     return value; 
@@ -1642,11 +1238,11 @@ M_endf
 
 /////////////////////////////////////////////////////
 
-value_S type_val(const slist_S& v, int64_t ix1, int64_t ix2) try
+value_S type_val(const block_S& v, int64_t ix1, int64_t ix2) try
 {
     value_S value {}; 
 
-    set_slist_value(value, v, false);    // std::move is not OK
+    set_block_value(value, v, false);    // std::move is not OK
     value.token_ix1 = v.token_ix1;
     value.token_ix2 = v.token_ix2;
     return value; 
@@ -1656,11 +1252,11 @@ M_endf
 
 /////////////////////////////////////////////////////
 
-value_S type_val(const verbdef_S& v, int64_t ix1, int64_t ix2) try
+value_S type_val(const verbset_S& v, int64_t ix1, int64_t ix2) try
 {
     value_S value {}; 
 
-    set_verbdef_value(value, v, false);    // std::move is not OK
+    set_verbset_value(value, v, false);    // std::move is not OK
     value.token_ix1 = ix1;
     value.token_ix2 = ix2;
     return value; 
@@ -2124,8 +1720,8 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   set_slist_value() -- put shared_ptr to passed-in slist_S into caller's (uninitialized) value_S structure 
-////                        (allocates new slist_S and copies passed-in slist_S into it)
+////   set_block_value() -- put shared_ptr to passed-in block_S into caller's (uninitialized) value_S structure 
+////                        (allocates new block_S and copies passed-in block_S into it)
 ////
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -2133,38 +1729,38 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-void set_slist_value(value_S& val, const slist_S& slist, bool move_ok) try
+void set_block_value(value_S& val, const block_S& block, bool move_ok) try
 {
     // make sure value is not already set
 
     if (val.ty != type_E::none)
     {
-        M_out_emsg1(L"set_slist_value(): passed-in value is already set: ");
+        M_out_emsg1(L"set_block_value(): passed-in value is already set: ");
         display_value(val, L"already-set value");
         M_out_emsgz();
-        M_throw("set_slist_value(): passed-in value is already set")
+        M_throw("set_block_value(): passed-in value is already set")
     }
 
 
-    // allocate new non-autodata slist_S on heap, anchor in caller's value_S, and copy passed-in slist_S into new slist_S  -- nested values remain shared
+    // allocate new non-autodata block_S on heap, anchor in caller's value_S, and copy passed-in block_S into new block_S  -- nested values remain shared
 
-    val.slist_sp.reset(new slist_S {}); 
+    val.block_sp.reset(new block_S {}); 
 
     if (move_ok)
-        *val.slist_sp = std::move(slist);
+        *val.block_sp = std::move(block);
     else
-        *val.slist_sp = slist;
+        *val.block_sp = block;
 
 
     // set type in passed-in value
 
-    val.ty = type_E::slist; 
+    val.ty = type_E::block; 
 
 
     // set location fields in passed-in value
 
-    val.token_ix1 = slist.token_ix1; 
-    val.token_ix2 = slist.token_ix2; 
+    val.token_ix1 = block.token_ix1; 
+    val.token_ix2 = block.token_ix2; 
      
     return; 
 }
@@ -2178,8 +1774,8 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   set_verbdef_value() -- put shared_ptr to passed-in verbdef_S into caller's (uninitialized) value_S structure 
-////                          (allocates new verbdef_S and copies passed-in verbdef_S into it)
+////   set_verbset_value() -- put shared_ptr to passed-in verbset_S into caller's (uninitialized) value_S structure 
+////                          (allocates new verbset_S and copies passed-in verbset_S into it)
 ////
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -2187,32 +1783,32 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-void set_verbdef_value(value_S& val, const verbdef_S& verbdef, bool move_ok) try
+void set_verbset_value(value_S& val, const verbset_S& verbset, bool move_ok) try
 {
     // make sure value is not already set
 
     if (val.ty != type_E::none)
     {
-        M_out_emsg1(L"set_verbdef_value(): passed-in value is already set: ");
+        M_out_emsg1(L"set_verbset_value(): passed-in value is already set: ");
         display_value(val, L"already-set value");
         M_out_emsgz();
-        M_throw("set_verbdef_value(): passed-in value is already set")
+        M_throw("set_verbset_value(): passed-in value is already set")
     }
 
 
-    // allocate new non-autodata verbdef_S on heap, anchor in caller's value_S, and copy passed-in verbdef_S into new verbdef_S 
+    // allocate new non-autodata verbset_S on heap, anchor in caller's value_S, and copy passed-in verbset_S into new verbset_S 
 
-    val.verbdef_sp.reset(new verbdef_S {}); 
+    val.verbset_sp.reset(new verbset_S {}); 
 
     if (move_ok)
-        *val.verbdef_sp = std::move(verbdef);
+        *val.verbset_sp = std::move(verbset);
     else
-        *val.verbdef_sp = verbdef;
+        *val.verbset_sp = verbset;
 
 
     // set type in passed-in value
 
-    val.ty = type_E::verbdef; 
+    val.ty = type_E::verbset; 
 
 
     // set location fields in passed-in value
@@ -2435,7 +2031,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   unshare_value() -- make sure this value_S points to unique copy of nested vlists, expressions, and slists, etc.
+////   unshare_value() -- make sure this value_S points to unique copy of nested vlists, expressions, and blocks, etc.
 ////                     
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -2478,33 +2074,33 @@ void unshare_value(value_S& value) try
     }
 
 
-    // if value has valid slist_S pointer, replace existing slist_S with new one
+    // if value has valid block_S pointer, replace existing block_S with new one
     // -------------------------------------------------------------------------
 
-    if (value.slist_sp.get() != nullptr)
+    if (value.block_sp.get() != nullptr)
     {
-        M__(M_out(L"unshare_value() -- before: slist_sp = %16X") % value.slist_sp.get(); ) 
-        std::shared_ptr<slist_S> new_slist_sp { std::make_shared<slist_S>() };            // get new, empty slist_S
-        *new_slist_sp  = *(value.slist_sp);                                               // copy all existing fields into new slist_S -- copies shared pointers, but not anything pointed to by those shared pointers
-        value.slist_sp = new_slist_sp;                                                    // slist_sp in value now points to filled-in new slist_S (still with pointers to shared/uncopied vlists and expressions)
+        M__(M_out(L"unshare_value() -- before: block_sp = %16X") % value.block_sp.get(); ) 
+        std::shared_ptr<block_S> new_block_sp { std::make_shared<block_S>() };            // get new, empty block_S
+        *new_block_sp  = *(value.block_sp);                                               // copy all existing fields into new block_S -- copies shared pointers, but not anything pointed to by those shared pointers
+        value.block_sp = new_block_sp;                                                    // block_sp in value now points to filled-in new block_S (still with pointers to shared/uncopied vlists and expressions)
                                                                                           
-        unshare_slist(*(value.slist_sp));                                                 // update new slist with unshared copies of nested objects (if any) 
-        M__(M_out(L"unshare_value() -- after: slist_sp = %16X") % value.slist_sp.get(); ) 
+        unshare_block(*(value.block_sp));                                                 // update new block with unshared copies of nested objects (if any) 
+        M__(M_out(L"unshare_value() -- after: block_sp = %16X") % value.block_sp.get(); ) 
     }
 
 
-    // if value has valid verbdef_S pointer, replace existing verbdef_S with new one
+    // if value has valid verbset_S pointer, replace existing verbset_S with new one
     // -----------------------------------------------------------------------------
 
-    if (value.verbdef_sp.get() != nullptr)
+    if (value.verbset_sp.get() != nullptr)
     {
-        M__(M_out(L"unshare_value() -- before: verblist_sp = %16X") % value.verbdef_sp.get(); ) 
-        std::shared_ptr<verbdef_S> new_verbdef_sp { std::make_shared<verbdef_S>() };      // get new, empty verbdef_S
-        *new_verbdef_sp  = *(value.verbdef_sp);                                           // copy all existing fields into verbdef_S -- copies shared pointers, but not anything pointed to by those shared pointers
-        value.verbdef_sp = new_verbdef_sp;                                                // verbdef_sp in value now points to filled-in new verbdef_S (still with pointers to shared/uncopied plists slists, etc.)
+        M__(M_out(L"unshare_value() -- before: verbset_sp = %16X") % value.verbset_sp.get(); ) 
+        std::shared_ptr<verbset_S> new_verbset_sp { std::make_shared<verbset_S>() };     // get new, empty verbset_S
+        *new_verbset_sp  = *(value.verbset_sp);                                          // copy all existing fields into verbset_S -- copies shared pointers, but not anything pointed to by those shared pointers
+        value.verbset_sp = new_verbset_sp;                                               // verbset_sp in value now points to filled-in new verbdef_S (still with pointers to shared/uncopied plists blocks, etc.)
 
-        unshare_verbdef(*(value.verbdef_sp));                                             // update new verbdef with unshared copies of nested objects (if any) 
-        M__(M_out(L"unshare_value() -- after: verbdef_sp = %16X") % value.verbdef_sp.get(); ) 
+        unshare_verbset(*(value.verbset_sp));                                            // update new verbdef with unshared copies of nested objects (if any) 
+        M__(M_out(L"unshare_value() -- after: verbset_sp = %16X") % value.verbset_sp.get(); ) 
     }  
 
 
@@ -2516,7 +2112,7 @@ void unshare_value(value_S& value) try
         M__(M_out(L"unshare_value() -- before: typdef_sp = %16X") % value.typdef_sp.get(); ) 
         std::shared_ptr<typdef_S> new_typdef_sp { std::make_shared<typdef_S>() };         // get new, empty typdef_S
         *new_typdef_sp = *(value.typdef_sp);                                              // copy all existing fields into typdef_S -- copies shared pointers, but not anything pointed to by those shared pointers
-        value.typdef_sp = new_typdef_sp;                                                  // typdef_sp in value now points to filled-in new typdef_S (still with pointers to shared/uncopied plists slists, etc.)
+        value.typdef_sp = new_typdef_sp;                                                  // typdef_sp in value now points to filled-in new typdef_S (still with pointers to shared/uncopied plists blocks, etc.)
                                                                                         
         unshare_typdef(*(value.typdef_sp));                                               // update new typdef_S with unshared copies of nested objects (if any) 
         M__(M_out(L"unshare_value() -- after: typdef_sp = %16X") % value.typdef_sp.get(); ) 
@@ -2554,7 +2150,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   unshare_vlist() -- make sure all values in this vlist_S point to unique copies of nested vlists, expression, and slists
+////   unshare_vlist() -- make sure all values in this vlist_S point to unique copies of nested vlists, expression, and blocks
 ////                      
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -2604,7 +2200,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   unshare_expression() -- make sure all values in this a_expression_S point to unique copies of nested vlists, expressions, and slists
+////   unshare_expression() -- make sure all values in this a_expression_S point to unique copies of nested vlists, expressions, and blocks
 ////                     
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -2635,7 +2231,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   unshare_slist() -- make sure all values in this slist_S point to unique copies of nested vlists, expressions, and slists
+////   unshare_block() -- make sure all values in this block_S point to unique copies of nested vlists, expressions, and blocks
 ////                      
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -2643,17 +2239,17 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-void unshare_slist(slist_S& slist) try
+void unshare_block(block_S& block) try
 {
-    M__(M_out(L"unshare_slist() called -- &slist = %016X") % (void *)&slist;)
+    M__(M_out(L"unshare_block() called -- &block = %016X") % (void *)&block;)
 
-	// loop 1 -- unshare values for expressions in slist 
+	// loop 1 -- unshare values for expressions in block 
 
-    if (slist.expression_ct > 0)
-        for (auto& expression : slist.expressions) unshare_expression(expression); 
+    if (block.expression_ct > 0)
+        for (auto& expression : block.expressions) unshare_expression(expression); 
 
 
-    M__(M_out(L"unshare_slist() returning");)
+    M__(M_out(L"unshare_block() returning");)
 	return; 
 }
 M_endf
@@ -2667,39 +2263,72 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   unshare_verbdef() -- make sure all values in this verbdef_S point to unique copies of nested plists, slists, parmtypes, etc.
+////   unshare_verbset() -- make sure all values in this verbset_S point to unique copies of nested plists, blocks, parmtypes, etc.
 ////                      
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-void unshare_verbdef(verbdef_S& verbdef) try
-{
-    M__(M_out(L"unshare_verbdef() called -- &verbdef = %016X") % (void *)&verbdef;)
    
-     
-    // make sure nothing is shared in the plist_S fields
+void unshare_verbset(verbset_S& verbset) try
+{  
+    M__(M_out(L"unshare_verbset() called -- &verbset = %016X") % (void *)&verbset;)
+   
 
-    unshare_plist(verbdef.lparms); 
-    unshare_plist(verbdef.lparms);
-
-
-    // if verbdef has valid slist pointer, replace existing slist with new (unshared) one.
-
-    if (verbdef.slist_sp.get() != nullptr)
+    // ---------------------------------------------------------------
+    // main loop to unshare each individual verbdef_S for this verbset
+    // ---------------------------------------------------------------
+    
+    for (auto i = 0; i < verbset.verbs.size(); i++)
     {
-        M__(M_out(L"unshare_verbdef() -- before: slist_sp = %16X") % verbdef.slist_sp.get(); ) 
-        std::shared_ptr<slist_S> new_slist_sp { std::make_shared<slist_S>() };                   // get new, empty slist_S
-        *new_slist_sp = *(verbdef.slist_sp);                                                     // copy all existing fields into new slist -- copies shared pointers, but not anything pointed to by those shared pointers
-        verbdef.slist_sp = new_slist_sp;                                                         // slist_sp in verbdef now points to filled-in new slist (still with pointers to shared/uncopied plists and parmtype_S expressions)
+        // make sure nothing is shared in the plist_S fields
+      
+        unshare_plist(verbset.verbs.at(i).lparms); 
+        unshare_plist(verbset.verbs.at(i).rparms);
+      
+      
+        // if verbdef has valid verb_block pointer, replace existing verb block with new (unshared) one.
+      
+        if (verbset.verbs.at(i).verb_block_sp.get() != nullptr)
+        {
+            M__(M_out(L"unshare_verbset() -- before: verb_block_sp = %16X") % verbset.verbs.at(i).verb_block_sp.get(); ) 
+            std::shared_ptr<block_S> new_block_sp { std::make_shared<block_S>() };                                   // get new, empty block_S
+            *new_block_sp = *(verbset.verbs.at(i).verb_block_sp);                                                    // copy all existing fields into new block -- copies shared pointers, but not anything pointed to by those shared pointers
+            verbset.verbs.at(i).verb_block_sp = new_block_sp;                                                        // block_sp in verbset.verbs.at(0) now points to filled-in new block (still with pointers to shared/uncopied plists and parmtype_S expressions)
+                                                                                                                   
+            unshare_block(*(verbset.verbs.at(i).verb_block_sp));                                                     // update new block with unshared copies of nested objects (if any) 
+            M__(M_out(L"unshare_verbset() -- after: verb_block_sp = %16X") % verbset.verbs.at(i).verb_block_sp.get(); )                  
+        }                                                                                                          
+      
+      
+        // if verbdef has valid init_block pointer, replace existing init block with new (unshared) one.
+      
+        if (verbset.verbs.at(i).init_block_sp.get() != nullptr)
+        {
+            M__(M_out(L"unshare_verbset() -- before: init_block_sp = %16X") % verbset.verbs.at(i).init_block_sp.get(); ) 
+            std::shared_ptr<block_S> new_block_sp { std::make_shared<block_S>() };                                   // get new, empty block_S
+            *new_block_sp = *(verbset.verbs.at(i).init_block_sp);                                                    // copy all existing fields into new block -- copies shared pointers, but not anything pointed to by those shared pointers
+            verbset.verbs.at(i).init_block_sp = new_block_sp;                                                        // block_sp in verbset.verbs.at(0) now points to filled-in new block (still with pointers to shared/uncopied plists and parmtype_S expressions)
+                                                                                                                   
+            unshare_block(*(verbset.verbs.at(i).init_block_sp));                                                     // update new block with unshared copies of nested objects (if any) 
+            M__(M_out(L"unshare_verbset() -- after: init_block_sp = %16X") % verbset.verbs.at(i).init_block_sp.get(); )                  
+        }    
 
-        unshare_slist(*(verbdef.slist_sp));                                                      // update new slist with unshared copies of nested objects (if any) 
-        M__(M_out(L"unshare_verbdef() -- after: slist_sp = %16X") % verbdef.slist_sp.get(); ) 
+        
+        // if verbdef has a persistent environment, get rid of it and replace it with a new (empty) one -- don't attempt to copy everything defined inside the environment -- all verbdefs in the verbset will have to be re-initialized 
+
+        if (verbset.verbs.at(i).persist_env_sp.get() != nullptr)
+        {
+            verbset.verbs.at(i).persist_env_sp.reset();                                                              // get rid of existing persistent environment
+            
+            std::shared_ptr<environ_S> persist_env_sp { new environ_S { } };                                         // allocate new persistent environment for this verb and anchor it locally, for now
+        
+            verbset.verbs.at(i).persist_env_sp = persist_env_sp;                                                     // set up shared ptr to new (empty) persistent env in verbdef_S        
+        }
     }
-
-    M__(M_out(L"unshare_verbdef() returning");)
+    
+    M__(M_out(L"unshare_verbset() returning");)
 	return; 
 }
 M_endf
@@ -3092,8 +2721,8 @@ bool is_type_valid(type_E kind) try
         case type_E::ref         : return true ;      break;
         case type_E::vlist       : return true ;      break;
         case type_E::expression  : return true ;      break;
-        case type_E::slist       : return true ;      break;
-        case type_E::verbdef     : return true ;      break; 
+        case type_E::block       : return true ;      break;
+        case type_E::verbset     : return true ;      break; 
         default                  : return false;      break; 
     }  
 }
@@ -3589,7 +3218,7 @@ M_endf
 //
 //
 //  note:  allocates new typdef_S and attaches to passed-in ref_S
-//  note:  value_sp needs to point to allocated value_S anchored in a symtab entry
+//  note:  value_sp needs to point to allocated value_S anchored in an symval_St
 //
 // ====================================================================================================
 
@@ -3760,7 +3389,7 @@ M_endf
 //
 //
 //  note:  allocates new typdef_S and attaches to passed-in ref_S
-//  note:  value_sp needs to point to another allocated value_S anchored in a symtab entry
+//  note:  value_sp needs to point to another allocated value_S anchored in symval_S
 //
 // ==========================================================================================================================
 
@@ -3899,13 +3528,13 @@ int make_reference(ref_S& ref, const symval_S& symval, const std::wstring& ident
     ref = ref_S { };            // reset caller's ref_S to default state, before starting
 
 
-    // make sure symtab entry is not for verbdef, typdef, or constant  
-    // --------------------------------------------------------------
+    // make sure symval_S is not for verbdef, typdef, or constant  
+    // ----------------------------------------------------------
 
-    if (symval.is_verbdef)
+    if (symval.is_verbset)
     {
         count_error();
-        M_out_emsg(L"make_reference() -- cannot make lvalue ref to %sverbdef %S") % (symval.is_builtin ? L"builtin " : L"") % ident;   
+        M_out_emsg(L"make_reference() -- cannot make lvalue ref to %sverbset %S") % (symval.is_builtin ? L"builtin " : L"") % ident;   
         return -1; 
     }
 

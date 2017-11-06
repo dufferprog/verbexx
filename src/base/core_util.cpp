@@ -24,6 +24,186 @@
 #include "h__common.h"
 
          
+//    static variables 
+//    ----------------
+
+namespace static_N
+{
+    // tracker_C counters
+
+    uint64_t                                tracker_construct       {0};                  // number of times constructor was called
+    uint64_t                                tracker_destruct        {0};                  // number of times destructor was called 
+
+
+    // timepoints and captured performance counters
+
+    std::chrono::steady_clock::time_point   steady_tp1              { };                  // first  saved timepoint              
+    std::chrono::steady_clock::time_point   steady_tp2              { };                  // second saved timepoint 
+    std::chrono::steady_clock::time_point   steady_tp3              { };                  // third  saved timepoint 
+
+    int64_t                                 pc1                     { -1 };               // first  saved performance counter (probably start of whole run)
+    int64_t                                 pc2                     { -1 };               // second saved performance counter (probably start of parse phase) 
+    int64_t                                 pc3                     { -1 };               // third  saved performance counter (probably start of evaluation phase)
+}
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//    timer-oriented functions
+//    ------------------------
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+// ----------------------
+// set_steady_timepoint()
+// ----------------------
+
+M_CORE_IMPEXP
+int set_steady_timepoint(uint32_t n) try
+{
+    switch (n)
+    {
+        case 1 : 
+            static_N::steady_tp1 = std::chrono::steady_clock::now();  
+            break; 
+    
+        case 2 : 
+            static_N::steady_tp2 = std::chrono::steady_clock::now();  
+            break;
+
+        case 3 :  
+            static_N::steady_tp3 = std::chrono::steady_clock::now();  
+            break;
+
+        default : 
+            M_out_emsg(L"set_steady_timepoint() -- timepoint number (%d) is not in range 1-3") % n;
+            return -1; 
+            break;
+    }
+
+    return 0; 
+}
+M_endf
+
+
+// ----------------------
+// elapsed_steady_clock()
+// ----------------------
+
+M_CORE_IMPEXP
+real_T elapsed_steady_time(uint32_t n) try
+{
+    real_T elapsed { 0.0 };
+
+    switch (n)
+    {
+        case 1 : 
+            elapsed = M_timer_elapsed(static_N::steady_tp1);  
+            break; 
+    
+        case 2 : 
+            elapsed = M_timer_elapsed(static_N::steady_tp2);   
+            break;
+
+        case 3 : 
+            elapsed = M_timer_elapsed(static_N::steady_tp3);  
+            break;
+
+        default : 
+            M_out_emsg(L"elapsed_steady_time() -- timepoint number (%d) is not in range 1-3") % n;
+            return -1.0; 
+            break;
+    }
+
+    return elapsed; 
+}
+M_endf
+
+
+
+
+// ---------------------------
+// capture_pc_time()
+// ---------------------------
+
+M_CORE_IMPEXP
+int capture_pc_time(uint32_t n) try
+{
+    switch (n)
+    {
+        case 1 : 
+            static_N::pc1 = query_performance_counter();  
+            break; 
+    
+        case 2 : 
+            static_N::pc2 = query_performance_counter();  
+            break;
+
+        case 3 :  
+            static_N::pc3 = query_performance_counter();  
+            break;
+
+        default : 
+            M_out_emsg(L"capture_performance_count() -- count number (%d) is not in range 1-3") % n;
+            return -1; 
+            break;
+    }
+
+    return 0; 
+}
+M_endf
+
+
+
+
+// -----------------
+// elapsed_pc_time()
+// -----------------
+
+M_CORE_IMPEXP
+float64_T elapsed_pc_time(uint32_t n) try
+{
+    float64_T elapsed { 0.0 };
+
+    switch (n)
+    {
+        case 1 : 
+            if (static_N::pc1 == -1)
+                elapsed = -1.0; 
+            else
+                elapsed = performance_counter_interval(static_N::pc1);  
+            break; 
+    
+        case 2 : 
+            if (static_N::pc2 == -1)
+                elapsed = -1.0; 
+            else
+                elapsed = performance_counter_interval(static_N::pc2); 
+            break;
+
+        case 3 : 
+            if (static_N::pc3 == -1)
+                elapsed = -1.0; 
+            else
+                elapsed = performance_counter_interval(static_N::pc3); 
+            break;
+
+        default : 
+            M_out_emsg(L"elapsed_pc_time() -- count number (%d) is not in range 1-3") % n;
+            elapsed = -1.0;
+            break;
+    }
+
+    return elapsed; 
+}
+M_endf
+
+
+
+
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\\
 //
 //           note: template buffer_C functions are in h_core_template.h (template functions needed in all compiles)  
@@ -57,7 +237,6 @@
 
 
 
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////
@@ -85,7 +264,11 @@ M_CORE_IMPEXP
 tracker_C::tracker_C()      
      : lineage       {std::to_wstring(0)}   
 {
-	   {M_out_lk(L"tracker_C::tracker() called -- default constructor -- id=%d  copy_id=%d  move_id=%d  lineage=\"%s\"") % id % copy_id % move_id % lineage;} 
+    static_N::tracker_construct ++; 
+	{M_out_lk( L"tracker_C::tracker() called -- default constructor -- id=%d  copy_id=%d  move_id=%d  lineage=\"%s\"  constuct/destruct = %d/%d")
+             % id % copy_id % move_id % lineage % static_N::tracker_construct % static_N::tracker_destruct
+             ;
+    } 
     return;
 }
 
@@ -104,7 +287,11 @@ tracker_C::tracker_C(int parm_id)
      : id            {parm_id                 }   
      , lineage       {std::to_wstring(parm_id)}   
 {
-	   {M_out_lk(L"tracker_C::tracker(%d) called -- int constructor -- parm_id=%d  id=%d  copy_id=%d  move_id=%d  lineage=\"%s\"") % parm_id % parm_id % id % copy_id % move_id % lineage;} 
+    static_N::tracker_construct ++; 
+	{M_out_lk( L"tracker_C::tracker(%d) called -- int constructor -- parm_id=%d  id=%d  copy_id=%d  move_id=%d  lineage=\"%s\"  constuct/destruct = %d/%d")
+             % parm_id % parm_id % id % copy_id % move_id % lineage % static_N::tracker_construct % static_N::tracker_destruct
+             ;
+    } 
     return;
 }
 
@@ -125,6 +312,7 @@ tracker_C::tracker_C(const tracker_C& from)
      , move_id    {from.move_id                            }
      , lineage    {from.lineage + std::wstring(L" : Copy") }  
 {
+    static_N::tracker_construct ++; 
     {M_out_lk(L"tracker_C::tracker(const tracker_C&) called -- copy constructor -- id=%d  copy_id=%d  move_id=%d  lineage=\"%s\"") % id % copy_id % move_id % lineage;}
     return;
 }
@@ -146,7 +334,8 @@ tracker_C::tracker_C(tracker_C&& from)
      , move_id    {from.move_id + 1}
      , lineage    {from.lineage + std::wstring(L" : Move")}  
 {
-	   from.lineage += std::wstring(L" : [moved from]");
+    static_N::tracker_construct ++; 
+	from.lineage += std::wstring(L" : [moved from]");
     {M_out_lk(L"tracker_C::tracker(tracker_C&&) called -- move constructor -- id=%d  copy_id=%d  move_id=%d  lineage=\"%s\"") % id % copy_id % move_id % lineage;}
     return;
 }
@@ -164,7 +353,11 @@ tracker_C::tracker_C(tracker_C&& from)
 M_CORE_IMPEXP
 tracker_C::~tracker_C()                    
 {
-    {M_out_lk(L"tracker_C::~tracker() called -- destructor -- id=%d  copy_id=%d  move_id=%d  lineage=\"%s\"") % id % copy_id % move_id % lineage;}
+    static_N::tracker_destruct ++; 
+    {M_out_lk(L"tracker_C::~tracker() called -- destructor -- id=%d  copy_id=%d  move_id=%d  lineage=\"%s\"  constuct/destruct = %d/%d") 
+             % id % copy_id % move_id % lineage % static_N::tracker_construct % static_N::tracker_destruct
+             ;
+    }
     return; 
 }
 
@@ -1279,7 +1472,7 @@ M_endf
 //║╳╳╳╳╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 //║╳╳╳╳║
 //║╳╳╳╳║
-//║╳╳╳╳║      out_ws() -- get rid of unprintable characters in std::wstring -- used onlf for narrow strings (like C++ exception .what() )
+//║╳╳╳╳║      out_ws() -- get rid of unprintable characters in std::wstring -- used only for narrow strings (like C++ exception .what() )
 //║╳╳╳╳║
 //║╳╳╳╳║
 //║╳╳╳╳║
@@ -1299,7 +1492,7 @@ M_endf
 M_CORE_IMPEXP
 std::string out_ws(std::wstring ws) try
 {
-    std::string s {};                 // output string
+    std::string s {};                                // output string
 
     for (auto i = 0; i < ws.size(); ++i)
     {
@@ -1343,6 +1536,49 @@ std::string out_ws(std::wstring ws) try
 M_endf
 
 
+//╔═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+//║╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳
+//║╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳
+//║╳╳╳╳╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+//║╳╳╳╳║
+//║╳╳╳╳║
+//║╳╳╳╳║      cleanup_ws() -- get rid of unprintable characters in std::wstring -- used for wide strings
+//║╳╳╳╳║
+//║╳╳╳╳║      for now, unprintable characters are fro 00-31 -- all others arepassed through 
+//║╳╳╳╳║
+//║╳╳╳╳║
+//║╳╳╳╳║
+//║╳╳╳╳╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+//║╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳
+//║╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳
+//╚═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+M_CORE_IMPEXP
+std::wstring cleanup_ws(std::wstring ws_in) try
+{
+    std::wstring ws_out {};                           // output string
+
+
+    // loop over each wchar_t in input wide string
+    // -------------------------------------------
+
+    for (auto i = 0; i < ws_in.size(); ++i)
+    {
+        wchar_t  wc   = ws_in.at(i);
+        uint32_t ch32 = (uint32_t)wc; 
+    
+        if ( ch32 <= 31 )
+            ws_out += (wchar_t)(utf32_N::CENT_SIGN);  // put substitute char (cent sign) in output string 
+        else 
+            ws_out += wc;                             // put original char in output string
+    }
+
+    return ws_out; 
+}
+M_endf
+
+
+
 
 
 //╔═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -1360,6 +1596,7 @@ M_endf
 //╚═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 
 // narrow string version
+// ---------------------
 
 M_CORE_IMPEXP
 std::string shorten_str(std::string str, size_t parm_maxl) try
@@ -1381,22 +1618,24 @@ M_endf
 
 
 // wide string version
+// -------------------
 
 M_CORE_IMPEXP
-std::wstring shorten_str(std::wstring wstr, size_t parm_maxl) try
+std::wstring shorten_str(std::wstring ws_parm_in, size_t parm_maxl) try
 {
-    std::wstring ws {};                 // output string
+    std::wstring ws_in  { cleanup_ws(ws_parm_in) };                 // cleaned-up in put string
+    std::wstring ws_out {                        };                 // output string
     
     size_t maxl = M_max(15, parm_maxl);
 
-    auto sz = wstr.size();
+    auto sz = ws_in.size();
 
     if (sz > maxl)   
-        ws = wstr.substr(0, maxl / 2UL) + std::wstring{L"\"...\""} + wstr.substr(sz - maxl / 2UL);  
+        ws_out = ws_in.substr(0, maxl / 2UL) + std::wstring{L"\"...\""} + ws_in.substr(sz - maxl / 2UL);  
     else
-        ws = wstr;            // already small enough 
+        ws_out = ws_in;                                            // already small enough 
 
-    return ws; 
+    return ws_out; 
 }
 M_endf
 

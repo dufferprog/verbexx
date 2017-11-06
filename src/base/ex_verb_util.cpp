@@ -40,8 +40,8 @@
 ////     @NOEVAL
 ////     @EVAL
 ////     @UNSHARE
-////     @EXPORT
-////     @UNEXPORT
+////     @EXPOSE
+////     @UNEXPOSE
 ////
 ////     @AGG
 ////     @TYPE
@@ -77,6 +77,7 @@
 ////              added_types:
 ////              all_vars: 
 ////              id_cache:
+////              statistics:
 ////              etc.
 ////
 ////
@@ -154,7 +155,7 @@ int eval_cond(frame_S& frame, const value_S& value, const e_expression_S& expres
     }
 
 
-    // return with R/C = 1, if evaluation returned a special results (exit) flag
+    // return with R/C = 1, if evaluation returned a special results (exit) flag -- do not cconsume special results
 
     if (cond_results.special_results)
     {
@@ -199,7 +200,7 @@ M_endf
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//    @VAR identifier identifier ... identifier     value: general-value  :global :export share: unshare:    -- keywords optional
+//    @VAR identifier identifier ... identifier     value: general-value  :global :expose share: unshare:    -- keywords optional
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -215,9 +216,13 @@ int verb_var(frame_S& frame, const e_expression_S& expression, const verbdef_S& 
     // fetch keyword values 
 
     value_S value_value  { };                                                   // value to be assigned -- will be unit if value: keyword not present 
-    auto value_rc   = get_right_keyword(expression, L"value" , value_value );   // key_value will be unit, if value: keyword is not present 
-    auto global_rc  = get_right_keyword(expression, L"global"              );   // rc = -1, if global:  keyword is not present
-    auto export_rc  = get_right_keyword(expression, L"export"              );   // rc = -1, if export:  keyword is not present  (assumed if this is a global variable) 
+    auto value_rc     = get_right_keyword(expression, L"value" , value_value );   // key_value will be unit, if value: keyword is not present 
+    auto global_rc    = get_right_keyword(expression, L"global"              );   // rc = -1, if global:    keyword is not present
+    auto static_rc    = get_right_keyword(expression, L"static"              );   // rc = -1, if static:    keyword is not present
+    auto verbmain_rc  = get_right_keyword(expression, L"verbmain"            );   // rc = -1, if verbmain:  keyword is not present
+#ifdef M_EXPOSE_SUPPORT
+    auto expose_rc  = get_right_keyword(expression, L"expose"              );   // rc = -1, if expose:  keyword is not present  (assumed if this is a global variable) 
+#endif
     auto unshare_rc = get_right_keyword(expression, L"unshare"             );   // rc = -1, if unshare: keyword is not present  
 
 
@@ -238,20 +243,85 @@ int verb_var(frame_S& frame, const e_expression_S& expression, const verbdef_S& 
             }
             else
             {
-                auto rc = def_global_var(var.string, value_value, false, unshare_rc == 0);    // add new non-constant variable to symbol table -- global variables are always exported
+                def_parm_S  parm { };
+                parm.unshare = (unshare_rc == 0); 
+
+                auto rc = def_global_var(var.string, value_value, parm);                       // add new non-constant variable to environment -- global variables are always exposed
                
                 // errors are unexpected here
                
                 if (rc != 0)
                 {
                     //count_error(); already counted in def_global_var()
-                    M_out_emsg1(L"verb_var() -- unexpected error from def_global_var() -- unable to define new global variable = %s") % var.string;
+                    M_out_emsg1(L"verb_var() -- error from def_global_var() -- unable to define new global variable = %s") % var.string;
                     msgend_loc(var, expression);
                     rc = -1; 
                 }  
             }
         }
-        else          // global: not present -- define local variable
+        else if (static_rc == 0)          // static: present -- define static variable
+        {
+            if (is_static_identifier_defined(frame, var.string))
+            {
+                count_error();
+                M_out_emsg1(L"verb_var() -- static identifier %s is already defined -- unable to define it again") % var.string;
+                msgend_loc(var, expression);
+                rc = -1;        
+            }
+            else
+            {
+                def_parm_S  parm { };
+                parm.unshare  = (unshare_rc == 0);
+#ifdef M_EXPOSE_SUPPORT
+                parm.exposed  = (expose_rc  == 0);
+#endif
+
+
+                auto rc = def_static_var(frame, var.string, value_value, parm);                       // add new non-constant variable to environment  -- expose based on expose: kw rc
+              
+                // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
+              
+                if (rc != 0)
+                {
+                    //count_error(); already counted in def_static_var()
+                    M_out_emsg1(L"verb_var() -- error from def_static_var() -- unable to define new static variable = %s") % var.string;
+                    msgend_loc(var, expression);
+                    rc = -1;  
+                }  
+            }
+        }
+        else if (verbmain_rc == 0)          // verbmain: present -- define verbmain variable
+        {
+            if (is_verbmain_identifier_defined(frame, var.string))
+            {
+                count_error();
+                M_out_emsg1(L"verb_var() -- verbmain identifier %s is already defined -- unable to define it again") % var.string;
+                msgend_loc(var, expression);
+                rc = -1;        
+            }
+            else
+            {
+                def_parm_S  parm { };
+                parm.unshare  = (unshare_rc == 0);
+#ifdef M_EXPOSE_SUPPORT
+                parm.exposed  = (expose_rc  == 0);
+#endif
+
+
+                auto rc = def_verbmain_var(frame, var.string, value_value, parm);                       // add new non-constant variable to environment  -- expose based on expose: kw rc
+              
+                // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
+              
+                if (rc != 0)
+                {
+                    //count_error(); already counted in def_verbmain_var()
+                    M_out_emsg1(L"verb_var() -- error from def_verbmain_var() -- unable to define new verbmain variable = %s") % var.string;
+                    msgend_loc(var, expression);
+                    rc = -1;  
+                }  
+            }
+        }
+        else          // global:, verbmain:, and static: were not present -- define local: variable
         {
             if (is_local_identifier_defined(frame, var.string))
             {
@@ -262,14 +332,21 @@ int verb_var(frame_S& frame, const e_expression_S& expression, const verbdef_S& 
             }
             else
             {
-                auto rc = def_local_var(frame, var.string, value_value, false, export_rc == 0, unshare_rc == 0);     // add new non-constant variable to symbol table  -- export based on export: kw rc
+                def_parm_S  parm { };
+                parm.unshare  = (unshare_rc == 0);
+#ifdef M_EXPOSE_SUPPORT
+                parm.exposed  = (expose_rc  == 0);
+#endif
+
+
+                auto rc = def_local_var(frame, var.string, value_value, parm);                       // add new non-constant variable to environment  -- expose based on expose: kw rc
               
                 // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
               
                 if (rc != 0)
                 {
                     //count_error(); already counted in def_local_var()
-                    M_out_emsg1(L"verb_var() -- unexpected eror from def_local_var() -- unable to define new local variable = %s") % var.string;
+                    M_out_emsg1(L"verb_var() -- error from def_local_var() -- unable to define new local variable = %s") % var.string;
                     msgend_loc(var, expression);
                     rc = -1;  
                 }  
@@ -307,7 +384,7 @@ M_endf
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//    @CONST   identifier   value: general-value   global: export: unshare: share: -- value: keyword is required
+//    @CONST   identifier   value: general-value   global: expose: unshare: share: -- value: keyword is required
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -327,14 +404,18 @@ int verb_const(frame_S& frame, const e_expression_S& expression, const verbdef_S
 
     // fetch keyword values 
 
-    value_S value_value  { };                                                   // value to be assigned -- should get/set -- value: keyword is required 
-    auto value_rc   = get_right_keyword(expression, L"value" , value_value );   // value: keyword should be present 
-    auto global_rc  = get_right_keyword(expression, L"global"              );   // rc = -1, if global:  keyword is not present
-    auto export_rc  = get_right_keyword(expression, L"export"              );   // rc = -1, if export:  keyword is not present  (always assumed, if this is global constant)
-    auto unshare_rc = get_right_keyword(expression, L"unshare"             );   // rc = -1, if unshare: keyword is not present  
+    value_S value_value  { };                                                     // value to be assigned -- should get/set -- value: keyword is required 
+    auto value_rc     = get_right_keyword(expression, L"value" , value_value );   // value: keyword should be present 
+    auto global_rc    = get_right_keyword(expression, L"global"              );   // rc = -1, if global:   keyword is not present
+    auto verbmain_rc  = get_right_keyword(expression, L"verbmain"            );   // rc = -1, if verbmain: keyword is not present
+    auto static_rc    = get_right_keyword(expression, L"static"              );   // rc = -1, if static:   keyword is not present
+#ifdef M_EXPOSE_SUPPORT
+    auto expose_rc  = get_right_keyword(expression, L"expose"                );   // rc = -1, if expose:  keyword is not present  (always assumed, if this is global constant)
+#endif
+    auto unshare_rc = get_right_keyword(expression, L"unshare"               );   // rc = -1, if unshare: keyword is not present  
 
  
-    // set global or local constant, depending on global: flag
+    // set global, static, verbmain, or local constant, depending on global: static: local: or verbmain: options
 
     if (global_rc == 0)
     {
@@ -347,20 +428,82 @@ int verb_const(frame_S& frame, const e_expression_S& expression, const verbdef_S
         }
         else
         { 
-            auto rc = def_global_var(var_name, value_value, true, unshare_rc == 0);     // add new constant variable to symbol table -- global constant always exported
+            def_parm_S parm { }; 
+            parm.unshare  = (unshare_rc == 0);
+                          
+            auto rc = def_global_const(var_name, value_value, parm);              // add new constant variable to environment -- global constant always exposed
            
             // errors expected here include duplicate global variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
            
             if (rc != 0)
             {
-                //count_error(); already counted in def_global_var()
-                M_out_emsg1(L"verb_const() -- unexpected error from def_global_var() -- unable to define new global constant = %s") % var_name;
+                //count_error(); already counted in def_global_const()
+                M_out_emsg1(L"verb_const() -- error from def_global_const() -- unable to define new global constant = %s") % var_name;
                 msgend_loc(expression.rparms.values.at(0), expression);
                 rc = -1; 
             } 
         }
     }
-    else          // global: not present -- define local constant
+    else if (static_rc == 0)          // static: present -- define static constant
+    {
+        if (is_static_identifier_defined(frame, var_name))
+        {
+            count_error();
+            M_out_emsg1(L"verb_const() -- static identifier %s is already defined -- unable to define it again") % var_name;
+            msgend_loc(expression.rparms.values.at(0), expression);
+            rc = -1;        
+        }
+        else
+        { 
+            def_parm_S parm { }; 
+            parm.unshare  = (unshare_rc == 0);
+#ifdef M_EXPOSE_SUPPORT
+            parm.exposed  = (expose_rc  == 0);
+#endif
+
+            auto rc = def_static_const(frame, var_name, value_value, parm);                           // add new non-constant variable to environment -- expose based on expose: kw rc
+          
+            // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
+          
+            if (rc != 0)
+            {
+                //count_error(); already counted in def_static_const()
+                M_out_emsg1(L"verb_const() -- error from def_static_const() -- unable to define new static constant = %s") % var_name;
+                msgend_loc(expression.rparms.values.at(0), expression);
+                rc = -1;  
+            } 
+        }
+    }
+    else if (verbmain_rc == 0)          // verbmain: present -- define verbmain constant
+    {
+        if (is_verbmain_identifier_defined(frame, var_name))
+        {
+            count_error();
+            M_out_emsg1(L"verb_const() -- verbmain identifier %s is already defined -- unable to define it again") % var_name;
+            msgend_loc(expression.rparms.values.at(0), expression);
+            rc = -1;        
+        }
+        else
+        { 
+            def_parm_S parm { }; 
+            parm.unshare  = (unshare_rc == 0);
+#ifdef M_EXPOSE_SUPPORT
+            parm.exposed  = (expose_rc  == 0);
+#endif
+            auto rc = def_verbmain_const(frame, var_name, value_value, parm);                         // add new non-constant variable to environment -- expose based on expose: kw rc
+          
+            // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
+          
+            if (rc != 0)
+            {
+                //count_error(); already counted in def_verbmain_const()
+                M_out_emsg1(L"verb_const() -- error from def_verbmain_const() -- unable to define new verbmain constant = %s") % var_name;
+                msgend_loc(expression.rparms.values.at(0), expression);
+                rc = -1;  
+            } 
+        }
+    }
+    else          // global: and static: were not present -- define local constant
     {
         if (is_local_identifier_defined(frame, var_name))
         {
@@ -371,14 +514,20 @@ int verb_const(frame_S& frame, const e_expression_S& expression, const verbdef_S
         }
         else
         { 
-            auto rc = def_local_var(frame, var_name, value_value, true, export_rc == 0, unshare_rc == 0);     // add new non-constant variable to symbol table -- export based on export: kw rc
+            def_parm_S parm { }; 
+            parm.unshare  = (unshare_rc == 0);
+#ifdef M_EXPOSE_SUPPORT
+            parm.exposed  = (expose_rc  == 0);
+#endif
+
+            auto rc = def_local_const(frame, var_name, value_value, parm);                           // add new non-constant variable to environment -- expose based on expose: kw rc
           
             // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
           
             if (rc != 0)
             {
-                //count_error(); already counted in def_local_var()
-                M_out_emsg1(L"verb_const() -- unexpected error from def_global_var -- unable to define new local constant = %s") % var_name;
+                //count_error(); already counted in def_local_const()
+                M_out_emsg1(L"verb_const() -- error from def_local_constr() -- unable to define new local constant = %s") % var_name;
                 msgend_loc(expression.rparms.values.at(0), expression);
                 rc = -1;  
             } 
@@ -400,7 +549,7 @@ M_endf
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//    @UNVAR identifier identifier ... identifier :global -- keyword optional
+//    @UNVAR identifier identifier ... identifier :global static: local: verbmain: -- keywords optional
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -413,10 +562,12 @@ int verb_unvar(frame_S& frame, const e_expression_S& expression, const verbdef_S
     M__(M_out(L"verb_unvar() called");)
 
 
-    // fetch global: keyword 
+    // fetch global: verbmain: static: keywords 
 
     value_S global_value { };                                                  // not looked at 
-    auto global_rc = get_right_keyword(expression, L"global", global_value);   // rc = -1, if global: keyword is not present
+    auto global_rc   = get_right_keyword(expression, L"global", global_value);   // rc = -1, if global:    keyword is not present
+    auto verbmain_rc = get_right_keyword(expression, L"verbmain"            );   // rc = -1, if verbmain:  keyword is not present
+    auto static_rc   = get_right_keyword(expression, L"static"              );   // rc = -1, if static:    keyword is not present
 
 
     // undefine variables in loop, if they are defined and non_constant 
@@ -452,7 +603,7 @@ int verb_unvar(frame_S& frame, const e_expression_S& expression, const verbdef_S
                 } 
                 else
                 {
-                    auto rc = undef_global_var(var.string);    // undefine variable from global symbol table
+                    auto rc = undef_global_var(var.string);    // undefine variable from global environment
                
                     // errors are unexpected here
                    
@@ -466,7 +617,89 @@ int verb_unvar(frame_S& frame, const e_expression_S& expression, const verbdef_S
                 }
             }
         }
-        else          // global: not present -- undefine local variable
+        else if (static_rc == 0)           // static: present -- undefine static variable
+        {
+            if (is_static_identifier_defined(frame, var.string))             // don't bother, if static identifier is already undefined 
+            {
+                if (is_static_identifier_const(frame, var.string))
+                {
+                    count_error(); 
+                    M_out_emsg1(L"verb_unvar() -- static variable %s is constant -- unable to undefine") % var.string;
+                    msgend_loc(var, expression);
+                    rc = -1;        
+                } 
+                else if (is_static_identifier_verb(frame, var.string))
+                {
+                    count_error(); 
+                    M_out_emsg1(L"verb_unvar() -- static identifier %s is a verb -- unable to undefine using @UNVAR") % var.string;
+                    msgend_loc(var, expression);
+                    rc = -1;        
+                } 
+                else if (is_static_identifier_typdef(frame, var.string))
+                {
+                    count_error(); 
+                    M_out_emsg1(L"verb_unvar() -- static identifier %s is a typdef -- unable to undefine using @UNVAR") % var.string;
+                    msgend_loc(var, expression);
+                    rc = -1;        
+                } 
+                else
+                {
+                    auto rc = undef_static_var(frame, var.string);           // undefine variable from static environment
+                   
+                    // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
+                   
+                    if (rc != 0)
+                    {
+                        //count_error(); already counted in def_local_var()
+                        M_out_emsg1(L"verb_unvar() -- unexpected error from undef_local_var() -- unable to undefine static variable = %s") % var.string;
+                        msgend_loc(var, expression);
+                        rc = -1;  
+                    } 
+                }
+            }
+        }       
+        else if (verbmain_rc == 0)           // verbmain: present -- undefine verbmain variable
+        {
+            if (is_verbmain_identifier_defined(frame, var.string))             // don't bother, if verbmain identifier is already undefined 
+            {
+                if (is_verbmain_identifier_const(frame, var.string))
+                {
+                    count_error(); 
+                    M_out_emsg1(L"verb_unvar() -- verbmain identifier %s is constant -- unable to undefine") % var.string;
+                    msgend_loc(var, expression);
+                    rc = -1;        
+                } 
+                else if (is_verbmain_identifier_verb(frame, var.string))
+                {
+                    count_error(); 
+                    M_out_emsg1(L"verb_unvar() -- verbmain identifier %s is a verb -- unable to undefine using @UNVAR") % var.string;
+                    msgend_loc(var, expression);
+                    rc = -1;        
+                } 
+                else if (is_verbmain_identifier_typdef(frame, var.string))
+                {
+                    count_error(); 
+                    M_out_emsg1(L"verb_unvar() -- verbmain identifier %s is a typdef -- unable to undefine using @UNVAR") % var.string;
+                    msgend_loc(var, expression);
+                    rc = -1;        
+                } 
+                else
+                {
+                    auto rc = undef_verbmain_var(frame, var.string);           // undefine variable from verbmain environment
+                   
+                    // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
+                   
+                    if (rc != 0)
+                    {
+                        //count_error(); already counted in undef_verbdef_var()
+                        M_out_emsg1(L"verb_unvar() -- unexpected error from undef_verbdef_var() -- unable to undefine verbdef identifier = %s") % var.string;
+                        msgend_loc(var, expression);
+                        rc = -1;  
+                    } 
+                }
+            }
+        }  
+        else          // global: verbdef: and static: were not present -- undefine local variable
         {
             if (is_local_identifier_defined(frame, var.string))             // don't bother, if local identifier is already undefined 
             {
@@ -493,7 +726,7 @@ int verb_unvar(frame_S& frame, const e_expression_S& expression, const verbdef_S
                 } 
                 else
                 {
-                    auto rc = undef_local_var(frame, var.string);           // undefine variable from local symbol table
+                    auto rc = undef_local_var(frame, var.string);           // undefine variable from local environment
                    
                     // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
                    
@@ -593,47 +826,97 @@ int verb_unshare(frame_S& frame, const e_expression_S& expression, const verbdef
 M_endf
 
 
-
+#ifdef M_EXPOSE_SUPPORT
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//    export_unexport() -- helper function for @EXPORT and @UNEXPORT  
+//    expose_unexpose() -- helper function for @EXPOSE and @UNEXPOSE  
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int export_unexport(frame_S& frame, const e_expression_S& expression, bool is_exported) try
+static int expose_unexpose(frame_S& frame, const e_expression_S& expression, bool is_exposed) try
 {
     // already known that there is one or more right positional defined identifier parms  
 
     int rc { 0 };  
 
+    // get setting for static: (vs local:) environment
 
-    // set/reset exported flag for variables in loop -
+    auto static_rc    = get_right_keyword(expression, L"static"              );   // rc = -1, if static:    keyword is not present
+    auto verbmain_rc  = get_right_keyword(expression, L"verbmain"            );   // rc = -1, if verbmain:  keyword is not present
+
+
+    // set/reset exposed flag for variables in loop -
 
     for (const auto& var : expression.rparms.values)
     {
-        M__(M_out(L"export_unexport() -- range for -- var.string = %s") % var.string; )
+        M__(M_out(L"expose_unexpose() -- range for -- var.string = %s") % var.string; )
          
 
-        if (!is_local_identifier_defined(frame, var.string)) 
+        if (static_rc == 0)                   // static: is present -- expose/unexpose static identifiers
         {
-            count_error();
-            M_out_emsg1(L"export_unexport() -- unable to export/unexport undefined identifier = %s") % var.string;
-            msgend_loc(expression);
-            rc = -1; 
-        }
-        else
-        {
-            auto rc = export_local_identifier(frame, var.string, is_exported);        // set/reset is_exported flag in local identifier
-              
-            // no errors expected here
-           
-            if (rc != 0)
+            if (!is_static_identifier_defined(frame, var.string)) 
             {
-                //count_error(); already counted in export_var()
-                M_out_emsg1(L"export_unexport() -- unexpected error from export_local_var() -- unable to export/unexport variable = %s") % var.string;
+                count_error();
+                M_out_emsg1(L"expose_unexpose() -- unable to expose/unexpose undefined static identifier = %s") % var.string;
                 msgend_loc(expression);
-                rc = -1;  
-            } 
+                rc = -1; 
+            }
+            else                              // static: identifier not defined 
+            {
+                auto rc = expose_static_identifier(frame, var.string, is_exposed);        // set/reset is_exposed flag in static identifier
+                  
+                if (rc != 0)
+                {
+                    //count_error(); already counted in expose_var()
+                    M_out_emsg1(L"expose_unexpose() --  error from expose_static_var() -- unable to expose/unexpose static identifier = %s") % var.string;
+                    msgend_loc(expression);
+                    rc = -1;  
+                } 
+            }
+        }
+        else if (verbmain_rc == 0)                   // verbmain: is present -- expose/unexpose verbmain identifiers
+        {
+            if (!is_verbmain_identifier_defined(frame, var.string)) 
+            {
+                count_error();
+                M_out_emsg1(L"expose_unexpose() -- unable to expose/unexpose undefined verbmain identifier = %s") % var.string;
+                msgend_loc(expression);
+                rc = -1; 
+            }
+            else                              // verbmain: identifier not defined 
+            {
+                auto rc = expose_verbmain_identifier(frame, var.string, is_exposed);        // set/reset is_exposed flag in verbmain identifier
+                  
+                if (rc != 0)
+                {
+                    //count_error(); already counted in expose_var()
+                    M_out_emsg1(L"expose_unexpose() --  error from expose_verbmain_var() -- unable to expose/unexpose verbmain identifier = %s") % var.string;
+                    msgend_loc(expression);
+                    rc = -1;  
+                } 
+            }
+        }
+        else   // not static: or verbmain: -- must be local: (since global: identifiers can't be exposed or unexposed)
+        {
+            if (!is_local_identifier_defined(frame, var.string)) 
+            {
+                count_error();
+                M_out_emsg1(L"expose_unexpose() -- unable to expose/unexpose undefined local identifier = %s") % var.string;
+                msgend_loc(expression);
+                rc = -1; 
+            }
+            else                              // static: not present -- expose/unexpose local identifiers 
+            {
+                auto rc = expose_local_identifier(frame, var.string, is_exposed);        // set/reset is_exposed flag in local identifier
+               
+                if (rc != 0)
+                {
+                    //count_error(); already counted in expose_var()
+                    M_out_emsg1(L"expose_unexpose() -- error from expose_local_var() -- unable to expose/unexpose local identifier = %s") % var.string;
+                    msgend_loc(expression);
+                    rc = -1;  
+                } 
+            }
         }
     }    
   
@@ -644,16 +927,16 @@ M_endf
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//    @EXPORT identifier identifier ... identifier   -- identifiers always are local to caller's scope  
+//    @EXPOSE identifier identifier ... identifier  
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int verb_export(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+int verb_expose(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
 {
     // already known that there is one or more right positional defined identifier parms  
-    M__(M_out(L"verb_export() called");)
+    M__(M_out(L"verb_expose() called");)
     
-    auto rc = export_unexport(frame, expression, true);                      // export all variables in right vlist
+    auto rc = expose_unexpose(frame, expression, true);                      // expose all variables in right vlist
     
     // return normally, or with error
 
@@ -669,16 +952,16 @@ M_endf
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//    @UNEXPORT identifier identifier ... identifier   -- identifiers are local to caller's scope  
+//    @UNEXPOSE identifier identifier ... identifier  
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int verb_unexport(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+int verb_unexpose(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
 {
     // already known that there is one or more right positional defined identifier parms  
-    M__(M_out(L"verb_unexport() called");)
+    M__(M_out(L"verb_unexpose() called");)
     
-    auto rc = export_unexport(frame, expression, false);                     // unexport all variables in right vlist
+    auto rc = expose_unexpose(frame, expression, false);                     // unexpose all variables in right vlist
     
     // return normally, or with error
 
@@ -690,8 +973,7 @@ int verb_unexport(frame_S& frame, const e_expression_S& expression, const verbde
     return rc; 
 }
 M_endf
- 
-
+#endif
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -824,9 +1106,13 @@ int verb_type(frame_S& frame, const e_expression_S& expression, const verbdef_S&
     
      value_S name_value  { };                                                      // name_value.string has name of undefined identifier for this typdef
 
-     auto name_rc    = get_right_keyword(expression, L"name",  name_value );       // name_rc    = -1 if name:     is not present (meaning anonymous (returned) type 
-     auto global_rc  = get_right_keyword(expression, L"global"            );       // global_rc  = -1, if global:  is not present (i.e. local: or defaulted to local)
-     auto export_rc  = get_right_keyword(expression, L"export"            );       // export_rc  = -1, if export:  is not present (meaning no export)
+     auto name_rc      = get_right_keyword(expression, L"name",  name_value );       // name_rc      = -1 if name:       is not present (meaning anonymous (returned) type 
+     auto global_rc    = get_right_keyword(expression, L"global"            );       // global_rc    = -1, if global:    is not present 
+     auto verbmain_rc  = get_right_keyword(expression, L"verbmain"          );       // verbmain rc  = -1, if verbmain:  is not present
+     auto static_rc    = get_right_keyword(expression, L"static"            );       // static rc    = -1, if static:    is not present
+#ifdef M_EXPOSE_SUPPORT
+     auto expose_rc    = get_right_keyword(expression, L"expose"            );       // expose_rc  = -1, if expose:  is not present (meaning no expose)
+#endif
 
 
      // known: no more than one of the following keywords is present:
@@ -1016,13 +1302,13 @@ int verb_type(frame_S& frame, const e_expression_S& expression, const verbdef_S&
      }
 
 
-     // ------------------------------------------------------------------------
-     // if name was provided, add this type-name to  global or local stack frame 
-     // ------------------------------------------------------------------------
+     // ------------------------------------------------------------------------------------------
+     // if name was provided, add this type-name to  global verbmain, static, or local stack frame 
+     // ------------------------------------------------------------------------------------------
 
      if (name_rc == 0)
      {
-        if (global_rc == 0)
+        if (global_rc == 0)                     // global: keyword was present
         {
             if (is_global_identifier_defined(name_value.string))
             {
@@ -1033,7 +1319,7 @@ int verb_type(frame_S& frame, const e_expression_S& expression, const verbdef_S&
             }
             else
             {
-                auto rc = def_global_typdef(name_value.string, typdef, false, false);    // add new type definition to symbol table -- global symbols are always exported  -- don't bother unsharing -- types are immutable 
+                auto rc = def_global_typdef(name_value.string, typdef);               // add new type definition to environment -- global symbols are always exposed  -- don't bother unsharing -- types are immutable 
                 M__(M_out(L"verb_type() -- def_global_typdef() returned");)
 
                 // errors are unexpected here
@@ -1047,7 +1333,65 @@ int verb_type(frame_S& frame, const e_expression_S& expression, const verbdef_S&
                 }  
             }
         }
-        else          // global: not present -- define local typdef
+        else if (static_rc == 0)          // static: keyword was present
+        {
+            if (is_static_identifier_defined(frame, name_value.string))
+            {
+                count_error();
+                M_out_emsg1(L"verb_type() -- static identifier %s is already defined -- unable to define it again") % name_value.string;
+                msgend_loc(name_value, expression);
+                rc = -1;        
+            }
+            else
+            {
+                def_parm_S parm { }; 
+#ifdef M_EXPOSE_SUPPORT
+                parm.exposed = (expose_rc == 0); 
+#endif
+
+                auto rc = def_static_typdef(frame, name_value.string, typdef, parm);          // add new non-constant variable to environment  -- expose based on expose: kw rc -- don't bother unsharing -- types are immutable
+              
+                // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
+              
+                if (rc != 0)
+                {
+                    //count_error(); already counted in def_static_typdef()
+                    M_out_emsg1(L"verb_type() -- unexpected error from def_static_typdef() -- unable to define new static identifier = %s") % name_value.string;
+                    msgend_loc(name_value, expression);
+                    rc = -1;  
+                }  
+            }
+        }  
+        else if (verbmain_rc == 0)          // verbmain: keyword was present
+        {
+            if (is_verbmain_identifier_defined(frame, name_value.string))
+            {
+                count_error();
+                M_out_emsg1(L"verb_type() -- verbmain identifier %s is already defined -- unable to define it again") % name_value.string;
+                msgend_loc(name_value, expression);
+                rc = -1;        
+            }
+            else
+            {
+                def_parm_S parm { }; 
+#ifdef M_EXPOSE_SUPPORT
+                parm.exposed = (expose_rc == 0); 
+#endif
+
+                auto rc = def_verbmain_typdef(frame, name_value.string, typdef, parm);          // add new non-constant variable to environment  -- expose based on expose: kw rc -- don't bother unsharing -- types are immutable
+              
+                // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
+              
+                if (rc != 0)
+                {
+                    //count_error(); already counted in def_verbmain_typdef()
+                    M_out_emsg1(L"verb_type() -- unexpected error from def_verbmain_typdef() -- unable to define new verbmain identifier = %s") % name_value.string;
+                    msgend_loc(name_value, expression);
+                    rc = -1;  
+                }  
+            }
+        }     
+        else          // neither global:, verbmain:, nor static: were not present -- define local typdef
         {
             if (is_local_identifier_defined(frame, name_value.string))
             {
@@ -1058,7 +1402,12 @@ int verb_type(frame_S& frame, const e_expression_S& expression, const verbdef_S&
             }
             else
             {
-                auto rc = def_local_typdef(frame, name_value.string, typdef, false, export_rc == 0, false);     // add new non-constant variable to symbol table  -- export based on export: kw rc -- don't bother unsharing -- types are immutable
+                def_parm_S parm { }; 
+#ifdef M_EXPOSE_SUPPORT
+                parm.exposed = (expose_rc == 0);
+#endif
+
+                auto rc = def_local_typdef(frame, name_value.string, typdef, parm);          // add new non-constant variable to environment  -- expose based on expose: kw rc -- don't bother unsharing -- types are immutable
               
                 // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
               
@@ -2200,15 +2549,15 @@ M_endf
 
 
 //---------------------------------------------------------------------------------
-//   @IS_SLIST xxxx
+//   @IS_BLOCK xxxx
 //---------------------------------------------------------------------------------
 
-int verb_is_slist(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+int verb_is_block(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
 {
     // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_slist() called");)
+    M__(M_out(L"verb_is_block() called");)
           
-    if (expression.rparms.values.at(0).ty == type_E::slist)
+    if (expression.rparms.values.at(0).ty == type_E::block)
         results = true_results();
     else
         results = false_results();
@@ -2229,18 +2578,23 @@ int verb_is_def(frame_S& frame, const e_expression_S& expression, const verbdef_
     
     bool tf {false};                                                                          // output value                                 
 
-    // see if global: or local: are defined -- only one of these (or neither) should be defined
 
-    value_S global_val { };                                                                   
-    value_S local_val  { };                                                                   
-    auto grc = get_right_keyword(expression, L"global" , global_val );                        // get value of global: keyword -- if not present, R/C is -1 
-    auto lrc = get_right_keyword(expression, L"local"  , local_val  );                        // get value of local:  keyword -- if not present, R/C is -1 
+    // see if global:, static:, verbmain:, or local: are defined -- only one of these (or none) should be defined
+                                                                  
+    auto global_rc   = get_right_keyword(expression, L"global");                              // get value of global:   keyword -- if not present, R/C is -1 
+    auto static_rc   = get_right_keyword(expression, L"static");                              // get value of static:   keyword -- if not present, R/C is -1 
+    auto verbmain_rc = get_right_keyword(expression, L"verbmain");                            // get value of verbmain: keyword -- if not present, R/C is -1 
+    auto local_rc    = get_right_keyword(expression, L"local" );                              // get value of local:    keyword -- if not present, R/C is -1 
 
-    if      (grc == 0)                                                                        // global present?
-        tf = is_global_identifier_defined(expression.rparms.values.at(0).string);             // identifier name should be in .string field  
-    else if (lrc == 0)                                                                        // local: present?
+    if (global_rc == 0)                                                                       // global present?
+        tf = is_global_identifier_defined(expression.rparms.values.at(0).string);             // identifier name should be in .string field 
+    else if (static_rc == 0 )                                                                 // static: present?
+        tf = is_static_identifier_defined(frame, expression.rparms.values.at(0).string);      // identifier name should be in .string field 
+    else if (verbmain_rc == 0 )                                                               // verbmain: present?
+        tf = is_verbmain_identifier_defined(frame, expression.rparms.values.at(0).string);    // identifier name should be in .string field 
+    else if (local_rc == 0 )                                                                  // local: present?
         tf = is_local_identifier_defined(frame, expression.rparms.values.at(0).string);       // identifier name should be in .string field 
-    else                                                                                      // neither global: or local: -- must be all: or default
+    else                                                                                      // neither global: verbmain: static: or local: -- must be all: or default
         tf = is_identifier_defined(frame, expression.rparms.values.at(0).string);             // identifier name should be in .string field  
 
     results = tf_results(tf);                                                                 // pass back 0 or 1 as output results
@@ -2260,22 +2614,26 @@ int verb_is_var(frame_S& frame, const e_expression_S& expression, const verbdef_
     
     bool tf {false};                                                                          // output value                                 
 
-    // see if global: or local: are defined -- only one of these (or neither) should be defined
 
-    value_S global_val { };                                                                   
-    value_S local_val  { };                                                                   
-    auto grc = get_right_keyword(expression, L"global" , global_val );                        // get value of global: keyword -- if not present, R/C is -1 
-    auto lrc = get_right_keyword(expression, L"local"  , local_val  );                        // get value of local:  keyword -- if not present, R/C is -1 
+    // see if global:, static:, verbmain:, or local: are defined -- only one of these (or none) should be defined
+                                                                  
+    auto global_rc   = get_right_keyword(expression, L"global");                              // get value of global:   keyword -- if not present, R/C is -1 
+    auto static_rc   = get_right_keyword(expression, L"static");                              // get value of static:   keyword -- if not present, R/C is -1 
+    auto verbmain_rc = get_right_keyword(expression, L"verbmain");                            // get value of verbmain: keyword -- if not present, R/C is -1 
+    auto local_rc    = get_right_keyword(expression, L"local" );                              // get value of local:    keyword -- if not present, R/C is -1 
 
 
     // set tf to true if variable is defined, and not constant
 
-    if      (grc == 0)                                                                        // global present?
+    if (global_rc == 0)                                                                       // global present?
         tf = is_global_identifier_variable(expression.rparms.values.at(0).string);            // identifier name should be in .string field 
-     
-    else if (lrc == 0)                                                                        // local: present?
+    else if (static_rc == 0)                                                                  // static: present?
+        tf = is_static_identifier_variable(frame, expression.rparms.values.at(0).string);     // identifier name should be in .string field 
+    else if (verbmain_rc == 0 )                                                               // verbmain: present?
+        tf = is_verbmain_identifier_variable(frame, expression.rparms.values.at(0).string);   // identifier name should be in .string field 
+    else if (local_rc == 0)                                                                   // local: present?
         tf = is_local_identifier_variable(frame, expression.rparms.values.at(0).string);      // identifier name should be in .string field 
-    else                                                                                      // neither global: or local: -- must be all: or default
+    else                                                                                      // neither global: verbmain: static: or local: -- must be all: or default
         tf = is_identifier_variable(frame, expression.rparms.values.at(0).string);            // identifier name should be in .string field 
 
     results = tf_results(tf);                                                                 // pass back 0 or 1 as output results
@@ -2295,18 +2653,23 @@ int verb_is_const(frame_S& frame, const e_expression_S& expression, const verbde
     
     bool tf {false};                                                                         // output value                                 
 
-    // see if global: or local: are defined -- only one of these (or neither) should be defined
 
-    value_S global_val { };                                                                   
-    value_S local_val  { };                                                                   
-    auto grc = get_right_keyword(expression, L"global" , global_val );                        // get value of global: keyword -- if not present, R/C is -1 
-    auto lrc = get_right_keyword(expression, L"local"  , local_val  );                        // get value of local:  keyword -- if not present, R/C is -1 
+    // see if global:, static:, verbmain:, or local: are defined -- only one of these (or none) should be defined
+                                                                  
+    auto global_rc   = get_right_keyword(expression, L"global");                              // get value of global:   keyword -- if not present, R/C is -1 
+    auto static_rc   = get_right_keyword(expression, L"static");                              // get value of static:   keyword -- if not present, R/C is -1 
+    auto verbmain_rc = get_right_keyword(expression, L"verbmain");                            // get value of verbmain: keyword -- if not present, R/C is -1 
+    auto local_rc    = get_right_keyword(expression, L"local" );                              // get value of local:    keyword -- if not present, R/C is -1 
 
-    if      (grc == 0)                                                                        // global present?
-        tf = is_global_identifier_const(expression.rparms.values.at(0).string);               // identifier name should be in .string field   
-    else if (lrc == 0)                                                                        // local: present?
+    if (global_rc == 0)                                                                       // global present?
+        tf = is_global_identifier_const(expression.rparms.values.at(0).string);               // identifier name should be in .string field 
+    else if (static_rc == 0)                                                                  // static: present?
+        tf = is_static_identifier_const(frame, expression.rparms.values.at(0).string);        // identifier name should be in .string field  
+    else if (verbmain_rc == 0 )                                                               // verbmain: present?
+        tf = is_verbmain_identifier_const(frame, expression.rparms.values.at(0).string);      // identifier name should be in .string field 
+    else if (local_rc == 0)                                                                   // local: present?
         tf = is_local_identifier_const(frame, expression.rparms.values.at(0).string);         // identifier name should be in .string field  
-    else                                                                                      // neither global: or local: -- must be all: or default
+    else                                                                                      // neither global: verbmain: static: or local: -- must be all: or default
         tf = is_identifier_const(frame, expression.rparms.values.at(0).string);               // identifier name should be in .string field 
 
     results = tf_results(tf);                                                                 // pass back 0 or 1 as output results
@@ -2937,6 +3300,14 @@ static int assign_vlist(frame_S& frame, const e_expression_S& expression, const 
     vlist_S     rest_vlist      {};                                                   // vlist to be assigned to rest (if rest_valid)  
    
 
+        // ???? does this need local: static: verbmain: keywords ????
+        // ???? does this need local: static: verbmain: keywords ????
+        // ???? does this need local: static: verbmain: keywords ????
+        // ???? does this need local: static: verbmain: keywords ????
+        // ???? does this need local: static: verbmain: keywords ????
+        // ???? does this need local: static: verbmain: keywords ????
+
+
     // main loop to define/assign positional vlist values to corresponding variables
     //------------------------------------------------------------------------------
     
@@ -3180,7 +3551,7 @@ M_endf
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//    @ARG_CT    -or-     @ARG_CT left: key:"string"   -or    @ARG_CT right: key:"string"     -- get left-side or right-side positional or keyword argument counts for this block
+//    @ARG_CT    -or-     @ARG_CT left: key:"string"   -or    @ARG_CT right: key:"string"     -- get left-side or right-side positional or keyword argument counts for this frameblock/verb-block/mainblock
 //
 //
 //          @ARG_CT left:               -- return total number of left-side  positional arguments
@@ -3250,7 +3621,7 @@ M_endf
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//    @ARGS left: right: -- return vlist value with either left-side or right-side vlist for this block
+//    @ARGS left: right: -- return vlist value with either left-side or right-side vlist for this frameblock/verb-block/mainblock
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -3270,12 +3641,12 @@ int verb_args(frame_S& frame, const e_expression_S& expression, const verbdef_S&
     // get right/left vlist, as requested  
 
     if (lrc == 0)                                            // left: is present  
-         args_value = vlist_val(frame.lparms);               // get left vlist for block 
+         args_value = vlist_val(frame.lparms);               // get left vlist for frameblock/verb-block/mainblock 
     else                                                     // left: is not present -- assume right: present, or neither left: or right: present (default is right-side count) 
-         args_value = vlist_val(frame.rparms);               // get right vlist for block
+         args_value = vlist_val(frame.rparms);               // get right vlist for frameblock/verb-block/mainblock
 
                                                                                    
-    results = to_results(args_value);                        // return left/right block parm vlist as output value
+    results = to_results(args_value);                        // return left/right frameblock/verb-block/mainblock parm vlist as output value
     return 0;
 }
 M_endf  
@@ -3284,7 +3655,7 @@ M_endf
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-//         @ARG n right: left: key:"string"           -- get n-th left_side/right-side positional/keyword parm for this block
+//         @ARG n right: left: key:"string"           -- get n-th left_side/right-side positional/keyword parm for this frameblock/verb-block/mainblock
 //
 //               @ARG n left:               -- return n-th left-side  positional argument
 //               @ARG n right:              -- return n-th right-side positional argument  
@@ -3894,8 +4265,8 @@ try
 
     // parse the passed-in interpolation section from the input string  
 
-    slist_S out_slist{ };                                                                                         // slist_s to be filled in by parse_string()  
-    auto prc = parse_string(frame, out_slist, ws_in, L"string interpolation ", false);                            // don't continue after error
+    block_S out_block{ };                                                                                         // block_S to be filled in by parse_string()  
+    auto prc = parse_string(frame, out_block, ws_in, L"string interpolation ", false);                            // don't continue after error
  
     if (prc != 0)                                                                                                 // return with error, if parse_string() failed
     {
@@ -3908,32 +4279,32 @@ try
     }
    
 
-    // evaluate the slist returned by parse_string
+    // evaluate the block returned by parse_string
 
     results_S out_results {}; 
     
-    M__(M_out(L"verb_interpolate_1() -- calling eval_slist() ************************");)
-    auto erc = eval_slist(frame, out_slist, out_results);                                                        // results (with any special flags) will be passed back directly (if no error)
-    M__(M_out(L"verb_interpolate_1() -- eval_slist() returned -- rc=%d *****************") % erc;)
+    M__(M_out(L"verb_interpolate_1() -- calling eval_block() ************************");)
+    auto erc = eval_block(frame, out_block, out_results);                                                        // results (with any special flags) will be passed back directly (if no error)
+    M__(M_out(L"verb_interpolate_1() -- eval_block() returned -- rc=%d *****************") % erc;)
     
   
-     // return immediately, if error returned by eval_slist()
+     // return immediately, if error returned by eval_block()
      
      if (erc != 0)
         {
-            M__(M_out(L"verb_interpolate_1() -- eval_slist() returned error");)
+            M__(M_out(L"verb_interpolate_1() -- eval_block() returned error");)
             M__(M_out(L"verb_interpolate_1() -- returning error");)
             count_error(); 
-            M_out_emsg1(L"verb_interpolate_1() -- eval_slist() failed for interpolated section \"%S\"") % ws_in;
+            M_out_emsg1(L"verb_interpolate_1() -- eval_block() failed for interpolated section \"%S\"") % ws_in;
             msgend_loc(expression.rparms.values.at(0), expression);
             results = error_results(); 
             return erc;
         }
     
 
-        // return immediately, if special results (like @GOTO) returned by eval_slist()
+        // return immediately, if special results (like @GOTO) returned by eval_block()
           
-        M__(M_out(L"verb_interpolate_1() -- eval_slist() returned OK -- check for special results");)
+        M__(M_out(L"verb_interpolate_1() -- eval_block() returned OK -- check for special results");)
         if (out_results.special_results)
         {
             M__(M_out(L"verb_interpolate_1() --  returning special results");)  
@@ -3945,14 +4316,14 @@ try
 
         if (out_results.multiple_results)
         {
-            M__(display_results(out_results, L"multiple results flag on from eval_slist()");)
+            M__(display_results(out_results, L"multiple results flag on from eval_block()");)
             if (out_results.no_results)                   // vlist exists in this results_S
             {
                 ws_out = std::wstring { };                // if not, put out empty string
             }
             else                                          // otherwise, need to format the (perhaps empty) vlist
             {
-                M__(M_out(L"verb_interpolate_1() --  multiple results from eval_slist()");)
+                M__(M_out(L"verb_interpolate_1() --  multiple results from eval_block()");)
                 ws_out = str_vlist(*(out_results.vlist_sp), false, false, true);
             }
         }
@@ -4772,6 +5143,7 @@ int verb_display(frame_S& frame, const e_expression_S& expression, const verbdef
     auto added_types_rc      = get_right_keyword(expression, L"added_types"      );     // r/c = 0, if added_types:        keyword is present
     auto all_types_rc        = get_right_keyword(expression, L"all_types"        );     // r/c = 0, if all_types:          keyword is present
     auto id_cache_rc         = get_right_keyword(expression, L"id_cache"         );     // r/c = 0, if id_cache:           keyword is present
+    auto statistics_rc       = get_right_keyword(expression, L"statistics"       );     // r/c = 0, if statistics:         keyword is present
                                                                              
     auto vars_rc             = get_right_keyword(expression, L"vars"             );     // r/c = 0, if vars:[ ... ]        keyword is present
     auto verbs_rc            = get_right_keyword(expression, L"verbs"            );     // r/c = 0, if verbs:[ ... ]       keyword is present
@@ -4807,19 +5179,19 @@ int verb_display(frame_S& frame, const e_expression_S& expression, const verbdef
     if (added_verbs_rc == 0) 
     {
          M_out(L" ");
-         display_all_verbdefs(frame, false, true);
+         display_all_verbsets(frame, false, true);
     } 
 
     if (builtin_verbs_rc == 0) 
     {
          M_out(L" ");
-         display_all_verbdefs(frame, true, false);
+         display_all_verbsets(frame, true, false);
     } 
 
     if (all_verbs_rc == 0) 
     {
          M_out(L" ");
-         display_all_verbdefs(frame, true, true);
+         display_all_verbsets(frame, true, true);
     }  
 
     if (added_types_rc == 0) 
@@ -4846,6 +5218,13 @@ int verb_display(frame_S& frame, const e_expression_S& expression, const verbdef
          display_id_cache();
     }  
 
+    if (statistics_rc == 0) 
+    {
+         M_out(L" ");
+         display_statistics();
+    }  
+
+
 
     // vars:[ ... ]   verbs:[ ...]    types:[     ]  options -- nested list with 1 or more strings is present with identifiers/verbnames to be displayed 
     // -------------------------------------------------------------------------------------------------------------------------------------------------
@@ -4861,19 +5240,19 @@ int verb_display(frame_S& frame, const e_expression_S& expression, const verbdef
     {
         M_get_right_keyword_vlist(expression, L"verbs", verbs_vlist) 
         M_out(L" ");
-        display_verbdefs(frame, verbs_vlist);                       // display selected verbs definitiona     
+        display_verbsets(frame, verbs_vlist);                       // display selected verbs definitiona     
     }
 
     if (types_rc == 0)
     {
         M_get_right_keyword_vlist(expression, L"types", types_vlist) 
         M_out(L" ");
-        display_typdefs(frame, types_vlist);                       // display selected type definitions     
+        display_typdefs(frame, types_vlist);                        // display selected type definitions     
     } 
 
     M_out(L"\n------------------------------------------------------------------------------------------------------------------------------------------\n");
 
-    results = no_results();                                        // output value = none
+    results = no_results();                                         // output value = none
     return 0; 
 }
 M_endf  

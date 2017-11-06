@@ -34,7 +34,7 @@
 
 namespace static_N
 {
-static uint64_t character_count      {0};       // number of characters passed up from input reader to tokenizer 
+static uint64_t character_count      {0};       // number of characters obtained from input source (file or string)   
 }
 
 
@@ -1075,7 +1075,7 @@ int char_stream_C::get_source_char(in_char_S& in_char)  try
     M__(M_out(L"char_stream_C::get_source_char() -- called");)
 
 
-    // error if no source (file of string) is currently attached
+    // error if no source (file or string) is currently attached
     // ---------------------------------------------------------
 
     if ( (m_in_file_p == nullptr) && (m_in_string_p == nullptr) )
@@ -1105,6 +1105,7 @@ int char_stream_C::get_source_char(in_char_S& in_char)  try
         
     if (m_in_file_p != nullptr)
     {
+        static_N::character_count++;      
         rc = m_in_file_p->get_char(in_char);                        // get and  consume 1st char -- should always return a char, even if error seen and R/C = -1 
 
         if (m_process_trigraphs)
@@ -1112,6 +1113,7 @@ int char_stream_C::get_source_char(in_char_S& in_char)  try
     }
     else
     {
+        static_N::character_count++; 
         rc = m_in_string_p->get_char(in_char);                      // get and  consume 1st char -- should always return a char, even if error seen and R/C = -1 
 
         if (m_process_trigraphs)
@@ -1146,11 +1148,13 @@ int char_stream_C::get_source_char(in_char_S& in_char)  try
 
         if (m_in_file_p != nullptr) 
         {
+            static_N::character_count += 2;  
             rc = m_in_file_p->get_char(in_char);   // should always return a char, even if error seen and R/C = -1 -- consume peek()ed 2nd trigraph char  (this R/C will get overlaid with next call)
             rc = m_in_file_p->get_char(in_char);   // should always return a char, even if error seen and R/C = -1 -- replace it with char after the trigraph chars 
         }
         else
         {
+            static_N::character_count += 2;  
             rc = m_in_string_p->get_char(in_char); // should always return a char, even if error seen and R/C = -1  -- consume peek()ed 2nd trigraph char (this R/C will get overlaid with next call)
             rc = m_in_string_p->get_char(in_char); // should always return a char, even if error seen and R/C = -1  -- replace it with char after the trigraph chars 
         }
@@ -1279,7 +1283,6 @@ int char_stream_C::get_char(in_char_S& in_char)  try               // get (and c
     // putback queue is empty -- need to go out to file/string to get next char
     // ------------------------------------------------------------------------
  
-    static_N::character_count++;                                   // accumulate static character count
     return get_source_char(in_char); 
 }
 M_endf

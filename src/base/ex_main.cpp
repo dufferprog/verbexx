@@ -50,7 +50,7 @@ int ex_main(int argc, wchar_t *argv[]) try
     // initial environment setup        
     // -------------------------
 
-    M_start_time(t1)
+    capture_pc_time(1);
     setup_environment(); 
 
 
@@ -59,12 +59,16 @@ int ex_main(int argc, wchar_t *argv[]) try
 
     auto main_pathname = process_cmdline_ext(argc, argv);                                  // setup verbexx processing based on command line parms     
 
+   // M_y(M_out(L"ex_main() -- et = %.9f") % elapsed_pc_time(1);)
+
                                                                                    
     // parse and evaluate the input token stream (top level)                                       
     // -----------------------------------------                                        
-                                                                                        
+                                             
+    int wmain_rc { 1 };                                                                    // return code for wmain() = 1, in case any errors prevent process_main_ext from being called 
+
     if (error_count() == 0)                                                                // bypass input file processing, if any errors so far
-        process_main_ext(main_pathname);                                                   // parse input token stream and interpret the resulting AST  
+        wmain_rc = process_main_ext(main_pathname);                                        // parse input token stream and interpret the resulting AST  
 
 
     // put out summary messsage (if requested), and return from wmain()
@@ -72,13 +76,15 @@ int ex_main(int argc, wchar_t *argv[]) try
     
     if (log_statistics() != log_E::none)
     {
-        M_out( L"\nex_main() : ending -- errors=%d %51t elapsed time = %.6f seconds")          // %51t accounts for \n at front of format string
+        M_out( L"\nex_main() : ending -- errors=%d %51t elapsed time = %.6f seconds")      // %51t accounts for \n at front of format string
              % error_count()
-             % M_elapsed_time(t1)
+             % elapsed_pc_time(1)
              ;   
     }
 
-    return 0;
+
+    M__(M_out(L"ex_main() returning -- wmain_rc = %d") % wmain_rc;) 
+    return wmain_rc;
 }
 M_endf_handle_r(-1)
 

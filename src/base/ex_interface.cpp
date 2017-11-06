@@ -45,10 +45,10 @@
 
 namespace static_N
 {
-//static pre_parse_C                            pp_main          {     };     // default (static) pre-parse stream for parse_input()
-static frame_S                               *main_frame_p     {     };     // non-owning pointer to top-level stack frame for parser evaluation phase 
-static symtab_S                               symtab_global    {     };     // default (static) global symtab_S -- global verbs and variables  
-static uint64_t                               error_ct         {0    };     // global parser and evaluation error counter (does not include pre-parser errors)
+static std::shared_ptr<frame_S>               pp_frame_sp      {     };     // owning pointer to top-level/persistent  stack frame  
+static frame_S                               *main_frame_p     {     };     // non-owning pointer to global/top-level stack frame for evaluation phase 
+static environ_S                              environ_global   {     };     // default (static) global environ_S -- global verbs and variables  
+static uint64_t                               error_ct         {0    };     // global parser and evaluation error counter (does not include preprocess errors)
 }
 
 
@@ -59,13 +59,60 @@ static uint64_t                               error_ct         {0    };     // g
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+
 ////_____________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   get_main_frame() -- pass back address of main (static) frame_S  
+////   get_pp_frame() -- pass back shared_ptr to main PP frame_S  
+////                   
+////
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+M_EX_IMPEXP 
+std::shared_ptr<frame_S>  get_pp_frame() try
+{
+     M__(M_out(L"get_pp_frame() -- called -- pp_frame_p = %p") % static_N::pp_frame_sp.get();)
+
+
+     // allocate new main/static PP frame_S, if none is currently allocated 
+
+     if (static_N::pp_frame_sp.get() == nullptr)
+     {
+         static_N::pp_frame_sp = new_frame();                                                  // allocate new pp stack frame -- will not be on stack for now, until  becomes active 
+
+         static_N::pp_frame_sp->no_scope                 = true;                               // no access to current active function's (or main SF) variables
+         static_N::pp_frame_sp->scope_sp.reset();                                              // no upward scope pointer from here (only the global scope)     
+         static_N::pp_frame_sp->is_preprocess            = true;                               // indicate this is a preprocessor stack frame  
+         static_N::pp_frame_sp->environ_p->is_preprocess = true;                               // also flag new environment as PP
+         static_N::pp_frame_sp->persist_sf_p             = nullptr;                            // no associated persistent SF for the main PP SF
+         static_N::pp_frame_sp->verbmain_sf_p            = nullptr;                            // no associated verb main  SF for the main PP SF
+         static_N::pp_frame_sp->env.is_preprocess        = true;                               // also flag imbedded environment as preprocessor environment        
+     }
+
+
+     // pass back shared pointer
+
+     return static_N::pp_frame_sp; 
+}
+M_endf
+
+ 
+
+
+
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   get_main_frame() -- pass back address of main (static, topmost) frame_S  
 ////                   
 ////
 ////_____________________________________________________________________________________________________________________
@@ -79,10 +126,15 @@ frame_S *get_main_frame() try
      M__(M_out(L"get_main_frame() -- called -- main_frame_p = %p") % static_N::main_frame_p;)
 
 
-     // allocate new frame_S, if none is currently allocated -- fill in self-pointer field, while the shared pointer is accessable
+     // allocate new frame_S, if none is currently allocated 
 
      if (static_N::main_frame_p == nullptr)
-         static_N::main_frame_p = add_new_frame();                         // allocate new main stack frame -- will be only one on stack, for now 
+     {
+         static_N::main_frame_p = add_new_frame();                         // allocate new main stack frame -- will be only one on stack, for now
+
+         static_N::main_frame_p->is_main     = true;                       // mark this SF as main
+         static_N::main_frame_p->env.is_main = true;                       // mark imbedded envronment as main, too 
+     }
 
 
      // pass back address, as requested
@@ -93,14 +145,13 @@ M_endf
 
 
 
-
 ////_____________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   get_global_symtab() -- pass back address of global (static) symtab_S  
+////   setup_global_environ() -- pass back address of global (static) environ_S, after preparing it for use 
 ////                   
 ////
 ////_____________________________________________________________________________________________________________________
@@ -109,9 +160,36 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 M_EX_IMPEXP 
-symtab_S *get_global_symtab() try
+void setup_global_environ() try
 {
-     return &(static_N::symtab_global); 
+    static_N::environ_global.is_global = true;          // indicate that this is global environment
+    return; 
+}
+M_endf
+
+
+
+
+
+
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   get_global_environ() -- pass back address of global (static) environ_S  (must have been set up already)
+////                   
+////
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+M_EX_IMPEXP 
+environ_S *get_global_environ() try
+{
+    return &(static_N::environ_global); 
 }
 M_endf
 
@@ -135,7 +213,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 M_EX_IMPEXP 
-uint64_t process_main_ext(const std::wstring& main_pathname) try
+int process_main_ext(const std::wstring& main_pathname) try
 {
     return process_main_file(*(static_N::main_frame_p), main_pathname); 
 }
@@ -160,7 +238,7 @@ M_endf
 M_EX_IMPEXP 
 std::wstring process_cmdline_ext(int argc, wchar_t *argv[]) try
 {
-     return process_cmdline(*get_main_frame(), static_N::symtab_global, argc, argv); 
+     return process_cmdline(*get_main_frame(), static_N::environ_global, argc, argv); 
 }
 M_endf
 
@@ -226,9 +304,9 @@ M_endf
 M_EX_IMPEXP 
 int set_skip_ext(const std::wstring& to_label) try
 {
-    // make sure current-level pre_parse_C instance exists - return with error, if not
+    // make sure current-level pre_process_C instance exists - return with error, if not
 
-     pre_parse_C *pp_p = current_pp(); 
+     pre_process_C *pp_p = current_pp(); 
      if (pp_p == nullptr)
          return -1; 
 
@@ -263,9 +341,9 @@ M_endf
 M_EX_IMPEXP 
 int pending_attach_ext(const std::wstring& pathname) try
 {
-    // make sure current-level pre_parse_C instance exists - return with error, if not
+    // make sure current-level pre_process_C instance exists - return with error, if not
 
-     pre_parse_C *pp_p = current_pp(); 
+     pre_process_C *pp_p = current_pp(); 
      if (pp_p == nullptr)
          return -1; 
 
@@ -284,9 +362,9 @@ M_endf
 M_EX_IMPEXP 
 int pending_attach_ext(const std::wstring& text, const std::wstring& id) try
 {
-    // make sure current-level pre_parse_C instance exists - return with error, if not
+    // make sure current-level pre_process_C instance exists - return with error, if not
 
-     pre_parse_C *pp_p = current_pp(); 
+     pre_process_C *pp_p = current_pp(); 
      if (pp_p == nullptr)
          return -1; 
 
@@ -404,7 +482,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   add_predefined_verb() -- add pre-defined verb to global symbol table  
+////   add_predefined_verb() -- add pre-defined verb to global environment  
 ////                   
 ////
 ////_____________________________________________________________________________________________________________________
@@ -413,10 +491,16 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 M_EX_IMPEXP 
-int add_predefined_verb(const std::wstring& verb_name, verbdef_S& verbdef) try
+int add_predefined_verb(const std::wstring& verb_name, const verbset_S& verbset_in) try
 {
-    verbdef.is_builtin = true; 
-    return def_global_verb(verb_name, verbdef, true); 
+    def_parm_S parm { }; 
+    parm.builtin = true; 
+
+    verbset_S verbset { verbset_in }; 
+    verbset.verbs[0].is_builtin = true;                        // should be only one verb in set at this point
+    verbset.has_builtin         = true;                        // indicate that this verbset has at least one predefined verbdef_S 
+
+    return def_global_verb(verb_name, verbset, parm); 
 }
 M_endf
 

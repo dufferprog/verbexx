@@ -2635,71 +2635,76 @@ int token_stream_C::retained_block_comment(token_C& token)  try
 
     //  consume initial "/{"  before starting   
 
-    get_char(ch);                                            // known to be "/"   (default)
-    get_char(ch1);                                           // known to be "{"   (default)
-    addto_orig_token(token, ch);                             // add the initial "/" to start of original comment string 
-    addto_orig_token(token, ch1);                            // add the initial "{" to start of original comment string
-    nest_level = 1;
+    get_char(ch);                                                   // known to be "/"   (default)
+    get_char(ch1);                                                  // known to be "{"   (default)
+    addto_orig_token(token, ch);                                    // add the initial "/" to start of original comment string 
+    addto_orig_token(token, ch1);                                   // add the initial "{" to start of original comment string
+    nest_level = 1;                                               
                 
     for(;;)   // loop until "}/" at proper nest level,  EOF, or error stops the retained block comment -- note "/{}/" is smallest retained block comment
     {
         get_char(ch);      
           
-        if (ch.ch32 == m_comment_1st_ch)                      // "/" found -- might be start of inner nested comment 
-        {                                              
-            peek_char(ch1);                            
-            if (ch1.ch32 == m_retained_block_comment_2nd_ch)  // "/{" found -- increment nest level
-            {                                          
-                addto_token(token, ch);                       // add the "/" to end of retained comment string 
-                addto_token(token, ch1);                      // add the "{" to end of retained comment string
-                discard_char();                               // discard the peek()ed "{"   ( "/" was consumed earlier)
-                ++nest_level;                                 
-            }                                                 
-            else                                              // not "/{" -- not start of nested comment
+        if (ch.ch32 == m_comment_1st_ch)                            // "/" found -- might be start of inner nested comment 
+        {                                                          
+            peek_char(ch1);                                        
+            if (ch1.ch32 == m_retained_block_comment_2nd_ch)        // "/{" found -- increment nest level
+            {                                                      
+                addto_token(token, ch);                             // add the "/" to end of retained comment string 
+                addto_token(token, ch1);                            // add the "{" to end of retained comment string
+                discard_char();                                     // discard the peek()ed "{"   ( "/" was consumed earlier)
+                ++nest_level;                                       
+            }                                                       
+            else                                                    // not "/{" -- not start of nested comment
             {   
-                addto_token(token, ch);                       // add "/" to retained comment string
-            }                                                 
-        }                                                     
-        else if (ch.ch32 == m_retained_block_comment_3rd_ch)  // "}" found -- might be end of comment 
-        {                                                     
-            peek_char(ch1);                                   // look at character following the "}"
-            if (ch1.ch32 == m_retained_block_comment_4th_ch)  // "}/" ends the nested comment 
-            {   
-                --nest_level;                                 // reduce nest level by one
-                discard_char();                               // discard the peek()ed "/"   
-
-                if (nest_level > 0)                           // looking at nested "}/ --  not looking at final "}/" 
-                {
-                    addto_token(token, ch);                   // add the "{" to end of original comment string 
-                    addto_token(token, ch1);                  // add the "/" to end of original comment string
-                }
-                else                                          // This "}/" matched outermost "/{", block comment is done , otherwise keep going 
-                {
-                    addto_orig_token(token, ch);              // add the "}" to end of original comment string, but not output token 
-                    addto_orig_token(token, ch1);             // add the "/" to end of original comment string, but not output token
-                    break;                                    // end the for(;;) loop
-                }
-            }                                                 
-            else                                              // not "}/" -- not end of comment
-            {                                                 
-                addto_token(token, ch);                       // add "}" to output retained comment string
-            }                                                 
+                addto_token(token, ch);                             // add "/" to retained comment string
+            }                                                       
+        }                                                           
+        else if (ch.ch32 == m_retained_block_comment_3rd_ch)        // "}" found -- might be end of comment 
+        {                                                           
+            peek_char(ch1);                                         // look at character following the "}"
+            if (ch1.ch32 == m_retained_block_comment_4th_ch)        // "}/" ends the nested comment 
+            {                                                      
+                --nest_level;                                       // reduce nest level by one
+                discard_char();                                     // discard the peek()ed "/"   
+                                                                   
+                if (nest_level > 0)                                 // looking at nested "}/ --  not looking at final "}/" 
+                {                                                  
+                    addto_token(token, ch);                         // add the "{" to end of original comment string 
+                    addto_token(token, ch1);                        // add the "/" to end of original comment string
+                }                                                  
+                else                                                // This "}/" matched outermost "/{", block comment is done , otherwise keep going 
+                {                                                  
+                    addto_orig_token(token, ch);                    // add the "}" to end of original comment string, but not output token 
+                    addto_orig_token(token, ch1);                   // add the "/" to end of original comment string, but not output token
+                    break;                                          // end the for(;;) loop
+                }                                                  
+            }                                                       
+            else                                                    // not "}/" -- not end of comment
+            {                                                       
+                addto_token(token, ch);                             // add "}" to output retained comment string
+            }                                                       
         }
+        else if (ch.subtype == char_E::eol)
+        {
+            addto_orig_token(token, ch );                           // add the EOL char to orig token string only
+            addto_token_subst(token, ch, std::wstring {L"\n"});     // add the substitute NL char(s) to token only (not orig_token)
+        } 
         else if (ch.subtype == char_E::eof)
         {
             invalid_token(token, L"Retained block comment (with pre-processor data) was still open when end-of-file was reached");
-            past_end_token(token, ch);                        // EOF is past end of token, so put it back
-            break;                                            // end the for(;;) loop
-        }                                                    
+            past_end_token(token, ch);                              // EOF is past end of token, so put it back
+            break;                                                  // end the for(;;) loop
+        }   
         else if (ch.subtype == char_E::error)               
         {                                                   
-            rc = past_end_token(token, ch);                   // put back error indication for next time -- comment token type replaced with "error"
-            break;                                            // end the for(;;) loop 
-        }                                                     
-        else                                                  // not error, EOF, or "/" or ">" -- just keep adding to token 
-        {                                                     
-            addto_token(token, ch);                           // add char to retained  token string only
-        }                                                
+            rc = past_end_token(token, ch);                         // put back error indication for next time -- comment token type replaced with "error"
+            break;                                                  // end the for(;;) loop 
+        }                                                           
+        else                                                        // not error, EOF, or "/" or ">" -- just keep adding to token 
+        {                                                           
+            addto_token(token, ch);                                 // add char to retained  token string only
+        }                                                          
     }
     
     M__(token.display(L"token_stream_C::retained_block_comment() returning");)
@@ -3058,7 +3063,7 @@ int token_stream_C::escaped_string(token_C& token, char32_t end_delim, char32_t 
             past_end_token(token, ch);                                  // EOF is past end of token, so put it back
             break;                                                      // end the for(;;) loop
         }
-        else if (ch.subtype == char_E::eol)                             // end of line found in active string (error)
+        else if (ch.subtype == char_E::eol)                             // end of line found in active string (error, unless multi-line string)
         {
             if (include_nl)                                             // multi-line string? 
             {

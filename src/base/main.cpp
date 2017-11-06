@@ -43,7 +43,7 @@
 ////       process_cmdline_ext()                         -- stub for external callers                                                    (in ex_interface.cpp)
 ////                                                        accesses global symtab_S, creates top-level frame_S    
 ////         process_cmdline()                           -- processes command line args                                                  (in     ex_parse.cpp)
-////           frame_parms()                             -- puts command line args as (main) block parms                                 (in      ex_eval.cpp)  
+////           frame_cmdline_parms()                     -- puts command line args as (main) block parms                                 (in      ex_eval.cpp)  
 ////       process_main_ext()                            -- stub for external callers                                                    (in ex_interface.cpp)
 ////                                                        access top-level frame_S 
 ////         process_main_file()                         --                                                                              (in     ex_parse.cpp) 
@@ -90,8 +90,7 @@ int wmain(int argc, wchar_t *argv[])
     // invoke ex_main() in ex.dll -- imported function name
     // --------------------------
 
-    auto rc = ex_main(argc, argv);
-    return rc;
+    return ex_main(argc, argv);
 }
 
 

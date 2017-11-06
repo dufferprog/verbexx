@@ -1127,8 +1127,8 @@ int instring_C::get_char(in_char_S& in_char, bool advance) try
     }       
 
 
-    //  Read in next line of file -- handle EOF, I/O error -- maintain states, etc.
-    //  ---------------------------------------------------------------------------
+    //  Read in next line of string -- handle EOF, I/O error -- maintain states, etc.
+    //  -----------------------------------------------------------------------------
 
     m_curr_wline = std::wstring{};
     m_end_pos    = 0;
