@@ -1,4 +1,5 @@
-﻿// h_ex_parse.h
+﻿
+// h_ex_parse.h
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -7,7 +8,7 @@
 ////
 ////
 ////            ============ 
-////            h_ex_parse.h -- declarations related to option file tokenization, parsing, etc. (ex_eval.cpp,  ex_parse.cpp  and  ex_preparse.cpp)  
+////            h_ex_parse.h -- declarations related to option file tokenization, parsing, etc. (ex_eval.cpp,  ex_parse.cpp  and  ex_preprocess.cpp)  
 ////            ============
 ////
 ////
@@ -36,9 +37,9 @@
 ////                                                                                                                                            
 ////
 ////
-////            ==========
-////            pre parser (pre_parse.cpp)  
-////            ==========
+////            =============
+////            pre processor (ex_preprocess.cpp)  
+////            =============
 ////
 ////
 ////
@@ -52,7 +53,7 @@
 //
 //
 //    ----------------
-//    var_S  structure    pre-parser)
+//    var_S  structure    preprocess)
 //    ----------------
 //
 //
@@ -79,7 +80,7 @@ struct var_S
 enum class tok_u1_E { none              // not classified yet 
                     , end               // END token from token_stream 
                     , passback          // not recognized -- pass back up to caller
-                    , evaluate          // text to be executed/evaluated by pre-parser
+                    , evaluate          // text to be executed/evaluated by preprocess
                     , identifier        // name of identifier -- usually lvalue (no leading sigil) -- may get passed back 
                     , string            // may get passed back
                     };
@@ -90,9 +91,9 @@ enum class tok_u1_E { none              // not classified yet
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-//    ------------------
-//    pre_parse_C  class 
-//    ------------------
+//    --------------------
+//    pre_process_C  class 
+//    --------------------
 //
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -109,25 +110,25 @@ struct pending_attach_S
 };
 
                     
-// pre_parse_C class
+// pre_process_C class
 // ------------------------------------------------------------------------------------
                                                                                        
-class pre_parse_C
+class pre_process_C
 {
 public:   
-                      pre_parse_C()                                              ;        // custom default constructor
-                      pre_parse_C(const pre_parse_C&)                   = delete ;        // no copy constructor
-                      pre_parse_C(pre_parse_C&&)                        = delete ;        // no move constructor
-                     ~pre_parse_C()                                     = default;        // compiler-generated destructor
-                      pre_parse_C&     operator=(const pre_parse_C&)    = delete ;        // no copy assignment
-                      pre_parse_C&     operator=(pre_parse_C&&)         = delete ;        // no move assignment
+                      pre_process_C()                                                ;        // custom default constructor
+                      pre_process_C(const pre_process_C&)                   = delete ;        // no copy constructor
+                      pre_process_C(pre_process_C&&)                        = delete ;        // no move constructor
+                     ~pre_process_C()                                       = default;        // compiler-generated destructor
+                      pre_process_C&     operator=(const pre_process_C&)    = delete ;        // no copy assignment
+                      pre_process_C&     operator=(pre_process_C&&)         = delete ;        // no move assignment
 
 
     // passthru or semi-passthru functions to imbedded token_string_C
 
-    void              inherit_state(                                                                          );  // initialize skipping state from *m_upward_sp pre_parse_C 
+    void              inherit_state(                                                                          );  // initialize skipping state from *m_upward_sp pre_process_C 
     void              close(                                                                                  );  // free up everything and reset states   
-    void              reuse(              bool = false                                                        );  // reset leftover states to pre_parse can be reused   
+    void              reuse(              bool = false                                                        );  // reset leftover states to  can be reused   
     int               attach_file(        const std::wstring&                                                 );  // add new file to this token stream -- placed on top of filestack -- wide string filename version
     void              add_pending_attach( const std::wstring&                                                 );  // add new filename to pending attach stack,for later file_attach() processing
     void              add_pending_attach( const std::wstring&, const std::wstring&                            );  // add new string to pending attach stack,for later file_attach() processing
@@ -204,10 +205,11 @@ public:
                              
     // non-passthru external functions
 
-    void              set_skip(                    const std::wstring&                                        );   // set skipping mode with label                  
+    void              set_skip(                    const std::wstring&                                        );   // set skipping mode with label 
+  //void              set_skipall(                                                                            );   // set skipall mode (to end)   
     void              set_imbed_folder(            const std::wstring&                                        );   // set base folder for imbed files -- form with passed-in string
     void              set_imbed_folder(                                                                       );   // set default base folder for imbed files -- use envar if set
-    void              display_settings(                                                                       );   // display pre-parser settings
+    void              display_settings(                                                                       );   // display preprocess settings
 
 
     // parsing/pre-parsing configuration flags (public)
@@ -216,12 +218,13 @@ public:
     bool                                   m_allow_verbless_multi_parms               { true       };              // true -- allows more than one positional parm to be present in a verbless expression
 
 
-    // pre-parse stack-oriented public data items
+    // preprocess stack-oriented public data items
 
-    std::shared_ptr<pre_parse_C>           m_upward_sp                                {             };             // pointer to next (upward) pre_parse_C on pre-parser stack
-    frame_S                               *m_frame_p                                  {             };             // pointer to stack frame for this pre_parse_C object
+    std::shared_ptr<pre_process_C>         m_upward_sp                                {             };             // pointer to next (upward) pre_process_C on preprocess stack
+    frame_S                               *m_frame_p                                  {             };             // pointer to stack frame for this pre_process_C object (may be static pp frame) 
     uint64_t                               m_serial                                   {             };             // serial number for this PP               
     uint64_t                               m_pp_depth                                 {             };             // queue depth for this PP
+    bool                                   m_remove_sf                                { false       };             // true -- m_frame_p needs to be removed from stack, when this PP is freed up
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -232,15 +235,15 @@ private:
     std::deque<token_C>                    m_token_stack                              {            };              // stack of tokens (that have been put back or peek()ed) 
     std::stack<pending_attach_S>           m_pending_attach_stack                     {            };              // stack of filenames waiting to be attached (when pre-processor text section ends)    
     bool                                   m_skipping                                 { false      };              // true -- pre-processor is in skipping mode 
-    bool                                   m_inherited_skipping                       { false      };              // true -- pre-processor inherited skipping mode from upward pre_parse_C  
-    std::wstring                           m_skipto_label                             {            };              // label that pre-parse is skipping to         
+    bool                                   m_inherited_skipping                       { false      };              // true -- pre-processor inherited skipping mode from upward pre_process_C  
+    std::wstring                           m_skipto_label                             {            };              // label that preprocess is skipping to         
     std::wstring                           m_imbed_folder                             { IMBED_PATH };              // folder for imbedding files                               
                                                                                                            
                                                                                                                   
     // internal (private) functions                                                                               
                                                                                                                   
     int      peek_raw_token(   token_C&,   size_t = 1ULL                                            );             // get token trom token stream and do initial processing
-    int      pre_parse_token(  token_C&,   size_t = 1ULL                                            );             // process any pre-parse values in token string
+    int      _token(           token_C&,   size_t = 1ULL                                            );             // process any preprocess values in token string
     int      get_parm(         token_C&, const token_C&, const std::wstring&, int, size_t = 1       );             // see if next token is stream is considered a parm for preceeding verb
 };                                    
 
@@ -265,7 +268,7 @@ private:
 ////
 ////
 ////            ==================
-////            parser/AST builder (parse.cpp )  
+////            parser/AST builder (ex_parse.cpp )  
 ////            ==================
 ////
 ////
@@ -288,7 +291,7 @@ private:
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 enum class tok_u2_E { none                    // not classified yet 
-                    , end                     // END token or R/C from pre-parser 
+                    , end                     // END token or R/C from preprocess 
                     , verbname                // verbname                               (@identifier -or- ++ -- <<<<, etc.)
                     , keyname                 // keyword parm for verb                  (identifier:)
                     , value                   // quoted string, integer, floating pt, unit -- see main token type for details
@@ -355,13 +358,13 @@ struct a_expression_S
 //
 //
 //    ------------------
-//    slist_S  structure
+//    block_S  structure
 //    ------------------
 //
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct slist_S
+struct block_S
 {
     uint64_t                          expression_ct      { 0     };      // number of expression in vector    
     std::vector<a_expression_S>       expressions                 ;      // vector of expressions (can be empty)
@@ -369,8 +372,8 @@ struct slist_S
     int64_t                           token_ix1          { -1 }   ;      // starting token index for this expression, if known  
     int64_t                           token_ix2          { -1 }   ;      // ending   token index for this expression, if known  
 
-    std::wstring                      label                       ;      // main label for this slist (often empty string)
-    std::map<std::wstring, uint64_t>  labels                      ;      // map with all labels (including main, if not empty) and associated expression indexes in this slist
+    std::wstring                      label                       ;      // main label for this block (often empty string)
+    std::map<std::wstring, uint64_t>  labels                      ;      // map with all labels (including main, if not empty) and associated expression indexes in this block
 };
 
 
@@ -390,7 +393,7 @@ struct slist_S
 ////
 ////
 ////            ================
-////            evaluation phase (eval.cpp)  
+////            evaluation phase (ex_eval.cpp)  
 ////            ================
 ////
 ////
@@ -402,16 +405,24 @@ struct slist_S
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-//    -------------------
-//    symtab_S  structure -- symbol table with verb names and variable names 
-//    -------------------
+//    --------------------
+//    environ_S  structure -- environment with verb names, type names, variable names, etc. 
+//    --------------------
 //
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct symtab_S
+struct environ_S
 {
-    std::map<std::wstring, symval_S>    symbols;        // identifier names for this scope                        
+    int64_t                             sernum           { 0     };                  // serial number for next symbol in this environment -- for debugging  -- valid serial numbers start with -1 and go downward   
+    bool                                is_global        { false };                  // true -- this environment is the global  environment)
+    bool                                is_main          { false };                  // true -- this environment is the main (persistent)  environment)
+    bool                                is_persistent    { false };                  // true -- this environment is for static or persistent environment for a user-defind verb   
+    bool                                is_preprocess    { false };                  // true -- this environment is for pre-processor stack frame
+    bool                                is_verbmain      { false };                  // true -- this environment is for the (non-persistent) stack frame of a user-defined verb
+    bool                                is_frameblock    { false };                  // true -- this environment is for a frameblock -- internal to a verb, main, pre-process, etc.
+    bool                                is_parmsonly     { false };                  // true -- this environment is for a parms-only SF -- same_scope: verb
+    std::map<std::wstring, symval_S>    symbols          {       };                  // identifier names for this environment -- environment                       
 };
 
 
@@ -428,14 +439,20 @@ struct symtab_S
 
 struct symval_S 
 {
-    bool                           is_exported                   { false };     // true -- this identifier is exported  -- visible in nested scopes
+#ifdef M_EXPOSE_SUPPORT
+    bool                           is_exposed                    { false };     // true -- this identifier is exposed  -- visible in nested dynamic scopes
+#endif
     bool                           is_const                      { false };     // true -- identifier is constant       -- value cannot be updated, cannot be undefined  
-    bool                           is_verbdef                    { false };     // true -- identifier is a verbdef      -- value cannot be updated
-    bool                           is_typdef                     { false };     // true -- identifier is a typdef       -- value cannot be updated
+    bool                           is_verbset                    { false };     // true -- identifier is a verbset      -- value cannot be updated if any built-in verbdefs in the set
+    bool                           is_typdef                     { false };     // true -- identifier is a typdef       -- value cannot be updated, cannot be undefined
     bool                           is_builtin                    { false };     // true -- identifier is built-in       -- (verb/type/etc.) value cannot be updated, cannot be undefined 
     bool                           is_alias                      { false };     // true -- identifier is an alias       -- updatability depends in main identifier -- alias can always be deleted
+                                                                                //                                         ???? not supported yet ?????? 
+    bool                           no_shadow                     { false };     // true -- identifier cannot be shadowed (only valid for global identifiers) 
+    bool                           no_undefine                   { false };     // true -- identifier cannot be undefined  
+    bool                           no_update                     { false };     // true -- identifier cannot be updated  
 
-    uint64_t                       serial                        { 0     };     // symval_S serial number (only counts ones in a symtab_S) -- valid serial numbers start with 1, not 0      
+    uint64_t                       serno                         { 0     };     // symval_S serial number      
 
     std::shared_ptr<value_S>       value_sp                      {       };     // pointer to associated value 
 };
@@ -446,43 +463,53 @@ struct symval_S
 //
 //
 //    ------------------
-//    frame_S  structure -- stack fame for block or verb
+//    frame_S  structure -- stack fame for frameblock, mainblock verb-block, or preprocessor-block
 //    ------------------
 //
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct frame_S 
-{   
-    //tracker_C                                   tracker                    {         };     // for debug only
-
-    std::weak_ptr<frame_S>                        self_wp                    {         };     // non-owning self-pointer -- for use_count() tracking   
-    std::shared_ptr<frame_S>                      scope_sp                   {         };     // shared owning pointer to parent scope stack frame  (need for closures ?????? to be changed ??????)
-
-	frame_S                                      *main_p                     { nullptr };     // pointer to main (topmost) stack frame -- non-owning pointer (top/main env points to itself) 
-    frame_S                                      *symbols_p                  { nullptr };     // pointer to next upper frame_S that has valid local symbol table (can point to self, if symtab_valid is true) -- non-owning pointer
+{  
     std::shared_ptr<frame_S>                      parent_sp                  {         };     // shared pointer to parent stack frame -- owning pointer (not initialized, if this is top/main stack frame)
-	frame_S                                      *child_p                    { nullptr };     // pointer to child stack frame -- non-owning pointer (0, if this is most deeply-nested stack frame 
-    symtab_S                                     *global_p                   { nullptr };     // pointer to global symbol table  -- same in all stack frames 
-                                             
-    bool                                          is_main                    { false   };     // true -- this is topmost/main stack frame
-    bool                                          is_preparse                { false   };     // true -- this stack frame belongs to pre-parser 
-    bool                                          is_block                   { false   };     // true -- this stack frame started because of block execution 
-    bool                                          is_verb                    { false   };     // true -- this stack frame env started because of verb execution  
-    bool                                          lexical_scope              { false   };     // true -- this stack_frame has lexical scope upwards to parent stack frame  
-    bool                                          dynamic_scope              { false   };     // true -- this stack_frame has dynamic scope upwards to parent stack frame -- only exported variables are visible 
-    bool                                          block_scope                { false   };     // true -- this stack_frame has dynamic scope upwards to parent stack frame -- all variables visible  
-    bool                                          symtab_valid               { false   };     // true -- search this stack frame's symbol table when looking up names 
-    bool                                          exports_done               { false   };     // true -- one or more exports have been done
-                                             
-    uint64_t                                      verb_eval_ct               { 0       };     // number of verbs evaluated (for statistics) 
+	frame_S                                      *child_p                    { nullptr };     // pointer to child stack frame -- non-owning pointer (0, if this is most deeply-nested stack frame -- non-owning ptr
+    std::weak_ptr<frame_S>                        self_wp                    {         };     // non-owning self-pointer -- for use_count() tracking   
+    std::shared_ptr<frame_S>                      scope_sp                   {         };     // shared owning pointer to upward scope stack frame  (used to keep the upward enclosing scopes (especially ones above the defining scope) around for closures) 
+
+    environ_S                                    *environ_p                  { nullptr };     // pointer to local environ_S -- normally points to this->environ field below
+    environ_S                                     env                        {         };     // local environment -- has with verb names and variable names for this stack frame (if environ_p points to here) 
+
+	frame_S                                      *persist_sf_p               { nullptr };     // pointer to persistent SF for this verb (if any) - persistent SF pointer to itself 
+    frame_S                                      *verbmain_sf_p              { nullptr };     // pointer to main SF for this verb  -- main verb SF points to itself  
+    frame_S                                      *local_sf_p                 { nullptr };     // pointer to SF that has local identifiers (for new definitionas, etc.)
+    frame_S                                      *search_sf_p                { nullptr };     // pointer to SF where search for identifiers should start
+
     uint64_t                                      serial                     {         };     // serial number for this stack frame -- for debugging
-    
+
+    bool                                          is_main                    { false   };     // true -- this is topmost/main stack frame
+    bool                                          is_preprocess              { false   };     // true -- this stack frame belongs to pre-processor 
+    bool                                          is_persistent              { false   };     // true -- this stack frame is the persistent SF for a user-defined verb 
+    bool                                          is_verbmain                { false   };     // true -- this stack frame started because of verb execution -- is non-persistent  
+    bool                                          is_frameblock              { false   };     // true -- this stack frame started because of frameblock execution 
+    bool                                          is_parmsonly               { false   };     // true -- this stack frame is for saving verb invocation parms only (verb has same_scope:) 
+   
+    bool                                          lexical_scope              { false   };     // true -- this stack_frame has lexical scope upwards to parent stack frame  
+    bool                                          dynamic_scope              { false   };     // true -- this stack_frame has dynamic scope upwards to parent stack frame 
+#ifdef M_EXPOSE_SUPPORT
+    bool                                          dynall_scope               { false   };     // true -- this stack_frame has dynall  scope upwards to parent stack frame -- like dynamic, but all variables visible, not just exposed ones 
+#endif
+    bool                                          no_scope                   { false   };     // true -- this stack_frame has no upwards scope to parent stack frame      -- no variables visible except global and local
+    bool                                          same_scope                 { false   };     // true -- this stack frame is for parms-only -- upwards scope is dynamic/dynall
+    bool                                          shared_environ             { false   };     // true -- environ_p points to a shared environment, not to this->environ 
+#ifdef M_EXPOSE_SUPPORT
+    bool                                          exposes_done               { false   };     // true -- one or more exposes have been done
+#endif                                             
+    uint64_t                                      verb_eval_ct               { 0       };     // number of verbs evaluated (for statistics) 
     std::wstring                                  verbname                   {         };     // name of verb being run (if frame_S started by verb) in this stack frame
-    vlist_S                                       lparms                     {         };     // left-side  parameters for this block  
-    vlist_S                                       rparms                     {         };     // right-side parameters for this block 
-    symtab_S                                      symtab                     {         };     // local symbol table -- has with verb names and variable names for this block (if symtab_valid flag is on) 
- // tracker_C                                     tracker                    { 111     };     // temp 
+    vlist_S                                       lparms                     {         };     // left-side  parameters for this frameblock/verb-block/mainblock  
+    vlist_S                                       rparms                     {         };     // right-side parameters for this frameblock/verb-block/mainblock 
+
+  //tracker_C                                     tracker                    {  111    };     // temp for storage leak debugging 
 };
 
 
@@ -505,17 +532,18 @@ struct results_S : public value_S
                                                                                         // this flag is on if there is a single result (or none) in the vlist 
                                                                                         // this lfag is off if the results value is returned toe notmal way -- in the imbedded value_S structure
     bool                                  no_results                       {false};     // no results -- vlist_sp is not initialized  (value type is "none")
+    bool                                  ignore_results                   {false};     // true -- these results don't overwrite results from prior expression in the block (used for @CONTINUE, etc.)
     bool                                  re_eval_expression_results       {false};     // need to call eval_value() again after 1st call to eval_value() returned a vlist or identifier from evaluating a nested expression  
     bool                                  builtin_verb_results             {false};     // true, if these results came from a builtin verb   
 
     bool                                  special_results                  {false};     // this flag is on, if any of the following flags are on -- for quick testing
     bool                                  error                            {false}; 
     bool                                  break_flag                       {false};     // @BREAK out of lowest enclosing @LOOP
-    bool                                  continue_flag                    {false};     // @CONTINUE -- end loop slist, but keep looping
+    bool                                  continue_flag                    {false};     // @CONTINUE -- end loop block, but keep looping
     bool                                  quit_flag                        {false};     // @QUIT -- lowest enclosing @BLOCK 
-    bool                                  end_flag                         {false};     // @END --  immediately end the main slist 
-    bool                                  leave_flag                       {false};     // @LEAVE some active enclosing (perhaps-labelled) slist -- optional label (if any) is in .str member
-    bool                                  goto_flag                        {false};     // @GOTO some label in an active enclosing slist -- required label is in .str member
+    bool                                  end_flag                         {false};     // @END --  immediately end the main block 
+    bool                                  leave_flag                       {false};     // @LEAVE some active enclosing (perhaps-labelled) block -- optional label (if any) is in .str member
+    bool                                  goto_flag                        {false};     // @GOTO some label in an active enclosing block -- required label is in .str member
     bool                                  xctl_flag                        {false};     // @XCTL pending to some verb -- new expression with verb to xctl-to is in value_S base struct
     bool                                  return_flag                      {false};     // @RETURN from lowest enclosing user-defined verb -- value is in value_S base struct
     bool                                  throw_flag                       {false};     // @THROW to nearest @TRY catch: verb              -- value is in value_S base struct
@@ -534,6 +562,35 @@ struct results_S : public value_S
 
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//    -----------------------
+//    parm_check_S  structure
+//    -----------------------
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+struct parm_check_S
+{
+    uint64_t                              first_parm_lineno                  { 0   };   // ending line number of 1st verb parm        (source ID not recorded)         
+    uint64_t                              verb_lineno                        { 0   };   // starting line number of verb               (source ID not recorded) 
+    uint64_t                              last_parm_lineno                   { 0   };   // starting line number of last verb parm     (source ID not recorded)
+    
+    uint64_t                              min_left_pos_parm                  { 0   };   // mimimum number of left  positional parms allowed by any member of overload set
+    uint64_t                              max_left_pos_parm                  { 0   };   // maximum number of left  positional parms allowed by any member of overload set
+    uint64_t                              min_right_pos_parm                 { 0   };   // mimimum number of right positional parms allowed by any member of overload set
+    uint64_t                              max_right_pos_parm                 { 0   };   // maximum number of right positional parms allowed by any member of overload set
+
+    std::set<std::wstring>                left_keywords                      {     };   // set of all allowed  left-side (top-level) keywords for any member of overload set               
+    std::set<std::wstring>                right_keywords                     {     };   // set of all allowed right-side (top-level) keywords for any member of overload set 
+};
+
+
+
+
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
 //▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
@@ -542,9 +599,9 @@ struct results_S : public value_S
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////
 /////
-/////  ============================================================
-/////  Parse-oriented external function prototypes -- ex_preparse.c
-/////  ============================================================
+/////  ==============================================================
+/////  Parse-oriented external function prototypes -- ex_preprocess.c
+/////  ==============================================================
 /////
 /////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -552,9 +609,9 @@ struct results_S : public value_S
 
 /////////////////// external setup and processing functions
 
-pre_parse_C *add_new_pp();                  // add new pre_parse_C to top of pre-parser stack 
-void         remove_pp();                   // remove newest pre_parse_C on stack and free it 
-pre_parse_C *current_pp();                  // return pointer to newest (current) pre_parse_C instance 
+pre_process_C *add_new_pp();                  // add new pre_process_C to top of preprocess stack 
+void           remove_pp();                   // remove newest pre_process_C on stack and free it 
+pre_process_C *current_pp();                  // return pointer to newest (current) pre_process_C instance 
 
 
 
@@ -568,16 +625,22 @@ pre_parse_C *current_pp();                  // return pointer to newest (current
 /////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// pre-parser control
+// preprocess control
 
-uint64_t     preparse_setup(pre_parse_C&);  // customize configuration settings in pre_parse_C object
+uint64_t     preprocess_setup(pre_process_C&);  // customize configuration settings in pre_process_C object
 
 
 /////////////////// external setup and processing functions
 
-uint64_t      process_main_file(   frame_S& ,                               const std::wstring&                                     );
-std::wstring  process_cmdline(     frame_S&, symtab_S&, int, wchar_t *[]                                                            ); 
-int           parse_string(        frame_S&, slist_S&, const std::wstring&, const std::wstring& = L"parsed string", bool = false    );
+int           process_main_file(   frame_S& ,                               const std::wstring&                                     );
+std::wstring  process_cmdline(     frame_S&, environ_S&, int, wchar_t *[]                                                           ); 
+int           parse_string(        frame_S&, block_S&, const std::wstring&, const std::wstring& = L"parsed string", bool = false    );
+
+
+//////////////// debug/statstical functions
+
+float64_T    get_parse_elapsed();  
+float64_T    get_eval_elapsed(); 
 
 
 ///////////////// location string and other debug-message-oriented routines
@@ -619,7 +682,7 @@ token_C token_list_at(std::vector<token_C>::size_type);
 
 /////////////////// expression-oriented external functions
 
-void expression_set_verb(frame_S&, a_expression_S&, const token_C&       ,  const verbdef_S&  );   // version with passed-in verbname token
+void expression_set_verb(frame_S&, a_expression_S&, const token_C&       ,  const verbset_S&  );   // version with passed-in verbname token + dummy? verbset_S
 void expression_set_verb(frame_S&, a_expression_S&, const a_expression_S&,  bool = false      );   // version with passed-in verb sub-expression 
 
 
@@ -641,18 +704,31 @@ void    add_keyword_value(   vlist_S&, const value_S&, const value_S&           
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////
 /////
-/////  =================================================================================
-/////  Symbol table / stack frame - oriented external function prototypes -- ex_symtab.c
-/////  =================================================================================
+/////  =======================================
+/////  Debug/Display functions -- ex_display.c
+/////  =======================================
 /////
 /////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-//////////////// display , debug, and string_oriented functions (usually displaying symtab values)
+//////////////// printable string-oriented functions
+
+std::wstring str_value( const value_S&, bool = false, bool = false, bool = false);
+std::wstring str_vlist( const vlist_S&, bool = false, bool = false, bool = false);
+
+std::wstring type_str(  type_E); 
+
+std::wstring verb_name(     const a_expression_S&);
+std::wstring verb_name(     const e_expression_S&);
+
+
+//////////////// output/display-oriented functions
+
+void    display_statistics();
 
 void    display_vlist(      const vlist_S&        , const std::wstring& = L"vlist"        , const std::wstring& = L"",               bool = false, const std::wstring& = L"");
-void    display_slist(      const slist_S&        , const std::wstring& = L"slist"        , const std::wstring& = L"", bool = false, bool = false, const std::wstring& = L"");
+void    display_block(      const block_S&        , const std::wstring& = L"block"        , const std::wstring& = L"", bool = false, bool = false, const std::wstring& = L"");
 void    display_expression( const a_expression_S& , const std::wstring& = L"expression"   , const std::wstring& = L"",               bool = true , const std::wstring& = L"");
 void    display_expression( const e_expression_S& , const std::wstring& = L"expression"   , const std::wstring& = L"",               bool = true , const std::wstring& = L"");
 void    display_value(      const value_S&        , const std::wstring& = L"value"        , const std::wstring& = L"",               bool = false, const std::wstring& = L"");
@@ -662,113 +738,205 @@ void    display_buffer( const std::wstring&       , const buf8_T&     ,  size_t 
 std::wstring results_msg_string( const results_S&);
                
 void    display_ref(                          const ref_S&                                            );
-void    display_verbdef(                      const verbdef_S&                                        );
+void    display_verbset(                      const verbset_S&                                        );
 void    display_typdef(  const std::wstring&, const typdef_S&   ,            const std::wstring& = L""); 
 void    display_fieldef( const std::wstring&, const fieldef_S&  ,            const std::wstring& = L""); 
 
-void    display_vars(         frame_S&, const vlist_S&          );
-void    display_verbdefs(     frame_S&, const vlist_S&          );
-void    display_typdefs(      frame_S&, const vlist_S&          );
+void    display_stack(        const frame_S&                          );
+void    display_vars(         const frame_S&, const vlist_S&          );
+void    display_verbsets(     const frame_S&, const vlist_S&          );
+void    display_typdefs(      const frame_S&, const vlist_S&          );
 
-void    display_all_verbdefs( frame_S&, bool = true, bool = true);
-void    display_all_typdefs(  frame_S&, bool = true, bool = true);
-void    display_all_vars(     frame_S&                          );
+void    display_all_verbsets( const frame_S&, bool = true, bool = true);
+void    display_all_typdefs(  const frame_S&, bool = true, bool = true);
+void    display_all_vars(     const frame_S&                          );
+ 
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////
+/////
+/////  =================================================================================
+/////  Environment / stack frame - oriented external function prototypes -- ex_environ.c
+/////  =================================================================================
+/////
+/////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////// verbdef definition external functions --- 
 
-int     def_global_verb(                     const std::wstring&, const verbdef_S&, bool = false,               bool = true   );
-int      def_local_verb(           frame_S&, const std::wstring&, const verbdef_S&, bool = false, bool = false, bool = true   );
+struct def_parm_S
+{
+    bool          builtin         { false };        // true -- this is built-in definition
+    bool          constant        { false };        // true -- this is a constant definition
+#ifdef M_EXPOSE_SUPPORT
+    bool          exposed         { false };        // true -- this is definition is exposed (forced on for globals)
+#endif
+    bool          unshare         { false };        // true -- value must be unshared when defined
+    bool          no_shadow       { false };        // true -- this definition can't be shadowsd -- forced off for non-local dedinintions
+    bool          no_update       { false };        // true -- this value can't be updated -- forced on for built-in, constant, or verb and type definitions
+    bool          no_undefine     { false };        // true -- this value can't be undefined -- forced on for biult-in, constant, or type definitions
+};
 
-int   undef_global_verb(                     const std::wstring&                                                              ); 
-int    undef_local_verb(           frame_S&, const std::wstring&                                                              ); 
 
-int     get_global_verb(                     const std::wstring&,       verbdef_S&                                            );
-int      get_local_verb(           frame_S&, const std::wstring&,       verbdef_S&                                            ); 
-int            get_verb(           frame_S&, const std::wstring&,       verbdef_S&                                            ); 
-int     get_global_verb(                     const std::wstring&,       symval_S&                                             );
-int      get_local_verb(           frame_S&, const std::wstring&,       symval_S&                                             );
-int            get_verb(           frame_S&, const std::wstring&,       symval_S&                                             );  
-                            
-
-/////////////////////////////////// typdef definition external functions ---    
-
-int     def_global_typdef(                   const std::wstring&, const typdef_S&,  bool = false,               bool = true   );
-int      def_local_typdef(         frame_S&, const std::wstring&, const typdef_S&,  bool = false, bool = false, bool = true   );
-
-int   undef_global_typdef(                   const std::wstring&                                                              );  
-int    undef_local_typdef(         frame_S&, const std::wstring&                                                              ); 
-
-int     get_global_typdef(                   const std::wstring&,       typdef_S&                                             );
-int      get_local_typdef(         frame_S&, const std::wstring&,       typdef_S&                                             ); 
-int            get_typdef(         frame_S&, const std::wstring&,       typdef_S&                                             ); 
-int     get_global_typdef(                   const std::wstring&,       symval_S&                                             );
-int      get_local_typdef(         frame_S&, const std::wstring&,       symval_S&                                             );
-int            get_typdef(         frame_S&, const std::wstring&,       symval_S&                                             );     
+int     def_global_verb(                               const std::wstring&, const verbset_S&, const def_parm_S&  = def_parm_S { }        );
+int     def_static_verb(                     frame_S&, const std::wstring&, const verbset_S&, const def_parm_S&  = def_parm_S { }        );
+int   def_verbmain_verb(                     frame_S&, const std::wstring&, const verbset_S&, const def_parm_S&  = def_parm_S { }        );
+int      def_local_verb(                     frame_S&, const std::wstring&, const verbset_S&, const def_parm_S&  = def_parm_S { }        );
+                                                                                                                                        
+int   undef_global_verb(                               const std::wstring&                                                               ); 
+int   undef_static_verb(                     frame_S&, const std::wstring&                                                               ); 
+int undef_verbmain_verb(                     frame_S&, const std::wstring&                                                               ); 
+int    undef_local_verb(                     frame_S&, const std::wstring&                                                               ); 
+                                                                                                                                        
+int     get_global_verb(                               const std::wstring&,       verbset_S&                                             );
+int     get_static_verb(               const frame_S&, const std::wstring&,       verbset_S&                                             ); 
+int   get_verbmain_verb(               const frame_S&, const std::wstring&,       verbset_S&                                             ); 
+int      get_local_verb(               const frame_S&, const std::wstring&,       verbset_S&                                             ); 
+int            get_verb(               const frame_S&, const std::wstring&,       verbset_S&                                             ); 
+int     get_global_verb(                               const std::wstring&,       symval_S&                                              );
+int     get_static_verb(               const frame_S&, const std::wstring&,       symval_S&                                              );
+int   get_verbmain_verb(               const frame_S&, const std::wstring&,       symval_S&                                              );
+int      get_local_verb(               const frame_S&, const std::wstring&,       symval_S&                                              );
+int            get_verb(               const frame_S&, const std::wstring&,       symval_S&                                              );  
+                                                                                                                                        
+                                                                                                                                        
+/////////////////////////////////// typdef definition external functions ---                                                            
+                                                                                                                                        
+int     def_global_typdef(                             const std::wstring&, const typdef_S&,  const def_parm_S&  = def_parm_S { }        );
+int     def_static_typdef(                   frame_S&, const std::wstring&, const typdef_S&,  const def_parm_S&  = def_parm_S { }        );
+int   def_verbmain_typdef(                   frame_S&, const std::wstring&, const typdef_S&,  const def_parm_S&  = def_parm_S { }        );
+int      def_local_typdef(                   frame_S&, const std::wstring&, const typdef_S&,  const def_parm_S&  = def_parm_S { }        );
+                                                                                                                                        
+int   undef_global_typdef(                             const std::wstring&                                                               ); 
+int   undef_static_typdef(                   frame_S&, const std::wstring&                                                               ); 
+int undef_verbmain_typdef(                   frame_S&, const std::wstring&                                                               ); 
+int    undef_local_typdef(                   frame_S&, const std::wstring&                                                               ); 
+                                                                                                                                        
+int     get_global_typdef(                             const std::wstring&,       typdef_S&                                              );
+int     get_static_typdef(             const frame_S&, const std::wstring&,       typdef_S&                                              ); 
+int   get_verbmain_typdef(             const frame_S&, const std::wstring&,       typdef_S&                                              ); 
+int      get_local_typdef(             const frame_S&, const std::wstring&,       typdef_S&                                              ); 
+int            get_typdef(             const frame_S&, const std::wstring&,       typdef_S&                                              ); 
+int     get_global_typdef(                             const std::wstring&,       symval_S&                                              );
+int     get_static_typdef(             const frame_S&, const std::wstring&,       symval_S&                                              );
+int   get_verbmain_typdef(             const frame_S&, const std::wstring&,       symval_S&                                              );
+int      get_local_typdef(             const frame_S&, const std::wstring&,       symval_S&                                              );
+int            get_typdef(             const frame_S&, const std::wstring&,       symval_S&                                              );     
 
 
 /////////////////////////////////// variable/constant definition external functions ---
 
-int      def_local_var(             frame_S&, const std::wstring&, const value_S&,    bool = false, bool = false, bool = false );
-int     def_global_var(                       const std::wstring&, const value_S&,    bool = false,               bool = false );
-
-int   undef_global_var(                       const std::wstring&                                                              );
-int    undef_local_var(             frame_S&, const std::wstring&                                                              );
-
-int     get_global_var(                       const std::wstring&,       value_S&                                              );
-int      get_local_var(             frame_S&, const std::wstring&,       value_S&                                              );
-int            get_var(             frame_S&, const std::wstring&,       value_S&                                              );
-int     get_global_var(                       const std::wstring&,       symval_S&                                             );
-int      get_local_var(             frame_S&, const std::wstring&,       symval_S&                                             );
-int            get_var(             frame_S&, const std::wstring&,       symval_S&                                             );    
-                                                                                   
-int  update_global_var(                       const std::wstring&, const value_S&,    bool = false,               bool = false );                                                               
-int   update_local_var(             frame_S&, const std::wstring&, const value_S&,    bool = false,               bool = false );
-int         update_var(             frame_S&, const std::wstring&, const value_S&,    bool = false,               bool = false );
+                                                                                             
+int       def_local_var(                      frame_S&, const std::wstring&, const value_S&,    const def_parm_S& = def_parm_S { }       );
+int       def_parms_var(                      frame_S&, const std::wstring&, const value_S&,    const def_parm_S& = def_parm_S { }       );
+int    def_verbmain_var(                      frame_S&, const std::wstring&, const value_S&,    const def_parm_S& = def_parm_S { }       );
+int      def_static_var(                      frame_S&, const std::wstring&, const value_S&,    const def_parm_S& = def_parm_S { }       );
+int      def_global_var(                                const std::wstring&, const value_S&,    const def_parm_S& = def_parm_S { }       );
+     
+int     def_local_const(                      frame_S&, const std::wstring&, const value_S&,    const def_parm_S& = def_parm_S { }       );
+int  def_verbmain_const(                      frame_S&, const std::wstring&, const value_S&,    const def_parm_S& = def_parm_S { }       );
+int    def_static_const(                      frame_S&, const std::wstring&, const value_S&,    const def_parm_S& = def_parm_S { }       );
+int    def_global_const(                                const std::wstring&, const value_S&,    const def_parm_S& = def_parm_S { }       );
+                                    
+int    undef_global_var(                                const std::wstring&                                                              );
+int    undef_static_var(                      frame_S&, const std::wstring&                                                              );
+int  undef_verbmain_var(                      frame_S&, const std::wstring&                                                              );
+int     undef_local_var(                      frame_S&, const std::wstring&                                                              );
+                                    
+int      get_global_var(                                const std::wstring&,       value_S&                                              );
+int      get_static_var(                const frame_S&, const std::wstring&,       value_S&                                              );
+int    get_verbmain_var(                const frame_S&, const std::wstring&,       value_S&                                              );
+int       get_local_var(                const frame_S&, const std::wstring&,       value_S&                                              );
+int             get_var(                const frame_S&, const std::wstring&,       value_S&                                              );
+int      get_global_var(                                const std::wstring&,       symval_S&                                             );
+int      get_static_var(                const frame_S&, const std::wstring&,       symval_S&                                             );
+int    get_verbmain_var(                const frame_S&, const std::wstring&,       symval_S&                                             );
+int       get_local_var(                const frame_S&, const std::wstring&,       symval_S&                                             );
+int             get_var(                const frame_S&, const std::wstring&,       symval_S&                                             );    
+                                                                                            
+                                                                                              /* make_const                 unshare  */
+int   update_global_var(                                const std::wstring&, const value_S&,    bool = false,               bool = false ); 
+int   update_static_var(                      frame_S&, const std::wstring&, const value_S&,    bool = false,               bool = false );
+int update_verbmain_var(                      frame_S&, const std::wstring&, const value_S&,    bool = false,               bool = false );
+int    update_local_var(                      frame_S&, const std::wstring&, const value_S&,    bool = false,               bool = false );
+int          update_var(                      frame_S&, const std::wstring&, const value_S&,    bool = false,               bool = false );
 
        
 /////////////////////////////////// identifier/symbol-oriented external functions
 
-bool is_local_identifier_defined(  frame_S&, const std::wstring&                                                           );
-bool is_local_identifier_variable( frame_S&, const std::wstring&                                                           );
-bool is_local_identifier_const(    frame_S&, const std::wstring&                                                           );
-bool is_local_identifier_verb(     frame_S&, const std::wstring&                                                           );
-bool is_local_identifier_typdef(   frame_S&, const std::wstring&                                                           );
-bool is_local_identifier_builtin(  frame_S&, const std::wstring&                                                           );
-bool is_local_identifier_alias(    frame_S&, const std::wstring&                                                           );
-bool is_local_identifier_mutable(  frame_S&, const std::wstring&                                                           );
+bool is_local_identifier_defined(       const frame_S&, const std::wstring&                                                              );
+bool is_local_identifier_variable(      const frame_S&, const std::wstring&                                                              );
+bool is_local_identifier_const(         const frame_S&, const std::wstring&                                                              );
+bool is_local_identifier_verb(          const frame_S&, const std::wstring&                                                              );
+bool is_local_identifier_typdef(        const frame_S&, const std::wstring&                                                              );
+bool is_local_identifier_builtin(       const frame_S&, const std::wstring&                                                              );
+bool is_local_identifier_alias(         const frame_S&, const std::wstring&                                                              );
+bool is_local_identifier_mutable(       const frame_S&, const std::wstring&                                                              );
+bool is_local_identifier_removable(     const frame_S&, const std::wstring&                                                              );
 
-bool is_global_identifier_defined(           const std::wstring&                                                           );
-bool is_global_identifier_variable(          const std::wstring&                                                           );
-bool is_global_identifier_const(             const std::wstring&                                                           );
-bool is_global_identifier_verb(              const std::wstring&                                                           );
-bool is_global_identifier_typdef(            const std::wstring&                                                           );
-bool is_global_identifier_builtin(           const std::wstring&                                                           );
-bool is_global_identifier_alias(             const std::wstring&                                                           );   
-bool is_global_identifier_mutable(           const std::wstring&                                                           );   
+bool is_verbmain_identifier_defined(    const frame_S&, const std::wstring&                                                              );
+bool is_verbmain_identifier_variable(   const frame_S&, const std::wstring&                                                              );
+bool is_verbmain_identifier_const(      const frame_S&, const std::wstring&                                                              );
+bool is_verbmain_identifier_verb(       const frame_S&, const std::wstring&                                                              );
+bool is_verbmain_identifier_typdef(     const frame_S&, const std::wstring&                                                              );
+bool is_verbmain_identifier_builtin(    const frame_S&, const std::wstring&                                                              );
+bool is_verbmain_identifier_alias(      const frame_S&, const std::wstring&                                                              );
+bool is_verbmain_identifier_mutable(    const frame_S&, const std::wstring&                                                              );
+bool is_verbmain_identifier_removable(  const frame_S&, const std::wstring&                                                              );
 
-bool is_identifier_defined(        frame_S&, const std::wstring&                                                           );
-bool is_identifier_variable(       frame_S&, const std::wstring&                                                           );
-bool is_identifier_const(          frame_S&, const std::wstring&                                                           );
-bool is_identifier_verb(           frame_S&, const std::wstring&                                                           );
-bool is_identifier_typdef(         frame_S&, const std::wstring&                                                           );
-bool is_identifier_builtin(        frame_S&, const std::wstring&                                                           );
-bool is_identifier_alias(          frame_S&, const std::wstring&                                                           );
-bool is_identifier_mutable(        frame_S&, const std::wstring&                                                           );
+bool is_static_identifier_defined(      const frame_S&, const std::wstring&                                                              );
+bool is_static_identifier_variable(     const frame_S&, const std::wstring&                                                              );
+bool is_static_identifier_const(        const frame_S&, const std::wstring&                                                              );
+bool is_static_identifier_verb(         const frame_S&, const std::wstring&                                                              );
+bool is_static_identifier_typdef(       const frame_S&, const std::wstring&                                                              );
+bool is_static_identifier_builtin(      const frame_S&, const std::wstring&                                                              );
+bool is_static_identifier_alias(        const frame_S&, const std::wstring&                                                              );
+bool is_static_identifier_mutable(      const frame_S&, const std::wstring&                                                              );
+bool is_static_identifier_removable(    const frame_S&, const std::wstring&                                                              );
 
-int  def_global_identifier(                  const std::wstring&,       symval_S&                           , bool = false );  
-int  def_local_identifier(         frame_S&, const std::wstring&,       symval_S&                           , bool = false ); 
+bool is_global_identifier_defined(                      const std::wstring&                                                              );
+bool is_global_identifier_variable(                     const std::wstring&                                                              );
+bool is_global_identifier_const(                        const std::wstring&                                                              );
+bool is_global_identifier_verb(                         const std::wstring&                                                              );
+bool is_global_identifier_typdef(                       const std::wstring&                                                              );
+bool is_global_identifier_builtin(                      const std::wstring&                                                              );
+bool is_global_identifier_alias(                        const std::wstring&                                                              );   
+bool is_global_identifier_mutable(                      const std::wstring&                                                              ); 
+bool is_global_identifier_removable(                    const std::wstring&                                                              ); 
 
-int  undef_global_identifier(                const std::wstring&                                                           );  
-int  undef_local_identifier(       frame_S&, const std::wstring&                                                           );  
+bool is_identifier_defined(             const frame_S&, const std::wstring&                                                              );
+bool is_identifier_variable(            const frame_S&, const std::wstring&                                                              );
+bool is_identifier_const(               const frame_S&, const std::wstring&                                                              );
+bool is_identifier_verb(                const frame_S&, const std::wstring&                                                              );
+bool is_identifier_typdef(              const frame_S&, const std::wstring&                                                              );
+bool is_identifier_builtin(             const frame_S&, const std::wstring&                                                              );
+bool is_identifier_alias(               const frame_S&, const std::wstring&                                                              );
+bool is_identifier_mutable(             const frame_S&, const std::wstring&                                                              );
+bool is_identifier_removable(           const frame_S&, const std::wstring&                                                              );
+                                                                                                                                        
+int  def_global_identifier(                             const std::wstring&,       symval_S&                           , bool = false    ); 
+int  def_static_identifier(                   frame_S&, const std::wstring&,       symval_S&                           , bool = false    ); 
+int  def_verbmain_identifier(                 frame_S&, const std::wstring&,       symval_S&                           , bool = false    ); 
+int  def_local_identifier(                    frame_S&, const std::wstring&,       symval_S&                           , bool = false    ); 
+                                                                                                                                        
+int  undef_global_identifier(                           const std::wstring&                                                              ); 
+int  undef_static_identifier(                 frame_S&, const std::wstring&                                                              ); 
+int  undef_verbmain_identifier(               frame_S&, const std::wstring&                                                              ); 
+int  undef_local_identifier(                  frame_S&, const std::wstring&                                                              );  
+                                                                                                                                        
+int  get_global_identifier(                             const std::wstring&,       value_S&                                              );
+int  get_static_identifier(             const frame_S&, const std::wstring&,       value_S&                                              );
+int  get_verbmain_identifier(           const frame_S&, const std::wstring&,       value_S&                                              );
+int  get_local_identifier(              const frame_S&, const std::wstring&,       value_S&                                              );
+int  get_identifier(                    const frame_S&, const std::wstring&,       value_S&                                              ); 
 
-int  get_global_identifier(                  const std::wstring&,       value_S&                                           );
-int  get_local_identifier(         frame_S&, const std::wstring&,       value_S&                                           );
-int  get_identifier(               frame_S&, const std::wstring&,       value_S&                                           ); 
-
-int  export_local_identifier(      frame_S&, const std::wstring&                                            , bool = true  );
-
-                             
+#ifdef M_EXPOSE_SUPPORT
+int  expose_local_identifier(                 frame_S&, const std::wstring&                                            , bool = true     );
+int  expose_verbdef_identifier(               frame_S&, const std::wstring&                                            , bool = true     );  
+int  expose_static_identifier(                frame_S&, const std::wstring&                                            , bool = true     );                                                                                                                                        
+#endif                             
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -795,18 +963,6 @@ struct fieldparm_S
     int64_t                        offset          { 0       } ;      // offset for start of this field, if   has_offset   is true                        
     int64_t                        skip            { 0       } ;      // number of bytes to skip before this field, if   has_skip   is true
 } ;
-
-
-
-//////////////// display , debug, and string_oriented functions
-
-std::wstring str_value( const value_S&, bool = false, bool = false, bool = false);
-std::wstring str_vlist( const vlist_S&, bool = false, bool = false, bool = false);
-
-std::wstring type_str(  type_E); 
-
-std::wstring verb_name(     const a_expression_S&);
-std::wstring verb_name(     const e_expression_S&);
 
 
 //////////////////////////////// results-oriented functions /////////////////////////////////////////////////////////////////
@@ -844,8 +1000,8 @@ value_S   string_val(      const std::wstring&                     , int64_t = -
 value_S   identifier_val(  const std::wstring&                     , int64_t = -1, int64_t = -1 );       // no type_val version for this function
 value_S   vlist_val(       const vlist_S&                          , int64_t = -1, int64_t = -1 );
 value_S   expression_val(  const a_expression_S&                   , int64_t = -1, int64_t = -1 );
-value_S   slist_val(       const slist_S&                          , int64_t = -1, int64_t = -1 );
-value_S   verbdef_val(     const verbdef_S&                        , int64_t = -1, int64_t = -1 );
+value_S   block_val(       const block_S&                          , int64_t = -1, int64_t = -1 );
+value_S   verbset_val(     const verbset_S&                        , int64_t = -1, int64_t = -1 );
 value_S   typdef_val(      const typdef_S&                         , int64_t = -1, int64_t = -1 );
 value_S   ref_val(         const ref_S&                            , int64_t = -1, int64_t = -1 );
 value_S   buffer_val(      const buf8_T&       , const typdef_S&   , int64_t = -1, int64_t = -1 );
@@ -865,8 +1021,8 @@ value_S   type_val(        float64_T                               , int64_t = -
 value_S   type_val(        const std::wstring&                     , int64_t = -1, int64_t = -1 );    
 value_S   type_val(        const vlist_S&                          , int64_t = -1, int64_t = -1 );    
 value_S   type_val(        const a_expression_S&                   , int64_t = -1, int64_t = -1 );
-value_S   type_val(        const slist_S&                          , int64_t = -1, int64_t = -1 );
-value_S   type_val(        const verbdef_S&                        , int64_t = -1, int64_t = -1 );
+value_S   type_val(        const block_S&                          , int64_t = -1, int64_t = -1 );
+value_S   type_val(        const verbset_S&                        , int64_t = -1, int64_t = -1 );
 value_S   type_val(        const typdef_S&                         , int64_t = -1, int64_t = -1 ); 
 value_S   type_val(        const ref_S&                            , int64_t = -1, int64_t = -1 ); 
 value_S   type_val(        const buf8_T&,        const typdef_S&   , int64_t = -1, int64_t = -1 );
@@ -887,8 +1043,8 @@ int       get_val(         const value_S&, uint64_t&  );
 
 void    set_vlist_value(       value_S&, const vlist_S&                     , bool = false);
 void    set_expression_value(  value_S&, const a_expression_S&              , bool = false);
-void    set_slist_value(       value_S&, const slist_S&                     , bool = false);
-void    set_verbdef_value(     value_S&, const verbdef_S&                   , bool = false);
+void    set_block_value(       value_S&, const block_S&                     , bool = false);
+void    set_verbset_value(     value_S&, const verbset_S&                   , bool = false);
 void    set_typdef_value(      value_S&, const typdef_S&                    , bool = false);
 void    set_ref_value(         value_S&, const ref_S&                       , bool = false);
 void    set_buffer_value(      value_S&, const buf8_T&    , const typdef_S& , bool = false);
@@ -896,8 +1052,8 @@ void    set_buffer_value(      value_S&, const buf8_T&    , const typdef_S& , bo
 void      unshare_value(       value_S&        ); 
 void      unshare_vlist(       vlist_S&        );
 void      unshare_expression(  a_expression_S& ); 
-void      unshare_slist(       slist_S&        );
-void      unshare_verbdef(     verbdef_S&      );
+void      unshare_block(       block_S&        );
+void      unshare_verbset(     verbset_S&      );
 void      unshare_plist(       plist_S&        );
 void      unshare_parmtype(    parmtype_S&     );
 void      unshare_typdef(      typdef_S&       ); 
@@ -918,7 +1074,7 @@ bool is_value_false(      const value_S&);
 bool is_same_class(       const value_S& , const value_S&);   
 
 
-//////////////////// aggregate-oriented functions 
+//////////////////// container/aggregate-oriented functions 
 
 
 int                combine_vlists(vlist_S&, const vlist_S&, const vlist_S&, bool=false); 
@@ -950,7 +1106,7 @@ bool               fieldefs_are_same(     const fieldef_S& , const fieldef_S&   
 
 int                make_reference(     ref_S&, const std::shared_ptr<value_S>&, const typdef_S&, uint64_t       );
 int                make_reference(     ref_S&, const value_S&,                  const typdef_S&, uint64_t       );
-int                make_reference(     ref_S&, const symtab_S&                , const std::wstring&             );
+int                make_reference(     ref_S&, const environ_S&               , const std::wstring&             );
 
 int                dereference_value(      value_S&, const value_S&                                             ); 
 int                set_via_reference(const value_S&, const value_S&,                                   bool=true);
@@ -978,12 +1134,14 @@ void       display_stack(const frame_S&);
 
 uint64_t   get_eval_verb_count(      void);
 uint64_t   get_eval_value_count(     void);
-uint64_t   get_eval_slist_count(     void);
+uint64_t   get_eval_block_count(     void);
 uint64_t   get_eval_statement_count( void);
 
 uint64_t   get_eval_frame_serial(    void);
 uint64_t   get_eval_frame_depth(     void);
 uint64_t   get_eval_frame_max_depth( void);
+
+frame_S   *get_newest_sf(            void);        
                                                                               
 
 /////////////////////////////////// verb parameter-oriented external functions   ---- can these be moved over to interface.h ???????? (functions to ex_interface.cpp)
@@ -1011,18 +1169,19 @@ int get_vlist_keyword(         const vlist_S&        ,  const std::wstring&,    
 
 ///////////////////////////////// principal evaluation functions
 
-void         frame_parms(      frame_S&, int, wchar_t *[] );
+void           frame_cmdline_parms(      frame_S&, int, wchar_t *[] );
 
-frame_S             *add_new_frame(      bool = true                           );
-std::shared_ptr<frame_S> new_frame(      bool                                  );
+frame_S             *add_new_frame(                                            );
+std::shared_ptr<frame_S> new_frame(                                            );
 frame_S                 *add_frame(      const std::shared_ptr<frame_S>&       );
 void                  remove_frame(                                            );
                          
-int           eval_block(      frame_S&,           const      vlist_S&, const vlist_S&, const   slist_S&, results_S&);
-int      eval_main_block(      frame_S&,                                                const   slist_S&            );
+int     eval_frame_block(      frame_S&,           const      vlist_S&, const vlist_S&, const   block_S&, results_S&);
+int      eval_main_block(      frame_S&,                                                const   block_S&, int&      );
+int  eval_verbinit_block(                                                               const verbdef_S&, results_S&);
 int      eval_verb_block(      frame_S&,         const e_expression_S&,                 const verbdef_S&, results_S&);
 
-int           eval_slist(      frame_S&,  const        slist_S&, results_S&                    , bool = false);
+int           eval_block(      frame_S&,  const        block_S&, results_S&                                   );
 int           eval_expression( frame_S&,  const a_expression_S&, results_S&                    , bool = false );
 int           eval_vlist(      frame_S&,               vlist_S&, results_S&, const    plist_S& , bool = false );   // passed-in vlist is updated in-place 
 int           eval_value(      frame_S&,  const        value_S&, results_S&, const parmtype_S& , bool = false );
@@ -1057,7 +1216,7 @@ int           eval_value(      frame_S&,  const        value_S&, results_S&, con
 ////
 ////
 ////     -------------------------------------------------------------
-////     special characters used by lex, pre-process, and parse phases:
+////     special characters used by lex, preprocess, and parse phases:
 ////     -------------------------------------------------------------
 ////
 ////
@@ -1192,7 +1351,7 @@ int           eval_value(      frame_S&,  const        value_S&, results_S&, con
 ////      000C     FF                                                                                          WS   WS       ws/*         
 ////      000D     CR                                                                                          WS   WS       ws/*         
 ////      0020     SPACE                                                                                       WS   WS       ws/*         
-////      0021  !  EXCLAMATION_MARK                                   !                                        O1   OP       op/*     pre-parser: trailing sigil for quoted string variable substitution, ! and != verbs 
+////      0021  !  EXCLAMATION_MARK                                   !                                        O1   OP       op/*     preprocess: trailing sigil for quoted string variable substitution, ! and != verbs 
 ////      0022  "  QUOTATION_MARK                                     "                                        QQ2  QQ       estr1    lex: escaped string-1 start/end delimiter 
 ////      0023  #  NUMBER_SIGN                                        #                                        O1   OP       op/*     # verb (also @AT)
 ////      0024  $  DOLLAR_SIGN                                        $                                        $$   $$       id/*     can be in extended identifiers  (not supported by default) -- parm sigil for identifiers and operators 
@@ -1208,7 +1367,7 @@ int           eval_value(      frame_S&,  const        value_S&, results_S&, con
 ////      002E  .  FULL_STOP                                          .                                        .    PU      (punct/1) lex: decimal point in floating point literals, line comment with newline suppression (...)
 ////      002F  /  SOLIDUS                                            /                                        /    OP      (op/*)    divide verb ( /  /= ), lex: start comment ( //    /~    /#     /< >/    /* */    /{ }/  )
 ////      003A  :  COLON                                              :                                        :    PU      (colon/1) trailing sigil for keyword identifiers and pre-processor labels
-////      003B  ;  SEMICOLON                                          ;                                        ;    PU       semi/1   slist expression separator
+////      003B  ;  SEMICOLON                                          ;                                        ;    PU       semi/1   block expression separator
 ////      003C  <  LESS_THAN_SIGN                                     <                                        O1   OP      (op/*)    less than verb ( <  <= ), left assignment verb ( <<< ), etc. 
 ////      003D  =  EQUALS_SIGN                                        =                                        O1   OP       op/*     left assignment verb ( = ), equals verb ( == >= <= ¬=), etc.  
 ////      003E  >  GREATER_THAN_SIGN                                  >                                        O1   OP      (op/*)    greater than verb ( > >= ), right assignment verb ( >>> ) etc.
@@ -1220,9 +1379,9 @@ int           eval_value(      frame_S&,  const        value_S&, results_S&, con
 ////      005E  ^  CIRCUMFLEX_ACCENT                                  ^                                        O1   OP       op/*     -----------------------
 ////      005F  _  LOW_LINE                                           _                                        _    SE       id/*     lex: visual separator in identifiers and numeric literals
 ////      0060  `  GRAVE_ACCENT                                       `                                        A1   AC       acc/1    ----------------------  
-////      007B  {  LEFT_CURLY_BRACKET                                 {                                        OC1  OB       o_brc/1  slist open brace
+////      007B  {  LEFT_CURLY_BRACKET                                 {                                        OC1  OB       o_brc/1  block open brace
 ////      007C  |  VERTICAL_LINE                                      |                                        O1   OP       op/*     string concatenate verb  ( |  |= ),    logical or || 
-////      007D  }  RIGHT_CURLY_BRACKET                                }                                        CC1  CB       c_brc/1  slist close brace
+////      007D  }  RIGHT_CURLY_BRACKET                                }                                        CC1  CB       c_brc/1  block close brace
 ////      007E  ~  TILDE                                              ~                                        O1   OP       op/*     -----------------------
 ////      00A1  ¡  INVERTED_EXCLAMATION_MARK                          AltGr + 1         Alt-173   Alt-0417     P2   PU       punct/1  -----------------------
 ////      00A2  ¢  CENT_SIGN                                          ---------------   Alt-155   Alt-0930     $$   $$       id/*     can be in extended identifiers (not supported by default)
@@ -1419,11 +1578,11 @@ int           eval_value(      frame_S&,  const        value_S&, results_S&, con
 ////          ACUTE_ACCENT                    ??'                 ´        -- lex: default escape char in type-2 strings   -- «» strings      ??????? this should become the grave accent
 ////          LEFT_PARENTHESIS                                    (        -- open  expression  paren  -- also   @(   and   :( 
 ////          RIGHT_PRENTHESIS                                    )        -- close expression  paren  -- also   )@   and   ):
-////          LEFT_CURLY_BRACKET                                  {        -- open  slist paren   
-////          RIGHT_CURLY_BRACKET                                 }        -- close slist paren 
+////          LEFT_CURLY_BRACKET                                  {        -- open  block paren   
+////          RIGHT_CURLY_BRACKET                                 }        -- close block paren 
 ////          LEFT_SQUARE_BRACKET                                 [        -- open  vlist paren   
 ////          RIGHT_SQUARE_BRACKET                                ]        -- close vlist paren   
-////          SEMICOLON                                           ;        -- expression separator in slist
+////          SEMICOLON                                           ;        -- expression separator in block
 ////                                                      
 ////
 ////
@@ -1596,7 +1755,7 @@ int           eval_value(      frame_S&,  const        value_S&, results_S&, con
 //// 
 ////
 ////
-//// pre-parser verbs:
+//// preprocess verbs:
 //// ----------------  
 ////
 ////   ?ERROR
@@ -1626,14 +1785,14 @@ int           eval_value(      frame_S&,  const        value_S&, results_S&, con
 ////   ------------
 ////
 ////   @DISPLAY_VERBS
-////   @BLOCK                  @BLOCK {slist} left:[vlist] right:[vlist]
+////   @BLOCK                  @BLOCK {block} left:[vlist] right:[vlist]
 ////   @ARG                    
 ////   @AT °                   [vlist] @AT int key:"string"  
-////   @DO                     @DO {slist};
+////   @DO                     @DO {block};
 ////   @GOTO                   @GOTO ????
-////   @IF                     @IF (expression)         then:{slist} else:{slist};
-////   @CASE                   @CASE when:(expression)  {slist}   when:(expression) {slist}   ...   when:(expression) {slist}   else:{slist};   
-////   @LOOP                   @LOOP while:(expression) {slist};
+////   @IF                     @IF (expression)         then:{block} else:{block};
+////   @CASE                   @CASE when:(expression)  {block}   when:(expression) {block}   ...   when:(expression) {block}   else:{block};   
+////   @LOOP                   @LOOP while:(expression) {block};
 ////   @SAY                    @SAY simple-values;
 ////   @STR                    @STR simple-values;
 ////   @VAR                    identifier @VAR   value:val;

@@ -24,7 +24,7 @@
  
 
 //   ------------------------------------------------------------ 
-//   Default action characters for lexer, parser,  and pre-parser
+//   Default action characters for lexer, parser,  and preprocess
 //   ------------------------------------------------------------ 
                                                                                              
 namespace const_N

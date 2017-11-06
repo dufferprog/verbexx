@@ -17,7 +17,8 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "h_ex_types.h"            
+#include "h_ex_types.h" 
+#include "h_ex_interface.h"
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -788,13 +789,15 @@
 //////// positional parms in right-side plist  /////////////////////////////
 
 #define            M_vt_any_right_pos(v        )            M_vt_any_x_pos( v,         r)
-#define          M_vt_unit_right_pos( v        )           M_vt_unit_x_pos( v,         r)
+#define           M_vt_unit_right_pos(v        )           M_vt_unit_x_pos( v,         r)
+#define          M_vt_int32_right_pos(v        )          M_vt_int32_x_pos( v,         r)
+#define        M_vt_int32rc_right_pos(v, lo, hi)        M_vt_int32rc_x_pos( v, lo, hi, r)
 #define          M_vt_int64_right_pos(v        )          M_vt_int64_x_pos( v,         r)
 #define        M_vt_int64rc_right_pos(v, lo, hi)        M_vt_int64rc_x_pos( v, lo, hi, r)
 #define        M_vt_float64_right_pos(v        )        M_vt_float64_x_pos( v,         r)
 #define      M_vt_float64rc_right_pos(v, lo, hi)      M_vt_float64rc_x_pos( v, lo, hi, r)
 #define         M_vt_string_right_pos(v        )         M_vt_string_x_pos( v,         r)
-#define          M_vt_slist_right_pos(v        )          M_vt_slist_x_pos( v,         r)
+#define          M_vt_block_right_pos(v        )          M_vt_block_x_pos( v,         r)
 #define        M_vt_verbdef_right_pos(v        )        M_vt_verbdef_x_pos( v,         r)
 #define         M_vt_typdef_right_pos(v        )         M_vt_typdef_x_pos( v,         r)
 #define          M_vt_array_right_pos(v        )          M_vt_array_x_pos( v,         r)
@@ -819,13 +822,15 @@
 //////// positional parms in left-side plist  ///////////////////////////////////////////////////////
 
 #define            M_vt_any_left_pos( v        )            M_vt_any_x_pos( v,         l)
-#define          M_vt_unit_left_pos(  v        )           M_vt_unit_x_pos( v,         l)
+#define           M_vt_unit_left_pos( v        )           M_vt_unit_x_pos( v,         l)
+#define          M_vt_int32_left_pos( v        )          M_vt_int32_x_pos( v,         l)
+#define        M_vt_int32rc_left_pos( v, lo, hi)        M_vt_int32rc_x_pos( v, lo, hi, l)
 #define          M_vt_int64_left_pos( v        )          M_vt_int64_x_pos( v,         l)
 #define        M_vt_int64rc_left_pos( v, lo, hi)        M_vt_int64rc_x_pos( v, lo, hi, l)
 #define        M_vt_float64_left_pos( v        )        M_vt_float64_x_pos( v,         l)
 #define      M_vt_float64rc_left_pos( v, lo, hi)      M_vt_float64rc_x_pos( v, lo, hi, l)
 #define         M_vt_string_left_pos( v        )         M_vt_string_x_pos( v,         l)
-#define          M_vt_slist_left_pos( v        )          M_vt_slist_x_pos( v,         l)
+#define          M_vt_block_left_pos( v        )          M_vt_block_x_pos( v,         l)
 #define        M_vt_verbdef_left_pos( v        )        M_vt_verbdef_x_pos( v,         l)
 #define         M_vt_typdef_left_pos( v        )         M_vt_typdef_x_pos( v,         l)
 #define          M_vt_array_left_pos( v        )          M_vt_array_x_pos( v,         l)
@@ -850,13 +855,15 @@
 //////// positional parms in nested plist /////////////////////////////////////////////////
 
 #define            M_vt_any_nest_pos(pl        )            M_vt_any_x_pos(pl,         nested)
-#define          M_vt_unit_nest_pos( pl        )           M_vt_unit_x_pos(pl,         nested)
+#define           M_vt_unit_nest_pos(pl        )           M_vt_unit_x_pos(pl,         nested)
+#define          M_vt_int32_nest_pos(pl        )          M_vt_int32_x_pos(pl,         nested)
+#define        M_vt_int32rc_nest_pos(pl, lo, hi)        M_vt_int32rc_x_pos(pl, lo, hi, nested)
 #define          M_vt_int64_nest_pos(pl        )          M_vt_int64_x_pos(pl,         nested)
 #define        M_vt_int64rc_nest_pos(pl, lo, hi)        M_vt_int64rc_x_pos(pl, lo, hi, nested)
 #define        M_vt_float64_nest_pos(pl        )        M_vt_float64_x_pos(pl,         nested)
 #define      M_vt_float64rc_nest_pos(pl, lo, hi)      M_vt_float64rc_x_pos(pl, lo, hi, nested)
 #define         M_vt_string_nest_pos(pl        )         M_vt_string_x_pos(pl,         nested)
-#define          M_vt_slist_nest_pos(pl        )          M_vt_slist_x_pos(pl,         nested)
+#define          M_vt_block_nest_pos(pl        )          M_vt_block_x_pos(pl,         nested)
 #define        M_vt_verbdef_nest_pos(pl        )        M_vt_verbdef_x_pos(pl,         nested)
 #define         M_vt_typdef_nest_pos(pl        )         M_vt_typdef_x_pos(pl,         nested)
 #define          M_vt_array_nest_pos(pl        )          M_vt_array_x_pos(pl,         nested)
@@ -900,6 +907,27 @@
     M_vt_add_x_pos(pl, pt, x);         \
 }
 
+//  int32 positional parm -- no range check 
+
+#define M_vt_int32_x_pos(pl, x)        \
+{                                      \
+    M_vt_pos_parm(pt)                  \
+    pt.int32_ok = true;                \
+    M_vt_add_x_pos(pl, pt, x);         \
+}
+
+
+// int32 positional parm -- with range check 
+
+#define M_vt_int32rc_x_pos(pl, lo, hi, x) \
+{                                         \
+    M_vt_pos_parm(pt)                     \
+    pt.int32_ok      = true;              \
+    pt.int32_range   = true;              \
+    pt.int32_min     = (lo);              \
+    pt.int32_max     = (hi);              \
+    M_vt_add_x_pos(pl, pt, x);            \
+}
 
 //  int64 positional parm -- no range check 
 
@@ -962,23 +990,11 @@
 #define M_vt_var_ident_x_pos(pl, x)    \
 {                                      \
     M_vt_pos_parm(pt)                  \
-    pt.var_ident_ok  = true;           \
-    pt.no_eval_ident = true;           \
+    pt.var_ident_ok       = true;      \
+    pt.eval.no_eval_ident = true;      \
     M_vt_add_x_pos(pl, pt, x);         \
 }
-
-
-// lvalue -- (unevaluated) var_ident or (unevaluated) lvalue reference positional parm 
-
-#define M_vt_lvalue_x_pos(pl, x)          \
-{                                         \
-    M_vt_pos_parm(pt)                     \
-    pt.var_ident_ok  = true;              \
-    pt.lvalue_ref_ok = true;              \
-    pt.no_eval_ident = true;              \
-    pt.no_eval_ref   = true;              \
-    M_vt_add_x_pos(pl, pt, x);            \
-}  
+  
 
 
 // (unevaluated) var_ident or const_ident (defined ident) positional parm 
@@ -986,9 +1002,9 @@
 #define M_vt_def_ident_x_pos(pl, x)    \
 {                                      \
     M_vt_pos_parm(pt)                  \
-    pt.var_ident_ok   = true;          \
-    pt.const_ident_ok = true;          \
-    pt.no_eval_ident  = true;          \
+    pt.var_ident_ok        = true;     \
+    pt.const_ident_ok      = true;     \
+    pt.eval.no_eval_ident  = true;     \
     M_vt_add_x_pos(pl, pt, x);         \
 }
 
@@ -999,8 +1015,8 @@
 #define M_vt_undef_ident_x_pos(pl, x)  \
 {                                      \
     M_vt_pos_parm(pt)                  \
-    pt.undef_ident_ok = true;          \
-    pt.no_eval_ident  = true;          \
+    pt.undef_ident_ok      = true;     \
+    pt.eval.no_eval_ident  = true;     \
     M_vt_add_x_pos(pl, pt, x);         \
 }
   
@@ -1010,9 +1026,9 @@
 #define M_vt_nonconst_ident_x_pos(pl, x) \
 {                                        \
     M_vt_pos_parm(pt)                    \
-    pt.undef_ident_ok = true;            \
-    pt.var_ident_ok   = true;            \
-    pt.no_eval_ident  = true;            \
+    pt.undef_ident_ok      = true;       \
+    pt.var_ident_ok        = true;       \
+    pt.eval.no_eval_ident  = true;       \
     M_vt_add_x_pos(pl, pt, x);           \
 }
 
@@ -1022,10 +1038,10 @@
 #define M_vt_any_ident_x_pos(pl, x)    \
 {                                      \
     M_vt_pos_parm(pt)                  \
-    pt.undef_ident_ok = true;          \
-    pt.var_ident_ok   = true;          \
-    pt.const_ident_ok = true;          \
-    pt.no_eval_ident  = true;          \
+    pt.undef_ident_ok      = true;     \
+    pt.var_ident_ok        = true;     \
+    pt.const_ident_ok      = true;     \
+    pt.eval.no_eval_ident  = true;     \
     M_vt_add_x_pos(pl, pt, x);         \
 }
 
@@ -1035,18 +1051,18 @@
 #define M_vt_raw_ident_x_pos(pl, x)    \
 {                                      \
     M_vt_pos_parm(pt)                  \
-    pt.raw_ident_ok = true;            \
-    pt.no_eval_ident  = true;          \
+    pt.raw_ident_ok        = true;     \
+    pt.eval.no_eval_ident  = true;     \
     M_vt_add_x_pos(pl, pt, x);         \
 }
 
 
-// slist positional parm 
+// block positional parm 
 
-#define M_vt_slist_x_pos(pl, x)        \
+#define M_vt_block_x_pos(pl, x)        \
 {                                      \
     M_vt_pos_parm(pt)                  \
-    pt.slist_ok = true;                \
+    pt.block_ok = true;                \
     M_vt_add_x_pos(pl, pt, x);         \
 }
 
@@ -1056,7 +1072,7 @@
 #define M_vt_verbdef_x_pos(pl, x)      \
 {                                      \
     M_vt_pos_parm(pt)                  \
-    pt.verbdef_ok = true;              \
+    pt.verbset_ok = true;              \
     M_vt_add_x_pos(pl, pt, x);         \
 }  
 
@@ -1201,8 +1217,8 @@
     pt.var_ident_ok   = true;                \
     pt.const_ident_ok = true;                \
     pt.vlist_ok       = true;                \
-    pt.slist_ok       = true;                \
-    pt.verbdef_ok     = true;                \
+    pt.block_ok       = true;                \
+    pt.verbset_ok    = true;                 \
     pt.typdef_ok      = true;                \
     pt.array_ok       = true;                \
     pt.structure_ok   = true;                \
@@ -1212,19 +1228,18 @@
 }
  
 
-// (unevaluated) var_ident positional parm   -or-  (evaluated) ref (lvalue ref only)  
-
-#define M_vt_lvalue_x_pos(pl, x)       \
-{                                      \
-    M_vt_pos_parm(pt)                  \
-    pt.var_ident_ok  = true;           \
-    pt.lvalue_ref_ok = true;           \
-    pt.no_eval_ident = true;           \
-    pt.no_eval_ref   = true;           \
-    M_vt_add_x_pos(pl, pt, x);         \
-}
  
+// lvalue -- (unevaluated) var_ident or (unevaluated) lvalue reference positional parm 
 
+#define M_vt_lvalue_x_pos(pl, x)          \
+{                                         \
+    M_vt_pos_parm(pt)                     \
+    pt.var_ident_ok       = true;         \
+    pt.lvalue_ref_ok      = true;         \
+    pt.eval.no_eval_ident = true;         \
+    pt.eval.no_eval_ref   = true;         \
+    M_vt_add_x_pos(pl, pt, x);            \
+}  
 
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -1241,7 +1256,7 @@
 #define        M_vt_float64_optional_right_kw(  v, n)               M_vt_float64_multi_right_kw(  v, n,       0, 1)
 #define      M_vt_float64rc_optional_right_kw(  v, n, x, y)       M_vt_float64rc_multi_right_kw(  v, n, x, y, 0, 1)
 #define         M_vt_string_optional_right_kw(  v, n)                M_vt_string_multi_right_kw(  v, n,       0, 1)
-#define          M_vt_slist_optional_right_kw(  v, n)                 M_vt_slist_multi_right_kw(  v, n,       0, 1)
+#define          M_vt_block_optional_right_kw(  v, n)                 M_vt_block_multi_right_kw(  v, n,       0, 1)
 #define        M_vt_verbdef_optional_right_kw(  v, n)               M_vt_verbdef_multi_right_kw(  v, n,       0, 1)
 #define         M_vt_typdef_optional_right_kw(  v, n)                M_vt_typdef_multi_right_kw(  v, n,       0, 1)
 #define          M_vt_array_optional_right_kw(  v, n)                 M_vt_array_multi_right_kw(  v, n,       0, 1)
@@ -1272,7 +1287,7 @@
 #define        M_vt_float64_optional_left_kw(  v, n)                M_vt_float64_multi_left_kw(   v, n,       0, 1)
 #define      M_vt_float64rc_optional_left_kw(  v, n, x, y)        M_vt_float64rc_multi_left_kw(   v, n, x, y, 0, 1)
 #define         M_vt_string_optional_left_kw(  v, n)                 M_vt_string_multi_left_kw(   v, n,       0, 1)
-#define          M_vt_slist_optional_left_kw(  v, n)                  M_vt_slist_multi_left_kw(   v, n,       0, 1)
+#define          M_vt_block_optional_left_kw(  v, n)                  M_vt_block_multi_left_kw(   v, n,       0, 1)
 #define        M_vt_verbdef_optional_left_kw(  v, n)                M_vt_verbdef_multi_left_kw(   v, n,       0, 1)
 #define         M_vt_typdef_optional_left_kw(  v, n)                 M_vt_typdef_multi_left_kw(   v, n,       0, 1)
 #define          M_vt_array_optional_left_kw(  v, n)                  M_vt_array_multi_left_kw(   v, n,       0, 1)
@@ -1296,13 +1311,13 @@
 //////// keywords in nested plist /////////////////////////////////////////////////
 
 #define            M_vt_any_optional_nest_kw( pl, n)                   M_vt_any_multi_nest_kw(  pl, n,       0, 1)
-#define          M_vt_nval_optional_nest_kw(  pl, n)                  M_vt_nval_multi_nest_kw(  pl, n,       0, 1)
+#define           M_vt_nval_optional_nest_kw( pl, n)                  M_vt_nval_multi_nest_kw(  pl, n,       0, 1)
 #define          M_vt_int64_optional_nest_kw( pl, n)                 M_vt_int64_multi_nest_kw(  pl, n,       0, 1)
 #define        M_vt_int64rc_optional_nest_kw( pl, n, x, y)         M_vt_int64rc_multi_nest_kw(  pl, n, x, y, 0, 1)
 #define        M_vt_float64_optional_nest_kw( pl, n)               M_vt_float64_multi_nest_kw(  pl, n,       0, 1)
 #define      M_vt_float64rc_optional_nest_kw( pl, n, x, y)       M_vt_float64rc_multi_nest_kw(  pl, n, x, y, 0, 1)
 #define         M_vt_string_optional_nest_kw( pl, n)                M_vt_string_multi_nest_kw(  pl, n,       0, 1)
-#define          M_vt_slist_optional_nest_kw( pl, n)                 M_vt_slist_multi_nest_kw(  pl, n,       0, 1)
+#define          M_vt_block_optional_nest_kw( pl, n)                 M_vt_block_multi_nest_kw(  pl, n,       0, 1)
 #define        M_vt_verbdef_optional_nest_kw( pl, n)               M_vt_verbdef_multi_nest_kw(  pl, n,       0, 1)
 #define         M_vt_typdef_optional_nest_kw( pl, n)                M_vt_typdef_multi_nest_kw(  pl, n,       0, 1)
 #define          M_vt_array_optional_nest_kw( pl, n)                 M_vt_array_multi_nest_kw(  pl, n,       0, 1)
@@ -1337,7 +1352,7 @@
 #define         M_vt_float64_required_right_kw(  v, n)                M_vt_float64_multi_right_kw(  v, n,       1, 1)
 #define       M_vt_float64rc_required_right_kw(  v, n, x, y)        M_vt_float64rc_multi_right_kw(  v, n, x, y, 1, 1)
 #define          M_vt_string_required_right_kw(  v, n)                 M_vt_string_multi_right_kw(  v, n,       1, 1)
-#define           M_vt_slist_required_right_kw(  v, n)                  M_vt_slist_multi_right_kw(  v, n,       1, 1)
+#define           M_vt_block_required_right_kw(  v, n)                  M_vt_block_multi_right_kw(  v, n,       1, 1)
 #define         M_vt_verbdef_required_right_kw(  v, n)                M_vt_verbdef_multi_right_kw(  v, n,       1, 1)
 #define          M_vt_typdef_required_right_kw(  v, n)                 M_vt_typdef_multi_right_kw(  v, n,       1, 1)
 #define           M_vt_array_required_right_kw(  v, n)                  M_vt_array_multi_right_kw(  v, n,       1, 1)
@@ -1368,7 +1383,7 @@
 #define        M_vt_float64_required_left_kw(  v, n)                M_vt_float64_multi_left_kw(   v, n,       1, 1)
 #define      M_vt_float64rc_required_left_kw(  v, n, x, y)        M_vt_float64rc_multi_left_kw(   v, n, x, y, 1, 1)
 #define         M_vt_string_required_left_kw(  v, n)                 M_vt_string_multi_left_kw(   v, n,       1, 1)
-#define          M_vt_slist_required_left_kw(  v, n)                  M_vt_slist_multi_left_kw(   v, n,       1, 1)
+#define          M_vt_block_required_left_kw(  v, n)                  M_vt_block_multi_left_kw(   v, n,       1, 1)
 #define        M_vt_verbdef_required_left_kw(  v, n)                M_vt_verbdef_multi_left_kw(   v, n,       1, 1)
 #define         M_vt_typdef_required_left_kw(  v, n)                 M_vt_typdef_multi_left_kw(   v, n,       1, 1)
 #define          M_vt_array_required_left_kw(  v, n)                  M_vt_array_multi_left_kw(   v, n,       1, 1)
@@ -1399,7 +1414,7 @@
 #define        M_vt_float64_required_nest_kw( pl, n)                M_vt_float64_multi_nest_kw(  pl, n,       1, 1)
 #define      M_vt_float64rc_required_nest_kw( pl, n, x, y)        M_vt_float64rc_multi_nest_kw(  pl, n, x, y, 1, 1)
 #define         M_vt_string_required_nest_kw( pl, n)                 M_vt_string_multi_nest_kw(  pl, n,       1, 1)
-#define          M_vt_slist_required_nest_kw( pl, n)                  M_vt_slist_multi_nest_kw(  pl, n,       1, 1)
+#define          M_vt_block_required_nest_kw( pl, n)                  M_vt_block_multi_nest_kw(  pl, n,       1, 1)
 #define        M_vt_verbdef_required_nest_kw( pl, n)                M_vt_verbdef_multi_nest_kw(  pl, n,       1, 1)
 #define         M_vt_typdef_required_nest_kw( pl, n)                 M_vt_typdef_multi_nest_kw(  pl, n,       1, 1)
 #define          M_vt_array_required_nest_kw( pl, n)                  M_vt_array_multi_nest_kw(  pl, n,       1, 1)
@@ -1435,7 +1450,7 @@
 #define        M_vt_float64_multi_right_kw(v, n,         c1, c2)         M_vt_float64_multi_x_kw( v, n,         c1, c2, r)
 #define      M_vt_float64rc_multi_right_kw(v, n, lo, hi, c1, c2)       M_vt_float64rc_multi_x_kw( v, n, lo, hi, c1, c2, r)
 #define         M_vt_string_multi_right_kw(v, n,         c1, c2)          M_vt_string_multi_x_kw( v, n,         c1, c2, r)
-#define          M_vt_slist_multi_right_kw(v, n,         c1, c2)           M_vt_slist_multi_x_kw( v, n,         c1, c2, r)
+#define          M_vt_block_multi_right_kw(v, n,         c1, c2)           M_vt_block_multi_x_kw( v, n,         c1, c2, r)
 #define        M_vt_verbdef_multi_right_kw(v, n,         c1, c2)         M_vt_verbdef_multi_x_kw( v, n,         c1, c2, r)
 #define         M_vt_typdef_multi_right_kw(v, n,         c1, c2)          M_vt_typdef_multi_x_kw( v, n,         c1, c2, r)
 #define          M_vt_array_multi_right_kw(v, n,         c1, c2)           M_vt_array_multi_x_kw( v, n,         c1, c2, r)
@@ -1466,7 +1481,7 @@
 #define        M_vt_float64_multi_left_kw( v, n,         c1, c2)         M_vt_float64_multi_x_kw( v, n,         c1, c2, l)
 #define      M_vt_float64rc_multi_left_kw( v, n, lo, hi, c1, c2)       M_vt_float64rc_multi_x_kw( v, n, lo, hi, c1, c2, l)
 #define         M_vt_string_multi_left_kw( v, n,         c1, c2)          M_vt_string_multi_x_kw( v, n,         c1, c2, l)
-#define          M_vt_slist_multi_left_kw( v, n,         c1, c2)           M_vt_slist_multi_x_kw( v, n,         c1, c2, l)
+#define          M_vt_block_multi_left_kw( v, n,         c1, c2)           M_vt_block_multi_x_kw( v, n,         c1, c2, l)
 #define        M_vt_verbdef_multi_left_kw( v, n,         c1, c2)         M_vt_verbdef_multi_x_kw( v, n,         c1, c2, l)
 #define         M_vt_typdef_multi_left_kw( v, n,         c1, c2)          M_vt_typdef_multi_x_kw( v, n,         c1, c2, l)
 #define          M_vt_array_multi_left_kw( v, n,         c1, c2)           M_vt_array_multi_x_kw( v, n,         c1, c2, l)
@@ -1496,7 +1511,7 @@
 #define        M_vt_float64_multi_nest_kw(pl, n,         c1, c2)         M_vt_float64_multi_x_kw(pl, n,         c1, c2, nested)
 #define      M_vt_float64rc_multi_nest_kw(pl, n, lo, hi, c1, c2)       M_vt_float64rc_multi_x_kw(pl, n, lo, hi, c1, c2, nested)
 #define         M_vt_string_multi_nest_kw(pl, n,         c1, c2)          M_vt_string_multi_x_kw(pl, n,         c1, c2, nested)
-#define          M_vt_slist_multi_nest_kw(pl, n,         c1, c2)           M_vt_slist_multi_x_kw(pl, n,         c1, c2, nested)
+#define          M_vt_block_multi_nest_kw(pl, n,         c1, c2)           M_vt_block_multi_x_kw(pl, n,         c1, c2, nested)
 #define        M_vt_verbdef_multi_nest_kw(pl, n,         c1, c2)         M_vt_verbdef_multi_x_kw(pl, n,         c1, c2, nested)
 #define         M_vt_typdef_multi_nest_kw(pl, n,         c1, c2)          M_vt_typdef_multi_x_kw(pl, n,         c1, c2, nested)
 #define          M_vt_array_multi_nest_kw(pl, n,         c1, c2)           M_vt_array_multi_x_kw(pl, n,         c1, c2, nested)
@@ -1533,7 +1548,7 @@
 
 
 
-//  multi-occurrence unit keyword  
+//  multi-occurrence keyword with no value
 
 #define M_vt_nval_multi_x_kw(pl, n, c1, c2, x)   \
 {                                                \
@@ -1599,12 +1614,12 @@
 }                                                 
 
 
-// multi-occurrence slist keyword 
+// multi-occurrence block keyword 
 
-#define M_vt_slist_multi_x_kw(pl, n, c1, c2, x)    \
+#define M_vt_block_multi_x_kw(pl, n, c1, c2, x)    \
 {                                                  \
     M_vt_multi_kw_parm(pt, c1, c2)                 \
-    pt.slist_ok = true;                            \
+    pt.block_ok = true;                            \
     M_vt_add_x_kw(n, pl, pt, x);                   \
 }
 
@@ -1614,7 +1629,7 @@
 #define M_vt_verbdef_multi_x_kw(pl, n, c1, c2, x)  \
 {                                                  \
     M_vt_multi_kw_parm(pt, c1, c2)                 \
-    pt.verbdef_ok = true;                          \
+    pt.verbset_ok = true;                          \
     M_vt_add_x_kw(n, pl, pt, x);                   \
 }  
 
@@ -1665,8 +1680,8 @@
 #define M_vt_var_ident_multi_x_kw(pl, n, c1, c2, x)    \
 {                                                      \
     M_vt_multi_kw_parm(pt, c1, c2)                     \
-    pt.var_ident_ok  = true;                           \
-    pt.no_eval_ident = true;                           \
+    pt.var_ident_ok       = true;                      \
+    pt.eval.no_eval_ident = true;                      \
     M_vt_add_x_kw(n, pl, pt, x);                       \
 }
 
@@ -1676,10 +1691,10 @@
 #define M_vt_lvalue_multi_x_kw(pl, n, c1, c2, x)       \
 {                                                      \
     M_vt_multi_kw_parm(pt, c1, c2)                     \
-    pt.var_ident_ok  = true;                           \
-    pt.lvalue_ref_ok = true;                           \
-    pt.no_eval_ident = true;                           \
-    pt.no_eval_ref   = true;                           \
+    pt.var_ident_ok       = true;                      \
+    pt.lvalue_ref_ok      = true;                      \
+    pt.eval.no_eval_ident = true;                      \
+    pt.eval.no_eval_ref   = true;                      \
     M_vt_add_x_kw(n, pl, pt, x);                       \
 }
 
@@ -1689,8 +1704,8 @@
 #define M_vt_undef_ident_multi_x_kw(pl, n, c1, c2, x)    \
 {                                                        \
     M_vt_multi_kw_parm(pt, c1, c2)                       \
-    pt.undef_ident_ok = true;                            \
-    pt.no_eval_ident  = true;                            \
+    pt.undef_ident_ok      = true;                       \
+    pt.eval.no_eval_ident  = true;                       \
     M_vt_add_x_kw(n, pl, pt, x);                         \
 }
 
@@ -1700,9 +1715,9 @@
 #define M_vt_def_ident_multi_x_kw(pl, n, c1, c2, x)      \
 {                                                        \
     M_vt_multi_kw_parm(pt, c1, c2)                       \
-    pt.var_ident_ok = true;                              \
-    pt.const_ident_ok = true;                            \
-    pt.no_eval_ident  = true;                            \
+    pt.var_ident_ok        = true;                       \
+    pt.const_ident_ok      = true;                       \
+    pt.eval.no_eval_ident  = true;                       \
     M_vt_add_x_kw(n, pl, pt, x);                         \
 }
 
@@ -1712,9 +1727,9 @@
 #define M_vt_nonconst_ident_multi_x_kw(pl, n, c1, c2, x)    \
 {                                                           \
     M_vt_multi_kw_parm(pt, c1, c2)                          \
-    pt.undef_ident_ok = true;                               \
-    pt.var_ident_ok = true;                                 \
-    pt.no_eval_ident  = true;                               \
+    pt.undef_ident_ok      = true;                          \
+    pt.var_ident_ok        = true;                          \
+    pt.eval.no_eval_ident  = true;                          \
     M_vt_add_x_kw(n, pl, pt, x);                            \
 }
 
@@ -1724,10 +1739,10 @@
 #define M_vt_any_ident_multi_x_kw(pl, n, c1, c2, x)         \
 {                                                           \
     M_vt_multi_kw_parm(pt, c1, c2)                          \
-    pt.undef_ident_ok = true;                               \
-    pt.var_ident_ok = true;                                 \
-    pt.const_ident_ok = true;                               \
-    pt.no_eval_ident  = true;                               \
+    pt.undef_ident_ok      = true;                          \
+    pt.var_ident_ok        = true;                          \
+    pt.const_ident_ok      = true;                          \
+    pt.eval.no_eval_ident  = true;                          \
     M_vt_add_x_kw(n, pl, pt, x);                            \
 }
 
@@ -1737,8 +1752,8 @@
 #define M_vt_raw_ident_multi_x_kw(pl, n, c1, c2, x)         \
 {                                                           \
     M_vt_multi_kw_parm(pt, c1, c2)                          \
-    pt.raw_ident_ok = true;                                 \
-    pt.no_eval_ident  = true;                               \
+    pt.raw_ident_ok        = true;                          \
+    pt.eval.no_eval_ident  = true;                          \
     M_vt_add_x_kw(n, pl, pt, x);                            \
 }
 
@@ -1842,8 +1857,8 @@
     pt.var_ident_ok   = true;                        \
     pt.const_ident_ok = true;                        \
     pt.vlist_ok       = true;                        \
-    pt.slist_ok       = true;                        \
-    pt.verbdef_ok     = true;                        \
+    pt.block_ok       = true;                        \
+    pt.verbset_ok     = true;                        \
     pt.typdef_ok      = true;                        \
     pt.array_ok       = true;                        \
     pt.structure_ok   = true;                        \
@@ -1866,18 +1881,22 @@
 
 // add verb to verb table
 
-#define M_vt_add(n, v, f)      \
-{                              \
-    v.fcn_p = (void *)&f;      \
-    add_predefined_verb(n, v); \
+#define M_vt_add(n, v, f)                     \
+{                                             \
+    v.d.fcn_p = (void *)&f;                   \
+    v.s.verbs.clear();                        \
+    v.s.verbs.push_back(v.d);                 \
+    add_predefined_verb(n, v.s);              \
 }
 
 
-#define M_vt_add_simplified(n, v, f)      \
-{                                         \
-    v.fcn_p = (void *)&f;                 \
-    v.simplified_call = true;             \
-    add_predefined_verb(n, v);            \
+#define M_vt_add_simplified(n, v, f)          \
+{                                             \
+    v.d.fcn_p = (void *)&f;                   \
+    v.d.simplified_call = true;               \
+    v.s.verbs.clear();                        \
+    v.s.verbs.push_back(v.d);                 \
+    add_predefined_verb(n, v.s);              \
 }
 
 
@@ -1891,18 +1910,18 @@
 
 // add pos or kw parm MACROs for unnested Expressions
 
-#define M_vt_add_l_kw(n, v, pt) v.lparms.keywords.emplace(n, pt);
-#define M_vt_add_r_kw(n, v, pt) v.rparms.keywords.emplace(n, pt);
+#define M_vt_add_l_kw(n, v, pt) v.d.lparms.keywords.emplace(n, pt);
+#define M_vt_add_r_kw(n, v, pt) v.d.rparms.keywords.emplace(n, pt);
 
 
 #define M_vt_add_l_pos(v, pt)          \
 {                                      \
-    v.lparms.values.push_back(pt);     \
+    v.d.lparms.values.push_back(pt);   \
 }
 
 #define M_vt_add_r_pos(v, pt)          \
 {                                      \
-    v.rparms.values.push_back(pt);     \
+    v.d.rparms.values.push_back(pt);   \
 }
 
 
@@ -1963,42 +1982,42 @@ pt.kw_max_ct = (c2);
 
 // verb with no parms (nofix) 
 
-#define M_vt_nofix(v) \
-verbdef_S v {};       \
-v.lparms.min_ct = 0;  \
-v.lparms.max_ct = 0;  \
-v.rparms.min_ct = 0;  \
-v.rparms.max_ct = 0;
+#define M_vt_nofix(v)       \
+verbadd_S v { };            \
+v.d.lparms.min_ct = 0;      \
+v.d.lparms.max_ct = 0;      \
+v.d.rparms.min_ct = 0;      \
+v.d.rparms.max_ct = 0;
 
 
 // prefix verb                    -- no leftside parms -- right-side positional parms = x to y
 
-#define M_vt_prefix(v, x, y)       \
-verbdef_S v {};                    \
-v.lparms.min_ct = 0;               \
-v.lparms.max_ct = 0;               \
-v.rparms.min_ct = (x);             \
-v.rparms.max_ct = (y);
+#define M_vt_prefix(v, x, y)             \
+verbadd_S v {};                          \
+v.d.lparms.min_ct = 0;                   \
+v.d.lparms.max_ct = 0;                   \
+v.d.rparms.min_ct = (x);                 \
+v.d.rparms.max_ct = (y);               
 
 
 // postfix verb                   -- no right-side parms -- left-side positional parms = x to y 
 
-#define M_vt_postfix(v, x, y)      \
-verbdef_S v {};                    \
-v.lparms.min_ct = (x);             \
-v.lparms.max_ct = (y);             \
-v.rparms.min_ct = 0;               \
-v.rparms.max_ct = 0;
+#define M_vt_postfix(v, x, y)            \
+verbadd_S v {};                          \
+v.d.lparms.min_ct = (x);                 \
+v.d.lparms.max_ct = (y);                 \
+v.d.rparms.min_ct = 0;                   \
+v.d.rparms.max_ct = 0;
 
 
 // infix verb                    -- w  to  x  left-side parms --  y  to  z  right-side positional parms
 
-#define M_vt_anyfix(v, w, x, y, z)  \
-verbdef_S v {};                     \
-v.lparms.min_ct = (w);              \
-v.lparms.max_ct = (x);              \
-v.rparms.min_ct = (y);              \
-v.rparms.max_ct = (z);
+#define M_vt_anyfix(v, w, x, y, z)        \
+verbadd_S v {};                           \
+v.d.lparms.min_ct = (w);                  \
+v.d.lparms.max_ct = (x);                  \
+v.d.rparms.min_ct = (y);                  \
+v.d.rparms.max_ct = (z);
 
 
 
@@ -2007,76 +2026,76 @@ v.rparms.max_ct = (z);
 
 // unary prefix verb                -- 1 right-side parm
 
-#define M_vt_unary_prefix(v)   \
-verbdef_S v {};                \
-v.lparms.min_ct = 0;           \
-v.lparms.max_ct = 0;           \
-v.rparms.min_ct = 1;           \
-v.rparms.max_ct = 1;
+#define M_vt_unary_prefix(v)        \
+verbadd_S v {};                     \
+v.d.lparms.min_ct = 0;              \
+v.d.lparms.max_ct = 0;              \
+v.d.rparms.min_ct = 1;              \
+v.d.rparms.max_ct = 1;
 
 
 // unary postfix verb               -- 1 left-side parm
 
-#define M_vt_unary_postfix(v)  \
-verbdef_S v {};                \
-v.lparms.min_ct = 1;           \
-v.lparms.max_ct = 1;           \
-v.rparms.min_ct = 0;           \
-v.rparms.max_ct = 0;
+#define M_vt_unary_postfix(v)        \
+verbadd_S v {};                      \
+v.d.lparms.min_ct = 1;               \
+v.d.lparms.max_ct = 1;               \
+v.d.rparms.min_ct = 0;               \
+v.d.rparms.max_ct = 0;
 
 
 // binary infix verb                 -- 1 parm on each side
 
-#define M_vt_binary_infix(v)   \
-verbdef_S v {};                \
-v.lparms.min_ct = 1;           \
-v.lparms.max_ct = 1;           \
-v.rparms.min_ct = 1;           \
-v.rparms.max_ct = 1;
+#define M_vt_binary_infix(v)         \
+verbadd_S v {};                      \
+v.d.lparms.min_ct = 1;               \
+v.d.lparms.max_ct = 1;               \
+v.d.rparms.min_ct = 1;               \
+v.d.rparms.max_ct = 1;
 
 
 
 // unary anyfix                      -- no more than one parameter on any side (can have no parms, or one parm, or two parms) 
 
-#define M_vt_unary_anyfix(v)   \
-verbdef_S v {};                \
-v.lparms.min_ct = 0;           \
-v.lparms.max_ct = 1;           \
-v.rparms.min_ct = 0;           \
-v.rparms.max_ct = 1;
+#define M_vt_unary_anyfix(v)         \
+verbadd_S v {};                      \
+v.d.lparms.min_ct = 0;               \
+v.d.lparms.max_ct = 1;               \
+v.d.rparms.min_ct = 0;               \
+v.d.rparms.max_ct = 1;
 
 
 // unary prefix or postfix verb      -- single parm on one side only -- either side 
 
-#define M_vt_unary_onefix(v)   \
-verbdef_S v {};                \
-v.parms_left_xor_right = true; \
-v.lparms.min_ct = 0;           \
-v.lparms.max_ct = 1;           \
-v.rparms.min_ct = 0;           \
-v.rparms.max_ct = 1;
+#define M_vt_unary_onefix(v)         \
+verbadd_S v {};                      \
+v.d.parms_left_xor_right = true;     \
+v.d.lparms.min_ct = 0;               \
+v.d.lparms.max_ct = 1;               \
+v.d.rparms.min_ct = 0;               \
+v.d.rparms.max_ct = 1;
 
 
 // unary prefix or postfix or infix verb   -- one or both sides has one parm --  
 
-#define M_vt_unary_somefix(v)  \
-verbdef_S v {};                \
-v.parms_some_required = true;  \
-v.lparms.min_ct = 0;           \
-v.lparms.max_ct = 1;           \
-v.rparms.min_ct = 0;           \
-v.rparms.max_ct = 1;
+#define M_vt_unary_somefix(v)        \
+verbadd_S v {};                      \
+v.d.parms_some_required = true;      \
+v.d.lparms.min_ct = 0;               \
+v.d.lparms.max_ct = 1;               \
+v.d.rparms.min_ct = 0;               \
+v.d.rparms.max_ct = 1;
                                
 
 // unary notinfix verb                 -- 1 parm on either side or no parms at all (but not parms on both sides)
 
-#define M_vt_unary_notinfix(v) \
-verbdef_S v {};                \
-v.parms_not_both_sides = true; \
-v.lparms.min_ct = 1;           \
-v.lparms.max_ct = 1;           \
-v.rparms.min_ct = 1;           \
-v.rparms.max_ct = 1;
+#define M_vt_unary_notinfix(v)       \
+verbadd_S v {};                      \
+v.d.parms_not_both_sides = true;     \
+v.d.lparms.min_ct = 1;               \
+v.d.lparms.max_ct = 1;               \
+v.d.rparms.min_ct = 1;               \
+v.d.rparms.max_ct = 1;
 
 
 
@@ -2084,79 +2103,83 @@ v.rparms.max_ct = 1;
 
 // n-ary prefix verb                 -- 0 to N right-side positional parms, no left-side parms 
 
-#define M_vt_nary_prefix(v)    \
-verbdef_S v {};                \
-v.lparms.min_ct = 0;           \
-v.lparms.max_ct = 0;           \
-v.rparms.min_ct = 0;           \
-v.rparms.max_ct = -1;
+#define M_vt_nary_prefix(v)          \
+verbadd_S v {};                      \
+v.d.lparms.min_ct = 0;               \
+v.d.lparms.max_ct = 0;               \
+v.d.rparms.min_ct = 0;               \
+v.d.rparms.max_ct = -1;
 
 
 // n-ary postfix verb                -- 0 to N left-side positional parms, no right-side parms
 
-#define M_vt_nary_postfix(v)   \
-verbdef_S v {};                \
-v.lparms.min_ct = 0;           \
-v.lparms.max_ct = -1;          \
-v.rparms.min_ct = 0;           \
-v.rparms.max_ct = 0;
+#define M_vt_nary_postfix(v)         \
+verbadd_S v {};                      \
+v.d.lparms.min_ct = 0;               \
+v.d.lparms.max_ct = -1;              \
+v.d.rparms.min_ct = 0;               \
+v.d.rparms.max_ct = 0;
 
 
 // n-ary infix verb                  -- 1 to N left-side and 1 to N right-side parms   (parms on both sides)
 
-#define M_vt_nary_infix(v)     \
-verbdef_S v {};                \
-v.lparms.min_ct = 1;           \
-v.lparms.max_ct = -1;          \
-v.rparms.min_ct = 1;           \
-v.rparms.max_ct = -1;
+#define M_vt_nary_infix(v)           \
+verbadd_S v {};                      \
+v.d.lparms.min_ct = 1;               \
+v.d.lparms.max_ct = -1;              \
+v.d.rparms.min_ct = 1;               \
+v.d.rparms.max_ct = -1;           
                      
                                 
 // n-ary anyfix verb                  -- 0 to N left-side and/or right-side parms   (parms on no side, one side, or both sides) 
 
-#define M_vt_nary_anyfix(v)    \
-verbdef_S v {};                \
-v.lparms.min_ct = 0;           \
-v.lparms.max_ct = -1;          \
-v.rparms.min_ct = 0;           \
-v.rparms.max_ct = -1;
+#define M_vt_nary_anyfix(v)          \
+verbadd_S v {};                      \
+v.d.lparms.min_ct = 0;               \
+v.d.lparms.max_ct = -1;              \
+v.d.rparms.min_ct = 0;               \
+v.d.rparms.max_ct = -1;
 
 
 // n-ary somefix verb                  -- at least one positional parm, on either left or right sides  (or both sides)
 
-#define M_vt_nary_somefix(v)   \
-verbdef_S v {};                \
-v.parms_some_required = true;  \
-v.lparms.min_ct =  0;          \
-v.lparms.max_ct = -1;          \
-v.rparms.min_ct =  0;          \
-v.rparms.max_ct = -1;
+#define M_vt_nary_somefix(v)         \
+verbadd_S v {};                      \
+v.d.parms_some_required = true;      \
+v.d.lparms.min_ct =  0;              \
+v.d.lparms.max_ct = -1;              \
+v.d.rparms.min_ct =  0;              \
+v.d.rparms.max_ct = -1;
 
 
 // n-ary onefix verb              -- at least one positional parm, on either left or right sides  (parms on one side or the other, but not both sides)
 
-#define M_vt_nary_onefix(v)    \
-verbdef_S v {};                \
-v.parms_left_xor_right = true; \
-v.lparms.min_ct =  0;          \
-v.lparms.max_ct = -1;          \
-v.rparms.min_ct =  0;          \
-v.rparms.max_ct = -1;
+#define M_vt_nary_onefix(v)        \
+verbadd_S v {};                    \
+v.d.parms_left_xor_right = true;   \
+v.d.lparms.min_ct =  0;            \
+v.d.lparms.max_ct = -1;            \
+v.d.rparms.min_ct =  0;            \
+v.d.rparms.max_ct = -1;           
 
 
 // n-ary notinfix verb            -- 0-N positional parms on left side or right side, but not both sides
 
-#define M_vt_nary_notinfix(v)  \
-verbdef_S v {};                \
-v.parms_not_both_sides = true; \
-v.lparms.min_ct =  0;          \
-v.lparms.max_ct = -1;          \
-v.rparms.min_ct =  0;          \
-v.rparms.max_ct = -1;
+#define M_vt_nary_notinfix(v)      \
+verbadd_S v {};                    \
+v.d.parms_not_both_sides = true;   \
+v.d.lparms.min_ct =  0;            \
+v.d.lparms.max_ct = -1;            \
+v.d.rparms.min_ct =  0;            \
+v.d.rparms.max_ct = -1;
 
 
+// -------------------------------------------
+// MACROs for adding unchecked keywords 
+// -------------------------------------------
 
-
+#define M_vt_no_check_right_kws(v)      v.d.rparms.no_check_keywords = true;  
+#define M_vt_no_check_left_kws(v)       v.d.lparms.no_check_keywords = true; 
 
 
 // -------------------------------------------
@@ -2175,8 +2198,8 @@ v.rparms.max_ct = -1;
 
 // add conflict set to verbdef right/left plist
 
-#define M_vt_add_r_conflict_set(v, s)  v.rparms.conflicts.push_back(s); 
-#define M_vt_add_l_conflict_set(v, s)  v.lparms.conflicts.push_back(s);
+#define M_vt_add_r_conflict_set(v, s)  v.d.rparms.conflicts.push_back(s); 
+#define M_vt_add_l_conflict_set(v, s)  v.d.lparms.conflicts.push_back(s);
 
 
 // add conflict set to nested plist
@@ -2201,8 +2224,8 @@ v.rparms.max_ct = -1;
 
 // add multiple choice set to verbdef right/left plist
 
-#define M_vt_add_r_choice_set(v, s)  v.rparms.choices.push_back(s); 
-#define M_vt_add_l_choice_set(v, s)  v.lparms.choices.push_back(s);
+#define M_vt_add_r_choice_set(v, s)  v.d.rparms.choices.push_back(s); 
+#define M_vt_add_l_choice_set(v, s)  v.d.lparms.choices.push_back(s);
 
 
 // add multiple choice set to nested plist
@@ -2227,13 +2250,79 @@ v.rparms.max_ct = -1;
 
 // add match set to verbdef right/left plist
 
-#define M_vt_add_r_match_set(v, s)  v.rparms.matches.push_back(s); 
-#define M_vt_add_l_match_set(v, s)  v.lparms.matches.push_back(s);
+#define M_vt_add_r_match_set(v, s)  v.d.rparms.matches.push_back(s); 
+#define M_vt_add_l_match_set(v, s)  v.d.lparms.matches.push_back(s);
 
 
 // add match set to nested plist
 
 #define M_vt_add_nested_match_set(p, s)  p.matches.push_back(s); 
+
+
+// --------------------------------------------------------------------------
+// MACROs for setting verb priority and association, evaluation control, etc.
+// --------------------------------------------------------------------------
+
+#define M_vt_priority(v, prio)           \
+v.s.priority = (prio);                  
+
+#define M_vt_right_associate(v)          \
+v.s.right_associate = true;   
+
+#define M_vt_left_associate(v)           \
+v.s.left_associate = true;   
+
+#define M_vt_custom_eval(v)              \
+v.s.custom_eval = true;   
+
+// these suppress all left-side or right-side positional parm evaluation
+
+#define M_vt_no_eval_left_ident(v)       \
+v.s.left_eval.no_eval_ident = true;   
+
+#define M_vt_no_eval_left_expression(v)  \
+v.s.left_eval.no_eval_expression = true;   
+
+#define M_vt_no_eval_left_vlist(v)       \
+v.s.left_eval.no_eval_vlist = true;   
+
+#define M_vt_no_eval_left_ref(v)         \
+v.s.left_eval.no_eval_ref = true;   
+
+#define M_vt_no_eval_left_lvalue(v)      \
+v.s.left_eval.no_eval_ident = true;      \
+v.s.left_eval.no_eval_ref   = true;   
+
+#define M_vt_no_eval_right_ident(v)      \
+v.s.right_eval.no_eval_ident = true;   
+
+#define M_vt_no_eval_right_expression(v) \
+v.s.right_eval.no_eval_expression = true;   
+
+#define M_vt_no_eval_right_vlist(v)      \
+v.s.right_eval.no_eval_vlist = true;   
+
+#define M_vt_no_eval_right_ref(v)        \
+v.s.right_eval.no_eval_ref = true;   
+
+#define M_vt_no_eval_right_lvalue(v)     \
+v.s.right_eval.no_eval_ident = true;     \
+v.s.right_eval.no_eval_ref   = true;   
+
+#define M_vt_info(v, ws)                 \
+v.d.info = (ws);  
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+//     verbadd_S -- structure with info for adding verbs
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+struct verbadd_S
+{
+    verbdef_S d    { }; 
+    verbset_S s    { }; 
+};
+
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

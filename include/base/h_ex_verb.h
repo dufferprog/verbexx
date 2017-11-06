@@ -33,6 +33,7 @@
 
 
 // Local MACRO to call eval_cond() and return if R/C is non-zero  (see definition below)
+// eval_cond will return -1 if error and +1 if special results -- both these cause immediate return without consuming the special results
 
 #define M_eval_cond(v, s, r)                             \
 {                                                        \
@@ -43,38 +44,6 @@
         return std::min(e_rc, 0);                        \
     }                                                    \
 }
-
-
-
-
-/////////////////////////////////////////////////////////////////////////////
-// verb priorities -- static constants
-/////////////////////////////////////////////////////////////////////////////
-
-
-static const int verb_priority_attached_paren      {  1000 };  
-                                                     
-static const int verb_priority_select              {   120 };  
-static const int verb_priority_subscript           {   120 };  
-                                                     
-static const int verb_priority_increment           {   100 };
-static const int verb_priority_not                 {   100 };
-static const int verb_priority_bitnot              {   100 };
-                                                     
-static const int verb_priority_at                  {    80 };  
-static const int verb_priority_power               {    70 };
-static const int verb_priority_multiply            {    60 }; 
-static const int verb_priority_add                 {    50 }; 
-static const int verb_priority_shift               {    40 }; 
-static const int verb_priority_compare             {    30 }; 
-static const int verb_priority_bitwise             {    20 }; 
-static const int verb_priority_boolean             {    10 };
-static const int verb_priority_default             {     0 };
-static const int verb_priority_assign              {   -10 };
-                                                     
-static const int verb_priority_separate            { -1000 };
-
- 
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -101,6 +70,7 @@ int verb_non_builtin(                 frame_S& eval, const e_expression_S&, cons
 int verb_verb(                        frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_fn(                          frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_unverb(                      frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
+int verb_initverb(                    frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_call(                        frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_xctl(                        frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_imbed(                       frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
@@ -121,9 +91,6 @@ int verb_continue(                    frame_S& eval, const e_expression_S&, cons
 int verb_quit(                        frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_end(                         frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_exit(                        frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
-int verb__exit(                       frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
-int verb_quick_exit(                  frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
-int verb_abort(                       frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_error(                       frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);  
 int verb_do(                          frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_block(                       frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
@@ -139,8 +106,10 @@ int verb_const(                       frame_S& eval, const e_expression_S&, cons
 int verb_noeval(                      frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_eval(                        frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_unshare(                     frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
-int verb_export(                      frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
-int verb_unexport(                    frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
+#ifdef M_EXPOSE_SUPPORT
+int verb_expose(                      frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
+int verb_unexpose(                    frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
+#endif
 int verb_unvar(                       frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
                                                                
 
@@ -265,7 +234,7 @@ int verb_is_const(                    frame_S& eval, const e_expression_S&, cons
 int verb_is_def(                      frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_is_expression(               frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 int verb_is_vlist(                    frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
-int verb_is_slist(                    frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
+int verb_is_block(                    frame_S& eval, const e_expression_S&, const verbdef_S&, results_S&);
 
 
 // structure, array, argument and vlist extracion verbs  -- verb_util.cpp

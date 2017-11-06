@@ -118,26 +118,35 @@ if (v##_p != nullptr)                                           \
 //
 
 
-#define M_get_right_pos(                   i, n)             ( i.rparms.values.size() > (n) ? i.rparms.values.at((n))                  : value_S       { } )
-#define M_get_right_pos_int64(             i, n)             ( i.rparms.values.size() > (n) ? i.rparms.values.at((n)).int64            : 0                 )
-#define M_get_right_pos_float64(           i, n)             ( i.rparms.values.size() > (n) ? i.rparms.values.at((n)).float64          : 0.0               )
-#define M_get_right_pos_string(            i, n)             ( i.rparms.values.size() > (n) ? i.rparms.values.at((n)).string           : std::wstring  { } )
-#define M_get_right_pos_ident(             i, n)             ( i.rparms.values.size() > (n) ? i.rparms.values.at((n)).string           : std::wstring  { } )
-#define M_get_right_pos_typdef_p(          i, n)             ( i.rparms.values.size() > (n) ? i.rparms.values.at((n)).typdef_sp.get()  : nullptr           )
-                                                                                                                                                       
-#define M_get_left_pos(                    i, n)             ( i.lparms.values.size() > (n) ? i.lparms.values.at((n))                  : value_S       { } )
-#define M_get_left_pos_int64(              i, n)             ( i.lparms.values.size() > (n) ? i.lparms.values.at((n)).int64            : 0                 )
-#define M_get_left_pos_float64(            i, n)             ( i.lparms.values.size() > (n) ? i.lparms.values.at((n)).float64          : 0.0               )
-#define M_get_left_pos_string(             i, n)             ( i.lparms.values.size() > (n) ? i.lparms.values.at((n)).string           : std::wstring  { } )
-#define M_get_left_pos_ident(              i, n)             ( i.lparms.values.size() > (n) ? i.lparms.values.at((n)).string           : std::wstring  { } )
-#define M_get_left_pos_typdef_p(           i, n)             ( i.lparms.values.size() > (n) ? i.lparms.values.at((n)).typdef_sp.get()  : nullptr           )
-                                                                                                                                                       
-#define M_get_nest_pos(                    l, n)             ( (l)     .values.size() > (n) ? (l)     .values.at((n))                  : value_S       { } )
-#define M_get_nest_pos_int64(              l, n)             ( (l)     .values.size() > (n) ? (l)     .values.at((n)).int64            : 0                 )
-#define M_get_nest_pos_float64(            l, n)             ( (l)     .values.size() > (n) ? (l)     .values.at((n)).float64          : 0.0               )
-#define M_get_nest_pos_string(             l, n)             ( (l)     .values.size() > (n) ? (l)     .values.at((n)).string           : std::wstring  { } )
-#define M_get_nest_pos_ident(              l, n)             ( (l)     .values.size() > (n) ? (l)     .values.at((n)).string           : std::wstring  { } )
-#define M_get_nest_pos_typdef_p(           l, n)             ( (l)     .values.size() > (n) ? (l)     .values.at((n)).typdef_sp.get()  : nullptr           )
+#define M_get_right_pos(                   i, n      )             ( i.rparms.values.size() > (n) ? i.rparms.values.at((n))                  : value_S       { } )
+#define M_get_right_pos_int32(             i, n      )             ( i.rparms.values.size() > (n) ? i.rparms.values.at((n)).int32            : 0                 )
+#define M_get_right_pos_int64(             i, n      )             ( i.rparms.values.size() > (n) ? i.rparms.values.at((n)).int64            : 0                 )
+#define M_get_right_pos_int32_d(           i, n, d   )             ( i.rparms.values.size() > (n) ? i.rparms.values.at((n)).int32            : (d)               )
+#define M_get_right_pos_int64_d(           i, n, d   )             ( i.rparms.values.size() > (n) ? i.rparms.values.at((n)).int64            : (d)               )
+#define M_get_right_pos_float64(           i, n      )             ( i.rparms.values.size() > (n) ? i.rparms.values.at((n)).float64          : 0.0               )
+#define M_get_right_pos_string(            i, n      )             ( i.rparms.values.size() > (n) ? i.rparms.values.at((n)).string           : std::wstring  { } )
+#define M_get_right_pos_ident(             i, n      )             ( i.rparms.values.size() > (n) ? i.rparms.values.at((n)).string           : std::wstring  { } )
+#define M_get_right_pos_typdef_p(          i, n      )             ( i.rparms.values.size() > (n) ? i.rparms.values.at((n)).typdef_sp.get()  : nullptr           )
+                                                                                                                                                             
+#define M_get_left_pos(                    i, n      )             ( i.lparms.values.size() > (n) ? i.lparms.values.at((n))                  : value_S       { } )
+#define M_get_left_pos_int32(              i, n      )             ( i.lparms.values.size() > (n) ? i.lparms.values.at((n)).int32            : 0                 )
+#define M_get_left_pos_int64(              i, n      )             ( i.lparms.values.size() > (n) ? i.lparms.values.at((n)).int64            : 0                 )
+#define M_get_left_pos_int32_d(            i, n, d   )             ( i.lparms.values.size() > (n) ? i.lparms.values.at((n)).int32            : (d)               )
+#define M_get_left_pos_int64_d(            i, n, d   )             ( i.lparms.values.size() > (n) ? i.lparms.values.at((n)).int64            : (d)               )
+#define M_get_left_pos_float64(            i, n      )             ( i.lparms.values.size() > (n) ? i.lparms.values.at((n)).float64          : 0.0               )
+#define M_get_left_pos_string(             i, n      )             ( i.lparms.values.size() > (n) ? i.lparms.values.at((n)).string           : std::wstring  { } )
+#define M_get_left_pos_ident(              i, n      )             ( i.lparms.values.size() > (n) ? i.lparms.values.at((n)).string           : std::wstring  { } )
+#define M_get_left_pos_typdef_p(           i, n      )             ( i.lparms.values.size() > (n) ? i.lparms.values.at((n)).typdef_sp.get()  : nullptr           )
+                                                                                                                                                             
+#define M_get_nest_pos(                    l, n      )             ( (l)     .values.size() > (n) ? (l)     .values.at((n))                  : value_S       { } )
+#define M_get_nest_pos_int32(              l, n      )             ( (l)     .values.size() > (n) ? (l)     .values.at((n)).int32            : 0                 )
+#define M_get_nest_pos_int64(              l, n      )             ( (l)     .values.size() > (n) ? (l)     .values.at((n)).int64            : 0                 )
+#define M_get_nest_pos_int32_d(            l, n, d   )             ( (l)     .values.size() > (n) ? (l)     .values.at((n)).int32            : (d)               )
+#define M_get_nest_pos_int64_d(            l, n, d   )             ( (l)     .values.size() > (n) ? (l)     .values.at((n)).int64            : (d)               )
+#define M_get_nest_pos_float64(            l, n      )             ( (l)     .values.size() > (n) ? (l)     .values.at((n)).float64          : 0.0               )
+#define M_get_nest_pos_string(             l, n      )             ( (l)     .values.size() > (n) ? (l)     .values.at((n)).string           : std::wstring  { } )
+#define M_get_nest_pos_ident(              l, n      )             ( (l)     .values.size() > (n) ? (l)     .values.at((n)).string           : std::wstring  { } )
+#define M_get_nest_pos_typdef_p(           l, n      )             ( (l)     .values.size() > (n) ? (l)     .values.at((n)).typdef_sp.get()  : nullptr           )
 
 
 
@@ -650,8 +659,8 @@ enum class type_E { none          // not valid for values -- default initializat
                   , keyname       // UTF-16 string -- name of keyword (same characters as identifier) 
                   , vlist         // 
                   , expression    // 
-                  , slist         // 
-                  , verbdef       // 
+                  , block         // 
+                  , verbset       // 
                   , typdef        // 
                   , ref           // reference to another value_S or data in buffer from another value_S
 
@@ -671,7 +680,7 @@ enum class type_E { none          // not valid for values -- default initializat
 struct typdef_S
 {
     type_E                                                  kind              {    };           // primary value type
-    size_t                                                  tsize             { 0  };           // will be 0 (not valid) for non-atomic types like none, special, error, unit, string, identifier, verbname, keyname, type, vlist. expression, slist, verbdef, etc.
+    size_t                                                  tsize             { 0  };           // will be 0 (not valid) for non-atomic types like none, special, error, unit, string, identifier, verbname, keyname, type, vlist. expression, block, verbdef, etc.
                                                                                                 // non-0     (valid    ) only for atomic and aggregate types  
     uint64_t                                                acount            { 0  };           // if .kind = type_E::array, this is the number of elements in the array (1-N) -- fixed number
     std::shared_ptr<typdef_S>                               atype_sp          {    };           // if .kind = type_E::array, this is a pointer to the type of each element in the array
@@ -753,8 +762,8 @@ struct value_S
 
     std::shared_ptr<    vlist_S     >       vlist_sp            {               };      // pointer to vlist_S         (if any)       -- if .ty = type_E::vlist
     std::shared_ptr< a_expression_S >  expression_sp            {               };      // pointer to a_expression_S  (if any)       -- if .ty = type_E::expression
-    std::shared_ptr<    slist_S     >       slist_sp            {               };      // pointer to slist_S         (if any)       -- if .ty = type_E::slist
-    std::shared_ptr<  verbdef_S     >     verbdef_sp            {               };      // pointer to verbdef_S       (if any)       -- if .ty = type_E::verbdef
+    std::shared_ptr<    block_S     >       block_sp            {               };      // pointer to block_S         (if any)       -- if .ty = type_E::block
+    std::shared_ptr<  verbset_S     >     verbset_sp            {               };      // pointer to verbset_S       (if any)       -- if .ty = type_E::verbset
     std::shared_ptr<   typdef_S     >      typdef_sp            {               };      // pointer to typdef_S        (if any)       -- if .ty = type_E::typdef   -or-   type_E::structure    -or-   type_E::array
     std::shared_ptr<     buf8_T     >      buffer_sp            {               };      // pointer to buf8_T          (if any)       -- if .ty = type_E::array    -or-   type_E::structure
     std::shared_ptr<      ref_S     >         ref_sp            {               };      // pointer to ref_S           (if any)       -- if .ty = type_E::ref     
@@ -803,8 +812,8 @@ struct vlist_S
     bool                                      val_identifier   { false };      // true = one or more positional values are identifier
     bool                                      val_vlist        { false };      // true = one or more positional values are vlist_S
     bool                                      val_expression   { false };      // true = one or more positional values are expression_S
-    bool                                      val_slist        { false };      // true = one or more positional values are slist_S
-    bool                                      val_verbdef      { false };      // true = one or more positional values are verbdef_S
+    bool                                      val_block        { false };      // true = one or more positional values are block_S
+    bool                                      val_verbset      { false };      // true = one or more positional values are verbset_S
     bool                                      val_typdef       { false };      // true = one or more positional values are typdef_S
     bool                                      val_array        { false };      // true = one or more positional values are array
     bool                                      val_structure    { false };      // true = one or more positional values are structure
@@ -862,6 +871,33 @@ struct e_expression_S
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
+//    ---------------------
+//    arg_eval_S  structure -- no-eval flags for left-side or right-side positional parms
+//    ---------------------
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+// overload set definition
+// -----------------------
+
+struct arg_eval_S                       // argument evaluation flags
+{
+    bool                                 no_eval_ident                  { false };      // true -- don't evaluate identifier positional agruments before invoking the verb
+    bool                                 no_eval_expression             { false };      // true -- don't evaluate expression positional agruments before invoking the verb
+    bool                                 no_eval_vlist                  { false };      // true -- don't evaluate vlist      positional agruments before invoking the verb
+    bool                                 no_eval_ref                    { false };      // true -- don't evaluate ref        positional agruments before invoking the verb
+  //bool                                 no_eval_kw_ident               { false };      // true -- don't evaluate identifier keyword    agruments before invoking the verb
+  //bool                                 no_eval_kw_expression          { false };      // true -- don't evaluate expression keyword    agruments before invoking the verb
+  //bool                                 no_eval_kw_vlist               { false };      // true -- don't evaluate vlist      keyword    agruments before invoking the verb
+  //bool                                 no_eval_kw_ref                 { false };      // true -- don't evaluate ref        keyword    agruments before invoking the verb
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
 //    ------------------
 //    plist_S  structure -- left-side or right-side parm types for verbdef_S
 //    ------------------
@@ -875,22 +911,17 @@ struct plist_S
     bool                                   no_check_keywords            { false };      // don't check keyword parms    -- anything is   OK (both number,name, and type)
     bool                                   no_check_keyword_names       { false };      // don't check keyword names    -- any names are OK (number and types must match 1st/only kw in multimap, with name = "*")
 
-
-    // global checking flags for positional parms -- used only when expression has no verb, (meaning it has positional parmtypes in the values vector)
-
-    bool                                   no_eval_ident                { false };      // true -- don't evaluate identifiers in positional parms  
-    bool                                   no_eval_expression           { false };      // true -- don't evaluate expressions in positional parms  
-    bool                                   no_eval_vlist                { false };      // true -- don't evaluate (nested) vlists in positional parms 
-                            
+    arg_eval_S                             eval                         {       };      // global evaluation flags for positional parms -- used only when expression has no verb, or when verb is part of an overload set (before proper verbdef is chosen) 
+                                                                                    
     int64_t                                min_ct                       { 0     };      // minimum number of positional parms allowed 
     int64_t                                max_ct                       { -1    };      // maximum number of positional parms allowed (-1 = no limit)
 
-    std::vector<parmtype_S>                values                                ;      // vector of positional args (can be empty, if global arg checking used)
-    std::map<std::wstring, parmtype_S>     keywords                              ;      // "list" of keyword args allowed (some may be required) 
-
-    std::vector<std::set<std::wstring>>    choices                               ;      // list of one/multiple choice sets of keywords (1 or more must be present) 
-    std::vector<std::set<std::wstring>>    conflicts                             ;      // list of conflicting sets of keywords (0 or 1 must be present)
-    std::vector<std::set<std::wstring>>    matches                               ;      // list of sets of keywords which must be present together -- same number of occurrences in vlist (can be 0, 1, 2, but all must occur same number of times)
+    std::vector<parmtype_S>                values                       {       };      // vector of positional args (can be empty, if global arg checking used)
+    std::map<std::wstring, parmtype_S>     keywords                     {       };      // "list" of keyword args allowed (some may be required) 
+                                                                        
+    std::vector<std::set<std::wstring>>    choices                      {       };      // list of one/multiple choice sets of keywords (1 or more must be present) 
+    std::vector<std::set<std::wstring>>    conflicts                    {       };      // list of conflicting sets of keywords (0 or 1 must be present)
+    std::vector<std::set<std::wstring>>    matches                      {       };      // list of sets of keywords which must be present together -- same number of occurrences in vlist (can be 0, 1, 2, but all must occur same number of times)
 };
 
 
@@ -913,16 +944,44 @@ struct argvar_S
 
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//    -------------------------------
+//    verbdef_S/verbset_S  structures -- verb definition info
+//    -------------------------------
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-//    --------------------
-//    verbdef_S  structure -- verb definition info
-//    --------------------
-//
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////
+// verb priorities 
+/////////////////////////////////////////////////////////////////////////////
+
+namespace verb_pri_N
+{
+constexpr int64_t _not_specified     { M_int64_min };    // use same priority as pre-existing verb in verbset (default if first verb in verbset)
+constexpr int64_t _attached_paren    {       1000L };                                                       
+constexpr int64_t _select            {        120L };  
+constexpr int64_t _subscript         {        120L };                                                      
+constexpr int64_t _increment         {        100L };
+constexpr int64_t _not               {        100L };
+constexpr int64_t _bitnot            {        100L };                                                     
+constexpr int64_t _at                {         80L };  
+constexpr int64_t _power             {         70L };
+constexpr int64_t _multiply          {         60L }; 
+constexpr int64_t _add               {         50L }; 
+constexpr int64_t _shift             {         40L }; 
+constexpr int64_t _compare           {         30L }; 
+constexpr int64_t _bitwise           {         20L }; 
+constexpr int64_t _boolean           {         10L };
+constexpr int64_t _default           {          0L };
+constexpr int64_t _assign            {        -10L };                                                     
+constexpr int64_t _separate          {      -1000L };
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct verbdef_S
 {
@@ -933,24 +992,48 @@ struct verbdef_S
     bool                                  parms_left_xor_right                                    { false   };    // true -- positional parms required either on left or on right (not both sides, or neither side)
     bool                                  parms_not_both_sides                                    { false   };    // true -- positional and keyword parms cannot appear on both sides (parms on either side, or neither side is OK)
 
-    bool                                  lexical_scope                                           { false   };    // true -- verb has lexical upward scope (causes closure with upward scopes at definition time to be captured)
-    bool                                  dynamic_scope                                           { false   };    // true -- verb has dynamic upward scope -- only exported upward-scoped symbols (on call chain) are visible    
-    bool                                  block_scope                                             { false   };    // true -- verb has block upward scope = dynamic + all upward-scoped symbols (on call chain) are visible    
-    std::shared_ptr<frame_S>              upward_scope_sp                                         {         };    // if lexical scope, this points to scope where verb was defined -- shared owning pointer                                       
+    bool                                  percolate_all                                           { false   };    // true -- percolate all special results to calling verb (used with same_scope: verbs)  
 
-    int                                   priority                                                { 0       };    // priority of this verb during expression evaluation
+    bool                                  lexical_scope                                           { false   };    // true -- verb has lexical upward scope (causes closure with upward scopes at definition time to be captured)
+    bool                                  dynamic_scope                                           { false   };    // true -- verb has dynamic upward scope -- only exposed upward-scoped symbols (on call chain) are visible 
+#ifdef M_EXPOSE_SUPPORT
+    bool                                  dynall_scope                                            { false   };    // true -- verb has dynall  upward scope = dynamic + all upward-scoped symbols (on call chain) are visible, not just exposed ones 
+#endif
+    bool                                  same_scope                                              { false   };    // true -- verb is does not have its oen static/dynamic environments -- uses caller's stack frame(s) 
+    bool                                  no_scope                                                { false   };    // true -- verb is self-contained (with input parms) -- no upward scope is established (although global variables/verbs/etc. are available) 
+    bool                                  scope_defaulted                                         { false   };    // true -- lexical scope was defaulted, not explicitly requested
+
+    std::weak_ptr<frame_S>                defining_scope_wp                                       {         };    // if lexical scope, this points to scope where verb was defined -- alway set for any lexically-scoped user-defined verb
+    std::shared_ptr<frame_S>              defining_scope_sp   /** SP **/                          {         };    // if closure, this points to scope where verb was defined -- shared owning pointer -- used only to keep enclosing scopes from going away                                     
+    std::shared_ptr<environ_S>            persist_env_sp      /** SP **/                          {         };    // persistent (static/closure) environment pointer -- exists for lifetime of function definition (non-builtin functions only)
+
+    void                                 *fcn_p                                                   { nullptr };    // pointer to function (in C++ parser code) to process this verb (non-owning pointer)
+    std::shared_ptr<block_S>              verb_block_sp       /** SP **/                          { nullptr };    // pointer to verb-block for this verb (if any -- only for user-defined, non built-in verbs) -- ***owning pointer***  
+    std::shared_ptr<block_S>              init_block_sp       /** SP **/                          { nullptr };    // pointer to init-block for this verb (if any -- only if init: option specified for user-defined, non built-in verbs) -- ***owning pointer***  
+
+    plist_S                               lparms                                                  {         };    // left-side positional and keyword descriptions
+    plist_S                               rparms                                                  {         };    // right-side positional and keyword descriptions
+    argvar_S                              lvars                                                   {         };    // variable names for left  side parms
+    argvar_S                              rvars                                                   {         };    // variable names for right side parms
+    std::wstring                          info                                          { L"no description" };    // descriptive message for debugging and overload match failure messages              
+};
+
+
+
+
+struct verbset_S
+{
+    std::vector<verbdef_S>                verbs                                                   {         };    // verbdefs in the overload set
+    int64_t                               priority                             { verb_pri_N::_not_specified };    // evaluation priority in expressions -- all verbs in overload set must have same priority and associativity
     bool                                  right_associate                                         { false   };    // true = always right-to-left associativity, false = left-to-right when infix or postfix, right-to-left when prefix or nofix 
     bool                                  left_associate                                          { false   };    // true = always left-to-right associativity, false = left-to-right when infix or postfix, right-to-left when prefix or nofix
-    void                                 *fcn_p                                                   { nullptr };    // pointer to function (in C++ parser code) to process this verb (non-owning pointer)
+    arg_eval_S                            left_eval                                               {         };    // left-side  argument evaluation flags  
+    arg_eval_S                            right_eval                                              {         };    // right-side argument evaluation flags 
+    bool                                  custom_eval                                             { false   };    // custom eval flag settings on a per-parm basis (especially keywords) -- can't be overloaded   
+    bool                                  has_builtin                                             { false   };    // at least one if the verbdef_S's is built-in  
+};
 
-    std::shared_ptr<slist_S>              slist_sp                                                { nullptr };    // pointer to code block for this verb (if any -- only for non built-in verbs) --= owning pointer  
-                                                                                                  
-    plist_S                               lparms                                                             ;    //  left-side positional and keyword descriptions
-    plist_S                               rparms                                                             ;    // right-side positional and keyword descriptions
-    argvar_S                              lvars                                                              ;    // variable names for left  side parms
-    argvar_S                              rvars                                                              ;    // variable names for right side parms
-};              
-
+ 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -967,11 +1050,7 @@ struct parmtype_S
     int64_t                        kw_min_ct                    { 0     };      // min number of times keyword can appear -- not used when checking positional parms 
     int64_t                        kw_max_ct                    { 0     };      // max number of times keyword can appear -- not used when checking positional parms  
 
-    bool                           no_eval_ident                { false };      // don't evaluate, if parm is an identifier 
-    bool                           no_eval_expression           { false };      // don't evaluate, if parm is an expression
-    bool                           no_eval_vlist                { false };      // don't evaluate, if parm is a  vlist
-    bool                           no_eval_ref                  { false };      // don't evaluate/dereference, if parm is a  ref
-
+    arg_eval_S                     eval                         {       };      // evaluation control flags
     bool                           anything_ok                  { false };      // all parm types OK -- no checking needed
     bool                           check_local_env_only         { false };      // check only local  stack frame when doing identifier checks 
     bool                           check_global_env_only        { false };      // check only global stack frame when doing identifier checks 
@@ -997,8 +1076,8 @@ struct parmtype_S
     bool                           undef_ident_ok               { false };      // ok for value to be undefined identifier (and not defined)
     bool                           vlist_ok                     { false };      // ok for value to be vlist -- optional pointer is set, if verb cares about value types in vlist
     bool                           expression_ok                { false };      // ok for value to be expression  
-    bool                           slist_ok                     { false };      // ok for value to be slist 
-    bool                           verbdef_ok                   { false };      // ok for value to be verbdef
+    bool                           block_ok                     { false };      // ok for value to be block 
+    bool                           verbset_ok                   { false };      // ok for value to be verbset
     bool                           typdef_ok                    { false };      // ok for value to be typdef
     bool                           array_ok                     { false };      // ok for value to be array
     bool                           structure_ok                 { false };      // ok for value to be structure
@@ -1041,7 +1120,7 @@ M_EX_IMPEXP int          ex_main(int, wchar_t *[]);
 
 /////////////////// public verb-oriented functions -- in ex_interface.cpp
 
-M_EX_IMPEXP int          add_predefined_verb(        const std::wstring&, verbdef_S&);
+M_EX_IMPEXP int          add_predefined_verb(        const std::wstring&, const verbset_S&);
 M_EX_IMPEXP int          attach_plist(               parmtype_S&, const plist_S&);
 
 M_EX_IMPEXP value_S      set_type_value( int64_t             );  
@@ -1059,23 +1138,26 @@ M_EX_IMPEXP bool is_valid_verbname(  const std::wstring&);
 /////////////////// public setup and processing functions  -- in ex_interface.cpp
 
 
-M_EX_IMPEXP uint64_t      process_main_ext(    const std::wstring&                      ); 
-M_EX_IMPEXP std::wstring  process_cmdline_ext( int, wchar_t *[]                         );
-M_EX_IMPEXP int           pending_attach_ext(  const std::wstring&                      );    // file version
-M_EX_IMPEXP int           pending_attach_ext(  const std::wstring&, const std::wstring& );    // string version   
-M_EX_IMPEXP int           import_dll(          const std::wstring&, const std::wstring& ); 
-M_EX_IMPEXP int           set_skip_ext(        const std::wstring&                      ); 
+M_EX_IMPEXP int                       process_main_ext(    const std::wstring&                      ); 
+M_EX_IMPEXP std::wstring              process_cmdline_ext( int, wchar_t *[]                         );
+M_EX_IMPEXP int                       pending_attach_ext(  const std::wstring&                      );    // file version
+M_EX_IMPEXP int                       pending_attach_ext(  const std::wstring&, const std::wstring& );    // string version   
+M_EX_IMPEXP int                       import_dll(          const std::wstring&, const std::wstring& ); 
+M_EX_IMPEXP int                       set_skip_ext(        const std::wstring&                      ); 
 
-M_EX_IMPEXP void          count_error(uint64_t = 1ULL); 
-M_EX_IMPEXP uint64_t      error_count();
-M_EX_IMPEXP frame_S      *get_main_frame();  
-M_EX_IMPEXP symtab_S     *get_global_symtab();  
+M_EX_IMPEXP void                      count_error(uint64_t = 1ULL); 
+M_EX_IMPEXP uint64_t                  error_count();
+M_EX_IMPEXP std::shared_ptr<frame_S>  get_pp_frame();  
+M_EX_IMPEXP frame_S                  *get_main_frame();  
+M_EX_IMPEXP void                      setup_global_environ(); 
+M_EX_IMPEXP environ_S                *get_global_environ();  
 
 
 
 ////////////////// public verb functions   -- in ex_verb.cpp 
 
-void add_predefined_typdefs();        
+void add_predefined_typdefs();   
+void add_predefined_constants();      
 void add_predefined_verbs();          
  
 

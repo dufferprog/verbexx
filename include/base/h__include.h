@@ -135,23 +135,28 @@
 #pragma message("#include standard C++ headers")
 
 #include <algorithm>
+//#include <allocators>              // ????
+#include <any>                       // C++17 only
 #include <array>
 #include <atomic>
 #include <bitset>
 #include <chrono>
-#include <complex>
 #include <codecvt>
+#include <complex>
 #ifndef _MANAGED
   #include <condition_variable>      // not supported with /clr option
 #endif
 #include <deque>
 #include <exception>
+#include <filesystem>
 #include <forward_list>
 #include <fstream>
 #include <functional>
 #ifndef _MANAGED
   #include <future>
 #endif
+//#include <hash_map>                // obsolete
+//#include <hash_set>                // obsolete
 #include <initializer_list>    
 #include <iomanip>
 #include <ios>
@@ -169,6 +174,7 @@
 #endif
 #include <new>
 #include <numeric>
+#include <optional>                  // C++17 only
 #include <ostream>
 #include <queue>
 #include <random>
@@ -184,19 +190,21 @@
 #include <stdexcept>
 #include <streambuf>
 #include <string>
+#include <string_view>               // C++17 only
 #include <strstream>                 // deprecated
 #include <system_error>
 #ifndef _MANAGED
   #include <thread>                  // not supported with /clr option
 #endif
 #include <tuple>
+#include <type_traits>
 #include <typeindex>
 #include <typeinfo>
-#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <valarray>
+#include <variant>                   // C++17 only 
 #include <vector>
 
 
@@ -478,10 +486,6 @@
 // Other C/C++ headers (Microsoft)
 //------------------------------------------------------------------------------------
 
-//#include <allocators>
-//#include <filesystem>
-//#include <hash_map>               deprecated -- gives compiler warning
-//#include <hash_set>               deprecated -- gives compiler warning
 //#include <mbstring.h>
 //#include <tchar.h>
 //#include <xcomplex>               gives compile errors 
@@ -520,8 +524,8 @@
 #include <boost/endian/arithmetic.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/format.hpp>
-#include <boost/geometry.hpp>
-#include <boost/geometry/geometries/geometries.hpp>
+//#include <boost/geometry.hpp>                                  // template syntax errors with C++17 -- bug in 1.65.0 1.65.1, but fixed now
+//#include <boost/geometry/geometries/geometries.hpp>            // template syntax errors with C++17 -- bug in 1.65.0 1.65.1, but fixed now
 
 #include <fftw3.h>
 

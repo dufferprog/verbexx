@@ -609,7 +609,7 @@ constexpr int32_t arcsec_720 { 2592000 };
 
 // M_start_timer(c, t1) -- c = clock variable name,  t1 = starting timepoint variable name
 // M_set_timer  (c, t1) -- updates t1 with latest closk time 
-// M_read_timer( c, t1) -- returns elapsed time in milliseconds
+// M_read_timer( c, t1) -- returns elapsed time in seconds
 
 #define M_start_timer(c, t1)        \
 std::chrono::steady_clock c;        \
@@ -618,8 +618,9 @@ auto t1 = c.now();
 #define M_set_timer(c, t1)          \
 t1 = c.now(); 
 
-#define M_read_timer(c, t1)  ((real_T)((std::chrono::duration_cast<std::chrono::milliseconds>(c.now() - t1)).count()) / 1000.0)    
-   
+#define M_read_timer(c, t1)     ((real_T)((std::chrono::duration_cast<std::chrono::milliseconds>((c).now() - (t1))).count()) / 1000.0)
+
+#define M_timer_elapsed(t1)     ((real_T)((std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - (t1))).count()) / 1000.0)     
 
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -1900,6 +1901,7 @@ M_CORE_IMPEXP  std::wstring    fmt_str(const std::wstring&,int, int, const std::
 M_CORE_IMPEXP  std::wstring    fmt_ptr(const void *); 
 
 M_CORE_IMPEXP  std::string     out_ws(     std::wstring         );
+M_CORE_IMPEXP  std::wstring    cleanup_ws( std::wstring         );
 M_CORE_IMPEXP  std::string     shorten_str(std::string  , size_t);
 M_CORE_IMPEXP  std::wstring    shorten_str(std::wstring , size_t);
 
@@ -2002,9 +2004,9 @@ M_CORE_IMPEXP  float64_T       power(float64_T, float64_T);
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    
 
-// --------------------------
-// logging-oriented functions
-// --------------------------
+// --------------------------------
+// logging/timer-oriented functions
+// --------------------------------
 
 M_CORE_IMPEXP  log_T         log_verbs(      void  );
 M_CORE_IMPEXP  void          log_verbs(      log_T );
@@ -2012,6 +2014,11 @@ M_CORE_IMPEXP  void          log_verbs(      log_T );
 M_CORE_IMPEXP  log_T         log_statistics( void  );
 M_CORE_IMPEXP  void          log_statistics( log_T );
 
+M_CORE_IMPEXP  int           set_steady_timepoint( uint32_t );
+M_CORE_IMPEXP  real_T        steady_elapsed_time(  uint32_t );
+
+M_CORE_IMPEXP  int           capture_pc_time(      uint32_t );
+M_CORE_IMPEXP  float64_T     elapsed_pc_time(      uint32_t );
 
 
 // -------------------
@@ -2133,10 +2140,12 @@ M_CORE_IMPEXP  std::wstring    errno_string(errno_t);
 // exit-oriented functions
 // -----------------------
 
-M_CORE_IMPEXP  void            do_exit(      int = -1);
-M_CORE_IMPEXP  void            do__exit(     int = -1);
-M_CORE_IMPEXP  void            do_abort(             );
-M_CORE_IMPEXP  void            do_quick_exit(int = -1); 
+M_CORE_IMPEXP  void            do_exit(       int = 1);
+M_CORE_IMPEXP  void            do__exit(      int = 1);
+M_CORE_IMPEXP  void            do__Exit(      int = 1);
+M_CORE_IMPEXP  void            do_abort(      int = 0);
+M_CORE_IMPEXP  void            do_quick_exit( int = 1); 
+M_CORE_IMPEXP  void            do_terminate(  int = 0); 
 
  
 
@@ -2150,6 +2159,8 @@ struct se_exception_S
     EXCEPTION_RECORD      exception_record       ;
     CONTEXT               context_record         ;
 };
+
+M_CORE_IMPEXP  void last_place(const std::wstring&);
 
 M_CORE_IMPEXP  void setup_exception(bool = false); 
 
@@ -2180,38 +2191,69 @@ M_CORE_IMPEXP  void handle_signal(int);
 //▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-// 
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------                                    //
+//                                                                                                                                                                                                                                          //
+//                                                                                                                                                                                                                                          //
+//      A      BBBB      CCCC    DDDD     EEEEE    FFFFF     GGGG     H   H    IIIII    JJJJJ    K   K    L        M   M     N   N     OOO     OOOOO    PPPP      QQQ     RRRR      SSSS    TTTTT                                           //                                                                                               
+//     A A     B   B    C        D   D    E        F        G         H   H      I         J     K  K     L        MM MM     NN  N    O   O    O   O    P   P    Q   Q    R   R    S          T                                             //
+//    A   A    BBBB     C        D   D    EEEE     FFF      G  GG     HHHHH      I         J     KKK      L        M M M     N N N    O   O    O   O    PPPP     Q   Q    RRRR      SSS       T                                             //
+//    AAAAA    B   B    C        D   D    E        F        G   G     H   H      I         J     K  K     L        M   M     N  NN    O   O    O   O    P        Q   Q    R  R         S      T                                             //
+//    A   A    BBBB      CCCC    DDDD     EEEEE    F         GGGG     H   H    IIIII    J  J     K   K    LLLLL    M   M     N   N     OOO     OOOOO    P         QQQ     R   R    SSSS       T                                             //              
+//                                                                                       JJ                                                                          Q                                                                      //
+//                                                                                                                                                                                                                                          //
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------                                    //
+//                                                                                                                                                                                                                                          //
+//                                                                                                                                                                                                                                          //
+//    U   U    V   V    W   W    X   X    Y   Y    ZZZZZ     000        1      2222     3333     4  4        4     55555      666     77777     888      999                                                                                //
+//    U   U    V   V    W   W     X X      Y Y        Z     0   0      11          2        3    4  4       44     5         6           7     8   8    9   9                                                                               //
+//    U   U     V V     W W W      X        Y        Z      0 0 0       1          2     333     44444     4 4     5555      6666       7       888      9999                                                                               //
+//    U   U     V V     WW WW     X X       Y       Z       0   0       1        2          3       4     44444        5     6   6     7       8   8        9                                                                               //
+//     UUU       V      W   W    X    X     Y      ZZZZZ     000      11111    22222    3333        4        4      555       666     7         888      999                                                                                //
+//                                                                                                                                                                                                                                          //
+//                                                                                                                                                                                                                                          //
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------                                    //
+//                                                                                                                                                                                                                                          //
+//                                                                     @          @       @       @  @                                  @         @     @@@@@                @                                                              //
+//                                                   @      @@@@        @        @        @       @  @        @     @@  @     @ @      @@@@     @@@@   @     @   @   @     @@@@                                                             //                                      
+//                                @        @         @          @       @        @                           @      @@ @     @@@@@    @ @      @  @    @ @@@ @    @ @     @  @                                                              //
+//    @@@@@                                          @       @@@        @        @                          @         @       @ @      @@@     @  @    @ @ @ @   @@@@@     @@@@                                                             // 
+//                                                                      @        @                         @         @ @@    @@@@@      @ @    @  @    @ @@@@     @ @     @  @                                                              //
+//              @         @       @        @         @       @          @        @                        @         @  @@     @ @     @@@@      @@@@   @         @   @     @@@@                                                             //  
+//                       @                @                            @          @                                                     @         @     @@@@@@               @                                                              //
+//                                                                                                                                                                               =========                                                  //
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------                                    //
+//                                                                                                                                                                                                                                          //
+//                                                                                                                                                                                                                                          //
+//                                                                                                                                                                                                                                          //
+//                                                                                                                                                                                                                                          //
+//         AA       BBBBBBBBB     CCCCCCCC    DDDDDDDD     EEEEEEEEEE   FFFFFFFFFF    GGGGGGGG    HH      HH   IIIIIIIIII   JJJJJJJJJJ   KK      KK   LL           MM      MM    NN      NN    OOOOOOOO    PPPPPPPPP                        // 
+//        AAAA      BBBBBBBBBB   CCCCCCCCCC   DDDDDDDDD    EEEEEEEEEE   FFFFFFFFFF   GGGGGGGGGG   HH      HH   IIIIIIIIII   JJJJJJJJJJ   KK     KK    LL           MMM    MMM    NNN     NN   OOOOOOOOOO   PPPPPPPPPP                       // 
+//       AA  AA     BB      BB   CC      CC   DD      DD   EE           FF           GG      GG   HH      HH       II             JJ     KK    KK     LL           MMMM  MMMM    NNNN    NN   OO      OO   PP      PP                       // 
+//      AA    AA    BB      BB   CC           DD      DD   EE           FF           GG           HH      HH       II             JJ     KK   KK      LL           MM MMMM MM    NN NN   NN   OO      OO   PP      PP                       // 
+//     AA      AA   BBBBBBBBB    CC           DD      DD   EEEEEEEE     FFFFFFFF     GG           HHHHHHHHHH       II             JJ     KKKKKK       LL           MM  MM  MM    NN  NN  NN   OO      OO   PPPPPPPPPP                       // 
+//     AAAAAAAAAA   BBBBBBBBB    CC           DD      DD   EEEEEEEE     FFFFFFFF     GG    GGGG   HHHHHHHHHH       II             JJ     KKKKKK       LL           MM      MM    NN   NN NN   OO      OO   PPPPPPPPP                        // 
+//     AAAAAAAAAA   BB      BB   CC           DD      DD   EE           FF           GG    GGGG   HH      HH       II             JJ     KK   KK      LL           MM      MM    NN    NNNN   OO      OO   PP                               // 
+//     AA      AA   BB      BB   CC      CC   DD      DD   EE           FF           GG      GG   HH      HH       II             JJ     KK    KK     LL           MM      MM    NN     NNN   OO      OO   PP                               // 
+//     AA      AA   BBBBBBBBBB   CCCCCCCCCC   DDDDDDDDD    EEEEEEEEEE   FF           GGGGGGGGGG   HH      HH   IIIIIIIIII         JJ     KK     KK    LLLLLLLLLL   MM      MM    NN      NN   OOOOOOOOOO   PP                               // 
+//     AA      AA   BBBBBBBBB     CCCCCCCC    DDDDDDDD     EEEEEEEEEE   FF            GGGGGGGG    HH      HH   IIIIIIIIII   JJ    JJ     KK      KK   LLLLLLLLLL   MM      MM    NN      NN    OOOOOOOO    PP                               // 
+//                                                                                                                            JJJJJJJ                                                                                                       //
+//                                                                                                                             JJJJJ                                                                                                        //
+//                                                                                                                                                                                                                                          //
+//                                                                                                                                                                                                                                          //
+//                                                                                                                                                                                                                                          //
+//      QQQQQQQQ    RRRRRRRRR     SSSSSSSSS   TTTTTTTTTT   UU      UU   VV      VV   WW      WW   XX      XX   YY      YY   ZZZZZZZZZZ                                                                                                      //
+//     QQQQQQQQQQ   RRRRRRRRRR   SSSSSSSSSS   TTTTTTTTTT   UU      UU   VV      VV   WW      WW    XX    XX     YY    YY    ZZZZZZZZZZ                                                                                                      //
+//     QQ      QQ   RR      RR   SS               TT       UU      UU   VV      VV   WW      WW     XX  XX       YY  YY           ZZ                                                                                                        //
+//     QQ      QQ   RR      RR   SS               TT       UU      UU   VV      VV   WW      WW      XXXX         YYYY           ZZ                                                                                                         //
+//     QQ      QQ   RRRRRRRRRR    SSSSSS          TT       UU      UU    VV    VV    WW      WW       XX           YY           ZZ                                                                                                          //
+//     QQ      QQ   RRRRRRRRR       SSSSSS        TT       UU      UU    VV    VV    WW  WW  WW       XX           YY          ZZ                                                                                                           //
+//     QQ      QQ   RR   RR              SS       TT       UU      UU     VV  VV     WW WWWW WW      XXXX          YY         ZZ                                                                                                            //
+//     QQ      QQ   RR    RR             SS       TT       UU      UU     VV  VV     WWWW  WWWW     XX  XX         YY        ZZ                                                                                                             //
+//     QQQQQQQQQQ   RR     RR    SSSSSSSSSS       TT        UUUUUUUU       VVVV      WWW    WWW    XX    XX        YY       ZZZZZZZZZZ                                                                                                      //
+//      QQQQQQQQ    RR      RR   SSSSSSSSS        TT         UUUUUU         VV       WW      WW   XX      XX       YY       ZZZZZZZZZZ                                                                                                      //
+//           QQ                                                                                                                                                                                                                             //
+//            QQ
 //
-//      A      BBBB      CCCC    DDDD     EEEEE    FFFFF     GGGG     H   H    IIIII    JJJJJ    K   K    L        M   M     N   N     OOO     OOOOO    PPPP      QQQ     RRRR      SSSS    TTTTT                                                                                                                                            
-//     A A     B   B    C        D   D    E        F        G         H   H      I         J     K  K     L        MM MM     NN  N    O   O    O   O    P   P    Q   Q    R   R    S          T                                
-//    A   A    BBBB     C        D   D    EEEE     FFF      G  GG     HHHHH      I         J     KKK      L        M M M     N N N    O   O    O   O    PPPP     Q   Q    RRRR      SSS       T                                               
-//    AAAAA    B   B    C        D   D    E        F        G   G     H   H      I         J     K  K     L        M   M     N  NN    O   O    O   O    P        Q   Q    R  R         S      T                              
-//    A   A    BBBB      CCCC    DDDD     EEEEE    F         GGGG     H   H    IIIII    J  J     K   K    LLLLL    M   M     N   N     OOO     OOOOO    P         QQQ     R   R    SSSS       T                                                             
-//                                                                                       JJ                                                                          Q                   
-//
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-//
-//
-//    U   U    V   V    W   W    X   X    Y   Y    ZZZZZ     000        1      2222     3333     4  4        4     55555      666     77777     888      999               
-//    U   U    V   V    W   W     X X      Y Y        Z     0   0      11          2        3    4  4       44     5         6           7     8   8    9   9                             
-//    U   U     V V     W W W      X        Y        Z      0 0 0       1          2     333     44444     4 4     5555      6666       7       888      9999                                        
-//    U   U     V V     WW WW     X X       Y       Z       0   0       1        2          3       4     44444        5     6   6     7       8   8        9                     
-//     UUU       V      W   W    X    X     Y      ZZZZZ     000      11111    22222    3333        4        4      555       666     7         888      999                                            
-//            
-// 
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-//
-//                                                                     @          @       @       @  @                                  @         @     @@@@@                @           
-//                                                   @      @@@@        @        @        @       @  @        @     @@  @     @ @      @@@@     @@@@   @     @   @   @     @@@@                                                                                                     
-//                                @        @         @          @       @        @                           @      @@ @     @@@@@    @ @      @  @    @ @@@ @    @ @     @  @                                                         
-//    @@@@@                                          @       @@@        @        @                          @         @       @ @      @@@     @  @    @ @ @ @   @@@@@     @@@@                                                                
-//                                                                      @        @                         @         @ @@    @@@@@      @ @    @  @    @ @@@@     @ @     @  @                                                  
-//              @         @       @        @         @       @          @        @                        @         @  @@     @ @     @@@@      @@@@   @         @   @     @@@@                                                                 
-//                       @                @                            @          @                                                     @         @     @@@@@@               @                                       
-//                                                                                                                                                                               =========
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 //⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫
 //⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫
 //⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫⧫
