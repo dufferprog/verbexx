@@ -1,0 +1,65 @@
+﻿////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   99 bottles of beer 
+//   ------------------
+//
+//   command line: "verbexx 99_bottles.txt"      -- run 1st version
+//
+//   command line: "verbexx 99_bottles.txt x"    -- run 2nd version
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+@IF (ARG_C > 2) then:{@GOTO "label2"};
+
+@SAY "\n----------------------   V E R S I O N   1   -------------------------\n";   
+
+// ----------------
+// standard version - slow, but not as slow as 2nd vesion
+// ----------------
+
+fn @FN [num] { @IF (num == 0) then:{"no more"} else:{num      }; };    // use "no more" instead of "0"
+fb @FN [num] { @IF (num == 1) then:{"bottle" } else:{"bottles"}; };    // "No bottles", "1 bottle", "2 bottles", etc.
+
+@VAR n = 99;
+
+@LOOP while:(n > 0)
+{                                                           
+    @SAY (@fn n) (@fb n) "of beer on the wall," (@fn n) (@fb n) "of beer."        ;
+    @SAY "Take one down and pass it around," (@fn n-1) "of beer on the wall\n"    ;
+    n--                                                                           ;
+}; 
+
+@SAY "No more bottles of beer on the wall, no more bottles of beer."              ;
+@SAY "Go to the store and buy some more, 99 bottles of beer on the wall."         ;
+
+@SAY "\n----------------------   V E R S I O N   1   -------------------------"   ;
+
+@DISPLAY statistics:;
+
+@QUIT; 
+:label2;
+
+@SAY "\n----------------------   V E R S I O N   2   -------------------------" ;
+
+// -------------
+// cuter version -- much slower due to string interpolation
+// -------------
+                                               
+@CONST p value:{ @IF (n == 0) then:{"no more"} else:{n        } }   ; // use "no more" instead of "0"
+@CONST b value:{ @IF (n == 1) then:{"bottle" } else:{"bottles"} }   ; // "No bottles", "1 bottle", "2 bottles", etc.
+
+@VAR n = 99;
+@LOOP until:(n == 0)
+{                                                             
+    @STDOUT @INTERPOLATE   "\n{n} {@DO b} of beer on the wall, {n} {@DO b} of beer.\n"            ; 
+    @STDOUT                "Take one down and pass it around, "                                   ;
+    n--                                                                                           ; 
+    @STDOUT @INTERPOLATE   "{@DO p} {@DO b} of beer on the wall.\n"                               ; 
+}; 
+
+@STDOUT "\nNo more bottles of beer on the wall, no more bottles of beer.\n"                       ;
+@STDOUT "Go to the store and buy some more, 99 bottles of beer on the wall.\n"                    ;
+
+@SAY "\n----------------------   V E R S I O N   2   -------------------------"                   ;  
+
+@DISPLAY statistics:;

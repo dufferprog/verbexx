@@ -11,22 +11,22 @@
 // --------------------------------------------------------
 
 @VAR y_comb value:
-( @FCN [f] 
+( @FN [f] 
   {
     @RETURN ( @(                         // @ sigil causes expression output to be treated as a verb
-                 @FCN [x]
+                 @FN [x]
                  { 
-                   @RETURN ( @f ( @FCN [y] { @RETURN (@(@x x) y); } ) );
-                 }
+                   @RETURN ( @f ( @FN [y] { @RETURN (@(@x x) y); } close:) );
+                 } close:
                )
                (                         // This is the argument for the above function
-                 @FCN [x] 
+                 @FN [x] 
                  {
-                   @RETURN ( @f ( @FCN [y] { @RETURN (@(@x x) y); } ) );
-                 }
+                   @RETURN ( @f ( @FN [y] { @RETURN (@(@x x) y); } close:) );
+                 } close:
                )
             );
-  }
+  } 
 );
 
 
@@ -34,17 +34,17 @@
 // ------------------------------------------------------------------------
 
 @VAR fact_gen value:
-( @FCN [fact]
+( @FN [fact]
   { 
-    @RETURN ( @FCN [n]                // Simple (non tail-recursive) factorial function
+    @RETURN ( @FN [n]                // Simple (non tail-recursive) factorial function
               {
                 @IF (n <= 0)
                   then:{ @RETURN 1;                     } 
                   else:{ @RETURN (n * (@fact (n - 1))); }
                 ; 
-              }
+              } close:
             );
-  }
+  } 
 );
 
 
