@@ -13,7 +13,7 @@
 
 PCH_HDRS = \
 $(INC_DIR_CORE)h__include.h \
-$(INC_DIR_CORE)h__utf32.h      
+$(INC_DIR_CORE)h__utf32.h
 
 COMM_HDRS = \
 $(INC_DIR_CORE)h__common.h \
@@ -25,8 +25,10 @@ $(INC_DIR_CORE)h_core_clr.h \
 $(INC_DIR_CORE)h_core_template.h \
 $(INC_DIR_CORE)h_core_util.h 
           
-EX_HDR_IF = \
-$(INC_DIR_EX)h_ex_interface.h 
+EX_IF_HDRS = \
+$(INC_DIR_EX)h_ex_interface.h \
+$(INC_DIR_EX)h_ex_types.h \
+$(INC_DIR_EX)h_ex_verbmac.h
 
 EX_HDRS = \
 $(INC_DIR_EX)h_ex_interface.h \
@@ -34,7 +36,8 @@ $(INC_DIR_EX)h_ex_lex.h \
 $(INC_DIR_EX)h_ex_parse.h \
 $(INC_DIR_EX)h_ex_types.h \
 $(INC_DIR_EX)h_ex_verb.h \
-$(INC_DIR_EX)h_ex_verbmac.h 
+$(INC_DIR_EX)h_ex_verbmac.h
+ 
 
 
 ############### pre-compiled headers ################################################################

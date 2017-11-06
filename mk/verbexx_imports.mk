@@ -11,7 +11,7 @@
 #               draw.dll
 #
 #    note: assumes output from verbexx_base.mk is already available  
-# 
+#     
 #
 ###############################################################################################################################
  
@@ -36,9 +36,9 @@ COMPILE    = cl
 LINK       = link
 SEPARATOR  = @echo ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-CFLAGS = /Yu /EHa /MD /nologo /O2 /Zm256 /I$(INC_DIR_CORE) /I$(INC_DIR_EX) /I$(INC_DIR_IMPORTS) /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_std.pch
+CFLAGS = $(CFLAGS_ALWAYS) /Yu /nologo /I$(INC_DIR_CORE) /I$(INC_DIR_EX) /I$(INC_DIR_IMPORTS) /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_std.pch
     
-LFLAGS_DLL = /STACK:200000000 /NOLOGO /LIBPATH:$(LIB_DIR) /DLL 
+LFLAGS_DLL = /STACK:$(STACK_SIZE) /NOLOGO /LIBPATH:$(LIB_DIR) /DLL 
 
 
 ###############################################################################################################################

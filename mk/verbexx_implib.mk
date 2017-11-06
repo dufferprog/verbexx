@@ -5,9 +5,15 @@
 #   verbexx_implib.mk -- included makefile with import libraries (for use with Windows nmake)
 #   =================    ---------------------------------------
 #
+#    note: also defines other global equates 
+#
+#
 #
 #############################################################################################################
  
+
+STACK_SIZE = 2000000000
+CFLAGS_ALWAYS = /EHa /MD /O2 /Zm256 /std:c++latest  
 
 ################### Windows import libraries ####################
 

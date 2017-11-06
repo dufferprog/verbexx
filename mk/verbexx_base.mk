@@ -23,20 +23,20 @@ $(MK_DIR)$(EXNAME)_folder.mk \
 $(MK_DIR)$(EXNAME)_implib.mk \
 $(MK_DIR)$(EXNAME)_base_header.mk 
 
-
+             
 ############# compile/link command options #########################################################################
 
 COMPILE    = cl
 LINK       = link
 SEPARATOR  = @echo ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-CFLAGS           = /Yu /EHa /MD /nologo         /O2 /Zm256      /I$(INC_DIR_CORE) /I$(INC_DIR_EX)     /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_std.pch
-CFLAGS_CLR       = /Yu /EHa /MD /nologo         /O2 /Zm256 /clr /I$(INC_DIR_CORE)                     /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_clr.pch
-CFLAGS_PCH       = /Yc /EHa /MD /showIncludes   /O2 /Zm256      /I$(INC_DIR_CORE)                     /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_std.pch
-CFLAGS_PCHCLR    = /Yc /EHa /MD                 /O2 /Zm256 /clr /I$(INC_DIR_CORE)                     /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_clr.pch   
+CFLAGS           = $(CFLAGS_ALWAYS) /Yu  /nologo              /I$(INC_DIR_CORE) /I$(INC_DIR_EX)     /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_std.pch
+CFLAGS_CLR       = $(CFLAGS_ALWAYS) /Yu  /nologo         /clr /I$(INC_DIR_CORE)                     /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_clr.pch
+CFLAGS_PCH       = $(CFLAGS_ALWAYS) /Yc  /showIncludes        /I$(INC_DIR_CORE)                     /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_std.pch
+CFLAGS_PCHCLR    = $(CFLAGS_ALWAYS) /Yc                  /clr /I$(INC_DIR_CORE)                     /Fo$(OBJ_DIR) /Fp$(PCH_DIR)pch_clr.pch   
 
-LFLAGS     = /STACK:2000000000 /NOLOGO /LIBPATH:$(LIB_DIR)      
-LFLAGS_DLL = /STACK:2000000000 /NOLOGO /LIBPATH:$(LIB_DIR) /DLL 
+LFLAGS     = /STACK:$(STACK_SIZE) /NOLOGO /LIBPATH:$(LIB_DIR)      
+LFLAGS_DLL = /STACK:$(STACK_SIZE) /NOLOGO /LIBPATH:$(LIB_DIR) /DLL 
 
 
 #####################################################################################################################
@@ -63,6 +63,8 @@ EX_DLL_OBJS = \
 $(OBJ_DIR)ex_dll.obj \
 $(OBJ_DIR)ex_addverb.obj \
 $(OBJ_DIR)ex_data.obj \
+$(OBJ_DIR)ex_display.obj \
+$(OBJ_DIR)ex_environ.obj \
 $(OBJ_DIR)ex_eval.obj \
 $(OBJ_DIR)ex_inchar.obj \
 $(OBJ_DIR)ex_infile.obj \
@@ -70,8 +72,7 @@ $(OBJ_DIR)ex_interface.obj \
 $(OBJ_DIR)ex_intoken.obj \
 $(OBJ_DIR)ex_main.obj \
 $(OBJ_DIR)ex_parse.obj \
-$(OBJ_DIR)ex_preparse.obj \
-$(OBJ_DIR)ex_symtab.obj \
+$(OBJ_DIR)ex_preprocess.obj \
 $(OBJ_DIR)ex_verb_ctl.obj \
 $(OBJ_DIR)ex_verb_op.obj \
 $(OBJ_DIR)ex_verb_util.obj  
@@ -187,6 +188,12 @@ $(OBJ_DIR)ex_data.obj       : $(SRC_DIR_EX)ex_data.cpp               $(MK)  $(PC
 $(OBJ_DIR)ex_dll.obj        : $(SRC_DIR_EX)ex_dll.cpp                $(MK)  $(PCH_STD) $(COMM_HDRS)               
   $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_EX)ex_dll.cpp
 
+$(OBJ_DIR)ex_display.obj    : $(SRC_DIR_EX)ex_display.cpp            $(MK)  $(PCH_STD) $(COMM_HDRS) $(EX_HDRS) 
+  $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_EX)ex_display.cpp   
+
+$(OBJ_DIR)ex_environ.obj    : $(SRC_DIR_EX)ex_environ.cpp            $(MK)  $(PCH_STD) $(COMM_HDRS) $(EX_HDRS) 
+  $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_EX)ex_environ.cpp             
+                                 
 $(OBJ_DIR)ex_eval.obj       : $(SRC_DIR_EX)ex_eval.cpp               $(MK)  $(PCH_STD) $(COMM_HDRS) $(EX_HDRS) 
   $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_EX)ex_eval.cpp
                                                        
@@ -208,12 +215,9 @@ $(OBJ_DIR)ex_main.obj       : $(SRC_DIR_EX)ex_main.cpp               $(MK)  $(PC
 $(OBJ_DIR)ex_parse.obj      : $(SRC_DIR_EX)ex_parse.cpp              $(MK)  $(PCH_STD) $(COMM_HDRS) $(EX_HDRS) 
   $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_EX)ex_parse.cpp              
                                                                      
-$(OBJ_DIR)ex_preparse.obj   : $(SRC_DIR_EX)ex_preparse.cpp           $(MK)  $(PCH_STD) $(COMM_HDRS) $(EX_HDRS) 
-  $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_EX)ex_preparse.cpp           
-                                                                     
-$(OBJ_DIR)ex_symtab.obj     : $(SRC_DIR_EX)ex_symtab.cpp             $(MK)  $(PCH_STD) $(COMM_HDRS) $(EX_HDRS) 
-  $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_EX)ex_symtab.cpp             
-                                                                     
+$(OBJ_DIR)ex_preprocess.obj : $(SRC_DIR_EX)ex_preprocess.cpp         $(MK)  $(PCH_STD) $(COMM_HDRS) $(EX_HDRS) 
+  $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_EX)ex_preprocess.cpp           
+                                                    
 $(OBJ_DIR)ex_verb_ctl.obj   : $(SRC_DIR_EX)ex_verb_ctl.cpp           $(MK)  $(PCH_STD) $(COMM_HDRS) $(EX_HDRS) 
   $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_EX)ex_verb_ctl.cpp           
                                                                      
