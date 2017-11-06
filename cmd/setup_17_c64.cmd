@@ -2,9 +2,10 @@
 @ECHO * 
 @ECHO *   setup_17_c64.cmd -- Set up x64 C++ compiler (VS2017)
 @ECHO *
-@ECHO *     -- Boost  1.65.1      (installed in C:\local\boost_65_1   directory)    -- note: use lib64-msvc-14.1 (no msvc-15.0 version yet)
-@ECHO *     -- Python 3.6.2       (installed in c:\local\Python36-32  directory)   
-@ECHO *     -- fftw   3.3.4       (installed in C:\local\fftw_3_3_4   directory)
+@ECHO *     -- Boost  1.65.1      (installed in C:\local\boost_65_1\   directory)    
+@ECHO *     -- Python 3.6.2       (installed in C:\local\Python36-32\  directory)                                                          -- use "py"   command to invoke
+@ECHO *     -- Perl   5.26.1      (installed in C:\local\Strawberry\   directory)  -- path automatically set up by installation process    -- use "perl" command to invoke 
+@ECHO *     -- fftw   3.3.4       (installed in C:\local\fftw_3_3_4\   directory)
 @ECHO *
 @ECHO ************************************************************************************************************************************************************************************************************************************************************* 
 ::::::::::
