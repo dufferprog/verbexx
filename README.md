@@ -1,17 +1,16 @@
 
 # verbexx
-verbexx is a toy verb-oriented scripting language.  There are no control or definition statements, and there is no distinction between operators and functions.  Verbs do almost everything in verbexx.  The only non-comment syntax elements are expression and code blocks, consisting of verbs and their parameters, along with parenthesis, semicolons, braces, and other punctuation.
+verbexx is a simple verb-oriented scripting language.  There are no control or definition statements, and there is no distinction between operators and functions -- both are termed "verbs".  Verbs do almost everything in verbexx.  The only non-comment syntax elements are expression and code blocks, consisting of verbs and their parameters, along with parenthesis, semicolons, braces, and other punctuation.
 
 ## Main verbexx features
 
 * No distinction between functions and operators -- these are both considered verbs.  Verbs can have positional and/or keyword
 parameters on the right and/or left sides.  Verbs can be defined with either lexical scoping (the default), dynamic scoping, no scoping (only local variables and global variables are visible), or same scoping (verb runs in same stack frame as the caller -- this is needed when creating user-defined verbs that function as control statements).
 
-* No control or definition statements -- almost everything is done with verbs.  Most things are first class, including types (primitive for now, and not hooked in yet), functions, and chuncks of code (enclosed in braces).  Passing around chunks of code allows verbs to act like control statements. 
+* No control or definition statements -- almost everything is done with verbs.  Most things are first class, including types (primitive for now, and not hooked in yet), functions, and blocks or chunks of code (enclosed in braces).  Passing around chunks of code allows verbs to act like control statements. 
 
 * Extremely simple syntax -- so simple, in fact, that sigils are needed in front of identifiers when these are
-to be parsed as verbs ("@" leading sigil) or keyword names (":" trailing sigil).  Similarly, if something that looks
-like an operator ("+", "-", etc.) needs to be passed to another verb as a parameter, a leading "$" sigil is needed.
+to be parsed as verbs ("@" leading sigil), keyword names (":" trailing sigil), or labels (":" leading sigil).  Similarly, if something that looks like an operator ("+", "-", etc.) needs to be passed to another verb as a parameter, a leading "$" sigil is needed.
 
 * No automatic tail calls -- these must be coded manually, using the @XCTL verb
 
@@ -21,22 +20,22 @@ like an operator ("+", "-", etc.) needs to be passed to another verb as a parame
   * No OOP support 
   * Almost no support for functional programming 
   * No lazy evaluation (except for verbs like "&&", "||", @LOOP, etc. ), other than blocks of code passed into verbs. 
-  * No pattern matching, immutable data, pure functions, monads, functors, continuations, currying, etc.
+  * No pattern matching, immutable data, pure functions, monads, functors, continuations, partial application, currying, etc.
   * No support for regular expressions
   * No garbage collection
   * No list comprehensions and generators, ranges, coroutines, etc.
   * No concurrency, multi-threading, green threads, fibers, channels, etc. 
-  * No trancendental functions, BigNum support, and other math support (this may happen soon)
-  * No file I/O (except very limited I/O to/from stdout/stdin) (this may also happen soon)
+  * No trancendental functions, BigNum support, and other math support 
+  * No file I/O (except very limited I/O to/from stdout/stdin/stderr) 
   * No fancy general-purpose container structures, iterators, move semantics, etc.
-  * No advanced string functions, string interpolation, formatted output, etc.
-  * No internationalization and locales, No proper Unicode support (combining characters) etc.
-  * No communications or web support -- HTML, sockets, etc.
+  * No advanced string functions or container-based functions
+  * No internationalization and locales, No proper Unicode support (combining characters or grapheme clusters) etc.
+  * No communications or web support -- no HTML, sockets, JSON, etc.
   * No foreign function APIs 
   * No elaborate type system or type inference, enumerations, etc.
   * No parse-time macros, although it's possible to run user-defined and built-in verbs during the preprocess stage while the AST is being built, and these can cause strings to be inserted into the program source as it's being parsed.
   * No generic programming, templates, metaprogramming, etc.
-  * No namespaces
+  * No namespaces, modules, or first-class environments
   * No debuggers, IDEs, etc.
 
 ## Sample verbexx code
@@ -175,36 +174,42 @@ i = -1;
 
 ```
 
-#### Y-combinator -- compact version
+#### Y-combinator -- compact version (rosettacode version)
 
 ```
-// Y-combinator function 
-// ---------------------
+/////// Y-combinator function (for single-argument lambdas) ///////
 
-@VAR y_comb =
-( @FN [f] 
-  { //1   2 23   4   5 56 7    7  6       43       1
-     @(@FN[x]{@f (@FN[y]{@(@x x) y} close:)} close:)       // output of this expression is treated as a verb, because of outer @(     )
-      (@FN[x]{@f (@FN[y]{@(@x x) y} close:)} close:)       // this is the argument supplied to the above verb expression
-  }
-);
-
-
-// Function to generate an anonymous factorial function as the return value -- Simple (non tail-recursive) factorial function
-// ------------------------------------------------------------------------
-
-@VAR fact_gen = ( @FN [fact] { @FN [n]{ @IF (n <= 0) then:{1} else:{n*(@fact (n-1))} } close: } );
-                
-
-// loop to test the above functions
-// --------------------------------
-
-@VAR i = -1;
-
-@LOOP while:(i <= 20)
-{
-  @SAY  i "factorial =" ( @(@y_comb fact_gen) i );  
-  i++; 
+y @FN [f]
+{ @( x -> { @f (z -> {@(@x x) z}) } )   // output of this expression is treated as a verb, due to outer @(  )
+   ( x -> { @f (z -> {@(@x x) z}) } )   // this is the argument supplied to the above verb expression
 };
 
+
+/////// Function to generate an anonymous factorial function as the return value -- (not tail-recursive) ///////
+
+fact_gen @FN [f]
+{ n -> { (n<=0) ? {1} {n * (@f n-1)}
+       }
+};
+
+
+/////// Function to generate an anonymous fibonacci function as the return value -- (not tail-recursive) ///////
+
+fib_gen @FN [f]
+{ n -> { (n<=0) ? { 0                                    }
+                  { (n<=2) ? {1} { (@f n-1) + (@f n-2) } } 
+       }
+};
+                
+
+/////// loops to test the above functions ///////
+
+@VAR factorial = @y fact_gen;
+@VAR fibonacci = @y fib_gen;
+
+@LOOP init:{@VAR i = -1} while:(i <= 20) next:{i++}
+{ @SAY  i "factorial =" (@factorial i) };
+
+@LOOP init:{     i = -1} while:(i <= 16) next:{i++}
+{ @SAY "fibonacci<" i "> =" (@fibonacci i) };
 ```
