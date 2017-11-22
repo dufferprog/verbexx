@@ -10,24 +10,13 @@
 
 fib1 @FN [n] 
 {
-  @IF (n <= 0) then: { @RETURN 0; }; 
-  @IF (n == 1) then: { @RETURN 1; };
-
-  @VAR n1 = n; @VAR n2 = n; 
-
-  
-
-  (@fib1 (n1-1)) + (@fib1 (n2-2)); 
+  @IF (n<=0) then:{ @RETURN 0 }; 
+  @IF (n==1) then:{ @RETURN 1 };  
+  (@fib1 n-1) + (@fib1 n-2); 
 };
 
-
-@VAR i value:-1;
-
-@LOOP while:(i <= 20)
-{
-  @SAY "@fib1<" i "> = " (@fib1 i);
-  i++;
-};
+@LOOP init:{@VAR i = -1} while:(i <= 20) next:{i++}
+{ @SAY "@fib1<" i "> = " (@fib1 i) };
 
 
 // Using manual tail call (@XCTL verb)
@@ -49,9 +38,5 @@ fib2 @FN [n]
 };
 
 
-i = -1; 
-@LOOP while:(i <= 90)
-{
-  @SAY "@fib2" i " = " (@fib2 i);
-  i++;
-};
+@LOOP init:{i = -1} while:(i <= 91) next:{i++}
+{ @SAY "@fib2<" i "> = " (@fib2 i) };

@@ -2,7 +2,7 @@
 //
 //   Y-combinator example
 //
-//   (I just copied this to see if it would work with verbexx -- I have no idea why you'd want such a program) 
+//   (copied from a JavaScript example) 
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -1,0 +1,47 @@
+﻿/////// Y-combinator function ///////
+
+y @FN [f]
+{ @( x -> { @f (z -> {@(@x x)@ z}) } )@   // output of this expression is treated as a verb, due to outer @(  )@
+   ( x -> { @f (z -> {@(@x x)@ z}) } )    // this is the argument supplied to the above verb expression
+};
+
+
+/////// Functions to return factorial and fibonacci lambdas -- (not tail-recursive) ///////
+
+fact_gen @FN [f]
+{ n -> { @IF (n<=0) then:{1           } 
+                    else:{n*(@f (n-1))}
+       }
+};
+
+fib_gen @FN [f]
+{ n -> { @IF (n<=0) then:{@RETURN 0}; 
+         @IF (n<=2) then:{@RETURN 1};  
+         (@f n-1) + (@f n-2); 
+       }
+};
+
+
+'? [c___c] @FN [tb___c fb___c] { @IF c___c then:tb___c else:fb___c } same_scope:;
+
+fa @FN [f] { n -> { (n<=0) ? {1} {n*(@f (n-1))} 
+                  }
+           };
+ 
+
+fb @FN [f] { n -> { (n<0) ? {0} {(n<=2) ? {1} {(@f n-1) + (@f n-2)}}
+                  }
+           }; 
+
+/////// loops to test the above functions ///////
+
+@VAR factorial = @y fact_gen;
+factorial = @y fa;
+@VAR fibonacci = @y fib_gen;
+fibonacci = @y fb;
+
+@LOOP init:{@VAR i = -1} while:(i <= 20) next:{i++}
+{ @SAY  i "factorial =" (@factorial i) };
+
+@LOOP init:{     i = -1} while:(i <= 20) next:{i++}
+{ @SAY "fibonacci<" i "> =" (@fibonacci i) };

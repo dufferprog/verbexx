@@ -1,0 +1,35 @@
+﻿////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   Y-combinator example (compact version, no @RETURNs, but much more confusing)
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+// Y-combinator function 
+// ---------------------
+
+@VAR y_comb =
+( @FN [f] 
+  { //1   2 23   4   5 56 7    7  6       43       1
+     @(@FN[x]{@f (@FN[y]{@(@x x) y} close:)} close:)       // output of this expression is treated as a verb, because of outer @(     )
+      (@FN[x]{@f (@FN[y]{@(@x x) y} close:)} close:)       // this is the argument supplied to the above verb expression
+  }
+);
+
+
+// Function to generate an anonymous factorial function as the return value -- Simple (non tail-recursive) factorial function
+// ------------------------------------------------------------------------
+
+@VAR fact_gen = ( @FN [fact] { @FN [n]{ @IF (n <= 0) then:{1} else:{n*(@fact (n-1))} } close: } );
+                
+
+// loop to test the above functions
+// --------------------------------
+
+@VAR i = -1;
+
+@LOOP while:(i <= 20)
+{
+  @SAY  i "factorial =" ( @(@y_comb fact_gen) i );  
+  i++; 
+};

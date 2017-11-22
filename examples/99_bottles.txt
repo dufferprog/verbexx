@@ -34,9 +34,9 @@ fb @FN [num] { @IF (num == 1) then:{"bottle" } else:{"bottles"}; };    // "No bo
 
 @SAY "\n----------------------   V E R S I O N   1   -------------------------"   ;
 
-@DISPLAY statistics:;
+//@DISPLAY statistics:;
 
-@QUIT; 
+@END; 
 :label2;
 
 @SAY "\n----------------------   V E R S I O N   2   -------------------------" ;
@@ -62,4 +62,4 @@ fb @FN [num] { @IF (num == 1) then:{"bottle" } else:{"bottles"}; };    // "No bo
 
 @SAY "\n----------------------   V E R S I O N   2   -------------------------"                   ;  
 
-@DISPLAY statistics:;
+//@DISPLAY statistics:;
