@@ -73,6 +73,7 @@ $(OBJ_DIR)ex_intoken.obj \
 $(OBJ_DIR)ex_main.obj \
 $(OBJ_DIR)ex_parse.obj \
 $(OBJ_DIR)ex_preprocess.obj \
+$(OBJ_DIR)ex_verb_aggr.obj \
 $(OBJ_DIR)ex_verb_ctl.obj \
 $(OBJ_DIR)ex_verb_op.obj \
 $(OBJ_DIR)ex_verb_util.obj  
@@ -217,7 +218,10 @@ $(OBJ_DIR)ex_parse.obj      : $(SRC_DIR_EX)ex_parse.cpp              $(MK)  $(PC
                                                                      
 $(OBJ_DIR)ex_preprocess.obj : $(SRC_DIR_EX)ex_preprocess.cpp         $(MK)  $(PCH_STD) $(COMM_HDRS) $(EX_HDRS) 
   $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_EX)ex_preprocess.cpp           
-                                                    
+  
+$(OBJ_DIR)ex_verb_aggr.obj  : $(SRC_DIR_EX)ex_verb_aggr.cpp          $(MK)  $(PCH_STD) $(COMM_HDRS) $(EX_HDRS) 
+  $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_EX)ex_verb_aggr.cpp           
+                                                  
 $(OBJ_DIR)ex_verb_ctl.obj   : $(SRC_DIR_EX)ex_verb_ctl.cpp           $(MK)  $(PCH_STD) $(COMM_HDRS) $(EX_HDRS) 
   $(COMPILE) /c $(CFLAGS)     $(SRC_DIR_EX)ex_verb_ctl.cpp           
                                                                      
