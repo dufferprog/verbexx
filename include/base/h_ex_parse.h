@@ -11,7 +11,7 @@
 ////            h_ex_parse.h -- declarations related to option file tokenization, parsing, etc. (ex_eval.cpp,  ex_parse.cpp  and  ex_preprocess.cpp)  
 ////            ============
 ////
-////
+////    
 ////
 ////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -24,11 +24,23 @@
 
 
 
-// path for imbedded files
+// path for included files
 // -----------------------
 
-#define IMBED_PATH_ENVAR       L"VERBEXX_IMBED_PATH"            // IMBED_PATH environment variable name   
-#define IMBED_PATH             L"..\\imbed\\"                   // default path for imbedded files, in case IMBED_PATH envar is not set  
+#define INCLUDE_PATH_ENVAR       L"VERBEXX_INCLUDE_PATH"          // INCLUDE_PATH environment variable name   
+#define INCLUDE_PATH             L"..\\include\\"                 // default path for included files, in case INCLUDE_PATH envar is not set  
+
+
+// ---------
+// constants
+// ---------
+
+namespace const_N
+{
+constexpr size_t  loctext_max        { 125 };                     // maximum number of characters in location text part of error mesages
+}
+
+
 
 
 
@@ -128,35 +140,36 @@ public:
 
     void              inherit_state(                                                                          );  // initialize skipping state from *m_upward_sp pre_process_C 
     void              close(                                                                                  );  // free up everything and reset states   
-    void              reuse(              bool = false                                                        );  // reset leftover states to  can be reused   
-    int               attach_file(        const std::wstring&                                                 );  // add new file to this token stream -- placed on top of filestack -- wide string filename version
-    void              add_pending_attach( const std::wstring&                                                 );  // add new filename to pending attach stack,for later file_attach() processing
-    void              add_pending_attach( const std::wstring&, const std::wstring&                            );  // add new string to pending attach stack,for later file_attach() processing
+    void              reuse(                     bool = false                                                 );  // reset leftover states to  can be reused   
+    int               attach_file(               const std::wstring&                                          );  // add new file to this token stream -- placed on top of filestack -- wide string filename version
+    void              add_pending_attach_file(   const std::wstring&                                          );  // add new filename to pending attach stack,for later file_attach() processing
+    void              add_pending_attach_string( const std::wstring&, const std::wstring&                     );  // add new string to pending attach stack,for later file_attach() processing
 
-    int               attach_string(      const std::wstring&, const std::wstring&                            );  // add new string to this token stream -- placed on top of filestack -- wide string version
-    int               attach_string(      const std::string& , const std::wstring&                            );  // add new string to this token stream -- placed on top of filestack -- wide string name version
-    int               attach_string(      const std::string& , const std::string&                             );  // add new string to this token stream -- placed on top of filestack -- "plain" string name version
+    int               attach_string(             const std::wstring&, const std::wstring&                     );  // add new string to this token stream -- placed on top of filestack -- wide string version
+    int               attach_string(             const std::string& , const std::wstring&                     );  // add new string to this token stream -- placed on top of filestack -- wide string name version
+    int               attach_string(             const std::string& , const std::string&                      );  // add new string to this token stream -- placed on top of filestack -- "plain" string name version
                                                                                                               
-    int               get_token(          token_C&                                                            );  // get (and consume) next composite token from stream  
-    int               peek_token(         token_C&, size_t = 1ULL                                             );  // return n-th composite token from stream/stack but do not consume it -- leave for next time  
-    void              putback_token(const token_C&                                                            );  // putback composite token to stream 
-    int               discard_token(                size_t = 1ULL                                             );  // Discard n-th token on putback queue (if any) R/C is -1 if putback q is not large enough 
+    int               get_token(                       token_C&                                               );  // get (and consume) next composite token from stream  
+    int               peek_token(                      token_C&, size_t = 1ULL                                );  // return n-th composite token from stream/stack but do not consume it -- leave for next time  
+    void              putback_token(             const token_C&                                               );  // putback composite token to stream 
+    int               discard_token(                   size_t = 1ULL                                          );  // Discard n-th token on putback queue (if any) R/C is -1 if putback q is not large enough 
                                                                                                              
-    bool              is_empty()     const;                                                                       // return true, if put-back token queue is empty
-    size_t            putback_size() const;                                                                       // return number of put-back tokens currently queued up 
+    bool              is_empty()                                                                         const;   // return true, if put-back token queue is empty
+    size_t            putback_size()                                                                     const;   // return number of put-back tokens currently queued up 
                                                                                                
-    void              set_quiet_mode(                      bool     = true                                    );  // set/reset quiet mode to suppress/show error messages 
-    void              set_suppress_echo(                   bool     = true                                    );  // set/reset line comment echo suppression
-    void              set_combine_strings(                 bool     = true                                    );  // set/reset combine adjacent strings flag
-    void              set_always_attach_plus_minus(        bool     = true                                    );  // set/reset always_attach_plus_minus flag
-    void              set_never_attach_plus_minus(         bool     = true                                    );  // set/reset never _attach_plus_minus flag
-    void              set_allow_leading_op_sigils(         bool     = true                                    );  // set/reset allow_leading_op_sigils  flag
-    void              set_allow_trailing_op_sigils(        bool     = true                                    );  // set/reset allow_trailing_op_sigils flag
-    void              set_allow_leading_id_sigils(         bool     = true                                    );  // set/reset allow_leading_op_sigils  flag
-    void              set_allow_trailing_id_sigils(        bool     = true                                    );  // set/reset allow_trailing_op_sigils flag
-    void              set_allow_paren_sigils(              bool     = true                                    );  // set/reset allow_paren_sigils       flag
-    void              set_allow_attached_paren(            bool     = true                                    );  // set/reset allow_attached_paren     flag
-                         
+    void              set_quiet_mode(                      bool     = true                                    );  // set/reset flag for quiet mode to suppress/show error messages 
+    void              set_suppress_echo(                   bool     = true                                    );  // set/reset flag for line comment echo suppression
+    void              set_combine_strings(                 bool     = true                                    );  // set/reset flag to  combine adjacent strings                                              
+    void              set_always_attach_plus_minus(        bool     = true                                    );  // set/reset flag to  always_attach_plus_minus                                              
+    void              set_never_attach_plus_minus(         bool     = true                                    );  // set/reset flag to  never _attach_plus_minus                                              
+    void              set_allow_leading_op_sigils(         bool     = true                                    );  // set/reset flag to  allow_leading_op_sigils                                               
+    void              set_allow_trailing_op_sigils(        bool     = true                                    );  // set/reset flag to  allow_trailing_op_sigils                                              
+    void              set_allow_leading_id_sigils(         bool     = true                                    );  // set/reset flag to  allow_leading_op_sigils                                               
+    void              set_allow_trailing_id_sigils(        bool     = true                                    );  // set/reset flag to  allow_trailing_op_sigils                                              
+    void              set_allow_paren_sigils(              bool     = true                                    );  // set/reset flag to  allow_paren_sigils                                                    
+    void              set_allow_attached_paren(            bool     = true                                    );  // set/reset flag to  allow_attached_paren                                                 
+    void              set_allow_in_same_char_op(           bool     = true                                    );  // set/reset flag to  allow_extra chars in same-char operator tokens flagattached_paren     
+
 
     //                functions to set configurable characters 
 
@@ -182,18 +195,19 @@ public:
     void              set_unechoed_line_comment_2nd_char(  char32_t = const_N::ch_unechoed_line_comment_2nd   );  // set unechoed line_comment_2nd  char 
     void              set_echoed_line_comment_2nd_char(    char32_t = const_N::ch_echoed_line_comment_2nd     );  // set echoed_line_comment_2nd    char 
     void              set_suppress_eol_comment_2nd_char(   char32_t = const_N::ch_suppress_eol_comment_2nd    );  // set suppress_eol_comment_2nd   char 
-    void              set_eof_comment_2nd_char(            char32_t = const_N::ch_eof_comment_2nd             );  // set eof_comment_2nd            char 
-    void              set_retained_line_comment_2nd_char(  char32_t = const_N::ch_retained_line_comment_2nd   );  // set retained_line_comment_2nd  char 
-                   
     void              set_block_comment_2nd_char(          char32_t = const_N::ch_block_comment_2nd           );  // set block_comment_2nd          char 
     void              set_block_comment_3rd_char(          char32_t = const_N::ch_block_comment_3rd           );  // set block_comment_3rd          char 
     void              set_block_comment_4th_char(          char32_t = const_N::ch_block_comment_4th           );  // set block_comment_4th          char 
     void              set_nest_comment_2nd_char(           char32_t = const_N::ch_nest_comment_2nd            );  // set nest_comment_2nd           char 
     void              set_nest_comment_3rd_char(           char32_t = const_N::ch_nest_comment_3rd            );  // set nest_comment_3rd           char 
-    void              set_nest_comment_4th_char(           char32_t = const_N::ch_nest_comment_4th            );  // set nest_comment_4th           char 
+    void              set_nest_comment_4th_char(           char32_t = const_N::ch_nest_comment_4th            );  // set nest_comment_4th           char
+    void              set_eof_comment_2nd_char(            char32_t = const_N::ch_eof_comment_2nd             );  // set eof_comment_2nd            char
+
+    void              set_retained_line_comment_2nd_char(  char32_t = const_N::ch_retained_line_comment_2nd   );  // set retained_line_comment_2nd  char 
     void              set_retained_block_comment_2nd_char( char32_t = const_N::ch_retained_block_comment_2nd  );  // set retained_block_comment_2nd char 
     void              set_retained_block_comment_3rd_char( char32_t = const_N::ch_retained_block_comment_3rd  );  // set retained_block_comment_3rd char 
     void              set_retained_block_comment_4th_char( char32_t = const_N::ch_retained_block_comment_4th  );  // set retained_block_comment_4th char 
+    void              set_retained_eof_comment_2nd_char(   char32_t = const_N::ch_retained_eof_comment_2nd    );  // set retained_eof_comment_2nd   char 
 
     void              set_leading_sigils(                  const std::vector<char32_t>&                       );   // set vector with sigils that can be attached to front of identifiers and operators and parens    
     void              set_leading_ident_sigils(            const std::vector<char32_t>&                       );   // set vector with sigils that can be attached to front of identifiers    
@@ -201,14 +215,15 @@ public:
     void              set_leading_oper_sigils(             const std::vector<char32_t>&                       );   // set vector with sigils that can be attached to front of identifiers    
     void              set_trailing_oper_sigils(            const std::vector<char32_t>&                       );   // set vector with sigils that can be attached to back  of identifiers 
     void              set_paren_sigils(                    const std::vector<char32_t>&                       );   // set vector with sigils that can be attached to fron/back of parenthesis 
+    void              set_in_same_char_op(                 const std::vector<char32_t>&                       );   // set vector with extra characters that can appear in same-char operator tokens 
+            
 
-                             
     // non-passthru external functions
 
     void              set_skip(                    const std::wstring&                                        );   // set skipping mode with label 
   //void              set_skipall(                                                                            );   // set skipall mode (to end)   
-    void              set_imbed_folder(            const std::wstring&                                        );   // set base folder for imbed files -- form with passed-in string
-    void              set_imbed_folder(                                                                       );   // set default base folder for imbed files -- use envar if set
+    void              set_include_folder(          const std::wstring&                                        );   // set base folder for include files -- form with passed-in string
+    void              set_include_folder(                                                                     );   // set default base folder for include files -- use envar if set
     void              display_settings(                                                                       );   // display preprocess settings
 
 
@@ -231,13 +246,13 @@ public:
 
 private:
 
-    token_stream_C                         m_token_stream                             {            };              // stream of incoming tokens    
-    std::deque<token_C>                    m_token_stack                              {            };              // stack of tokens (that have been put back or peek()ed) 
-    std::stack<pending_attach_S>           m_pending_attach_stack                     {            };              // stack of filenames waiting to be attached (when pre-processor text section ends)    
-    bool                                   m_skipping                                 { false      };              // true -- pre-processor is in skipping mode 
-    bool                                   m_inherited_skipping                       { false      };              // true -- pre-processor inherited skipping mode from upward pre_process_C  
-    std::wstring                           m_skipto_label                             {            };              // label that preprocess is skipping to         
-    std::wstring                           m_imbed_folder                             { IMBED_PATH };              // folder for imbedding files                               
+    token_stream_C                         m_token_stream                             {              };            // stream of incoming tokens    
+    std::deque<token_C>                    m_token_stack                              {              };            // stack of tokens (that have been put back or peek()ed) 
+    std::stack<pending_attach_S>           m_pending_attach_stack                     {              };            // stack of filenames waiting to be attached (when pre-processor text section ends)    
+    bool                                   m_skipping                                 { false        };            // true -- pre-processor is in skipping mode 
+    bool                                   m_inherited_skipping                       { false        };            // true -- pre-processor inherited skipping mode from upward pre_process_C  
+    std::wstring                           m_skipto_label                             {              };            // label that preprocess is skipping to         
+    std::wstring                           m_include_folder                           { INCLUDE_PATH };            // folder for including files                               
                                                                                                            
                                                                                                                   
     // internal (private) functions                                                                               
@@ -339,6 +354,7 @@ struct a_expression_S
     bool                              has_verb         { false } ;      // true -- verb present,   false -- no verb found for this expression
     bool                              has_sigil        { false } ;      // true -- original verb had leading sigil
     char32_t                          sigil            {       } ;      // if has sigil is true, leading sigil chr is saved here 
+    bool                              auto_recurs      { false } ;      // true -- the expression automatically generated by operator priority parsing 
 
     int                               priority         { 0     } ;      // verb priority (variable verbs use default priority, associativity, etc.)
     bool                              right_associate  { false } ;      // true = always right-to-left associativity, false = left-to-right when infix or postfix, right-to-left when prefix or nofix 
@@ -439,22 +455,30 @@ struct environ_S
 
 struct symval_S 
 {
+     // properties mostly pertaining to the symval entry itself                                                                         
+
+    bool                           is_alias                      { false };     // true -- identifier is an alias       -- updatability depends in main identifier
+    bool                           is_weak                       { false };     // true -- this is a weak alias (i.e. value_sp is not set)  
+    bool                           no_shadow                     { false };     // true -- identifier cannot be shadowed (only valid for global identifiers) 
+    bool                           no_remove                     { false };     // true -- identifier cannot be undefined/removed  
+    bool                           no_update                     { false };     // true -- value for this identifier cannot be updated  (it may still be removeable)
 #ifdef M_EXPOSE_SUPPORT
     bool                           is_exposed                    { false };     // true -- this identifier is exposed  -- visible in nested dynamic scopes
 #endif
-    bool                           is_const                      { false };     // true -- identifier is constant       -- value cannot be updated, cannot be undefined  
-    bool                           is_verbset                    { false };     // true -- identifier is a verbset      -- value cannot be updated if any built-in verbdefs in the set
-    bool                           is_typdef                     { false };     // true -- identifier is a typdef       -- value cannot be updated, cannot be undefined
-    bool                           is_builtin                    { false };     // true -- identifier is built-in       -- (verb/type/etc.) value cannot be updated, cannot be undefined 
-    bool                           is_alias                      { false };     // true -- identifier is an alias       -- updatability depends in main identifier -- alias can always be deleted
-                                                                                //                                         ???? not supported yet ?????? 
-    bool                           no_shadow                     { false };     // true -- identifier cannot be shadowed (only valid for global identifiers) 
-    bool                           no_undefine                   { false };     // true -- identifier cannot be undefined  
-    bool                           no_update                     { false };     // true -- identifier cannot be updated  
+
+
+    // properties mostly pertaining to the value associated with this identifier
+
+    bool                           is_var                        { false };     // true -- this identifier is a variable  (created originally by @VAR)             
+    bool                           is_const                      { false };     // true -- this identifier is a constant  (created originally by @CONST)         -- value cannot be updated, cannot be undefined  
+    bool                           is_verbset                    { false };     // true -- this identifier is a verbset   (created originally by @VERB, etc.)    -- value cannot be updated if any built-in verbdefs in the set
+    bool                           is_typdef                     { false };     // true -- this identifier is a typdef    (created originally by @TYPE, etc.)    -- value cannot be updated, cannot be undefined
+    bool                           is_builtin                    { false };     // true -- this identifier is built-in  -- (verb/type/etc.) value cannot be updated, cannot be undefined 
 
     uint64_t                       serno                         { 0     };     // symval_S serial number      
 
-    std::shared_ptr<value_S>       value_sp                      {       };     // pointer to associated value 
+    std::shared_ptr<value_S>       value_sp                      {       };     // shared pointer to associated value -- owning pointer (not set for weak alias) -- not used for access to the associated value 
+    std::weak_ptr<value_S>         value_wp                      {       };     // weak pointer to associated value -- use this one to access the associated value 
 };
  
 
@@ -530,7 +554,7 @@ struct results_S : public value_S
     bool                                  multiple_results                 {false};     // multiple individual results (if any) are returned in vlist positional values  (value type may be none, since values are in vlist)
                                                                                         // this flag is also on when the no_results flag is on (meaning there is no vlist_sp at all) 
                                                                                         // this flag is on if there is a single result (or none) in the vlist 
-                                                                                        // this lfag is off if the results value is returned toe notmal way -- in the imbedded value_S structure
+                                                                                        // this lfag is off if the results value is returned the normal way -- in the imbedded value_S structure
     bool                                  no_results                       {false};     // no results -- vlist_sp is not initialized  (value type is "none")
     bool                                  ignore_results                   {false};     // true -- these results don't overwrite results from prior expression in the block (used for @CONTINUE, etc.)
     bool                                  re_eval_expression_results       {false};     // need to call eval_value() again after 1st call to eval_value() returned a vlist or identifier from evaluating a nested expression  
@@ -544,6 +568,7 @@ struct results_S : public value_S
     bool                                  end_flag                         {false};     // @END --  immediately end the main block 
     bool                                  leave_flag                       {false};     // @LEAVE some active enclosing (perhaps-labelled) block -- optional label (if any) is in .str member
     bool                                  goto_flag                        {false};     // @GOTO some label in an active enclosing block -- required label is in .str member
+    bool                                  lgoto_flag                       {false};     // @GOTO longjmp: some label in an active enclosing block -- required label is in .str member
     bool                                  xctl_flag                        {false};     // @XCTL pending to some verb -- new expression with verb to xctl-to is in value_S base struct
     bool                                  return_flag                      {false};     // @RETURN from lowest enclosing user-defined verb -- value is in value_S base struct
     bool                                  throw_flag                       {false};     // @THROW to nearest @TRY catch: verb              -- value is in value_S base struct
@@ -552,8 +577,6 @@ struct results_S : public value_S
     std::wstring                          str                                     ;     // @LEAVE or @GOTO label string, @XCTL verb name
 
     /////////////////////////////////////////////////////////////////////////
-
-    bool                                  suppress_eval_once               {false};     // suppress evaluation once after value is returned from expression evaluation  
 
 
     /// rest of fields are inherited from value_S
@@ -641,6 +664,7 @@ int           parse_string(        frame_S&, block_S&, const std::wstring&, cons
 
 float64_T    get_parse_elapsed();  
 float64_T    get_eval_elapsed(); 
+int64_t      get_token_ix(); 
 
 
 ///////////////// location string and other debug-message-oriented routines
@@ -714,8 +738,26 @@ void    add_keyword_value(   vlist_S&, const value_S&, const value_S&           
 
 //////////////// printable string-oriented functions
 
-std::wstring str_value( const value_S&, bool = false, bool = false, bool = false);
-std::wstring str_vlist( const vlist_S&, bool = false, bool = false, bool = false);
+struct text_control_S
+{
+    int   indent {0}; 
+};
+
+std::wstring text_raw_tokens(int64_t, int64_t);
+
+std::wstring text_value(      const value_S&        , text_control_S& );
+std::wstring text_vlist(      const vlist_S&        , text_control_S& );
+std::wstring text_block(      const block_S&        , text_control_S& );
+std::wstring text_expression( const a_expression_S& , text_control_S& );
+std::wstring text_expression( const e_expression_S& , text_control_S& );
+
+
+std::wstring str_value(      const value_S&         , bool = false, bool = false, bool = false);
+std::wstring str_results(    const results_S&       , bool = false, bool = false, bool = false);
+std::wstring str_vlist(      const vlist_S&         , bool = false, bool = false, bool = false);
+std::wstring str_expression( const a_expression_S&  , bool = false, bool = false, bool = false);
+
+std::wstring str_results_string(const results_S&);
 
 std::wstring type_str(  type_E); 
 
@@ -726,6 +768,7 @@ std::wstring verb_name(     const e_expression_S&);
 //////////////// output/display-oriented functions
 
 void    display_statistics();
+void    display_token_list(int64_t);
 
 void    display_vlist(      const vlist_S&        , const std::wstring& = L"vlist"        , const std::wstring& = L"",               bool = false, const std::wstring& = L"");
 void    display_block(      const block_S&        , const std::wstring& = L"block"        , const std::wstring& = L"", bool = false, bool = false, const std::wstring& = L"");
@@ -768,15 +811,17 @@ void    display_all_vars(     const frame_S&                          );
 
 struct def_parm_S
 {
-    bool          builtin         { false };        // true -- this is built-in definition
-    bool          constant        { false };        // true -- this is a constant definition
+    bool          builtin         { false };        // true -- this is built-in   definition
+    bool          constant        { false };        // true -- this is a constant definition  (may be set internally)
+    bool          variable        { false };        // true -- this is a variable definition  (may be set internally)
+
 #ifdef M_EXPOSE_SUPPORT
     bool          exposed         { false };        // true -- this is definition is exposed (forced on for globals)
 #endif
-    bool          unshare         { false };        // true -- value must be unshared when defined
-    bool          no_shadow       { false };        // true -- this definition can't be shadowsd -- forced off for non-local dedinintions
-    bool          no_update       { false };        // true -- this value can't be updated -- forced on for built-in, constant, or verb and type definitions
-    bool          no_undefine     { false };        // true -- this value can't be undefined -- forced on for biult-in, constant, or type definitions
+    bool          unshare         { false };        // true -- value must be unshared when defined -- internally forced off for aliases
+    bool          no_shadow       { false };        // true -- this definition can't be shadowsd   -- internally forced off for non-local definitions ????
+    bool          no_update       { false };        // true -- this value can't be updated         -- internally forced on  for built-in, constant, or verb and type definitions
+    bool          no_remove       { false };        // true -- this value can't be undefined       -- internally forced on  for built-in, constant, or type definitions
 };
 
 
@@ -863,13 +908,33 @@ int update_verbmain_var(                      frame_S&, const std::wstring&, con
 int    update_local_var(                      frame_S&, const std::wstring&, const value_S&,    bool = false,               bool = false );
 int          update_var(                      frame_S&, const std::wstring&, const value_S&,    bool = false,               bool = false );
 
-       
+
+/////////////////////////////////// alias definition external functions ---
+                                                                                             
+int      def_local_alias(                     frame_S&, const std::wstring&, const std::wstring&, const def_parm_S& = def_parm_S { }     );
+int      def_parms_alias(                     frame_S&, const std::wstring&, const std::wstring&, const def_parm_S& = def_parm_S { }     );
+int   def_verbmain_alias(                     frame_S&, const std::wstring&, const std::wstring&, const def_parm_S& = def_parm_S { }     );
+int     def_static_alias(                     frame_S&, const std::wstring&, const std::wstring&, const def_parm_S& = def_parm_S { }     );
+int     def_global_alias(                               const std::wstring&, const std::wstring&, const def_parm_S& = def_parm_S { }     );
+                        
+int   undef_global_alias(                               const std::wstring&                                                              );
+int   undef_static_alias(                     frame_S&, const std::wstring&                                                              );
+int undef_verbmain_alias(                     frame_S&, const std::wstring&                                                              );
+int    undef_local_alias(                     frame_S&, const std::wstring&                                                              );
+
+int      def_local_weak_alias(                frame_S&, const std::wstring&, const std::wstring&, const def_parm_S& = def_parm_S { }     );
+int      def_parms_weak_alias(                frame_S&, const std::wstring&, const std::wstring&, const def_parm_S& = def_parm_S { }     );
+int   def_verbmain_weak_alias(                frame_S&, const std::wstring&, const std::wstring&, const def_parm_S& = def_parm_S { }     );
+int     def_static_weak_alias(                frame_S&, const std::wstring&, const std::wstring&, const def_parm_S& = def_parm_S { }     );
+int     def_global_weak_alias(                          const std::wstring&, const std::wstring&, const def_parm_S& = def_parm_S { }     );
+
+
 /////////////////////////////////// identifier/symbol-oriented external functions
 
 bool is_local_identifier_defined(       const frame_S&, const std::wstring&                                                              );
 bool is_local_identifier_variable(      const frame_S&, const std::wstring&                                                              );
 bool is_local_identifier_const(         const frame_S&, const std::wstring&                                                              );
-bool is_local_identifier_verb(          const frame_S&, const std::wstring&                                                              );
+bool is_local_identifier_verbset(       const frame_S&, const std::wstring&                                                              );
 bool is_local_identifier_typdef(        const frame_S&, const std::wstring&                                                              );
 bool is_local_identifier_builtin(       const frame_S&, const std::wstring&                                                              );
 bool is_local_identifier_alias(         const frame_S&, const std::wstring&                                                              );
@@ -879,7 +944,7 @@ bool is_local_identifier_removable(     const frame_S&, const std::wstring&     
 bool is_verbmain_identifier_defined(    const frame_S&, const std::wstring&                                                              );
 bool is_verbmain_identifier_variable(   const frame_S&, const std::wstring&                                                              );
 bool is_verbmain_identifier_const(      const frame_S&, const std::wstring&                                                              );
-bool is_verbmain_identifier_verb(       const frame_S&, const std::wstring&                                                              );
+bool is_verbmain_identifier_verbset(    const frame_S&, const std::wstring&                                                              );
 bool is_verbmain_identifier_typdef(     const frame_S&, const std::wstring&                                                              );
 bool is_verbmain_identifier_builtin(    const frame_S&, const std::wstring&                                                              );
 bool is_verbmain_identifier_alias(      const frame_S&, const std::wstring&                                                              );
@@ -889,7 +954,7 @@ bool is_verbmain_identifier_removable(  const frame_S&, const std::wstring&     
 bool is_static_identifier_defined(      const frame_S&, const std::wstring&                                                              );
 bool is_static_identifier_variable(     const frame_S&, const std::wstring&                                                              );
 bool is_static_identifier_const(        const frame_S&, const std::wstring&                                                              );
-bool is_static_identifier_verb(         const frame_S&, const std::wstring&                                                              );
+bool is_static_identifier_verbset(      const frame_S&, const std::wstring&                                                              );
 bool is_static_identifier_typdef(       const frame_S&, const std::wstring&                                                              );
 bool is_static_identifier_builtin(      const frame_S&, const std::wstring&                                                              );
 bool is_static_identifier_alias(        const frame_S&, const std::wstring&                                                              );
@@ -899,7 +964,7 @@ bool is_static_identifier_removable(    const frame_S&, const std::wstring&     
 bool is_global_identifier_defined(                      const std::wstring&                                                              );
 bool is_global_identifier_variable(                     const std::wstring&                                                              );
 bool is_global_identifier_const(                        const std::wstring&                                                              );
-bool is_global_identifier_verb(                         const std::wstring&                                                              );
+bool is_global_identifier_verbset(                      const std::wstring&                                                              );
 bool is_global_identifier_typdef(                       const std::wstring&                                                              );
 bool is_global_identifier_builtin(                      const std::wstring&                                                              );
 bool is_global_identifier_alias(                        const std::wstring&                                                              );   
@@ -909,7 +974,7 @@ bool is_global_identifier_removable(                    const std::wstring&     
 bool is_identifier_defined(             const frame_S&, const std::wstring&                                                              );
 bool is_identifier_variable(            const frame_S&, const std::wstring&                                                              );
 bool is_identifier_const(               const frame_S&, const std::wstring&                                                              );
-bool is_identifier_verb(                const frame_S&, const std::wstring&                                                              );
+bool is_identifier_verbset(             const frame_S&, const std::wstring&                                                              );
 bool is_identifier_typdef(              const frame_S&, const std::wstring&                                                              );
 bool is_identifier_builtin(             const frame_S&, const std::wstring&                                                              );
 bool is_identifier_alias(               const frame_S&, const std::wstring&                                                              );
@@ -967,14 +1032,16 @@ struct fieldparm_S
 
 //////////////////////////////// results-oriented functions /////////////////////////////////////////////////////////////////
 
-results_S       to_results( const value_S& );    
-results_S    error_results(                ); 
-results_S  special_results(                ); 
-results_S       no_results(                );
-results_S     unit_results(                );
-results_S     true_results(                );
-results_S    false_results(                );
-results_S       tf_results( bool tf        );    
+int         to_single_results( results_S&     ); 
+
+results_S          to_results( const value_S& ); 
+results_S       error_results(                ); 
+results_S     special_results(                ); 
+results_S          no_results(                );
+results_S        unit_results(                );
+results_S        true_results(                );
+results_S       false_results(                );
+results_S          tf_results( bool tf        );    
 
 
 //////////////////////////////// value-oriented functions /////////////////////////////////////////////////////////////////
@@ -994,10 +1061,12 @@ value_S   uint32_val(      uint32_t                                , int64_t = -
 value_S   uint64_val(      uint64_t                                , int64_t = -1, int64_t = -1 );
 value_S   float32_val(     float32_T                               , int64_t = -1, int64_t = -1 );
 value_S   float64_val(     float64_T                               , int64_t = -1, int64_t = -1 );
-value_S   string_val(      const wchar_t *                         , int64_t = -1, int64_t = -1 );       // no type_val version for this function
-value_S   identifier_val(  const wchar_t *                         , int64_t = -1, int64_t = -1 );       // no type_val version for this function
-value_S   string_val(      const std::wstring&                     , int64_t = -1, int64_t = -1 );
-value_S   identifier_val(  const std::wstring&                     , int64_t = -1, int64_t = -1 );       // no type_val version for this function
+value_S   string_val(      const wchar_t *                         , int64_t = -1, int64_t = -1 );       // no type_val() version for this function
+value_S   string_val(      const std::wstring&                     , int64_t = -1, int64_t = -1 );                    
+value_S   identifier_val(  const wchar_t *                         , int64_t = -1, int64_t = -1 );       // no type_val() version for this function
+value_S   identifier_val(  const std::wstring&                     , int64_t = -1, int64_t = -1 );       // no type_val() version for this function
+value_S   verbname_val(    const wchar_t *                         , int64_t = -1, int64_t = -1 );       // no type_val() version for this function
+value_S   verbname_val(    const std::wstring&                     , int64_t = -1, int64_t = -1 );       // no type_val() version for this function
 value_S   vlist_val(       const vlist_S&                          , int64_t = -1, int64_t = -1 );
 value_S   expression_val(  const a_expression_S&                   , int64_t = -1, int64_t = -1 );
 value_S   block_val(       const block_S&                          , int64_t = -1, int64_t = -1 );
@@ -1061,13 +1130,15 @@ void      unshare_typdef(      typdef_S&       );
 
 ////////////////////  value testing functions
 
+bool is_value_unit(       const value_S&);
+bool is_value_boolean(    const value_S&);
+bool is_value_string(     const value_S&);
 bool is_value_integer(    const value_S&);
 bool is_value_signed(     const value_S&);
 bool is_value_unsigned(   const value_S&);
 bool is_value_float(      const value_S&);
 bool is_value_arithmetic( const value_S&);
 bool is_value_comparable( const value_S&);
-bool is_value_boolean(    const value_S&);
 bool is_value_true(       const value_S&);
 bool is_value_false(      const value_S&);
 
@@ -1362,7 +1433,7 @@ int           eval_value(      frame_S&,  const        value_S&, results_S&, con
 ////      0029  )  RIGHT_PARENTHESIS                                  )                                        CP1  CB       c_par/1  expression close parenthesis
 ////      002A  *  ASTERISK                                           *                                        O1   OP      (op/*)    multiply verb ( * *= ),  --  lex: block comment delimiters ( /* */ ) 
 ////      002B  +  PLUS_SIGN                                          +                                        +    OP      (op/*)    add verb ( + ++ += ), etc.
-////      002C  ,  COMMA                                              ,                                        ,    PU       comma/1  , verb (also @SEP)
+////      002C  ,  COMMA                                              ,                                        ,    PU       comma/1  , verb (aka @SEPARATE)
 ////      002D  -  HYPHEN_MINUS                                       -                                        -    OP      (op/*)    minus/subtract verb ( - -- -= ) , etc.  (lex: can be attached sign)
 ////      002E  .  FULL_STOP                                          .                                        .    PU      (punct/1) lex: decimal point in floating point literals, line comment with newline suppression (...)
 ////      002F  /  SOLIDUS                                            /                                        /    OP      (op/*)    divide verb ( /  /= ), lex: start comment ( //    /~    /#     /< >/    /* */    /{ }/  )
@@ -1746,90 +1817,6 @@ int           eval_value(      frame_S&,  const        value_S&, results_S&, con
 ////    simple string
 ////
 ////    escaped string
-////
-////
-////
-//// 
-////
-////   
-//// 
-////
-////
-//// preprocess verbs:
-//// ----------------  
-////
-////   ?ERROR
-////   ?ABORT 
-////   ?EXIT
-////   ?END
-////   ?END_DEF                identifier 
-////   ?END_UNDEF              identifier
-////   ?SAY
-////   ?SAY_SKIP
-////   ?SAY_ALWAYS
-////   ?DISPLAY_ALL_VARS
-////   ?SET                    identifier   string
-////   ?VAR                    identifier   string 
-////   ?CONST                  identifier   string
-////   ?UNSET                  identifier
-////   ?IMBED                  string 
-////   ?SKIPTO                 identifier
-////   ?SKIPTO_DEF             identifier   identifier
-////   ?SKIPTO_UNDEF           identifier   identifier
-////   ?SKIPTO_EQ              identifier   identifier    identifier
-////   ?SKIPTO_NE              identifier   identifier    identifier
-////
-////
-////
-////   parser verbs:
-////   ------------
-////
-////   @DISPLAY_VERBS
-////   @BLOCK                  @BLOCK {block} left:[vlist] right:[vlist]
-////   @ARG                    
-////   @AT °                   [vlist] @AT int key:"string"  
-////   @DO                     @DO {block};
-////   @GOTO                   @GOTO ????
-////   @IF                     @IF (expression)         then:{block} else:{block};
-////   @CASE                   @CASE when:(expression)  {block}   when:(expression) {block}   ...   when:(expression) {block}   else:{block};   
-////   @LOOP                   @LOOP while:(expression) {block};
-////   @SAY                    @SAY simple-values;
-////   @STR                    @STR simple-values;
-////   @VAR                    identifier @VAR   value:val;
-////   @CONST                  identifier @CONST value:val;
-////   >>>   ►                 value         >>>    identifier; 
-////   <<< = ◄                 identifier    =      value;
-////   ++ +¹                   identifier ++   or   ++ identifier 
-////   -- -¹                   identifier --   or   -- identifier 
-////
-////   +=                      identifier += arith_type
-////   -=                      identifier -= arith_type
-////   *= ×=                   identifier *= arith_type
-////   /= ÷=                   identifier /= arith_type
-////   ^=                      identifier ^= arith_type
-////   ⁒=                      identifier ⁒= arith_type  
-////
-////   +                       arith_type  +  arith_type 
-////   -                       arith_type  -  arith_type 
-////   *  ×                    arith_type  *  arith_type 
-////   /  ÷                    arith_type  /  arith_type 
-////   ^                       arith_type  ^  arith type 
-////   ⁒  @REM                 arith_type  ⁒  arith_type 
-////
-////   ,  @SEP                 any-type ...  ,  any-type ...
-////
-////   |                       string | string
-////   ==  ≡                   value == value
-////   <                       value < value
-////   >                       value > value
-////   <=  ≤                   value <= value
-////   >=  ≥                   value >= value
-////   ¬=  ≠                   value ¬= value
-////       
-////   ∧  @AND                value ∧ value
-////   ∨  @OR                 value ∨ value
-////   ⊻  @XOR                value ⊻ value
-////   ¬  @NOT                ¬ value   
 ////
 ////
 ////

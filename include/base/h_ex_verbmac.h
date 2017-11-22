@@ -1218,7 +1218,7 @@
     pt.const_ident_ok = true;                \
     pt.vlist_ok       = true;                \
     pt.block_ok       = true;                \
-    pt.verbset_ok    = true;                 \
+    pt.verbset_ok     = true;                \
     pt.typdef_ok      = true;                \
     pt.array_ok       = true;                \
     pt.structure_ok   = true;                \
@@ -2275,7 +2275,8 @@ v.s.left_associate = true;
 #define M_vt_custom_eval(v)              \
 v.s.custom_eval = true;   
 
-// these suppress all left-side or right-side positional parm evaluation
+
+// these suppress all left-side or right-side positional parm evaluation    (flags are set directly in the verbset)
 
 #define M_vt_no_eval_left_ident(v)       \
 v.s.left_eval.no_eval_ident = true;   

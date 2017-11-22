@@ -49,25 +49,27 @@ constexpr char32_t  ch_raw_string_prefix           { utf32_N::LATIN_CAPITAL_LETT
 constexpr char32_t  ch_multiline_string_prefix     { utf32_N::LATIN_CAPITAL_LETTER_M                        };      // prefix char for multiline string -- M"   "    or  M«   » 
 constexpr char32_t  ch_word_string_start           { utf32_N::APOSTROPHE                                    };      // starting delimiter for word strings 
 
-constexpr char32_t  ch_unechoed_line_comment       { utf32_N::_BAD_CHARACTER_                               };      // pre-processor unechoed line comment              character (default = none -- use   //    )
-constexpr char32_t  ch_echoed_line_comment         { utf32_N::_BAD_CHARACTER_                               };      // pre-processor echoed line comment                character (default = none                )
+constexpr char32_t  ch_unechoed_line_comment       { utf32_N::_BAD_CHARACTER_                               };      // single introducer char -- unechoed line comment  (disabled)            
+constexpr char32_t  ch_echoed_line_comment         { utf32_N::_BAD_CHARACTER_                               };      // single introducer char -- echoed line comment    (disabled)            
                                                                                                           
-constexpr char32_t  ch_comment_1st                 { utf32_N::SOLIDUS                                       };      // 1st char for all comments                 (   /*  //  /<  /~           )   
-constexpr char32_t  ch_unechoed_line_comment_2nd   { utf32_N::SOLIDUS                                       };      // 2nd char for unechoed line  comment delim (   //                       ) 
-constexpr char32_t  ch_echoed_line_comment_2nd     { utf32_N::_BAD_CHARACTER_                               };      // 2nd char for echoed line    comment delim (                            ) 
-constexpr char32_t  ch_suppress_eol_comment_2nd    { utf32_N::_BAD_CHARACTER_                               };      // 2nd char for suppress EOL   comment delim (                            ) 
-constexpr char32_t  ch_eof_comment_2nd             { utf32_N::TILDE                                         };      // 2nd char for EOF            comment delim (   /~                       )  
-constexpr char32_t  ch_retained_line_comment_2nd   { utf32_N::NUMBER_SIGN                                   };      // 2nd char for retained line  comment delim (   /#                       )
-                                                                                                          
-constexpr char32_t  ch_block_comment_2nd           { utf32_N::ASTERISK                                      };      // 2nd char for block          comment delim (   /*          */           )  
-constexpr char32_t  ch_block_comment_3rd           { utf32_N::ASTERISK                                      };      // 3rd char for block          comment delim (   /*          */           ) 
-constexpr char32_t  ch_block_comment_4th           { utf32_N::SOLIDUS                                       };      // 4th char for block          comment delim (   /*          */           )  
-constexpr char32_t  ch_nest_comment_2nd            { utf32_N::LESS_THAN_SIGN                                };      // 2nd char for nestable       comment delim (   /<  /<  >/  >/           ) 
-constexpr char32_t  ch_nest_comment_3rd            { utf32_N::GREATER_THAN_SIGN                             };      // 3rd char for nestable       comment delim (   /<  /<  >/  >/           ) 
-constexpr char32_t  ch_nest_comment_4th            { utf32_N::SOLIDUS                                       };      // 4th char for nestable       comment delim (   /<  /<  >/  >/           ) 
-constexpr char32_t  ch_retained_block_comment_2nd  { utf32_N::LEFT_CURLY_BRACKET                            };      // 2nd char for retained_block comment delim (   /{          }/           ) 
-constexpr char32_t  ch_retained_block_comment_3rd  { utf32_N::RIGHT_CURLY_BRACKET                           };      // 3rd char for retained_block comment delim (   /{          }/           ) 
-constexpr char32_t  ch_retained_block_comment_4th  { utf32_N::SOLIDUS                                       };      // 4th char for retained_block comment delim (   /{          }/           ) 
+constexpr char32_t  ch_comment_1st                 { utf32_N::SOLIDUS                                       };      // 1st char for all comments                 (   /*  //  /[  /]  /#  /{  /}  )   
+constexpr char32_t  ch_unechoed_line_comment_2nd   { utf32_N::SOLIDUS                                       };      // 2nd char for unechoed line  comment delim (   //                          ) 
+constexpr char32_t  ch_echoed_line_comment_2nd     { utf32_N::_BAD_CHARACTER_                               };      // 2nd char for echoed line    comment delim (                               )   (disabled)
+constexpr char32_t  ch_suppress_eol_comment_2nd    { utf32_N::_BAD_CHARACTER_                               };      // 2nd char for suppress EOL   comment delim (                               )   (disabled)
+constexpr char32_t  ch_eof_comment_2nd             { utf32_N::RIGHT_SQUARE_BRACKET                          };      // 2nd char for EOF            comment delim (   /]                          )  
+                                                                                                                                                                                                 
+constexpr char32_t  ch_block_comment_2nd           { utf32_N::ASTERISK                                      };      // 2nd char for block          comment delim (   /*          */              )  
+constexpr char32_t  ch_block_comment_3rd           { utf32_N::ASTERISK                                      };      // 3rd char for block          comment delim (   /*          */              ) 
+constexpr char32_t  ch_block_comment_4th           { utf32_N::SOLIDUS                                       };      // 4th char for block          comment delim (   /*          */              )  
+constexpr char32_t  ch_nest_comment_2nd            { utf32_N::LEFT_SQUARE_BRACKET                           };      // 2nd char for nestable       comment delim (   /[  /[  ]/  ]/              ) 
+constexpr char32_t  ch_nest_comment_3rd            { utf32_N::RIGHT_SQUARE_BRACKET                          };      // 3rd char for nestable       comment delim (   /[  /[  ]/  ]/              ) 
+constexpr char32_t  ch_nest_comment_4th            { utf32_N::SOLIDUS                                       };      // 4th char for nestable       comment delim (   /[  /[  ]/  ]/              ) 
+                                                                                                                                                                                                 
+constexpr char32_t  ch_retained_block_comment_2nd  { utf32_N::LEFT_CURLY_BRACKET                            };      // 2nd char for retained_block comment delim (   /{  /{  }/  }/              ) 
+constexpr char32_t  ch_retained_block_comment_3rd  { utf32_N::RIGHT_CURLY_BRACKET                           };      // 3rd char for retained_block comment delim (   /{  /{  }/  }/              ) 
+constexpr char32_t  ch_retained_block_comment_4th  { utf32_N::SOLIDUS                                       };      // 4th char for retained_block comment delim (   /{  /{  }/  }/              ) 
+constexpr char32_t  ch_retained_line_comment_2nd   { utf32_N::NUMBER_SIGN                                   };      // 2nd char for retained line  comment delim (   /#                          )
+constexpr char32_t  ch_retained_eof_comment_2nd    { utf32_N::RIGHT_CURLY_BRACKET                           };      // 2nd char for retained EOF   comment delim (   /}                          )
                                                                                                           
 constexpr char32_t  ch_backspace_escape            { utf32_N::LATIN_SMALL_LETTER_B                          };      // in-string escape char for backspace 
 constexpr char32_t  ch_form_feed_escape            { utf32_N::LATIN_SMALL_LETTER_F                          };      // in-string escape char for form feed 
@@ -80,6 +82,9 @@ constexpr char32_t  ch_hex_escape                  { utf32_N::LATIN_SMALL_LETTER
                                                                                                           
 constexpr char32_t  ch_base_prefix                 { utf32_N::DIGIT_ZERO                                    };      // based   numeric literal prefix 0b 0o 0x etc.
 constexpr char32_t  ch_base2_lower                 { utf32_N::LATIN_SMALL_LETTER_B                          };      // base 2  numeric literal prefix 0b 
+
+
+
 constexpr char32_t  ch_base2_upper                 { utf32_N::LATIN_CAPITAL_LETTER_B                        };      // base 2  numeric literal prefix 0B
 constexpr char32_t  ch_base8_lower                 { utf32_N::LATIN_SMALL_LETTER_O                          };      // base 8  numeric literal prefix 0o 
 constexpr char32_t  ch_base8_upper                 { utf32_N::LATIN_CAPITAL_LETTER_O                        };      // base 8  numeric literal prefix 0O
@@ -94,6 +99,11 @@ constexpr char32_t  ch_float_lower                 { utf32_N::LATIN_SMALL_LETTER
 constexpr char32_t  ch_float_upper                 { utf32_N::LATIN_CAPITAL_LETTER_F                        };      // unsigned numeric literal suffix F64 etc.
 constexpr char32_t  ch_exponent_lower              { utf32_N::LATIN_SMALL_LETTER_E                          };      // numeric literal exponent suffix e-11 etc.
 constexpr char32_t  ch_exponent_upper              { utf32_N::LATIN_CAPITAL_LETTER_E                        };      // numeric literal exponent suffix E+12 etc.
+
+constexpr char32_t  ch_same_char_op1               { utf32_N::_BAD_CHARACTER_                               };      // 1st extra char allowed in same-char operator tokens   (none allowed, for now)
+constexpr char32_t  ch_same_char_op2               { utf32_N::_BAD_CHARACTER_                               };      // 2nd extra char allowed in same-char operator tokens   (none allowed, for now)
+constexpr char32_t  ch_same_char_op3               { utf32_N::_BAD_CHARACTER_                               };      // 3rd extra char allowed in same-char operator tokens   (none allowed, for now)
+constexpr char32_t  ch_same_char_op4               { utf32_N::_BAD_CHARACTER_                               };      // 4th extra char allowed in same-char operator tokens   (none allowed, for now)
 
 
 //    ordinary widechar equates -- used during execution phase after strings are converted to std::wstring
@@ -304,8 +314,8 @@ enum class char_E { none                      // C F T S   initialized -- not ye
                   , f_type1_string_start      // - - - S  variable purpose char -- function = starting char for type 1 strings
                   , f_type2_string_start      // - - - S  variable purpose char -- function = starting char for type 2 strings
 
-                  , f_line_comment            // - - - S  variable purpose char -- function = line comment (not echoed) 
-                  , f_echoed_line_comment     // - - - S  variable purpose char -- function = echoed line comment
+                  , f_line_comment            // - - - S  variable purpose char -- function = line comment (not echoed)                
+                  , f_echoed_line_comment     // - - - S  variable purpose char -- function = echoed line comment                      
                   , f_comment_1st             // - - - S  variable purpose char -- function = 1st character of comment start sequence
 
                   , f_leading_sigil           // - - - S  variable purpose char -- function = leading sigil attached directly to an identifier
@@ -470,11 +480,12 @@ enum class token_E { none                       // initial state -- no token (ye
                    , invalid                    // invalid number or other token, etc.
                    , whitespace 
                    , line_comment
-                   , retained_line_comment
-                   , eof_comment
                    , block_comment
-                   , retained_block_comment
                    , nestable_comment
+                   , eof_comment
+                   , retained_line_comment
+                   , retained_block_comment
+                   , retained_eof_comment
                    , full_stop
                    , comma
                    , semicolon
@@ -619,13 +630,8 @@ public:
     // external functions
 
     void            display(const std::wstring& = std::wstring(L"token"), bool = false) const;  // display token
-    std::wstring    loc_str() const; 
-
-
-    // internal (private functions)
-
-private: 
-    std::wstring type_str() const;                                               // get printable token type (with any sigils)
+    std::wstring    loc_str()  const;                                            // get printable token location string
+    std::wstring    type_str() const;                                            // get printable token type (with any sigils)
 };
 
 
@@ -900,6 +906,7 @@ public:
     void             set_allow_trailing_id_sigils(        bool     = true                                    );      // set/reset flag to allow identifier tokens to have trailing sigils 
     void             set_allow_paren_sigils(              bool     = true                                    );      // set/reset flag to allow parentheis tokens to have leading/trailing sigils
     void             set_allow_attached_paren(            bool     = true                                    );      // set/reset flag to allow attached parentheis to identifier tokens (token role is verb)
+    void             set_allow_in_same_char_op(           bool     = true                                    );      // set/reset flag to allow extra characters in same-char operator toekns
 
 
     //               configurable character setting functions  
@@ -926,18 +933,20 @@ public:
     void             set_unechoed_line_comment_2nd_char(  char32_t = const_N::ch_unechoed_line_comment_2nd   );      // set line_comment_2nd           char 
     void             set_echoed_line_comment_2nd_char(    char32_t = const_N::ch_echoed_line_comment_2nd     );      // set echoed_line_comment_2nd    char 
     void             set_suppress_eol_comment_2nd_char(   char32_t = const_N::ch_suppress_eol_comment_2nd    );      // set suppress_eol_comment_2nd   char 
-    void             set_eof_comment_2nd_char(            char32_t = const_N::ch_eof_comment_2nd             );      // set eof_comment_2nd            char 
-    void             set_retained_line_comment_2nd_char(  char32_t = const_N::ch_retained_line_comment_2nd   );      // set retained_line_comment_2nd  char 
-
+      
     void             set_block_comment_2nd_char(          char32_t = const_N::ch_block_comment_2nd           );      // set block_comment_2nd          char 
     void             set_block_comment_3rd_char(          char32_t = const_N::ch_block_comment_3rd           );      // set block_comment_3rd          char 
     void             set_block_comment_4th_char(          char32_t = const_N::ch_block_comment_4th           );      // set block_comment_4th          char 
     void             set_nest_comment_2nd_char(           char32_t = const_N::ch_nest_comment_2nd            );      // set nest_comment_2nd           char 
     void             set_nest_comment_3rd_char(           char32_t = const_N::ch_nest_comment_3rd            );      // set nest_comment_3rd           char 
     void             set_nest_comment_4th_char(           char32_t = const_N::ch_nest_comment_4th            );      // set nest_comment_4th           char 
+    void             set_eof_comment_2nd_char(            char32_t = const_N::ch_eof_comment_2nd             );      // set eof_comment_2nd            char 
+
+    void             set_retained_line_comment_2nd_char(  char32_t = const_N::ch_retained_line_comment_2nd   );      // set retained_line_comment_2nd  char 
     void             set_retained_block_comment_2nd_char( char32_t = const_N::ch_retained_block_comment_2nd  );      // set retained_block_comment_2nd char 
     void             set_retained_block_comment_3rd_char( char32_t = const_N::ch_retained_block_comment_3rd  );      // set retained_block_comment_3rd char 
-    void             set_retained_block_comment_4th_char( char32_t = const_N::ch_retained_block_comment_4th  );      // set retained_block_comment_4th char  
+    void             set_retained_block_comment_4th_char( char32_t = const_N::ch_retained_block_comment_4th  );      // set retained_block_comment_4th char 
+    void             set_retained_eof_comment_2nd_char(   char32_t = const_N::ch_retained_eof_comment_2nd    );      // set retained_eof_comment_2nd   char 
                                                                                                                     
     void             set_leading_sigils(                  const std::vector<char32_t>&                       );      // set vector with sigils that can be attached to front      of identifiers, operators, and parens   
     void             set_leading_ident_sigils(            const std::vector<char32_t>&                       );      // set vector with sigils that can be attached to front      of identifiers    
@@ -945,6 +954,7 @@ public:
     void             set_leading_oper_sigils(             const std::vector<char32_t>&                       );      // set vector with sigils that can be attached to front      of identifiers    
     void             set_trailing_oper_sigils(            const std::vector<char32_t>&                       );      // set vector with sigils that can be attached to back       of identifiers 
     void             set_paren_sigils(                    const std::vector<char32_t>&                       );      // set vector with sigils that can be attached to front/back of parenthesis 
+    void             set_in_same_char_op(                 const std::vector<char32_t>&                       );      // set vector with sigils that can be attached to front/back of parenthesis 
 
 
 private:
@@ -982,7 +992,8 @@ private:
     bool                     m_allow_trailing_op_sigils       {false};                                               // true: allow trailing         sigil characters on operator      tokens 
     bool                     m_allow_paren_sigils             {false};                                               // true: allow leading/trailing sigil characters on parenthesis   tokens 
     bool                     m_allow_attached_paren           {false};                                               // true: allow attached parenthesis to identifier tokens -- token is treated as a verb 
-        
+    bool                     m_allow_in_same_char_op          {false};                                               // true: allow additional characters in same-char operator tokens (. .. ... etc.) 
+
 
     //                       configurable characters
 
@@ -1002,8 +1013,8 @@ private:
 
     //                       configurable one-character comment starters                                            
                                                                                                        
-    char32_t                 m_unechoed_line_comment_ch       {const_N::ch_unechoed_line_comment       };            // line comment char (no echo)                          
-    char32_t                 m_echoed_line_comment_ch         {const_N::ch_echoed_line_comment         };            // echoed line comment char                             
+    char32_t                 m_unechoed_line_comment_ch       {const_N::ch_unechoed_line_comment       };            // line comment char (no echo)                                
+    char32_t                 m_echoed_line_comment_ch         {const_N::ch_echoed_line_comment         };            // echoed line comment char                                   
     char32_t                 m_vanishing_separator_ch         {const_N::ch_vanishing_sep               };            // vanishing (string) separator character 
                                     
 
@@ -1013,18 +1024,19 @@ private:
     char32_t                 m_unechoed_line_comment_2nd_ch   {const_N::ch_unechoed_line_comment_2nd   };            // 2nd char in line comment starting sequence (2nd "/" in "//", for example) 
     char32_t                 m_echoed_line_comment_2nd_ch     {const_N::ch_echoed_line_comment_2nd     };            // 2nd char in echoed line comment starting sequence 
     char32_t                 m_suppress_eol_comment_2nd_ch    {const_N::ch_suppress_eol_comment_2nd    };            // 2nd char in starting sequence for comment that suppresses the EOL
-    char32_t                 m_eof_comment_2nd_ch             {const_N::ch_eof_comment_2nd             };            // 2nd char in EOF-ended      comment starting sequence     ( "~" in "/~", for example)
-    char32_t                 m_retained_line_comment_2nd_ch   {const_N::ch_retained_line_comment_2nd   };            // 2nd char in retained line  comment starting sequence     ( "#" in "/#", for example)
-
+    char32_t                 m_eof_comment_2nd_ch             {const_N::ch_eof_comment_2nd             };            // 2nd char in EOF-ended      comment starting sequence     ( "]" in "/]", for example)
     char32_t                 m_block_comment_2nd_ch           {const_N::ch_block_comment_2nd           };            // 2nd char in block          comment starting sequence     ( "*" in "/*", for example)
     char32_t                 m_block_comment_3rd_ch           {const_N::ch_block_comment_3rd           };            // 3rd char in block          comment starting sequence     ( "*" in "*/", for example)
     char32_t                 m_block_comment_4th_ch           {const_N::ch_block_comment_4th           };            // 4th char in block          comment starting sequence     ( "/" in "*/", for example)
-    char32_t                 m_nest_comment_2nd_ch            {const_N::ch_nest_comment_2nd            };            // 2nd char in nestable block comment starting sequence     ( "<" in "/<", for example)
-    char32_t                 m_nest_comment_3rd_ch            {const_N::ch_nest_comment_3rd            };            // 3rd char in nestable block comment starting sequence     ( ">" in ">/", for example)
-    char32_t                 m_nest_comment_4th_ch            {const_N::ch_nest_comment_4th            };            // 4th char in nestable block comment starting sequence     ( "/" in ">/", for example)    
+    char32_t                 m_nest_comment_2nd_ch            {const_N::ch_nest_comment_2nd            };            // 2nd char in nestable block comment starting sequence     ( "[" in "/[", for example)
+    char32_t                 m_nest_comment_3rd_ch            {const_N::ch_nest_comment_3rd            };            // 3rd char in nestable block comment starting sequence     ( "]" in "]/", for example)
+    char32_t                 m_nest_comment_4th_ch            {const_N::ch_nest_comment_4th            };            // 4th char in nestable block comment starting sequence     ( "/" in "]/", for example) 
+
+    char32_t                 m_retained_line_comment_2nd_ch   {const_N::ch_retained_line_comment_2nd   };            // 2nd char in retained line  comment starting sequence     ( "#" in "/#", for example)
     char32_t                 m_retained_block_comment_2nd_ch  {const_N::ch_retained_block_comment_2nd  };            // 2nd char in retained block comment starting sequence     ( "{" in "/{", for example)
     char32_t                 m_retained_block_comment_3rd_ch  {const_N::ch_retained_block_comment_3rd  };            // 3rd char in retained block comment starting sequence     ( "}" in "}/", for example)
     char32_t                 m_retained_block_comment_4th_ch  {const_N::ch_retained_block_comment_4th  };            // 4th char in retained block comment starting sequence     ( "/" in "}/", for example)
+    char32_t                 m_retained_eof_comment_2nd_ch    {const_N::ch_retained_eof_comment_2nd    };            // 2nd char in retained EOF   comment starting sequence     ( "}" in "/}", for example)
 
 
     //                       configurable lists of sigil characters
@@ -1035,7 +1047,12 @@ private:
     std::vector<char32_t>    m_leading_oper_sigils            {     };                                               // vector with all allowed leading          sigil characters for operators    -- default is no sigils                               
     std::vector<char32_t>    m_trailing_oper_sigils           {     };                                               // vector with all allowed trailing         sigil characters for operators    -- default is no sigils 
     std::vector<char32_t>    m_paren_sigils                   {     };                                               // vector with all allowed leading/trailing sigil characters for parentheiss  -- default is no sigils 
-             
+    
+    //                       other configurable character lists
+
+    std::vector<char32_t>    m_in_same_char_op                {     };                                               // vector with all allowed extra (non-same) charas allowed in same_oper tokenss -- default is no extra characters    
+
+
 
     // internal (private) functions
 
@@ -1049,7 +1066,7 @@ private:
     int              fetch_pop_raw_token(    token_C&                                                       );       // call fetch_raw_token() or get raw token from raw token stack 
     int              fetch_composite_token(  token_C&                                                       );       // build (uncombined) token from input characters from file 
     int              fetch_non_whitespace(   token_C&                                                       );       // helper function for fetch_composite token 
-    void             start_token(            token_C&, token_E                                              );       // start a token of the specified type
+    void             start_token(            token_C&, token_E, bool = false                                );       // start a token of the specified type -- bool=false means clean out existing orig_str
     int              addto_token(            token_C&,          const in_char_S&                            );       // append char to token (both orig_str and str)
     int              addto_token_subst(      token_C&,          const in_char_S&, const std::wstring&       );       // append char to token (str only) -- substitute string provided
     int              addto_token_subst(      token_C&,          const in_char_S&, char32_t                  );       // append char to token (str only) -- substitute code point provided
@@ -1065,11 +1082,12 @@ private:
     int              operator_token(         token_C&,                             bool = false             );       // gather up a operator token 
     int              same_operator_token(    token_C&,          const in_char_S&,  bool = false             );       // gather up a dot/comma, etc. operator token -- all characters are same in operator name
     int              line_comment(           token_C&, bool, bool = false, size_t = 1                       );       // gather up a line comment, with/without echo  
-    int              retained_line_comment(  token_C&                                                       );       // gather up a retained line comment (passed up to parser) 
     int              block_comment(          token_C&                                                       );       // gather up a block comment 
     int              nestable_comment(       token_C&                                                       );       // gather up a nestable block comment
-    int              retained_block_comment( token_C&                                                       );       // gather up a retained block comment (passed up to parser) 
     int              eof_comment(            token_C&                                                       );       // gather up a EOF comment 
+    int              retained_line_comment(  token_C&                                                       );       // gather up a retained line  comment (passed up to parser) 
+    int              retained_block_comment( token_C&                                                       );       // gather up a retained block comment (passed up to parser) 
+    int              retained_eof_comment(   token_C&                                                       );       // gather up a retained EOF   comment (passed up to parser) 
     int              whitespace_token(       token_C&                                                       );       // gather up whitespace token 
     int              identifier_token(       token_C&, bool = false                                         );       // gather up identifier token, with/without leading sigil 
     int              word_string(            token_C&                                                       );       // gather up single-word string

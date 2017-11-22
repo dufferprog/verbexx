@@ -112,7 +112,7 @@ if (v##_p != nullptr)                                           \
 
 // following MACROs get n-th right/left positional parm, if present
 //
-//    example -- xparm.length = (int2_t)M_get_right_pos_int64(expression, 3) -- gets 4th positional parm  
+//    example -- xparm.length = (int16_t)M_get_right_pos_int64(expression, 3) -- gets 4th positional parm  
 //
 //    i = expression  ,  n = n-th positional parm, l = nested vlist
 //
@@ -613,9 +613,9 @@ if (v##_p != nullptr)                                           \
 
 
 
-// =========================================
-// types needed for non-ex pre-defined verbs
-// =========================================
+// ==================================================
+// types needed for non-ex_xxxx.cpp pre-defined verbs
+// ==================================================
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -710,13 +710,13 @@ struct fieldef_S
 struct ref_S
 {   
 
-    bool                                                    in_buffer         {false};           // true, if this refers to data in *(value_sp->buffer_sp) -- i.e., not a full value_S reference 
+    bool                                                    in_buffer         {false};           // true, if this refers to data in *(refval_sp->buffer_sp) -- i.e., not a full value_S reference 
     bool                                                    is_lvalue         {false};           // true, if this is an lvalue reference 
     bool                                                    is_rvalue         {false};           // true, if this is an rvalue reference 
     bool                                                    auto_deref        {false};           // true, if this is should be auto dereferenced (reference not explicitly created by user) 
-    std::shared_ptr<value_S>                                value_sp          {     };           // pointer to value_S being referenced -- never nullptr  
-    uint64_t                                                offset            { 0   };           // offset into *(value_sp->buffer_sp), if required -- 0 if full *value_sp reference 
-    std::shared_ptr<typdef_S>                               typdef_sp         {     };           // typdef_S for expression/field referenced -- nullptr, if full *value_sp reference    
+    std::shared_ptr<value_S>                                refval_sp         {     };           // pointer to value_S being referenced -- never nullptr  
+    uint64_t                                                offset            { 0   };           // offset into *(refval_sp->buffer_sp), if required -- 0 if full *refval_sp reference 
+    std::shared_ptr<typdef_S>                               typdef_sp         {     };           // typdef_S for expression/field referenced -- nullptr,  if full *refval_sp reference    
 };
 
 
@@ -737,26 +737,26 @@ struct value_S
      
     union                                                                               // value -- only if numeric type
     {  
-        unit_T      unit;                                                               // no data here
-        bool        boolean;                                                            // valid only if type is type_E::boolean  
-        int8_t      int8;                                                               // valid only if type is type_E::int8  
-        int16_t     int16;                                                              // valid only if type is type_E::int16 
-        int32_t     int32;                                                              // valid only if type is type_E::int32 
-        int64_t     int64;                                                              // valid only if type is type_E::int64 
-        uint8_t     uint8;                                                              // valid only if type is type_E::uint8 
-        uint16_t    uint16;                                                             // valid only if type is type_E::uint16 
-        uint32_t    uint32;                                                             // valid only if type is type_E::uint32 
-        uint64_t    uint64                                      { 0             };      // valid only if type is type_E::uint64       -- default initialize all 8 bytes to 0 
-        float32_T   float32;                                                            // valid only if type is type_E::float32  
-        float64_T   float64;                                                            // valid only if type is type_E::float64  
-    };                                                                            
+        unit_T                          unit;                                          // no data here
+        bool                            boolean;                                       // valid only if type is type_E::boolean  
+        int8_t                          int8;                                          // valid only if type is type_E::int8  
+        int16_t                         int16;                                         // valid only if type is type_E::int16 
+        int32_t                         int32;                                         // valid only if type is type_E::int32 
+        int64_t                         int64;                                         // valid only if type is type_E::int64 
+        uint8_t                         uint8;                                         // valid only if type is type_E::uint8 
+        uint16_t                        uint16;                                        // valid only if type is type_E::uint16 
+        uint32_t                        uint32;                                        // valid only if type is type_E::uint32 
+        uint64_t                        uint64                  { 0             };     // valid only if type is type_E::uint64       -- default initialize all 8 bytes to 0 
+        float32_T                       float32;                                       // valid only if type is type_E::float32  
+        float64_T                       float64;                                       // valid only if type is type_E::float64  
+    };                                                                                                
                                                                             
-    std::wstring                   string                                        ;      // valid when .ty is identifier, verbname,  keyname, or string -- used for string literal -or- identifier/verb name/keyword name
-                                                                                
-    int64_t                        kw_token_ix                  { -1            };      // token index (for error messages) for keyword owning this value -- not used if this value does not belong to a keyword
-    int64_t                        token_ix1                    { -1            };      // starting token index (for error messages) for this value, if known  
-    int64_t                        token_ix2                    { -1            };      // ending   token index (for error messages) for this value, if known 
-                                                                            
+    std::wstring                        string                                   ;      // valid when .ty is identifier, verbname,  keyname, or string -- used for string literal -or- identifier/verb name/keyword name
+                                                                                     
+    int64_t                             kw_token_ix             { -1            };      // token index (for error messages) for keyword owning this value -- not used if this value does not belong to a keyword
+    int64_t                             token_ix1               { -1            };      // starting token index (for error messages) for this value, if known  
+    int64_t                             token_ix2               { -1            };      // ending   token index (for error messages) for this value, if known 
+                                                                       
 
     //  shared pointers to non-local data -- will be set only when corresponding type is saved in this value_S, as indicated by value_S::ty
 
@@ -766,7 +766,12 @@ struct value_S
     std::shared_ptr<  verbset_S     >     verbset_sp            {               };      // pointer to verbset_S       (if any)       -- if .ty = type_E::verbset
     std::shared_ptr<   typdef_S     >      typdef_sp            {               };      // pointer to typdef_S        (if any)       -- if .ty = type_E::typdef   -or-   type_E::structure    -or-   type_E::array
     std::shared_ptr<     buf8_T     >      buffer_sp            {               };      // pointer to buf8_T          (if any)       -- if .ty = type_E::array    -or-   type_E::structure
-    std::shared_ptr<      ref_S     >         ref_sp            {               };      // pointer to ref_S           (if any)       -- if .ty = type_E::ref     
+    std::shared_ptr<      ref_S     >         ref_sp            {               };      // pointer to ref_S           (if any)       -- if .ty = type_E::ref    
+
+    // flags
+
+    bool                                suppress_eval_once      { false         };      // suppress evaluation once
+    bool                                suppress_eval           { false         };      // suppress evaluation until this flag is turned off
 };
 
 
@@ -840,7 +845,7 @@ struct vlist_S
 //
 //
 //    ------------------------
-//    e_expression_S structure -- copied-over expression_S for use during verb execution (resolved verb name and keyword names, with evaluated values, etc.)
+//    e_expression_S structure -- copied-over a_expression_S for use during verb execution (resolved verb name and keyword names, with evaluated values, etc.)
 //    ------------------------
 //
 //
@@ -888,11 +893,85 @@ struct arg_eval_S                       // argument evaluation flags
     bool                                 no_eval_expression             { false };      // true -- don't evaluate expression positional agruments before invoking the verb
     bool                                 no_eval_vlist                  { false };      // true -- don't evaluate vlist      positional agruments before invoking the verb
     bool                                 no_eval_ref                    { false };      // true -- don't evaluate ref        positional agruments before invoking the verb
+    bool                                 verbless                       { false };      // true -- temp flag in dummy plist/verbdef -- this evaluation is being done for a verbless expresion   
   //bool                                 no_eval_kw_ident               { false };      // true -- don't evaluate identifier keyword    agruments before invoking the verb
   //bool                                 no_eval_kw_expression          { false };      // true -- don't evaluate expression keyword    agruments before invoking the verb
   //bool                                 no_eval_kw_vlist               { false };      // true -- don't evaluate vlist      keyword    agruments before invoking the verb
   //bool                                 no_eval_kw_ref                 { false };      // true -- don't evaluate ref        keyword    agruments before invoking the verb
 };
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//    ---------------------
+//    parmtype_S  structure
+//    ---------------------
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+struct parmtype_S
+{
+    int64_t                        kw_min_ct                    { 0     };      // min number of times keyword can appear -- not used when checking positional parms 
+    int64_t                        kw_max_ct                    { 0     };      // max number of times keyword can appear -- not used when checking positional parms  
+
+    arg_eval_S                     eval                         {       };      // evaluation control flags
+    bool                           anything_ok                  { false };      // all parm types OK -- no checking needed
+    bool                           check_local_env_only         { false };      // check only local  stack frame when doing identifier checks 
+    bool                           check_global_env_only        { false };      // check only global stack frame when doing identifier checks 
+    
+    bool                           nval_ok                      { false };      // ok for keyword to have no following value
+    bool                           boolean_ok                   { false };      // ok for value to be BOOL_T
+    bool                           unit_ok                      { false };      // ok for value to be UNIT_T
+    bool                           int8_ok                      { false };      // ok for value to be INT8_T
+    bool                           int16_ok                     { false };      // ok for value to be INT16_T
+    bool                           int32_ok                     { false };      // ok for value to be INT32_T
+    bool                           int64_ok                     { false };      // ok for value to be INT64_T
+    bool                           uint8_ok                     { false };      // ok for value to be UINT8_T
+    bool                           uint16_ok                    { false };      // ok for value to be UINT16_T
+    bool                           uint32_ok                    { false };      // ok for value to be UINT32_T
+    bool                           uint64_ok                    { false };      // ok for value to be UINT64_T
+    bool                           float32_ok                   { false };      // ok for value to be FLOAT32_T
+    bool                           float64_ok                   { false };      // ok for value to be FLOAT64_T
+    bool                           string_ok                    { false };      // ok for value to be STRING_T
+    bool                           verbname_ok                  { false };      // ok for value to be verbname  
+    bool                           raw_ident_ok                 { false };      // ok for vlue to be  any (raw/unevaluated) identifier (defined, or undefined) -- including typdef or verbdef??
+    bool                           var_ident_ok                 { false };      // ok for value to be defined variable identifier  (not a constant)
+    bool                           const_ident_ok               { false };      // ok for value to be defined constant identifier (not a variable) 
+    bool                           typdef_ident_ok              { false };      // ok for value to be defined typdef identifier 
+    bool                           verbset_ident_ok             { false };      // ok for value to be defined vebset identifier 
+    bool                           undef_ident_ok               { false };      // ok for value to be undefined identifier (and not defined)
+    bool                           vlist_ok                     { false };      // ok for value to be vlist -- optional pointer is set, if verb cares about value types in vlist
+    bool                           expression_ok                { false };      // ok for value to be expression  
+    bool                           block_ok                     { false };      // ok for value to be block 
+    bool                           verbset_ok                   { false };      // ok for value to be verbset
+    bool                           typdef_ok                    { false };      // ok for value to be typdef
+    bool                           array_ok                     { false };      // ok for value to be array
+    bool                           structure_ok                 { false };      // ok for value to be structure
+    bool                           lvalue_ref_ok                { false };      // ok for value to be lvalue-type ref 
+    bool                           rvalue_ref_ok                { false };      // ok for value to be rvalue-type ref 
+    
+
+    //  min/max values for range checking -- only supported for int64 and float 64 parms
+
+    bool                           int64_range                  { false };      // true -- do int64   range check
+    bool                           float64_range                { false };      // true -- do float64 range check
+
+    int64_t                        int64_min                    { 0     };      // min int64   value allowed
+    int64_t                        int64_max                    { 0     };      // max int64   value allowed
+    float64_T                      float64_min                  { 0.0   };      // min float64 value allowed
+    float64_T                      float64_max                  { 0.0   };      // max float64 value allowed
+
+
+    //  pointer to nested argument list -- valid only when vlist_ok flag is set
+
+    std::shared_ptr<plist_S>       plist_sp                              ;     // pointer to nested plist -- can be set if vlist is allowed as a parm value  
+                                                                               // note: uses stub definition for plist_S -- real definition of plist_S is below
+};
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -961,24 +1040,25 @@ struct argvar_S
 
 namespace verb_pri_N
 {
-constexpr int64_t _not_specified     { M_int64_min };    // use same priority as pre-existing verb in verbset (default if first verb in verbset)
-constexpr int64_t _attached_paren    {       1000L };                                                       
-constexpr int64_t _select            {        120L };  
-constexpr int64_t _subscript         {        120L };                                                      
-constexpr int64_t _increment         {        100L };
-constexpr int64_t _not               {        100L };
-constexpr int64_t _bitnot            {        100L };                                                     
-constexpr int64_t _at                {         80L };  
-constexpr int64_t _power             {         70L };
-constexpr int64_t _multiply          {         60L }; 
-constexpr int64_t _add               {         50L }; 
-constexpr int64_t _shift             {         40L }; 
-constexpr int64_t _compare           {         30L }; 
-constexpr int64_t _bitwise           {         20L }; 
-constexpr int64_t _boolean           {         10L };
-constexpr int64_t _default           {          0L };
-constexpr int64_t _assign            {        -10L };                                                     
-constexpr int64_t _separate          {      -1000L };
+constexpr int64_t _not_specified     {  M_int64_min };    // use same priority as pre-existing verb in verbset (default if first verb in verbset) -- note: all verbs in an overload set must have the same priority (and associativity) 
+constexpr int64_t _attached_paren    {    1000'000L };                                                       
+constexpr int64_t _select            {     120'000L };  
+constexpr int64_t _subscript         {     120'000L };                                                      
+constexpr int64_t _increment         {     100'000L };
+constexpr int64_t _not               {     100'000L };
+constexpr int64_t _bitnot            {     100'000L };                                                     
+constexpr int64_t _at                {      80'000L };  
+constexpr int64_t _power             {      70'000L };
+constexpr int64_t _multiply          {      60'000L }; 
+constexpr int64_t _add               {      50'000L }; 
+constexpr int64_t _shift             {      40'000L }; 
+constexpr int64_t _compare           {      30'000L }; 
+constexpr int64_t _bitwise           {      20'000L }; 
+constexpr int64_t _boolean           {      10'000L };
+constexpr int64_t _default           {           0L };
+constexpr int64_t _assign            {     -10'000L };                                                     
+constexpr int64_t _separate          {    -990'000L };
+constexpr int64_t _sequence          {   -1000'000L };
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -986,8 +1066,11 @@ constexpr int64_t _separate          {      -1000L };
 struct verbdef_S
 {
     bool                                  is_builtin                                              {         };    // true -- when verb is built-in (not user defined)
+    bool                                  verbless                                                { false   };    // true -- this is a temporary dummy verbdef_s used during verbless expression evaluation 
     bool                                  simplified_call                                         { false   };    // true -- call verb without frame_S, verbdef_S, and with value_S rather than results_S 
+    bool                                  by_alias_ok                                             { false   };    // true -- arg variable names starting with "_" (example: "_arg1") are assumed to be passed by alias 
     bool                                  parms_same_type                                         { false   };    // true -- all positional parms (both sides) must be same type
+    bool                                  parms_same_number                                       { false   };    // true -- must be same number of positional parms on left and right sides (can be 0-N)  
     bool                                  parms_some_required                                     { false   };    // true -- at least one positional parm is required, either on left-side or right-side (used when both sides support 0-N positional parms)  
     bool                                  parms_left_xor_right                                    { false   };    // true -- positional parms required either on left or on right (not both sides, or neither side)
     bool                                  parms_not_both_sides                                    { false   };    // true -- positional and keyword parms cannot appear on both sides (parms on either side, or neither side is OK)
@@ -1030,11 +1113,12 @@ struct verbset_S
     arg_eval_S                            left_eval                                               {         };    // left-side  argument evaluation flags  
     arg_eval_S                            right_eval                                              {         };    // right-side argument evaluation flags 
     bool                                  custom_eval                                             { false   };    // custom eval flag settings on a per-parm basis (especially keywords) -- can't be overloaded   
-    bool                                  has_builtin                                             { false   };    // at least one if the verbdef_S's is built-in  
+    bool                                  has_builtin                                             { false   };    // at least one if the verbdef_S's is built-in 
+    bool                                  verbless                                                { false   };    // true -- this is a temporary dummy verbset_s used during verbless expression evaluation 
 };
 
  
-
+#if 0 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
@@ -1070,9 +1154,11 @@ struct parmtype_S
     bool                           float64_ok                   { false };      // ok for value to be FLOAT64_T
     bool                           string_ok                    { false };      // ok for value to be STRING_T
     bool                           verbname_ok                  { false };      // ok for value to be verbname  
-    bool                           raw_ident_ok                 { false };      // ok for vlue to be  any (raw/unevaluated) identifier (defined, or undefined)
+    bool                           raw_ident_ok                 { false };      // ok for vlue to be  any (raw/unevaluated) identifier (defined, or undefined) -- including typdef or verbdef??
     bool                           var_ident_ok                 { false };      // ok for value to be defined variable identifier  (not a constant)
     bool                           const_ident_ok               { false };      // ok for value to be defined constant identifier (not a variable) 
+    bool                           typdef_ident_ok              { false };      // ok for value to be defined typdef identifier 
+    bool                           verbset_ident_ok             { false };      // ok for value to be defined vebset identifier 
     bool                           undef_ident_ok               { false };      // ok for value to be undefined identifier (and not defined)
     bool                           vlist_ok                     { false };      // ok for value to be vlist -- optional pointer is set, if verb cares about value types in vlist
     bool                           expression_ok                { false };      // ok for value to be expression  
@@ -1101,7 +1187,7 @@ struct parmtype_S
     std::shared_ptr<plist_S>       plist_sp                              ;     // pointer to nested plist -- can be set if vlist is allowed as a parm value  
 
 };
-
+#endif
 
                                                                                                                           
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1138,12 +1224,12 @@ M_EX_IMPEXP bool is_valid_verbname(  const std::wstring&);
 /////////////////// public setup and processing functions  -- in ex_interface.cpp
 
 
-M_EX_IMPEXP int                       process_main_ext(    const std::wstring&                      ); 
-M_EX_IMPEXP std::wstring              process_cmdline_ext( int, wchar_t *[]                         );
-M_EX_IMPEXP int                       pending_attach_ext(  const std::wstring&                      );    // file version
-M_EX_IMPEXP int                       pending_attach_ext(  const std::wstring&, const std::wstring& );    // string version   
-M_EX_IMPEXP int                       import_dll(          const std::wstring&, const std::wstring& ); 
-M_EX_IMPEXP int                       set_skip_ext(        const std::wstring&                      ); 
+M_EX_IMPEXP int                       process_main_ext(          const std::wstring&                      ); 
+M_EX_IMPEXP std::wstring              process_cmdline_ext(       int, wchar_t *[]                         );
+M_EX_IMPEXP int                       pending_attach_file_ext(   const std::wstring&                      );    // file version
+M_EX_IMPEXP int                       pending_attach_string_ext( const std::wstring&, const std::wstring& );    // string version   
+M_EX_IMPEXP int                       import_dll(                const std::wstring&, const std::wstring& ); 
+M_EX_IMPEXP int                       set_skip_ext(              const std::wstring&                      ); 
 
 M_EX_IMPEXP void                      count_error(uint64_t = 1ULL); 
 M_EX_IMPEXP uint64_t                  error_count();
