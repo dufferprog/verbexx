@@ -326,8 +326,10 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   attach_file_ext() -- set up pending attach for passed-in filename -- stub for external callers  
-////                        (note: preprocessor must be active) 
+////   pending_attach_file_ext()    -- set up pending attach for passed-in filename -- stub for external callers  
+////   pending_attach_string_ext()  -- set up pending attach for passed-in string   -- stub for external callers    
+////
+////                                (note: preprocessor must be active) 
 //// 
 ////
 ////_____________________________________________________________________________________________________________________
@@ -339,7 +341,7 @@ M_endf
 // ----------------------
 
 M_EX_IMPEXP 
-int pending_attach_ext(const std::wstring& pathname) try
+int pending_attach_file_ext(const std::wstring& pathname) try
 {
     // make sure current-level pre_process_C instance exists - return with error, if not
 
@@ -350,7 +352,7 @@ int pending_attach_ext(const std::wstring& pathname) try
 
      // add passed-in filename to the pending attach stack for current pp instance
 
-     pp_p->add_pending_attach(pathname); 
+     pp_p->add_pending_attach_file(pathname); 
      return 0; 
 }
 M_endf
@@ -360,7 +362,7 @@ M_endf
 // -------------------------
 
 M_EX_IMPEXP 
-int pending_attach_ext(const std::wstring& text, const std::wstring& id) try
+int pending_attach_string_ext(const std::wstring& text, const std::wstring& id) try
 {
     // make sure current-level pre_process_C instance exists - return with error, if not
 
@@ -371,7 +373,7 @@ int pending_attach_ext(const std::wstring& text, const std::wstring& id) try
 
      // add passed-in filename to the pending attach stack for current pp instance
 
-     pp_p->add_pending_attach(text, id); 
+     pp_p->add_pending_attach_string(text, id); 
      return 0; 
 }
 M_endf
@@ -493,12 +495,91 @@ M_endf
 M_EX_IMPEXP 
 int add_predefined_verb(const std::wstring& verb_name, const verbset_S& verbset_in) try
 {
+    // indicate that verbset_S has at least one built-in verb 
+
+    verbset_S verbset { verbset_in };                                     // local (nodifiable) copy of passed-in verbset
+    verbset.has_builtin = true;                                           // indicate that this verbset has at least one predefined verbdef_S 
+
+
+    // see if any custom evaluation is required -- recursive look into all positional/keyword parms to see if any evaluation flags are already set
+    // -------------------------------------------------------------------------------------------------------------------------------------------
+    //
+    // note: This is bypassed, if the custom_eval flag is already set 
+
+    if (!verbset.custom_eval)
+    {
+    // ?????? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
+    // ?????? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?      need new check_custom_eval() function that can be called recursively for each nested plist pointed to by a parmtype
+    // ?????? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
+    // ?????? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
+    // ?????? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
+    }
+
+
+    // error, if custom evaluation flag (was already/is now) on, and more than one verbdef in the verbset
+    // --------------------------------------------------------------------------------------------------
+
+    if ( (verbset.custom_eval) && (verbset.verbs.size() > 1) )
+    {
+        count_error(); 
+        M_out_emsg(L"add_predefined_verb() -- custom evaluation is required for verb \"%S\", but there are %d verbs in the built-in overload set being added -- verbs with custom evaluation cannot be overloaded")  % verb_name % verbset.verbs.size();     
+        return -1;  
+    }
+     
+
+    // if custom evaluation flag is off in the verbset_S, update the evaluation flags each verbdef_S in the passed-in verbset_S, so they are all the same (which allows overloading)
+    // --------------------------------------------------------------------------------------------------------------------------------------------------
+    //
+    // note: does not look into each positional parm nested vlist, nor does it process keyword parms -- these need custom evaluation)
+
+    if (!verbset.custom_eval)
+    {
+        for (auto& verbdef : verbset.verbs )
+        {
+            // propagate global plist-wide evaluation flags from verbset_S into the plist-wide evaluation flags in the left and right-side parmlists in this verbdef  
+      
+            verbdef.lparms.eval.no_eval_ident         |=  verbset. left_eval.no_eval_ident      ;
+            verbdef.lparms.eval.no_eval_expression    |=  verbset. left_eval.no_eval_expression ;
+            verbdef.lparms.eval.no_eval_vlist         |=  verbset. left_eval.no_eval_vlist      ;
+            verbdef.lparms.eval.no_eval_ref           |=  verbset. left_eval.no_eval_ref        ;
+            verbdef.rparms.eval.no_eval_ident         |=  verbset.right_eval.no_eval_ident      ;
+            verbdef.rparms.eval.no_eval_expression    |=  verbset.right_eval.no_eval_expression ;
+            verbdef.rparms.eval.no_eval_vlist         |=  verbset.right_eval.no_eval_vlist      ;
+            verbdef.rparms.eval.no_eval_ref           |=  verbset.right_eval.no_eval_ref        ;
+            
+      
+            // propagate global plist-wide evaluation flags from verbset_S into each left-side positional parameter parmtype_S   (note: keyword parms are not modified -- these require the "custom_eval" flag)
+      
+            for (auto& parmtype : verbdef.lparms.values) 
+            {
+                parmtype.eval.no_eval_ident           |=   verbset.left_eval.no_eval_ident      ;
+                parmtype.eval.no_eval_expression      |=   verbset.left_eval.no_eval_expression ;
+                parmtype.eval.no_eval_vlist           |=   verbset.left_eval.no_eval_vlist      ;
+                parmtype.eval.no_eval_ref             |=   verbset.left_eval.no_eval_ref        ;  
+            }
+      
+      
+            // propagate global plist-wide evaluation flags from verbset_S into each right-side positional parameter parmtype_S  (note: keyword parms are not modified -- these require the "custom_eval" flag)
+      
+            for (auto& parmtype : verbdef.rparms.values) 
+            {
+                parmtype.eval.no_eval_ident           |=   verbset.right_eval.no_eval_ident      ;
+                parmtype.eval.no_eval_expression      |=   verbset.right_eval.no_eval_expression ;
+                parmtype.eval.no_eval_vlist           |=   verbset.right_eval.no_eval_vlist      ;
+                parmtype.eval.no_eval_ref             |=   verbset.right_eval.no_eval_ref        ;  
+            }  
+        } 
+    }
+
+
+    // add built-in verbset_S to the global environment
+    // ------------------------------------------------
+
+    for (auto& verbdef : verbset.verbs )
+        verbdef.is_builtin = true;              // make sure "built-in flag is set in each verbdef_S
+                                                                                          
     def_parm_S parm { }; 
     parm.builtin = true; 
-
-    verbset_S verbset { verbset_in }; 
-    verbset.verbs[0].is_builtin = true;                        // should be only one verb in set at this point
-    verbset.has_builtin         = true;                        // indicate that this verbset has at least one predefined verbdef_S 
 
     return def_global_verb(verb_name, verbset, parm); 
 }
@@ -579,7 +660,7 @@ bool is_valid_identifier(const std::wstring& ws) try
     // -----------------------------------------------------------------------------------
 
     uint64_t ws_ix      { 0    }; 
-    bool     first_ch32 { true };
+    bool     first_ch32 { true };                              // indicate that we haven't seen 1st character yet
 
              
     while (ws_ix < sz)
@@ -616,7 +697,8 @@ bool is_valid_identifier(const std::wstring& ws) try
         auto type = char_type(ch32); 
         M__(M_out(L"is_valid_identifier():  in loop -- type = %d  (sep=%d  alpha=%d  num=%d)") % (int)type % (int)(char_E::sep) % (int)(char_E::alpha) % (int)(char_E::num);)
 
-        // handle first or other characters in identifier
+
+        // handle first character -or- other characters in identifier
 
         if (first_ch32)
         {

@@ -243,21 +243,24 @@ uint64_t preprocess_setup(pre_process_C& pp) try
 
     // do additional preprocessor setup, with parse-oriented options 
                                                                              // note that ch_sigil_keyword and ch_sigil_label are the same character // 
-    std::vector<char32_t> leading_sigils         { const_N::ch_sigil_verb,   const_N::ch_sigil_label,   const_N::ch_sigil_parm, const_N::ch_sigil_keyword  }; //  leading verb, parm, and label sigils (combined list)
-    std::vector<char32_t> leading_ident_sigils   { const_N::ch_sigil_verb,   const_N::ch_sigil_label,   const_N::ch_sigil_parm                             }; //  leading verb, parm, and label sigils (for identifiers)
-    std::vector<char32_t> leading_oper_sigils    {                                                      const_N::ch_sigil_parm                             }; //  leading       parm,           sigil  (for operators)
-    std::vector<char32_t> trailing_ident_sigils  { const_N::ch_sigil_keyword                                                                               }; //  trailing keyword sigils              (for identifiers)
-    std::vector<char32_t> paren_sigils           { const_N::ch_sigil_verb,   const_N::ch_sigil_keyword                                                     }; //  leading/trailing verb sigil          (for parenthesis)
-                                                                                                                                                           
+    std::vector<char32_t> leading_sigils         { const_N::ch_sigil_verb,    const_N::ch_sigil_label,   const_N::ch_sigil_parm,    const_N::ch_sigil_keyword  }; //  leading verb, parm, and label sigils (combined list)
+    std::vector<char32_t> leading_ident_sigils   { const_N::ch_sigil_verb,    const_N::ch_sigil_label,   const_N::ch_sigil_parm                                }; //  leading verb, parm, and label sigils (for identifiers)
+    std::vector<char32_t> leading_oper_sigils    {                                                       const_N::ch_sigil_parm                                }; //  leading       parm,           sigil  (for operators)
+    std::vector<char32_t> trailing_ident_sigils  { const_N::ch_sigil_keyword                                                                                   }; //  trailing keyword sigils              (for identifiers)
+    std::vector<char32_t> paren_sigils           { const_N::ch_sigil_verb,    const_N::ch_sigil_keyword                                                        }; //  leading/trailing verb sigil          (for parenthesis)
+    std::vector<char32_t> in_same_char_op        { const_N::ch_same_char_op1, const_N::ch_same_char_op2, const_N::ch_same_char_op3, const_N::ch_same_char_op4  }; //  extra charas for same-char operator tokens 
+    
+
     pp.set_combine_strings(        false                );                                                                                                    // don't combine adjacent strings separated by whitespace    
     pp.set_allow_attached_paren(   true                 );                                                                                                    // allow attached parens to identifier tokens
-
+           
     pp.set_leading_sigils(                leading_sigils );                                                                                                   // add combined list of leading sigils          (in addition to any preprocess sigils)
     pp.set_leading_ident_sigils(    leading_ident_sigils );                                                                                                   // add list of leading sigils  for identifiers  (in addition to any preprocess sigils)
     pp.set_trailing_ident_sigils(  trailing_ident_sigils );                                                                                                   // add list of trailing sigils for identifiers  (in addition to any preprocess sigils)
     pp.set_leading_oper_sigils(      leading_oper_sigils );                                                                                                   // add list of leading sigils  for operators    (in addition to any preprocess sigils)
     pp.set_paren_sigils(                    paren_sigils );                                                                                                   // add list of sigils for parenthesis           (in addition to any preprocess sigils)
-    
+    pp.set_in_same_char_op(              in_same_char_op );                                                                                                   // add list of extra characters that can appear in same-char operator tokens
+       
     return error_count(); 
 }
 M_endf
@@ -304,10 +307,10 @@ pre_process_C::pre_process_C() try
     M__(M_out(L"Pre_parse_C default constructor called");)
 
 
-    // set up default imbed folder from IMBED_PATH envar, if set
-    // ---------------------------------------------------------
+    // set up default include folder from INCLUDE_PATH envar, if set
+    // -------------------------------------------------------------
 
-    set_imbed_folder(); 
+    set_include_folder(); 
 
 
     // set up required configuration parms for the token_stream
@@ -333,7 +336,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   inherit_state() -- inhert skipping state upwardpp
+////   inherit_state() -- inhert skipping state in upward pp
 ////
 ////
 ////_____________________________________________________________________________________________________________________
@@ -343,7 +346,7 @@ M_endf
 
 void pre_process_C::inherit_state() try
 {
-    // inherit skipping state from 2 generations upwrd -- upward pre_process_C (if any)
+    // inherit skipping state from 2 generations upward -- upward pre_process_C (if any)
 
     if (m_upward_sp.get() != nullptr) 
     {
@@ -381,7 +384,8 @@ void pre_process_C::close() try
 
     m_token_stack.clear(); 
     m_skipto_label.clear();
-    m_skipping = false; 
+    m_skipping           = false; 
+    m_inherited_skipping = false; 
 
     return; 
 }
@@ -420,7 +424,8 @@ void pre_process_C::reuse(bool refresh) try
 
     m_token_stack.clear(); 
     m_skipto_label.clear();
-    m_skipping = false; 
+    m_skipping           = false; 
+    m_inherited_skipping = false; 
 
     return; 
 }
@@ -449,7 +454,7 @@ M_endf
 void pre_process_C::display_settings() try
 {
     //M_out(L"---------------------------------------------------------------------------------------");
-    M_out(L"pre_process_C::m_imbed folder         = [%S]") % m_imbed_folder;
+    M_out(L"pre_process_C::m_include folder       = [%S]") % m_include_folder;
     M_out(L"pre_process_C::m_skipping             = %S"  ) % M_bool_cstr(m_skipping);
     M_out(L"pre_process_C::m_inherited_skipping   = %S"  ) % M_bool_cstr(m_inherited_skipping);
     M_out(L"pre_process_C::m_skipto label         = [%S]") % m_skipto_label;
@@ -513,12 +518,13 @@ int pre_process_C::peek_raw_token(token_C& t, size_t peek_level)
         
         // pass back retained comments
 
-        if  ( (token.type == token_E::retained_line_comment) || (token.type == token_E::retained_block_comment) )
+        if  ( (token.type == token_E::retained_line_comment) || (token.type == token_E::retained_block_comment) || (token.type == token_E::retained_eof_comment) )
         {
+            M__(token.display(L"pre_process_C::peek_raw_token() -- processing retained comment");)
             M__(M_out(L"pre_process_C::peek_raw_token():2 -- processing retained comment");)   
             token.utype1 = tok_u1_E::evaluate;                      // text for evaluation by pre-processor
             t = token; 
-            M__(t.display(L"pre_process_C::peek_raw_token() evaluate:");)
+            M__(token.display(L"pre_process_C::peek_raw_token() evaluate:");)
             return 0;
         }          
 
@@ -610,8 +616,9 @@ int pre_process_C::_token(token_C& t, size_t peek_level) try
         if (prc != 0)    
         {       
             M__(M_out(L"_token(): error R/C from token_stream_C::peek_raw_token()");)
-            m_skipping = false;                           // error ends any active skipping mode 
-            t          = token;                           // might be a filled-in token (or not) -- don't consume token
+            m_skipping           = false;                 // error ends any active skipping mode 
+            m_inherited_skipping = false;                 // error ends any active skipping mode 
+            t                    = token;                 // might be a filled-in token (or not) -- don't consume token
             count_error(); 
             return -1;                                    // return immediately -- lower routines should have done count_error()                         
         }
@@ -683,10 +690,10 @@ int pre_process_C::_token(token_C& t, size_t peek_level) try
 
 
             // parse the retained comment, even in local skipping mode (to check for matching @SKIPTO target labels)
-            
-            std::wstring info { L"preprocesssor text - imbedded from <<<"};
+
+            std::wstring info { L"pp text - includeded from <<<"};
             info += token.loc_str();  
-            info += L">>>  position in preprocessor text";
+            info += L">>>  position in pp text";
             
             block_S out_block{ };                                                                                                 // block_S to be filled in by parse_string()  
             auto src = parse_string(*m_frame_p, out_block, token.str, info, false);                                               // don't continue after error
@@ -698,7 +705,7 @@ int pre_process_C::_token(token_C& t, size_t peek_level) try
             if (src != 0)                                                                                                         // return with error, if parse_string() failed
             {
                 M_out_emsg(L"pre_process_C::_token() -- parse_string() failed for pre-processor text");
-                token.display();
+                token.display(L"!!!!!!     Token");
                 M_out_emsg2(L"    pre-processing ends"); 
                 count_error(); 
                 return -1;    
@@ -712,7 +719,8 @@ int pre_process_C::_token(token_C& t, size_t peek_level) try
                 M__(M_out(L"pre_process_C::_token() -- serial= %d  --  M_skipto_label = \"%S\" -- out_block.label = \"%S\"") % m_serial % m_skipto_label % out_block.label;) 
                 if (m_skipto_label == out_block.label)              // @SKIPTO target label is at start of this retained comment? tar
                 {
-                    m_skipping = false;                             // end skipping mode 
+                    m_skipping           = false;                   // end skipping mode 
+                    m_inherited_skipping = false;
                     m_skipto_label.clear() ; 
                 }   
             }
@@ -739,7 +747,7 @@ int pre_process_C::_token(token_C& t, size_t peek_level) try
             {
                 M__(M_out(L"pre_process_C::_token() -- eval_block() returned error");)
                 M_out_emsg1(L"pre_process_C::_token() -- eval_block() failed for preprocessor text");
-                token.display();
+                token.display(L"!!!!!!     Token");
                 M_out_emsg2(L"    pre-processing ends"); 
                 count_error(); 
                 return -1;
@@ -767,7 +775,7 @@ int pre_process_C::_token(token_C& t, size_t peek_level) try
                 else                                            // not @END or @SKIP/@SKIPTO -- unexpected special results
                 {                               
                     M_out_emsg1(L"pre_process_C::_token() -- eval_block() for preprocessor text returned unexpected special results: %S") % results_msg_string(out_results); 
-                    token.display();
+                    token.display(L"!!!!!!     Token");
                     M_out_emsg2(L"    pre-processing ends"); 
                     count_error(); 
                     return -1;
@@ -790,8 +798,8 @@ int pre_process_C::_token(token_C& t, size_t peek_level) try
 
                     if (arc != 0)
                     {
-                        M_out_emsg(L"pre_process_C::_token() -- attach_file() failed, trying to attach file \"%S\" requested by pre-processor text") % pend.name;
-                        token.display();
+                        M_out_emsg1(L"pre_process_C::_token() -- attach_file() failed, trying to attach file \"%S\" requested by pre-processor text") % pend.name;
+                        token.display(L"!!!!!!     Token");
                         M_out_emsg2(L"    pre-processing ends"); 
                         count_error(); 
                         return -1;    
@@ -805,7 +813,7 @@ int pre_process_C::_token(token_C& t, size_t peek_level) try
                     if (arc != 0)
                     {
                         M_out_emsg(L"pre_process_C::_token() -- attach_string() failed, trying to attach string ID \"%S\" requested by pre-processor text") % pend.name;
-                        token.display();
+                        token.display(L"!!!!!!     Token");
                         M_out_emsg2(L"    pre-processing ends"); 
                         count_error(); 
                         return -1;    
@@ -1032,7 +1040,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   set_imbed_folder()  -- set base folder for imbedded/included files
+////   set_include_folder()  -- set base folder for included files
 ////                   
 ////
 ////_____________________________________________________________________________________________________________________
@@ -1041,15 +1049,15 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 
-// form with no parms -- set default imbed path using environment variable (if set)
-// --------------------------------------------------------------------------------
+// form with no parms -- set default include path using environment variable (if set)
+// ----------------------------------------------------------------------------------
 
-void pre_process_C::set_imbed_folder() try    
+void pre_process_C::set_include_folder() try    
 {
-    if ( is_env_set(IMBED_PATH_ENVAR) )
-        m_imbed_folder = get_env(IMBED_PATH_ENVAR);
+    if ( is_env_set(INCLUDE_PATH_ENVAR) )
+        m_include_folder = get_env(INCLUDE_PATH_ENVAR);
     else
-        m_imbed_folder = std::wstring { IMBED_PATH };  
+        m_include_folder = std::wstring { INCLUDE_PATH };  
 }
 M_endf
 
@@ -1058,9 +1066,9 @@ M_endf
 // form with passed-in string
 // --------------------------
 
-void pre_process_C::set_imbed_folder(const std::wstring& i_f) try    
+void pre_process_C::set_include_folder(const std::wstring& i_f) try    
 {
-    m_imbed_folder = i_f; 
+    m_include_folder = i_f; 
 }
 M_endf
 
@@ -1111,7 +1119,7 @@ int pre_process_C::attach_file(const std::wstring& wn) try
     std::wstring final_pathname { }; 
 
 
-    // get final filename for imbed -- prepend m_imbed_folder, if passed-in filename appears not to be an absolute pathname 
+    // get final filename for include -- prepend m_include_folder, if passed-in filename appears not to be an absolute pathname 
 
     if ( (wn.size() >= 1) && ((wn.at(0) == L'\\') || (wn.at(0) == L'/')) )
         final_pathname = wn; 
@@ -1119,7 +1127,7 @@ int pre_process_C::attach_file(const std::wstring& wn) try
     else if ( (wn.size() >= 2) &&  (wn.at(1) == L':' ) ) 
         final_pathname = wn; 
     else
-        final_pathname = m_imbed_folder + wn; 
+        final_pathname = m_include_folder + wn; 
     
 
     // attach this file to the token stream -=- complain if errors passed back
@@ -1129,13 +1137,9 @@ int pre_process_C::attach_file(const std::wstring& wn) try
 
     if ( (arc != 0) || (err.error_occurred) )
     {
-        M_out_emsg(L"pre_process_C::attach_file() -- input file \"%S\" cannot be used -- error text = <<%S>>") % wn % err.error_text;     
+        M_out_emsg(L"pre_process_C::attach_file() -- input file \"%S\" cannot be used -- pathname = \"%S\" -- error text = <<%S>>") % wn % final_pathname % err.error_text;     
         return -1; 
     }  
-
-   // arc = m_token_stream.attach_file(m_imbed_folder + L"test_attach1.txt", err);  
-   // arc = m_token_stream.attach_file(m_imbed_folder + L"test_attach2.txt", err);  
-   // arc = m_token_stream.attach_file(m_imbed_folder + L"test_attach3.txt", err);    
 
     return 0;                            // attach is OK
 }
@@ -1152,18 +1156,15 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   add_pending_attach() -- add filename/string to pending attach stack (at front) 
+////   add_pending_attach_file() -- add filename to pending attach stack (at front) 
 ////                   
 ////
 ////_____________________________________________________________________________________________________________________
 ////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-                 
-// version that adds a file to the pending attach stack
-// ----------------------------------------------------
 
-void pre_process_C::add_pending_attach(const std::wstring& filename) try
+void pre_process_C::add_pending_attach_file(const std::wstring& filename) try
 {
     // add this filename to front of pending attach stack (order of attach()ed file reading will be reversed when attach()es are actioned later
 
@@ -1177,10 +1178,22 @@ void pre_process_C::add_pending_attach(const std::wstring& filename) try
 M_endf
 
 
-// version that adds a string to the pending attach stack
-// ------------------------------------------------------
 
-void pre_process_C::add_pending_attach(const std::wstring& text, const std::wstring& id) try
+
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   add_pending_attach_string() -- add string to pending attach stack (at front) 
+////                   
+////
+////_____________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+
+void pre_process_C::add_pending_attach_string(const std::wstring& text, const std::wstring& id) try
 {
     // add this string to front of pending attach stack (order of attach()ed string processing will be reversed when attach()es are actioned later
 
@@ -1251,6 +1264,7 @@ void pre_process_C::set_allow_leading_id_sigils(         bool     tf           )
 void pre_process_C::set_allow_trailing_id_sigils(        bool     tf           ) try { return m_token_stream.set_allow_trailing_id_sigils(             tf  );      }  M_endf
 void pre_process_C::set_allow_paren_sigils(              bool     tf           ) try { return m_token_stream.set_allow_paren_sigils(                   tf  );      }  M_endf
 void pre_process_C::set_allow_attached_paren(            bool     tf           ) try { return m_token_stream.set_allow_attached_paren(                 tf  );      }  M_endf
+void pre_process_C::set_allow_in_same_char_op(           bool     tf           ) try { return m_token_stream.set_allow_in_same_char_op(                tf  );      }  M_endf
                                                        
 void pre_process_C::set_trigraph_char(                   char32_t ch32         ) try { return m_token_stream.set_trigraph_char(                        ch32);      }  M_endf
 void pre_process_C::set_vanishing_separator_char(        char32_t ch32         ) try { return m_token_stream.set_vanishing_separator_char(             ch32);      }  M_endf  
@@ -1274,19 +1288,20 @@ void pre_process_C::set_comment_1st_char(                char32_t ch32         )
 void pre_process_C::set_unechoed_line_comment_2nd_char(  char32_t ch32         ) try { return m_token_stream.set_unechoed_line_comment_2nd_char(       ch32);      }  M_endf       
 void pre_process_C::set_echoed_line_comment_2nd_char(    char32_t ch32         ) try { return m_token_stream.set_echoed_line_comment_2nd_char(         ch32);      }  M_endf       
 void pre_process_C::set_suppress_eol_comment_2nd_char(   char32_t ch32         ) try { return m_token_stream.set_suppress_eol_comment_2nd_char(        ch32);      }  M_endf       
-void pre_process_C::set_eof_comment_2nd_char(            char32_t ch32         ) try { return m_token_stream.set_eof_comment_2nd_char(                 ch32);      }  M_endf       
-void pre_process_C::set_retained_line_comment_2nd_char(  char32_t ch32         ) try { return m_token_stream.set_retained_line_comment_2nd_char(       ch32);      }  M_endf       
-                                                                                           
+                                                                           
 void pre_process_C::set_block_comment_2nd_char(          char32_t ch32         ) try { return m_token_stream.set_block_comment_2nd_char(               ch32);      }  M_endf       
 void pre_process_C::set_block_comment_3rd_char(          char32_t ch32         ) try { return m_token_stream.set_block_comment_3rd_char(               ch32);      }  M_endf       
 void pre_process_C::set_block_comment_4th_char(          char32_t ch32         ) try { return m_token_stream.set_block_comment_4th_char(               ch32);      }  M_endf       
 void pre_process_C::set_nest_comment_2nd_char(           char32_t ch32         ) try { return m_token_stream.set_nest_comment_2nd_char(                ch32);      }  M_endf       
 void pre_process_C::set_nest_comment_3rd_char(           char32_t ch32         ) try { return m_token_stream.set_nest_comment_3rd_char(                ch32);      }  M_endf       
-void pre_process_C::set_nest_comment_4th_char(           char32_t ch32         ) try { return m_token_stream.set_nest_comment_4th_char(                ch32);      }  M_endf       
+void pre_process_C::set_nest_comment_4th_char(           char32_t ch32         ) try { return m_token_stream.set_nest_comment_4th_char(                ch32);      }  M_endf 
+void pre_process_C::set_eof_comment_2nd_char(            char32_t ch32         ) try { return m_token_stream.set_eof_comment_2nd_char(                 ch32);      }  M_endf       
+
+void pre_process_C::set_retained_line_comment_2nd_char(  char32_t ch32         ) try { return m_token_stream.set_retained_line_comment_2nd_char(       ch32);      }  M_endf 
 void pre_process_C::set_retained_block_comment_2nd_char( char32_t ch32         ) try { return m_token_stream.set_retained_block_comment_2nd_char(      ch32);      }  M_endf       
 void pre_process_C::set_retained_block_comment_3rd_char( char32_t ch32         ) try { return m_token_stream.set_retained_block_comment_3rd_char(      ch32);      }  M_endf       
 void pre_process_C::set_retained_block_comment_4th_char( char32_t ch32         ) try { return m_token_stream.set_retained_block_comment_4th_char(      ch32);      }  M_endf        
-                                                                                                                                                     
+void pre_process_C::set_retained_eof_comment_2nd_char(   char32_t ch32         ) try { return m_token_stream.set_retained_eof_comment_2nd_char(        ch32);      }  M_endf                                                                                                                                                      
 
 
 
@@ -1376,6 +1391,17 @@ void pre_process_C::set_paren_sigils(const std::vector<char32_t>& sigils) try
 M_endf
 
 
+void pre_process_C::set_in_same_char_op(const std::vector<char32_t>& extra) try 
+{
+    if (extra.size() > 0)
+        m_token_stream.set_allow_in_same_char_op(true );                      // need to allow extra chars in same-char operator tokens
+    else                                                                  
+        m_token_stream.set_allow_in_same_char_op(false);                      // don't allow them 
+
+
+    return m_token_stream.set_in_same_char_op(extra); 
+}
+M_endf
 
 
 

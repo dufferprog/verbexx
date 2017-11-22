@@ -40,23 +40,9 @@
 ////     @NOEVAL
 ////     @EVAL
 ////     @UNSHARE
-////     @EXPOSE
-////     @UNEXPOSE
-////
-////     @AGG
-////     @TYPE
-////
-////     @TO_xxxx
-////     @IS_xxxx
-////
-////     #
-////
+////     //@EXPOSE
+////     //@UNEXPOSE
 ////     @GETENV
-////     @ARG_CT
-////     @ARGS
-////     @ARG
-////     @AT 
-////     @VL_CT
 ////     @STR
 ////     @SAY
 ////     @STDOUT
@@ -78,6 +64,7 @@
 ////              all_vars: 
 ////              id_cache:
 ////              statistics:
+////              token_list:
 ////              etc.
 ////
 ////
@@ -150,8 +137,7 @@ int eval_cond(frame_S& frame, const value_S& value, const e_expression_S& expres
     {
         M_out_emsg1(L"eval_cond() -- cannot evaluate value for condition (%s) -- verb=%s execution ends immediately") % ws % verb_name(expression); 
         msgend_loc(cond_results, expression);
-        results = error_results();     // pass back error results 
-        return -1; 
+        M_verb_error0(results) 
     }
 
 
@@ -173,8 +159,7 @@ int eval_cond(frame_S& frame, const value_S& value, const e_expression_S& expres
         M_out_emsg1(L"eval_cond() -- evaluated value for %s keyword is not integer -- verb=%s execution ends immediately") % ws % verb_name(expression); 
         display_value(cond_results, L"bad " + ws + L" value");
         msgend_loc(cond_results, expression);
-        results = error_results();     // pass back error results  
-        return -1; 
+        M_verb_error0(results)
     }
 
 
@@ -200,15 +185,13 @@ M_endf
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//    @VAR identifier identifier ... identifier     value: general-value  :global :expose share: unshare:    -- keywords optional
+//    @VAR identifier identifier ... identifier     value: general-value  global: local: verbmain: static: expose: share: unshare:    -- keywords optional
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int verb_var(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
 {
     // already known that there is one or more right positional undefined identifier parms     and    maybe right value: and global: keywords
-
-    int rc { 0 };  
 
     M__(M_out(L"verb_var() called");)
 
@@ -236,26 +219,23 @@ int verb_var(frame_S& frame, const e_expression_S& expression, const verbdef_S& 
         {
             if (is_global_identifier_defined(var.string))
             {
-                count_error();
-                M_out_emsg1(L"verb_var() -- global identifier %s is already defined -- unable to define it again") % var.string;
-                msgend_loc(var, expression);
-                rc = -1;        
+                M_out_emsg1(L"@VAR -- global identifier \"%S\" is already defined -- unable to define it again") % var.string;
+                M_verb_error1_loc(results, var, expression)      
             }
             else
             {
                 def_parm_S  parm { };
                 parm.unshare = (unshare_rc == 0); 
 
-                auto rc = def_global_var(var.string, value_value, parm);                       // add new non-constant variable to environment -- global variables are always exposed
+                auto drc = def_global_var(var.string, value_value, parm);                       // add new non-constant variable to environment -- global variables are always exposed
                
                 // errors are unexpected here
                
-                if (rc != 0)
+                if (drc != 0)
                 {
                     //count_error(); already counted in def_global_var()
-                    M_out_emsg1(L"verb_var() -- error from def_global_var() -- unable to define new global variable = %s") % var.string;
-                    msgend_loc(var, expression);
-                    rc = -1; 
+                    M_out_emsg1(L"@VAR -- error from def_global_var() -- unable to define new global variable = %s") % var.string;
+                    M_verb_error0_loc(results, var, expression)
                 }  
             }
         }
@@ -263,10 +243,8 @@ int verb_var(frame_S& frame, const e_expression_S& expression, const verbdef_S& 
         {
             if (is_static_identifier_defined(frame, var.string))
             {
-                count_error();
-                M_out_emsg1(L"verb_var() -- static identifier %s is already defined -- unable to define it again") % var.string;
-                msgend_loc(var, expression);
-                rc = -1;        
+                M_out_emsg1(L"@VAR -- static identifier \"%S\" is already defined -- unable to define it again") % var.string;
+                M_verb_error1_loc(results, var, expression)      
             }
             else
             {
@@ -277,16 +255,15 @@ int verb_var(frame_S& frame, const e_expression_S& expression, const verbdef_S& 
 #endif
 
 
-                auto rc = def_static_var(frame, var.string, value_value, parm);                       // add new non-constant variable to environment  -- expose based on expose: kw rc
+                auto drc = def_static_var(frame, var.string, value_value, parm);                       // add new non-constant variable to environment  -- expose based on expose: kw rc
               
                 // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
               
-                if (rc != 0)
+                if (drc != 0)
                 {
                     //count_error(); already counted in def_static_var()
-                    M_out_emsg1(L"verb_var() -- error from def_static_var() -- unable to define new static variable = %s") % var.string;
-                    msgend_loc(var, expression);
-                    rc = -1;  
+                    M_out_emsg1(L"@VAR -- error from def_static_var() -- unable to define new static variable = %s") % var.string;
+                    M_verb_error0_loc(results, var, expression)  
                 }  
             }
         }
@@ -294,10 +271,8 @@ int verb_var(frame_S& frame, const e_expression_S& expression, const verbdef_S& 
         {
             if (is_verbmain_identifier_defined(frame, var.string))
             {
-                count_error();
-                M_out_emsg1(L"verb_var() -- verbmain identifier %s is already defined -- unable to define it again") % var.string;
-                msgend_loc(var, expression);
-                rc = -1;        
+                M_out_emsg1(L"@VAR -- verbmain identifier \"%S\" is already defined -- unable to define it again") % var.string;
+                M_verb_error1_loc(results, var, expression)     
             }
             else
             {
@@ -308,16 +283,15 @@ int verb_var(frame_S& frame, const e_expression_S& expression, const verbdef_S& 
 #endif
 
 
-                auto rc = def_verbmain_var(frame, var.string, value_value, parm);                       // add new non-constant variable to environment  -- expose based on expose: kw rc
+                auto drc = def_verbmain_var(frame, var.string, value_value, parm);                       // add new non-constant variable to environment  -- expose based on expose: kw rc
               
                 // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
               
-                if (rc != 0)
+                if (drc != 0)
                 {
                     //count_error(); already counted in def_verbmain_var()
-                    M_out_emsg1(L"verb_var() -- error from def_verbmain_var() -- unable to define new verbmain variable = %s") % var.string;
-                    msgend_loc(var, expression);
-                    rc = -1;  
+                    M_out_emsg1(L"@VAR -- error from def_verbmain_var() -- unable to define new verbmain variable = %s") % var.string;
+                    M_verb_error0_loc(results, var, expression) 
                 }  
             }
         }
@@ -325,10 +299,8 @@ int verb_var(frame_S& frame, const e_expression_S& expression, const verbdef_S& 
         {
             if (is_local_identifier_defined(frame, var.string))
             {
-                count_error();
-                M_out_emsg1(L"verb_var() -- local identifier %s is already defined -- unable to define it again") % var.string;
-                msgend_loc(var, expression);
-                rc = -1;        
+                M_out_emsg1(L"@VAR -- local identifier \"%S\" is already defined -- unable to define it again") % var.string;
+                M_verb_error1_loc(results, var, expression)     
             }
             else
             {
@@ -339,60 +311,50 @@ int verb_var(frame_S& frame, const e_expression_S& expression, const verbdef_S& 
 #endif
 
 
-                auto rc = def_local_var(frame, var.string, value_value, parm);                       // add new non-constant variable to environment  -- expose based on expose: kw rc
+                auto drc = def_local_var(frame, var.string, value_value, parm);                       // add new non-constant variable to environment  -- expose based on expose: kw rc
               
                 // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
               
-                if (rc != 0)
+                if (drc != 0)
                 {
                     //count_error(); already counted in def_local_var()
-                    M_out_emsg1(L"verb_var() -- error from def_local_var() -- unable to define new local variable = %s") % var.string;
-                    msgend_loc(var, expression);
-                    rc = -1;  
+                    M_out_emsg1(L"@VAR -- error from def_local_var() -- unable to define new local variable = %s") % var.string;
+                    M_verb_error0_loc(results, var, expression)
                 }  
             }
         }
     }    
 
 
-    // return normally, or with error
-
-    if (rc == 0)  
+    // pass back variables -- not the values -- set up single results (1 variable present) or multiple results (0 or more than 1 variable present) 
+    // -------------------------------------------------------------------------------------------------------------------------------------------
+  
+    if (expression.rparms.values.size() == 1)                                                                          // just one variable to be assigned
     {
-        // pass back variables -- not the values -- set up single results (1 variable present) or multiple results (0 or more than 1 variable present) 
-        // -------------------------------------------------------------------------------------------------------------------------------------------
-      
-        if (expression.rparms.values.size() == 1)                                                                          // just one variable to be assigned
-        {
-            results = to_results(expression.rparms.values.at(0));                                                          // output value = single variable
-        }
-        else                                                                                                               // 0 or more than 1 value -- need to pass back multiple results
-        {
-            vlist_S vlist { };                                                                                             // clean results vlist -- no global:, value: keywords, etc. 
-            vlist.values = expression.rparms.values;                                                                       // copy over just the right-side positional parms = all values to be assigned   
-            results = to_results(vlist_val(vlist));                                                                        // convert vlist to results
-            results.multiple_results = true;                                                                               // pass back vlist as multiple results
-        }
+        results = to_results(expression.rparms.values.at(0));                                                          // output value = single variable
     }
-    else
-        results = error_results();                                     // output results = error
+    else                                                                                                               // 0 or more than 1 value -- need to pass back multiple results
+    {
+        vlist_S vlist { };                                                                                             // clean results vlist -- no global:, value: keywords, etc. 
+        vlist.values = expression.rparms.values;                                                                       // copy over just the right-side positional parms = all values to be assigned   
+        results = to_results(vlist_val(vlist));                                                                        // convert vlist to results
+        results.multiple_results = true;                                                                               // pass back vlist as multiple results
+    }
 
-    return rc; 
+    return 0; 
 }
 M_endf
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//    @CONST   identifier   value: general-value   global: expose: unshare: share: -- value: keyword is required
+//    @CONST   identifier   value: general-value   global: local: verbmain: static: expose:  unshare: share: -- value: keyword is required
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int verb_const(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
 {
     // already known that there is one right positional undefined identifier parm     and    required right value: keyword  -- one optional global: keyword
-
-    int rc { 0 }; 
 
     M__(M_out(L"verb_const() called");)
 
@@ -421,26 +383,23 @@ int verb_const(frame_S& frame, const e_expression_S& expression, const verbdef_S
     {
         if (is_global_identifier_defined(var_name))
         {
-            count_error();
-            M_out_emsg1(L"verb_const() -- global identifier %s is already defined -- unable to define it again") % var_name;
-            msgend_loc(expression.rparms.values.at(0), expression);
-            rc = -1;        
+            M_out_emsg1(L"@CONST -- global identifier \"%S\" is already defined -- unable to define it again") % var_name;
+            M_verb_error1_loc(results, expression.rparms.values.at(0), expression)      
         }
         else
         { 
             def_parm_S parm { }; 
             parm.unshare  = (unshare_rc == 0);
                           
-            auto rc = def_global_const(var_name, value_value, parm);              // add new constant variable to environment -- global constant always exposed
+            auto drc = def_global_const(var_name, value_value, parm);              // add new constant variable to environment -- global constant always exposed
            
             // errors expected here include duplicate global variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
            
-            if (rc != 0)
+            if (drc != 0)
             {
                 //count_error(); already counted in def_global_const()
-                M_out_emsg1(L"verb_const() -- error from def_global_const() -- unable to define new global constant = %s") % var_name;
-                msgend_loc(expression.rparms.values.at(0), expression);
-                rc = -1; 
+                M_out_emsg1(L"@CONST -- error from def_global_const() -- unable to define new global constant = %s") % var_name;
+                M_verb_error0_loc(results, expression.rparms.values.at(0), expression) 
             } 
         }
     }
@@ -448,10 +407,8 @@ int verb_const(frame_S& frame, const e_expression_S& expression, const verbdef_S
     {
         if (is_static_identifier_defined(frame, var_name))
         {
-            count_error();
-            M_out_emsg1(L"verb_const() -- static identifier %s is already defined -- unable to define it again") % var_name;
-            msgend_loc(expression.rparms.values.at(0), expression);
-            rc = -1;        
+            M_out_emsg1(L"@CONST -- static identifier \"%S\" is already defined -- unable to define it again") % var_name;
+            M_verb_error1_loc(results, expression.rparms.values.at(0), expression)     
         }
         else
         { 
@@ -461,16 +418,15 @@ int verb_const(frame_S& frame, const e_expression_S& expression, const verbdef_S
             parm.exposed  = (expose_rc  == 0);
 #endif
 
-            auto rc = def_static_const(frame, var_name, value_value, parm);                           // add new non-constant variable to environment -- expose based on expose: kw rc
+            auto drc = def_static_const(frame, var_name, value_value, parm);                           // add new non-constant variable to environment -- expose based on expose: kw rc
           
             // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
           
-            if (rc != 0)
+            if (drc != 0)
             {
                 //count_error(); already counted in def_static_const()
-                M_out_emsg1(L"verb_const() -- error from def_static_const() -- unable to define new static constant = %s") % var_name;
-                msgend_loc(expression.rparms.values.at(0), expression);
-                rc = -1;  
+                M_out_emsg1(L"@CONST -- error from def_static_const() -- unable to define new static constant = %s") % var_name;
+                M_verb_error0_loc(results, expression.rparms.values.at(0), expression) 
             } 
         }
     }
@@ -478,10 +434,8 @@ int verb_const(frame_S& frame, const e_expression_S& expression, const verbdef_S
     {
         if (is_verbmain_identifier_defined(frame, var_name))
         {
-            count_error();
-            M_out_emsg1(L"verb_const() -- verbmain identifier %s is already defined -- unable to define it again") % var_name;
-            msgend_loc(expression.rparms.values.at(0), expression);
-            rc = -1;        
+            M_out_emsg1(L"@CONST -- verbmain identifier \"%S\" is already defined -- unable to define it again") % var_name;
+            M_verb_error1_loc(results, expression.rparms.values.at(0), expression)      
         }
         else
         { 
@@ -490,16 +444,15 @@ int verb_const(frame_S& frame, const e_expression_S& expression, const verbdef_S
 #ifdef M_EXPOSE_SUPPORT
             parm.exposed  = (expose_rc  == 0);
 #endif
-            auto rc = def_verbmain_const(frame, var_name, value_value, parm);                         // add new non-constant variable to environment -- expose based on expose: kw rc
+            auto drc = def_verbmain_const(frame, var_name, value_value, parm);                         // add new non-constant variable to environment -- expose based on expose: kw rc
           
             // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
           
-            if (rc != 0)
+            if (drc != 0)
             {
                 //count_error(); already counted in def_verbmain_const()
-                M_out_emsg1(L"verb_const() -- error from def_verbmain_const() -- unable to define new verbmain constant = %s") % var_name;
-                msgend_loc(expression.rparms.values.at(0), expression);
-                rc = -1;  
+                M_out_emsg1(L"@CONST -- error from def_verbmain_const() -- unable to define new verbmain constant = %s") % var_name;
+                M_verb_error0_loc(results, expression.rparms.values.at(0), expression) 
             } 
         }
     }
@@ -507,10 +460,8 @@ int verb_const(frame_S& frame, const e_expression_S& expression, const verbdef_S
     {
         if (is_local_identifier_defined(frame, var_name))
         {
-            count_error();
-            M_out_emsg1(L"verb_const() -- local identifier %s is already defined -- unable to define it again") % var_name;
-            msgend_loc(expression.rparms.values.at(0), expression);
-            rc = -1;        
+            M_out_emsg1(L"@CONST -- local identifier \"%S\" is already defined -- unable to define it again") % var_name;
+            M_verb_error1_loc(results, expression.rparms.values.at(0), expression)      
         }
         else
         { 
@@ -520,29 +471,25 @@ int verb_const(frame_S& frame, const e_expression_S& expression, const verbdef_S
             parm.exposed  = (expose_rc  == 0);
 #endif
 
-            auto rc = def_local_const(frame, var_name, value_value, parm);                           // add new non-constant variable to environment -- expose based on expose: kw rc
+            auto drc = def_local_const(frame, var_name, value_value, parm);                           // add new non-constant variable to environment -- expose based on expose: kw rc
           
             // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
           
-            if (rc != 0)
+            if (drc != 0)
             {
                 //count_error(); already counted in def_local_const()
-                M_out_emsg1(L"verb_const() -- error from def_local_constr() -- unable to define new local constant = %s") % var_name;
-                msgend_loc(expression.rparms.values.at(0), expression);
-                rc = -1;  
+                M_out_emsg1(L"@CONST -- error from def_local_constr() -- unable to define new local constant = %s") % var_name;
+                M_verb_error0_loc(results, expression.rparms.values.at(0), expression) 
             } 
         }
     }
 
 
-    // return with/without error
+    // return with value assigned to new constant
+    // ------------------------------------------
 
-    if (rc == 0)
-        results = to_results(value_value);               // output results = value assigned to new constant
-    else
-        results = error_results();                       // output results = error          
-
-    return rc; 
+    results = to_results(value_value);               // output results = value assigned to new constant 
+    return 0; 
 }
 M_endf
 
@@ -555,9 +502,7 @@ M_endf
 
 int verb_unvar(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
 {
-    // already known that there is one or more right positional undefined identifier parms     and    maybe right global: keyword
-
-    int rc { 0 };  
+    // already known that there is one or more right positional defined identifier parms     and    maybe right global: keyword
 
     M__(M_out(L"verb_unvar() called");)
 
@@ -582,39 +527,47 @@ int verb_unvar(frame_S& frame, const e_expression_S& expression, const verbdef_S
             {
                 if (is_global_identifier_const(var.string))
                 {
-                    count_error(); 
-                    M_out_emsg1(L"verb_unvar() -- global variable %s is constant -- unable to undefine") % var.string;
-                    msgend_loc(var, expression);
-                    rc = -1;        
+                    M_out_emsg1(L"@UNVAR -- global variable \"%S\" is constant -- unable to undefine") % var.string;
+                    M_verb_error1_loc(results, var, expression)    
                 } 
-                else if (is_global_identifier_verb(var.string))
+                else if (is_global_identifier_verbset(var.string))
                 {
-                    count_error(); 
-                    M_out_emsg1(L"verb_unvar() -- global identifier %s is a verb -- unable to undefine using @UNVAR") % var.string;
-                    msgend_loc(var, expression);
-                    rc = -1;        
+                    M_out_emsg1(L"@UNVAR -- global identifier \"%S\" is a verb -- unable to undefine using @UNVAR") % var.string;
+                    M_verb_error1_loc(results, var, expression)  
                 } 
                 else if (is_global_identifier_typdef(var.string))
                 {
-                    count_error(); 
-                    M_out_emsg1(L"verb_unvar() -- global identifier %s is a typedef -- unable to undefine using @UNVAR") % var.string;
-                    msgend_loc(var, expression);
-                    rc = -1;        
+                    M_out_emsg1(L"@UNVAR -- global identifier \"%S\" is a typedef -- unable to undefine using @UNVAR") % var.string;
+                    M_verb_error1_loc(results, var, expression)      
+                } 
+                else if (is_global_identifier_alias(var.string))
+                {
+                    M_out_emsg1(L"@UNVAR -- global identifier \"%S\" is an alias -- unable to undefine using @UNVAR") % var.string;
+                    M_verb_error1_loc(results, var, expression)     
+                } 
+                else if (!is_global_identifier_removable(var.string))
+                {
+                    M_out_emsg1(L"@UNVAR -- global identifier \"%S\" cannot be removed -- unable to undefine using @UNVAR") % var.string;
+                    M_verb_error1_loc(results, var, expression)       
                 } 
                 else
                 {
-                    auto rc = undef_global_var(var.string);    // undefine variable from global environment
+                    auto urc = undef_global_var(var.string);    // undefine variable from global environment
                
                     // errors are unexpected here
                    
-                    if (rc != 0)
+                    if (urc != 0)
                     {
                         //count_error(); already counted in def_global_var()
-                        M_out_emsg1(L"verb_unvar() -- unexpected error from undef_global_var() -- unable to undefine global variable = %s") % var.string;
-                        msgend_loc(var, expression);
-                        rc = -1; 
+                        M_out_emsg1(L"@UNVAR -- unexpected error from undef_global_var() -- unable to undefine global variable = %s") % var.string;
+                        M_verb_error0_loc(results, var, expression)  
                     } 
                 }
+            }
+            else
+            {
+                M_out_emsg1(L"@UNVAR -- global identifier \"%S\" is not defined -- unable to undefine") % var.string;
+                M_verb_error1_loc(results, var, expression)     
             }
         }
         else if (static_rc == 0)           // static: present -- undefine static variable
@@ -623,39 +576,47 @@ int verb_unvar(frame_S& frame, const e_expression_S& expression, const verbdef_S
             {
                 if (is_static_identifier_const(frame, var.string))
                 {
-                    count_error(); 
-                    M_out_emsg1(L"verb_unvar() -- static variable %s is constant -- unable to undefine") % var.string;
-                    msgend_loc(var, expression);
-                    rc = -1;        
+                    M_out_emsg1(L"@UNVAR -- static variable \"%S\" is constant -- unable to undefine") % var.string;
+                    M_verb_error1_loc(results, var, expression)       
                 } 
-                else if (is_static_identifier_verb(frame, var.string))
+                else if (is_static_identifier_verbset(frame, var.string))
                 {
-                    count_error(); 
-                    M_out_emsg1(L"verb_unvar() -- static identifier %s is a verb -- unable to undefine using @UNVAR") % var.string;
-                    msgend_loc(var, expression);
-                    rc = -1;        
+                    M_out_emsg1(L"@UNVAR -- static identifier \"%S\" is a verb -- unable to undefine using @UNVAR") % var.string;
+                    M_verb_error1_loc(results, var, expression)     
                 } 
                 else if (is_static_identifier_typdef(frame, var.string))
                 {
-                    count_error(); 
-                    M_out_emsg1(L"verb_unvar() -- static identifier %s is a typdef -- unable to undefine using @UNVAR") % var.string;
-                    msgend_loc(var, expression);
-                    rc = -1;        
+                    M_out_emsg1(L"@UNVAR -- static identifier \"%S\" is a typdef -- unable to undefine using @UNVAR") % var.string;
+                    M_verb_error1_loc(results, var, expression)       
+                } 
+                else if (is_static_identifier_alias(frame, var.string))
+                {
+                    M_out_emsg1(L"@UNVAR -- static identifier \"%S\" is an alias -- unable to undefine using @UNVAR") % var.string;
+                    M_verb_error1_loc(results, var, expression)      
+                } 
+                else if (!is_static_identifier_removable(frame, var.string))
+                {
+                    M_out_emsg1(L"@UNVAR -- static identifier \"%S\" cannot be removed -- unable to undefine using @UNVAR") % var.string;
+                    M_verb_error1_loc(results, var, expression)       
                 } 
                 else
                 {
-                    auto rc = undef_static_var(frame, var.string);           // undefine variable from static environment
+                    auto urc = undef_static_var(frame, var.string);           // undefine variable from static environment
                    
                     // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
                    
-                    if (rc != 0)
+                    if (urc != 0)
                     {
                         //count_error(); already counted in def_local_var()
-                        M_out_emsg1(L"verb_unvar() -- unexpected error from undef_local_var() -- unable to undefine static variable = %s") % var.string;
-                        msgend_loc(var, expression);
-                        rc = -1;  
+                        M_out_emsg1(L"@UNVAR -- unexpected error from undef_local_var() -- unable to undefine static variable = %s") % var.string;
+                        M_verb_error0_loc(results, var, expression)  
                     } 
                 }
+            }
+            else
+            {
+                M_out_emsg1(L"@UNVAR -- static identifier \"%S\" is not defined -- unable to undefine") % var.string;
+                M_verb_error1_loc(results, var, expression)   
             }
         }       
         else if (verbmain_rc == 0)           // verbmain: present -- undefine verbmain variable
@@ -664,39 +625,47 @@ int verb_unvar(frame_S& frame, const e_expression_S& expression, const verbdef_S
             {
                 if (is_verbmain_identifier_const(frame, var.string))
                 {
-                    count_error(); 
-                    M_out_emsg1(L"verb_unvar() -- verbmain identifier %s is constant -- unable to undefine") % var.string;
-                    msgend_loc(var, expression);
-                    rc = -1;        
+                    M_out_emsg1(L"@UNVAR -- verbmain identifier \"%S\" is constant -- unable to undefine") % var.string;
+                    M_verb_error1_loc(results, var, expression)      
                 } 
-                else if (is_verbmain_identifier_verb(frame, var.string))
+                else if (is_verbmain_identifier_verbset(frame, var.string))
                 {
-                    count_error(); 
-                    M_out_emsg1(L"verb_unvar() -- verbmain identifier %s is a verb -- unable to undefine using @UNVAR") % var.string;
-                    msgend_loc(var, expression);
-                    rc = -1;        
+                    M_out_emsg1(L"@UNVAR -- verbmain identifier \"%S\" is a verb -- unable to undefine using @UNVAR") % var.string;
+                    M_verb_error1_loc(results, var, expression)      
                 } 
                 else if (is_verbmain_identifier_typdef(frame, var.string))
                 {
-                    count_error(); 
-                    M_out_emsg1(L"verb_unvar() -- verbmain identifier %s is a typdef -- unable to undefine using @UNVAR") % var.string;
-                    msgend_loc(var, expression);
-                    rc = -1;        
+                    M_out_emsg1(L"@UNVAR -- verbmain identifier \"%S\" is a typdef -- unable to undefine using @UNVAR") % var.string;
+                    M_verb_error1_loc(results, var, expression)       
+                } 
+                else if (is_verbmain_identifier_alias(frame, var.string))
+                {
+                    M_out_emsg1(L"@UNVAR -- verbmain identifier \"%S\" is an alias -- unable to undefine using @UNVAR") % var.string;
+                    M_verb_error1_loc(results, var, expression)        
+                } 
+                else if (!is_verbmain_identifier_removable(frame, var.string))
+                {
+                    M_out_emsg1(L"@UNVAR -- verbmain identifier \"%S\" cannot be removed -- unable to undefine using @UNVAR") % var.string;
+                    M_verb_error1_loc(results, var, expression)       
                 } 
                 else
                 {
-                    auto rc = undef_verbmain_var(frame, var.string);           // undefine variable from verbmain environment
+                    auto urc = undef_verbmain_var(frame, var.string);           // undefine variable from verbmain environment
                    
                     // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
                    
-                    if (rc != 0)
+                    if (urc != 0)
                     {
                         //count_error(); already counted in undef_verbdef_var()
-                        M_out_emsg1(L"verb_unvar() -- unexpected error from undef_verbdef_var() -- unable to undefine verbdef identifier = %s") % var.string;
-                        msgend_loc(var, expression);
-                        rc = -1;  
+                        M_out_emsg1(L"@UNVAR -- unexpected error from undef_verbdef_var() -- unable to undefine verbdef identifier = %s") % var.string;
+                        M_verb_error0_loc(results, var, expression)  
                     } 
                 }
+            }
+            else
+            {
+                M_out_emsg1(L"@UNVAR -- verbmain identifier \"%S\" is not defined -- unable to undefine") % var.string;
+                M_verb_error1_loc(results, var, expression)  
             }
         }  
         else          // global: verbdef: and static: were not present -- undefine local variable
@@ -705,125 +674,550 @@ int verb_unvar(frame_S& frame, const e_expression_S& expression, const verbdef_S
             {
                 if (is_local_identifier_const(frame, var.string))
                 {
-                    count_error(); 
-                    M_out_emsg1(L"verb_unvar() -- local variable %s is constant -- unable to undefine") % var.string;
-                    msgend_loc(var, expression);
-                    rc = -1;        
+                    M_out_emsg1(L"@UNVAR -- local variable \"%S\" is constant -- unable to undefine") % var.string;
+                    M_verb_error1_loc(results, var, expression)     
                 } 
-                else if (is_local_identifier_verb(frame, var.string))
+                else if (is_local_identifier_verbset(frame, var.string))
                 {
-                    count_error(); 
-                    M_out_emsg1(L"verb_unvar() -- local identifier %s is a verb -- unable to undefine using @UNVAR") % var.string;
-                    msgend_loc(var, expression);
-                    rc = -1;        
+                    M_out_emsg1(L"@UNVAR -- local identifier \"%S\" is a verb -- unable to undefine using @UNVAR") % var.string;
+                    M_verb_error1_loc(results, var, expression)       
                 } 
                 else if (is_local_identifier_typdef(frame, var.string))
                 {
-                    count_error(); 
-                    M_out_emsg1(L"verb_unvar() -- local identifier %s is a typedef -- unable to undefine using @UNVAR") % var.string;
-                    msgend_loc(var, expression);
-                    rc = -1;        
+                    M_out_emsg1(L"@UNVAR -- local identifier \"%S\" is a typedef -- unable to undefine using @UNVAR") % var.string;
+                    M_verb_error1_loc(results, var, expression)        
+                } 
+                else if (is_local_identifier_alias(frame, var.string))
+                {
+                    M_out_emsg1(L"@UNVAR -- local identifier \"%S\" is a alias -- unable to undefine using @UNVAR") % var.string;
+                    M_verb_error1_loc(results, var, expression)      
+                } 
+                else if (!is_local_identifier_removable(frame, var.string))
+                {
+                    M_out_emsg1(L"@UNVAR -- local identifier \"%S\" cannot be removed -- unable to undefine using @UNVAR") % var.string;
+                    M_verb_error1_loc(results, var, expression)        
                 } 
                 else
                 {
-                    auto rc = undef_local_var(frame, var.string);           // undefine variable from local environment
+                    auto urc = undef_local_var(frame, var.string);           // undefine variable from local environment
                    
                     // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
                    
-                    if (rc != 0)
+                    if (urc != 0)
                     {
                         //count_error(); already counted in def_local_var()
-                        M_out_emsg1(L"verb_unvar() -- unexpected error from undef_local_var() -- unable to undefine local variable = %s") % var.string;
-                        msgend_loc(var, expression);
-                        rc = -1;  
+                        M_out_emsg1(L"@UNVAR -- unexpected error from undef_local_var() -- unable to undefine local variable = %s") % var.string;
+                        M_verb_error0_loc(results, var, expression)  
                     } 
                 }
+            }
+            else
+            {
+                M_out_emsg1(L"@UNVAR -- local identifier \"%S\" is not defined -- unable to undefine") % var.string;
+                M_verb_error1_loc(results, var, expression)  
             }
         }        // global/local check
     }            // end of for() loop 
 
 
-    // return normally, or with error
-
-    if (rc == 0)  
-        results = no_results();                                        // output results = none
-    else
-        results = error_results();                                     // output results = error
-
-    return rc; 
+    // return normally, with no results
+  
+    results = no_results();                                        // output results = none  
+    return 0; 
 }
 M_endf
  
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//    @NOEVAL identifier :share :unshare
+//                                          ------
+//    identifier identifier ... identifier  @ALIAS identifier identifier ... identifier      global: local: verbmain: static: expose:   -- keywords optional
+//                                          ------
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int verb_noeval(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+int verb_alias(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
 {
-    // already known that there is one positional identifier parm -- optional share: noshare: keyword 
-    M__(M_out(L"verb_noeval() called");)
+    // already known that there is one or more left  positional undefined identifier parms
+    // already known that there is one or more right positional undefined identifier parms     and    maybe right value: and global: keywords
+    // same number of left and right positional parms 
+
+    M__(M_out(L"verb_alias() called");)
 
 
-    // see if caller wants unshared copy
+    // fetch keyword values 
 
-    if (0 == get_right_keyword(expression, L"unshare"))
+    value_S value_value  { };                                                      // value to be assigned -- will be unit if value: keyword not present 
+    auto weak_rc      = get_right_keyword(expression, L"weak"                );    // rc = -1, if weak:      keyword is not present
+    auto global_rc    = get_right_keyword(expression, L"global"              );    // rc = -1, if global:    keyword is not present
+    auto static_rc    = get_right_keyword(expression, L"static"              );    // rc = -1, if static:    keyword is not present
+    auto verbmain_rc  = get_right_keyword(expression, L"verbmain"            );    // rc = -1, if verbmain:  keyword is not present
+#ifdef M_EXPOSE_SUPPORT
+    auto expose_rc  = get_right_keyword(expression, L"expose"              );      // rc = -1, if expose:  keyword is not present  (assumed if this is a global alias) 
+#endif
+  
+
+    // ----------------------------------------------------------------------------
+    // define new aliases in loop -- each one "pointing" to an existing identifier: 
+    // ----------------------------------------------------------------------------
+
+    auto alias_ct = std::min(expression.lparms.values.size(), expression.rparms.values.size() );     // left and right counts should bethe same
+
+    for (auto i = 0; i < alias_ct; i++)
     {
-        value_S value {expression.rparms.values.at(0)};            // just copy 1st positional parm value to local var -- nested items are still shared
-        unshare_value(value);
-        results = to_results(value); 
-    }
-    else
+        auto alias_v = expression.lparms.values.at(i);
+        auto ident_v = expression.rparms.values.at(i); 
+        auto alias = alias_v.string; 
+        auto ident = ident_v.string; 
+
+        M__(M_out(L"@ALIAS -- i=%d  alias=\"%S\"  ident=\"%S\"") % i % alias % ident;)
+
+        if (!is_identifier_defined(frame, ident))
+        {
+            M_out_emsg1(L"@ALIAS -- identifier \"%S\" is is not defined -- unable to create an alias \"%S\" for it") % ident % alias;
+            M_verb_error1_loc(results, ident_v, expression)     
+        }
+        else if (global_rc == 0)
+        {
+            if (is_global_identifier_defined(alias))
+            {
+                M_out_emsg1(L"@ALIAS -- global identifier \"%S\" is already defined -- unable to define it again as an alias") % alias;
+                M_verb_error1_loc(results, alias_v, expression)   
+            }
+            else if (!is_identifier_defined(frame, ident))
+            {
+                M_out_emsg1(L"@ALIAS -- identifier \"%S\" is is not defined -- unable to create an alias \"%S\" for it") % ident % alias;
+                M_verb_error1_loc(results, ident_v, expression)       
+            }
+            else
+            {
+                def_parm_S  parm { };
+
+
+                if (weak_rc == -1)
+                {
+                    auto drc = def_global_alias(ident, alias, parm);                       // add new non-constant alias to environment -- global alias are always exposed
+                   
+                    // errors are unexpected here
+                   
+                    if (drc != 0)
+                    {
+                        //count_error(); already counted in def_global_alias()
+                        M_out_emsg1(L"@ALIAS -- error from def_global_alias() -- unable to define new global alias = %s") % alias;
+                        M_verb_error0_loc(results, alias_v, expression)
+                    } 
+                }
+                else
+                {
+                    auto drc = def_global_weak_alias(ident, alias, parm);                  // add new non-constant alias to environment -- global alias are always exposed
+                   
+                    // errors are unexpected here
+                   
+                    if (drc != 0)
+                    {
+                        //count_error(); already counted in def_global_weak_alias()
+                        M_out_emsg1(L"@ALIAS -- error from def_global_weak_alias() -- unable to define new weak global alias = %s") % alias;
+                        M_verb_error0_loc(results, alias_v, expression)
+                    } 
+                }
+            }
+        }
+        else if (static_rc == 0)          // static: present -- define static alias
+        {
+            if (is_static_identifier_defined(frame, alias))
+            {
+                M_out_emsg1(L"@ALIAS -- static identifier \"%S\" is already defined -- unable to define it again as an alias") % alias;
+                M_verb_error1_loc(results, alias_v, expression)   
+            }
+            else
+            {
+                def_parm_S  parm { };
+#ifdef M_EXPOSE_SUPPORT
+                parm.exposed  = (expose_rc  == 0);
+#endif
+                if (weak_rc == -1)
+                {
+                    auto drc = def_static_alias(frame, ident, alias, parm);                       // add new non-constant alias to environment  -- expose based on expose: kw rc
+                  
+                    // errors expected here include duplicate alias names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
+                  
+                    if (drc != 0)
+                    {
+                        //count_error(); already counted in def_static_alias()
+                        M_out_emsg1(L"@ALIAS -- error from def_static_alias() -- unable to define new static alias = %s") % alias;
+                        M_verb_error0_loc(results, alias_v, expression)
+                    }  
+                }
+                else
+                {
+                    auto drc = def_static_weak_alias(frame, ident, alias, parm);                  // add new non-constant weak alias to environment  -- expose based on expose: kw rc
+                  
+                    // errors expected here include duplicate alias names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
+                  
+                    if (drc != 0)
+                    {
+                        //count_error(); already counted in def_static_alias()
+                        M_out_emsg1(L"@ALIAS -- error from def_static_weak_alias() -- unable to define new weak static alias = %s") % alias;
+                        M_verb_error0_loc(results, alias_v, expression)
+                    }  
+                }
+            }
+        }
+        else if (verbmain_rc == 0)          // verbmain: present -- define verbmain alias
+        {
+            if (is_verbmain_identifier_defined(frame, alias))
+            {
+                M_out_emsg1(L"@ALIAS -- verbmain identifier \"%S\" is already defined -- unable to define it again as an alias") % alias;
+                M_verb_error1_loc(results, alias_v, expression)   
+            }
+            else
+            {
+                def_parm_S  parm { };
+#ifdef M_EXPOSE_SUPPORT
+                parm.exposed  = (expose_rc  == 0);
+#endif
+                if (weak_rc == -1)
+                {
+                    auto drc = def_verbmain_alias(frame, ident, alias, parm);                       // add new non-constant alias to environment  -- expose based on expose: kw rc
+                  
+                    // errors expected here include duplicate alias names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
+                  
+                    if (drc != 0)
+                    {
+                        //count_error(); already counted in def_verbmain_alias()
+                        M_out_emsg1(L"@ALIAS -- error from def_verbmain_alias() -- unable to define new verbmain alias = %s") % alias;
+                        M_verb_error0_loc(results, alias_v, expression)
+                    }  
+                }
+                else
+                {
+                    auto drc = def_verbmain_weak_alias(frame, ident, alias, parm);                 // add new non-constant alias to environment  -- expose based on expose: kw rc
+                  
+                    // errors expected here include duplicate alias names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
+                  
+                    if (drc != 0)
+                    {
+                        //count_error(); already counted in def_verbmain_alias()
+                        M_out_emsg1(L"@ALIAS -- error from def_verbmain_weak_alias() -- unable to define new weak verbmain alias = %s") % alias;
+                        M_verb_error0_loc(results, alias_v, expression)
+                    }  
+                }
+            }
+        }
+        else          // global:, verbmain:, and static: were not present -- define local: alias
+        {
+            if (is_local_identifier_defined(frame, alias))
+            {
+                M_out_emsg1(L"@ALIAS -- local identifier \"%S\" is already defined -- unable to define it again as an alias") % alias;
+                M_verb_error1_loc(results, alias_v, expression)   
+            }
+            else
+            {
+                def_parm_S  parm { };
+#ifdef M_EXPOSE_SUPPORT
+                parm.exposed  = (expose_rc  == 0);
+#endif
+
+                if (weak_rc == -1)
+                {
+                    auto drc = def_local_alias(frame, ident, alias, parm);                       // add new non-constant alias to environment  -- expose based on expose: kw rc
+                  
+                    // errors expected here include duplicate alias names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
+                  
+                    if (drc != 0)
+                    {
+                        //count_error(); already counted in def_local_alias()
+                        M_out_emsg1(L"@ALIAS -- error from def_local_alias() -- unable to define new local alias = %s") % alias;
+                        M_verb_error0_loc(results, alias_v, expression)
+                    }  
+                }
+                else
+                {
+                    auto drc = def_local_weak_alias(frame, ident, alias, parm);                       // add new non-constant alias to environment  -- expose based on expose: kw rc
+                  
+                    // errors expected here include duplicate alias names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
+                  
+                    if (drc != 0)
+                    {
+                        //count_error(); already counted in def_local_alias()
+                        M_out_emsg1(L"@ALIAS -- error from def_local_weak_alias() -- unable to define new weak local alias = %s") % alias;
+                        M_verb_error0_loc(results, alias_v, expression)
+                    }                  
+                }
+            }
+        }
+    }    
+
+
+    // normal return -- pass back aliases -- not the values -- set up single results (1 alias present) or multiple results (0 or more than 1 alias present) 
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------
+   
+    if (expression.rparms.values.size() == 1)                                                                          // just one alias to be assigned
     {
-        results = to_results(expression.rparms.values.at(0));      // just copy 1st positional parm value to results
+        results = to_results(expression.lparms.values.at(0));                                                          // output value = single alias
     }
+    else                                                                                                               // 0 or more than 1 alias -- need to pass back multiple results
+    {
+        vlist_S vlist { };                                                                                             // clean results vlist -- no global:, value: keywords, etc. 
+        vlist.values = expression.lparms.values;                                                                       // copy over just the right-side positional parms = all values to be assigned   
+        results = to_results(vlist_val(vlist));                                                                        // convert vlist to results
+        results.multiple_results = true;                                                                               // pass back vlist as multiple results
+    }  
 
-
-    results.suppress_eval_once = true;                             // suppress evaluation on return from this verb
-    return 0 ; 
+    return 0;                                                                                                          // return normally
 }
 M_endf
 
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//    @EVAL -- return (already) evaluated input parms
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int verb_eval(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there are 1-N right-side positional parms of any type 
-
-    M__(M_out(L"verb_eval() called");)
-
-    results = to_results(vlist_val(expression.rparms));                                         // place input vlist in results (should have been evaluated before verb_eval() was called) 
-    results.multiple_results = true;                                                            // indicate that mutiple results are perhaps being returned
-    return 0;
-}
-M_endf
 
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//    @UNSHARE value
+//    @UNALIAS identifier identifier ... identifier :global static: local: verbmain: -- keywords optional
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int verb_unshare(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+int verb_unalias(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
 {
-    // already known that there is one positional assignable type parm
-    M__(M_out(L"verb_unshare() called");)
+    // already known that there is one or more right positional defined identifier parms     and    maybe right global: keyword
 
-    value_S value {expression.rparms.values.at(0)};      // just copy 1st positional parm value to local var -- nested items are still shared
-    unshare_value(value);
-    results = to_results(value); 
-    return 0 ; 
+    M__(M_out(L"verb_unalias() called");)
+
+
+    // fetch global: verbmain: static: keywords 
+
+    value_S global_value { };                                                  // not looked at 
+    auto global_rc   = get_right_keyword(expression, L"global", global_value);   // rc = -1, if global:    keyword is not present
+    auto verbmain_rc = get_right_keyword(expression, L"verbmain"            );   // rc = -1, if verbmain:  keyword is not present
+    auto static_rc   = get_right_keyword(expression, L"static"              );   // rc = -1, if static:    keyword is not present
+
+
+    // undefine aliases in loop, if they are defined and non_constant 
+
+    for (const auto& alias : expression.rparms.values)
+    {
+        M__(M_out(L"verb_unalias() -- range for -- alias.string = %s") % alias.string; )
+
+        if (global_rc == 0)                                              // if global: keyword present, undefine global alias
+        {
+            if (is_global_identifier_defined(alias.string))             // don't bother, if global alias is already undefined 
+            {
+                if (!is_global_identifier_alias(alias.string))
+                {
+                    if (is_global_identifier_const(alias.string))
+                    {
+                        M_out_emsg1(L"@UNALIAS -- global alias \"%S\" is constant -- unable to undefine") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)       
+                    } 
+                    else if (is_global_identifier_verbset(alias.string))
+                    {
+                        M_out_emsg1(L"@UNALIAS -- global alias \"%S\" is a verb -- unable to undefine") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)        
+                    } 
+                    else if (is_global_identifier_typdef(alias.string))
+                    {
+                        M_out_emsg1(L"@UNALIAS -- global alias \"%S\" is a typedef -- unable to undefine") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)         
+                    } 
+                    else if (!is_global_identifier_removable(alias.string))
+                    {
+                        M_out_emsg1(L"@UNALIAS -- global alias \"%S\" cannot be removed -- unable to undefine") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)          
+                    }
+                    else
+                    {
+                        M_out_emsg1(L"@UNALIAS -- global identifier \"%S\" is not an alias -- unable to undefine using @UNALIAS") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)          
+                    }
+                }    
+                else
+                {
+                    auto urc = undef_global_alias(alias.string);    // undefine alias from global environment
+               
+                    // errors are unexpected here
+                   
+                    if (urc != 0)
+                    {
+                        //count_error(); already counted in undef_global_alias()
+                        M_out_emsg1(L"@UNALIAS -- unexpected error from undef_global_alias() -- unable to undefine global alias = %s") % alias.string;
+                        M_verb_error0_loc(results, alias, expression)   
+                    } 
+                }
+            }
+            else
+            {
+                M_out_emsg1(L"@UNALIAS -- global identifier \"%S\" is not defined -- unable to undefine") % alias.string;
+                M_verb_error1_loc(results, alias, expression)     
+            }
+        }
+        else if (static_rc == 0)           // static: present -- undefine static alias
+        {
+            if (is_static_identifier_defined(frame, alias.string))             // don't bother, if static identifier is already undefined 
+            {
+                if (!is_static_identifier_alias(frame, alias.string))
+                {
+                    if (is_static_identifier_const(frame, alias.string))
+                    {
+                        M_out_emsg1(L"@UNALIAS -- static alias \"%S\" is constant -- unable to undefine") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)          
+                    } 
+                    else if (is_static_identifier_verbset(frame, alias.string))
+                    {
+                        M_out_emsg1(L"@UNALIAS -- static identifier \"%S\" is a verb -- unable to undefine") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)       
+                    } 
+                    else if (is_static_identifier_typdef(frame, alias.string))
+                    {
+                        M_out_emsg1(L"@UNALIAS -- static identifier \"%S\" is a typdef -- unable to undefine") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)        
+                    } 
+                    else if (!is_static_identifier_removable(frame, alias.string))
+                    {
+                        M_out_emsg1(L"@UNALIAS -- static identifier \"%S\" cannot be removed -- unable to undefine") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)        
+                    }
+                    else
+                    {
+                        M_out_emsg1(L"@UNALIAS -- static identifier \"%S\" is not an alias -- unable to undefine using @UNALIAS") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)          
+                    }
+                }
+                else
+                {
+                    auto urc = undef_static_alias(frame, alias.string);           // undefine alias from static environment
+                   
+                    // errors expected here include duplicate alias names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
+                   
+                    if (urc != 0)
+                    {
+                        //count_error(); already counted in def_local_alias()
+                        M_out_emsg1(L"@UNALIAS -- unexpected error from undef_local_alias() -- unable to undefine static alias = %s") % alias.string;
+                        M_verb_error0_loc(results, alias, expression)  
+                    } 
+                }
+            }
+            else
+            {
+                M_out_emsg1(L"@UNALIAS -- static identifier \"%S\" is not defined -- unable to undefine") % alias.string;
+                M_verb_error1_loc(results, alias, expression)    
+            }
+        }       
+        else if (verbmain_rc == 0)           // verbmain: present -- undefine verbmain alias
+        {
+            if (is_verbmain_identifier_defined(frame, alias.string))             // don't bother, if verbmain identifier is already undefined 
+            {
+                if (!is_verbmain_identifier_alias(frame, alias.string))
+                {
+                    if (is_verbmain_identifier_const(frame, alias.string))
+                    {
+                        M_out_emsg1(L"@UNALIAS -- verbmain identifier \"%S\" is constant -- unable to undefine") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)          
+                    } 
+                    else if (is_verbmain_identifier_verbset(frame, alias.string))
+                    {
+                        M_out_emsg1(L"@UNALIAS -- verbmain identifier \"%S\" is a verb -- unable to undefine") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)          
+                    } 
+                    else if (is_verbmain_identifier_typdef(frame, alias.string))
+                    {
+                        M_out_emsg1(L"@UNALIAS -- verbmain identifier \"%S\" is a typdef -- unable to undefine") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)          
+                    } 
+                    else if (!is_verbmain_identifier_removable(frame, alias.string))
+                    {
+                        M_out_emsg1(L"@UNALIAS -- verbmain identifier \"%S\" cannot be removed -- unable to undefine") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)           
+                    } 
+                    else
+                    {
+                        M_out_emsg1(L"@UNALIAS -- verbmain identifier \"%S\" is not an alias -- unable to undefine using @UNALIAS") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)          
+                    }
+                }
+                else
+                {
+                    auto urc = undef_verbmain_alias(frame, alias.string);           // undefine alias from verbmain environment
+                   
+                    // errors expected here include duplicate alias names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
+                   
+                    if (urc != 0)
+                    {
+                        //count_error(); already counted in undef_verbdef_alias()
+                        M_out_emsg1(L"@UNALIAS -- unexpected error from undef_verbdef_alias() -- unable to undefine verbdef identifier = %s") % alias.string;
+                        M_verb_error0_loc(results, alias, expression)    
+                    } 
+                }
+            }
+            else
+            {
+                M_out_emsg1(L"@UNALIAS -- verbmain identifier \"%S\" is not defined -- unable to undefine") % alias.string;
+                M_verb_error1_loc(results, alias, expression)   
+            }
+        }  
+        else          // global: verbdef: and static: were not present -- undefine local alias
+        {
+            if (is_local_identifier_defined(frame, alias.string))             // don't bother, if local identifier is already undefined 
+            {
+                if (!is_local_identifier_alias(frame, alias.string))
+                {
+                    if (is_local_identifier_const(frame, alias.string))
+                    {
+                        M_out_emsg1(L"@UNALIAS -- local alias \"%S\" is constant -- unable to undefine") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)       
+                    } 
+                    else if (is_local_identifier_verbset(frame, alias.string))
+                    {
+                        M_out_emsg1(L"@UNALIAS -- local identifier \"%S\" is a verb -- unable to undefine") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)         
+                    } 
+                    else if (is_local_identifier_typdef(frame, alias.string))
+                    {
+                        M_out_emsg1(L"@UNALIAS -- local identifier \"%S\" is a typedef -- unable to undefine") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)         
+                    } 
+                    else if (!is_local_identifier_removable(frame, alias.string))
+                    {
+                        M_out_emsg1(L"@UNALIAS -- local identifier \"%S\" cannot be removed -- unable to undefine") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)          
+                    }
+                    else
+                    {
+                        M_out_emsg1(L"@UNALIAS -- local identifier \"%S\" is not an alias -- unable to undefine using @UNALIAS") % alias.string;
+                        M_verb_error1_loc(results, alias, expression)          
+                    }
+                }
+                else
+                {
+                    auto urc = undef_local_alias(frame, alias.string);           // undefine alias from local environment
+                   
+                    // errors expected here include duplicate alias names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
+                   
+                    if (urc != 0)
+                    {
+                        //count_error(); already counted in def_local_alias()
+                        M_out_emsg1(L"@UNALIAS -- unexpected error from undef_local_alias() -- unable to undefine local alias = %s") % alias.string;
+                        M_verb_error0_loc(results, alias, expression)    
+                    } 
+                }
+            }
+            else
+            {
+                M_out_emsg1(L"@UNALIAS -- local identifier \"%S\" is not defined -- unable to undefine") % alias.string;
+                M_verb_error1_loc(results, alias, expression)     
+            }
+        }        // global/local check
+    }            // end of for() loop 
+
+
+    // return normally, with no results
+
+    results = no_results();                                        // output results = none 
+    return 0; 
 }
 M_endf
+ 
 
 
 #ifdef M_EXPOSE_SUPPORT
@@ -976,1709 +1370,6 @@ M_endf
 #endif
 
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-//╔═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-//║╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳
-//║╳╳╔════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-//║╳╳║
-//║╳╳║      Aggregate-oriented and Type-oriented verbs
-//║╳╳║
-//║╳╳╚════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-//║╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳
-//╚═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-
-
-//---------------------------------------------------------------------------------
-//   @AGG 
-//---------------------------------------------------------------------------------
-
-int verb_agg(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // see which parms are present -- at least one must be present: len: or type: (or both)
-    // -----------------------------------------------------------
-
-    value_S len_value  { };
-    value_S type_value { };
-
-    auto len_rc   = get_right_keyword(expression, L"len"  , len_value  );       // len_rc   = -1, if len:   is not present (meaning use length of type: for length of buffer 
-    auto type_rc  = get_right_keyword(expression, L"type" , type_value );       // type_rc  = -1, if type:  is not present (meaning, make array of UINT8_T with len: elements
-
-
-    // error, if neither len: nor type: keywords are present
-    // -----------------------------------------------------
-
-    if ( (len_rc == -1) && (type_rc == -1) )
-    {
-       count_error();
-       M_out_emsg1(L"verb_agg() -- neither len: or type: keywords were present -- at least one is required -- aggregate cannot be constructed");
-       msgend_loc(expression);
-
-       results = results_S { };
-       return -1; 
-    }
-
-
-    // error, if both len: and type: keywords are present, and length of typdef_S exceeds specified len:
-    // -------------------------------------------------------------------------------------------------
-
-    if (
-        ( (len_rc == 0) && (type_rc == 0) )
-        &&
-        ( type_value.typdef_sp->tsize > len_value.int64)
-       ) 
-    {
-       count_error();
-       M_out_emsg1(L"verb_agg() -- length of type: (%d) exceeds specified len: (%d) -- aggregate cannot be constructed") % type_value.typdef_sp->tsize % len_value.int64;
-       msgend_loc(expression);
-
-       results = results_S { };
-       return -1; 
-    }
-
-
-    // error, if typdef_S for type: keyword has zero length (i.e. is not fixed-length typdef_S)
-    // ----------------------------------------------------------------------------------------
-
-    if ( (type_rc == 0) && (type_value.typdef_sp->tsize <= 0) )
-    {
-       count_error();
-       M_out_emsg1(L"verb_agg() -- length of type: is 0 (non fixed-length type) -- aggregate cannot be constructed");
-       msgend_loc(expression);
-
-       results = results_S { };
-       return -1; 
-    }  
-
-
-    // get length of buf8_T
-  
-    size_t len { };
-
-    if (len_rc == 0)
-       len = len_value.int64; 
-    else
-       len = type_value.typdef_sp->tsize;
-
-
-    // get typdef for this aggregate
-
-    typdef_S typdef { };
-
-    if (type_rc == 0)
-    {
-        typdef = *(type_value.typdef_sp);                                   // use caller's typdef, if provided
-        unshare_typdef(typdef);                                             // make sure nothing shared,since std::move() will be used below
-    }
-    else    
-    {
-        make_array_typdef(len, make_atomic_typdef(type_E::uint8), typdef);  // use array of uint8, with len: elements
-    }
-
-
-    // construct aggregate results from typdef_S and buffer, and return normally
-
-    buf8_T buffer { len }; 
-    buffer.clear(); 
-
-    results = to_results(  buffer_val(buffer, typdef, true)  ); 
-
-    return 0; 
-}
-M_endf
-         
-
-//---------------------------------------------------------------------------------
-//   @TYPE 
-//---------------------------------------------------------------------------------
-
-int verb_type(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    int rc {0}; 
-
-
-     // process input parms
-     // -------------------
-
-     // known: optional typedef name on right side -- is unevaluated identifier
-    
-     value_S name_value  { };                                                      // name_value.string has name of undefined identifier for this typdef
-
-     auto name_rc      = get_right_keyword(expression, L"name",  name_value );       // name_rc      = -1 if name:       is not present (meaning anonymous (returned) type 
-     auto global_rc    = get_right_keyword(expression, L"global"            );       // global_rc    = -1, if global:    is not present 
-     auto verbmain_rc  = get_right_keyword(expression, L"verbmain"          );       // verbmain rc  = -1, if verbmain:  is not present
-     auto static_rc    = get_right_keyword(expression, L"static"            );       // static rc    = -1, if static:    is not present
-#ifdef M_EXPOSE_SUPPORT
-     auto expose_rc    = get_right_keyword(expression, L"expose"            );       // expose_rc  = -1, if expose:  is not present (meaning no expose)
-#endif
-
-
-     // known: no more than one of the following keywords is present:
-
-     value_S array_value     { };            // value should be a vlist with two positional parms
-     value_S struct_value    { };            // value should be a vlist with 1-N nested vlist values 
-
-     auto     unit_rc = get_right_keyword(expression, L"unit"                      );  
-     auto     bool_rc = get_right_keyword(expression, L"bool"                      );  
-     auto     int8_rc = get_right_keyword(expression, L"int8"                      );    
-     auto    uint8_rc = get_right_keyword(expression, L"uint8"                     );  
-     auto    int16_rc = get_right_keyword(expression, L"int16"                     );    
-     auto   uint16_rc = get_right_keyword(expression, L"uint16"                    ); 
-     auto    int32_rc = get_right_keyword(expression, L"int32"                     );    
-     auto   uint32_rc = get_right_keyword(expression, L"uint32"                    ); 
-     auto    int64_rc = get_right_keyword(expression, L"int64"                     );    
-     auto   uint64_rc = get_right_keyword(expression, L"uint64"                    ); 
-     auto  float32_rc = get_right_keyword(expression, L"float32"                   );    
-     auto  float64_rc = get_right_keyword(expression, L"float64"                   ); 
-     auto    array_rc = get_right_keyword(expression, L"array"    ,     array_value);
-     auto   struct_rc = get_right_keyword(expression, L"struct"   ,    struct_value);
-
-
-     // set up typdef_S based on input parms
-     // ------------------------------------
-
-     typdef_S typdef { };              // typdef to be filled in 
-
-
-     // (note: only one of these should have r/c = 0, if none are present, default typdef will be produced)
-
-     if (    unit_rc == 0 )   make_atomic_typdef(type_E::unit    , typdef);
-     if (    bool_rc == 0 )   make_atomic_typdef(type_E::boolean , typdef);
-     if (    int8_rc == 0 )   make_atomic_typdef(type_E::int8    , typdef);
-     if (   uint8_rc == 0 )   make_atomic_typdef(type_E::uint8   , typdef);
-     if (   int16_rc == 0 )   make_atomic_typdef(type_E::int16   , typdef);
-     if (  uint16_rc == 0 )   make_atomic_typdef(type_E::uint16  , typdef);
-     if (   int32_rc == 0 )   make_atomic_typdef(type_E::int32   , typdef);
-     if (  uint32_rc == 0 )   make_atomic_typdef(type_E::uint32  , typdef);
-     if (   int64_rc == 0 )   make_atomic_typdef(type_E::int64   , typdef);
-     if (  uint64_rc == 0 )   make_atomic_typdef(type_E::uint64  , typdef);
-     if ( float32_rc == 0 )   make_atomic_typdef(type_E::float32 , typdef);
-     if ( float64_rc == 0 )   make_atomic_typdef(type_E::float64 , typdef);
-
-
-
-     // process array type
-     // ------------------
-
-     if (array_rc == 0)
-     {
-         uint64_t acount {0};  
-
-
-         // array_value should be a vlist with 2 positional values -- int64 number of elements, and typdef_S for each element
-
-         if (
-             (array_value.ty != type_E::vlist)
-             ||
-             (array_value.vlist_sp->value_ct != 2)
-            )
-         {
-              count_error();
-              M_out_emsg1(L"verb_type() -- unexpected error -- invalid array: kw parm value");
-              msgend_loc(array_value, expression);
-              rc = -1;          
-         }
-         else if ( array_value.vlist_sp->values.at(0).ty != type_E::int64 )
-         {
-              count_error();
-              M_out_emsg1(L"verb_type() -- unexpected error -- 1st positional value in array:[vlist] is not valid int64");
-              msgend_loc(array_value.vlist_sp->values.at(0), expression);
-              rc = -1;           
-         }   
-         else
-         {
-             acount = (uint64_t)(array_value.vlist_sp->values.at(0).int64);              // capture number of elements
-         
-             if ( array_value.vlist_sp->values.at(1).ty != type_E::typdef)
-             {
-                 count_error();
-                 M_out_emsg1(L"verb_type() -- unexpected error -- 2nd positional value in array:[vlist] is not typdef");
-                 msgend_loc(array_value.vlist_sp->values.at(1), expression);
-                 rc = -1;          
-             }
-             else
-             {   
-                 M__(M_out(L"verb_type() -- array element tsize = %d") % array_value.vlist_sp->values.at(1).typdef_sp->tsize;)
-
-                 if (array_value.vlist_sp->values.at(1).typdef_sp->tsize == 0)    // is typdef for array element a non-sized (invalid) typdef?
-                 {
-                     count_error();
-                     M_out_emsg1(L"verb_type() -- unexpected error -- array element typdef is non-sized (not atomic or aggregate)");
-                     msgend_loc(array_value.vlist_sp->values.at(1), expression);
-                     rc = -1;             
-                 }
-
-
-                 // set up array typdef_S -- count and element type are OK for arrays
-
-                 auto ma_rc = make_array_typdef(acount, *(array_value.vlist_sp->values.at(1).typdef_sp), typdef); //  builds array typdef_S into typdef output parm -- all values are unshared in typdef_S
-
-                 if (ma_rc != 0)                                                                                  //  unexpected make_array_typdef() failure ???
-                 {
-                     count_error();
-                     M_out_emsg1(L"verb_type() -- unexpected error -- make_array_typdef() failed");
-                     msgend_loc(array_value.vlist_sp->values.at(1), expression);
-                     rc = -1;             
-                 }              
-             }       // array element type is typdef 
-         }           // number of array elements is OK   
-     }              // array: present
-
-
-     // process structure type      
-     // ----------------------
-   
-     if (struct_rc == 0)
-     {
-         // build vector with decoded field parms for passing to make_structure_typdef()
-         // ----------------------------------------------------------------------------
-
-         std::vector<fieldparm_S> fieldparms { };
-
-
-         // loop through nested vlist of field definitions (this is the vlist for the struct: keyword)  
-
-         for (auto& elem : struct_value.vlist_sp->values)   // elem should be n-th positional value_S->vlist  
-         {
-              M__(display_vlist(*(elem.vlist_sp), L"*(elem.vlist_sp)");)
-
-
-              // collect parm info about n-th field 
-
-              fieldparm_S fieldparm { };
-
-              fieldparm.fieldname = M_get_nest_pos_string(  *(elem.vlist_sp), 0);                  // 1st positional parm (0) is fieldname
-              fieldparm.typdef_p  = M_get_nest_pos_typdef_p(*(elem.vlist_sp), 1);                  // 2nd positional parm (0) is typdef_S for this field
-
-              value_S offset_value    { };
-              value_S skip_value      { };
-            
-              auto offset_rc = get_vlist_keyword(*(elem.vlist_sp), L"offset", offset_value    );   // get offset:nnnn   (if present)
-              auto skip_rc   = get_vlist_keyword(*(elem.vlist_sp), L"skip"  , skip_value      );   // get skip:nnnn     (if present)  
-              auto same_rc   = get_vlist_keyword(*(elem.vlist_sp), L"same"                    );   // get same:         (if present)
-              auto high_rc   = get_vlist_keyword(*(elem.vlist_sp), L"high"                    );   // get high:         (if present)
-
-              if (offset_rc == 0)
-              {
-                  fieldparm.offset     = offset_value.int64; 
-                  fieldparm.has_offset = true;
-              }
-
-              if (skip_rc == 0)
-              {
-                  fieldparm.skip       = skip_value.int64;
-                  fieldparm.has_skip   = true; 
-              }
-            
-              if (same_rc == 0)
-                  fieldparm.same_as_prior = true; 
-              
-              if (high_rc == 0)
-                  fieldparm.at_hi_watermark = true; 
-
-
-              // add collected field parms for n-th field into field parms vector
-
-              M__(M_out(L"verb_type() -- fieldname = %S  type=%S   offset=%d    skip=%d") % fieldparm.fieldname % type_str(fieldparm.typdef_p->kind) % fieldparm.offset % fieldparm.skip;)    
-         
-              fieldparms.push_back(fieldparm);    
-         } 
-
-
-         // set up structure typdef_S -- based on collected fieldparm info 
-
-         auto mr_rc = make_structure_typdef(fieldparms, typdef);
-         M__(M_out(L"verb_type() -- make_structure_typdef() returned");)
-
-         if (mr_rc != 0)                                                                                  //  make_structure_typdef() failure ?
-         {
-             count_error();
-             M_out_emsg1(L"verb_type() -- make_structure_typdef() failed -- see earlier error messages");
-             msgend_loc(expression);
-             rc = -1;             
-         } 
-     }
-
-
-     // ------------------------------------------------------------------------------------------
-     // if name was provided, add this type-name to  global verbmain, static, or local stack frame 
-     // ------------------------------------------------------------------------------------------
-
-     if (name_rc == 0)
-     {
-        if (global_rc == 0)                     // global: keyword was present
-        {
-            if (is_global_identifier_defined(name_value.string))
-            {
-                count_error();
-                M_out_emsg1(L"verb_type() -- global identifier %s is already defined -- unable to define it again") % name_value.string;
-                msgend_loc(name_value, expression);
-                rc = -1;        
-            }
-            else
-            {
-                auto rc = def_global_typdef(name_value.string, typdef);               // add new type definition to environment -- global symbols are always exposed  -- don't bother unsharing -- types are immutable 
-                M__(M_out(L"verb_type() -- def_global_typdef() returned");)
-
-                // errors are unexpected here
-               
-                if (rc != 0)
-                {
-                    //count_error(); already counted in def_global_typdef()
-                    M_out_emsg1(L"verb_type() -- unexpected error from def_global_typdef() -- unable to define new global identifier = %s") % name_value.string;
-                    msgend_loc(name_value, expression);
-                    rc = -1; 
-                }  
-            }
-        }
-        else if (static_rc == 0)          // static: keyword was present
-        {
-            if (is_static_identifier_defined(frame, name_value.string))
-            {
-                count_error();
-                M_out_emsg1(L"verb_type() -- static identifier %s is already defined -- unable to define it again") % name_value.string;
-                msgend_loc(name_value, expression);
-                rc = -1;        
-            }
-            else
-            {
-                def_parm_S parm { }; 
-#ifdef M_EXPOSE_SUPPORT
-                parm.exposed = (expose_rc == 0); 
-#endif
-
-                auto rc = def_static_typdef(frame, name_value.string, typdef, parm);          // add new non-constant variable to environment  -- expose based on expose: kw rc -- don't bother unsharing -- types are immutable
-              
-                // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
-              
-                if (rc != 0)
-                {
-                    //count_error(); already counted in def_static_typdef()
-                    M_out_emsg1(L"verb_type() -- unexpected error from def_static_typdef() -- unable to define new static identifier = %s") % name_value.string;
-                    msgend_loc(name_value, expression);
-                    rc = -1;  
-                }  
-            }
-        }  
-        else if (verbmain_rc == 0)          // verbmain: keyword was present
-        {
-            if (is_verbmain_identifier_defined(frame, name_value.string))
-            {
-                count_error();
-                M_out_emsg1(L"verb_type() -- verbmain identifier %s is already defined -- unable to define it again") % name_value.string;
-                msgend_loc(name_value, expression);
-                rc = -1;        
-            }
-            else
-            {
-                def_parm_S parm { }; 
-#ifdef M_EXPOSE_SUPPORT
-                parm.exposed = (expose_rc == 0); 
-#endif
-
-                auto rc = def_verbmain_typdef(frame, name_value.string, typdef, parm);          // add new non-constant variable to environment  -- expose based on expose: kw rc -- don't bother unsharing -- types are immutable
-              
-                // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
-              
-                if (rc != 0)
-                {
-                    //count_error(); already counted in def_verbmain_typdef()
-                    M_out_emsg1(L"verb_type() -- unexpected error from def_verbmain_typdef() -- unable to define new verbmain identifier = %s") % name_value.string;
-                    msgend_loc(name_value, expression);
-                    rc = -1;  
-                }  
-            }
-        }     
-        else          // neither global:, verbmain:, nor static: were not present -- define local typdef
-        {
-            if (is_local_identifier_defined(frame, name_value.string))
-            {
-                count_error();
-                M_out_emsg1(L"verb_type() -- local identifier %s is already defined -- unable to define it again") % name_value.string;
-                msgend_loc(name_value, expression);
-                rc = -1;        
-            }
-            else
-            {
-                def_parm_S parm { }; 
-#ifdef M_EXPOSE_SUPPORT
-                parm.exposed = (expose_rc == 0);
-#endif
-
-                auto rc = def_local_typdef(frame, name_value.string, typdef, parm);          // add new non-constant variable to environment  -- expose based on expose: kw rc -- don't bother unsharing -- types are immutable
-              
-                // errors expected here include duplicate variable names in list -- 2nd one cannot be re-defined -- other errors caught by usual verb parm checking
-              
-                if (rc != 0)
-                {
-                    //count_error(); already counted in def_local_typdef()
-                    M_out_emsg1(L"verb_type() -- unexpected error from def_local_typdef() -- unable to define new local identifier = %s") % name_value.string;
-                    msgend_loc(name_value, expression);
-                    rc = -1;  
-                }  
-            }
-        }          // local
-     }             // name: provided
-
-
-     // ---------------------------------------------
-     // return with results = new typdef_S (or error)
-     // ---------------------------------------------
-
-     if (rc == 0)
-     {
-         value_S value { typdef_val(typdef) };           // put typdef_S into a value_S
-      // unshare_value(value);                           // make sure all nested items are unshared -- shouldn't be required 
-         results = to_results(value);                    // pass back new typdef_S definition
-     }
-     else
-     {
-         results = error_results();
-     }
-
-     M__(M_out(L"verb_type() -- returning");)
-     return rc;  
-}        
-M_endf
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//    @TO_XXXXX type conversion verbs
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-template<typename T>      bool verb__to_bool(   T x) {return (     bool)x;}
-template<typename T>    int8_t verb__to_int8(   T x) {return (   int8_t)x;}
-template<typename T>   int16_t verb__to_int16(  T x) {return (  int16_t)x;}
-template<typename T>   int32_t verb__to_int32(  T x) {return (  int32_t)x;}
-template<typename T>   int64_t verb__to_int64(  T x) {return (  int64_t)x;}
-template<typename T>   uint8_t verb__to_uint8(  T x) {return (  uint8_t)x;}
-template<typename T>  uint16_t verb__to_uint16( T x) {return ( uint16_t)x;}
-template<typename T>  uint32_t verb__to_uint32( T x) {return ( uint32_t)x;}
-template<typename T>  uint64_t verb__to_uint64( T x) {return ( uint64_t)x;}
-template<typename T> float32_T verb__to_float32(T x) {return (float32_T)x;}
-template<typename T> float64_T verb__to_float64(T x) {return (float64_T)x;}    
-
-
-//---------------------------------------------------------------------------------
-//   @TO_BOOL xxx
-//---------------------------------------------------------------------------------
-
-int verb_to_bool(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
-    M__(M_out(L"verb_to_bool() called");)
-          
-    value_S in_val  {expression.rparms.values.at(0)};
-    value_S out_val {                              };
-
-
-    // convert input value to boolean true/false value
-
-    if (is_value_true(in_val))
-        out_val = boolean_val(true , in_val.token_ix1, in_val.token_ix1);
-    else
-        out_val = boolean_val(false, in_val.token_ix1, in_val.token_ix1);
-        
-
-    results = to_results(out_val);
-    return 0; 
-}
-M_endf
-
-
-
-//---------------------------------------------------------------------------------
-//   @TO_INT8 xxx
-//---------------------------------------------------------------------------------
-
-int verb_to_int8(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
-    M__(M_out(L"verb_to_int8() called");)
-          
-    value_S in_val  {expression.rparms.values.at(0)};
-    value_S out_val {                              };
-
-
-    // convert unit value to 0
-
-    if (in_val.ty == type_E::unit)
-    {
-        out_val = int8_val(0, in_val.token_ix1, in_val.token_ix1);
-    }
-
-
-    // convert arithmetic values with C/C++ casting  -- ???????????????????????? need to use get_val() functions instead of casting for integer conversions ?????????????????????????? 
-
-    else if (is_value_arithmetic(in_val))
-    {
-         M_verb_unary_fvalix_arith(out_val, verb__to_int8, in_val, in_val.token_ix1, in_val.token_ix2)
-    } 
-
-
-    // special conversion to numeric for strings
-
-    else if (in_val.ty == type_E::string)
-    {
-        // convert from string to int8_t -- complain about any conversion errors
-
-        int8_t  int8 { }; 
-        auto trc = to_int8(in_val.string, int8);
-        if (trc != 0)
-        {            
-            M_out_emsg1(L"verb_to_int8() -- error occurred when converting from string = «%s» to int8 value") % in_val.string; 
-            msgend_loc(in_val, expression);
-        
-            results = error_results(); 
-            return -1; 
-        }   
-
-        out_val = int8_val(int8, in_val.token_ix1, in_val.token_ix1);
-    }  
-
-    results = to_results(out_val);
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @TO_INT16 xxx
-//---------------------------------------------------------------------------------
-
-int verb_to_int16(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
-    M__(M_out(L"verb_to_int16() called");)
-          
-    value_S in_val  {expression.rparms.values.at(0)};
-    value_S out_val {                              };
-
-
-    // convert unit value to 0
-
-    if (in_val.ty == type_E::unit)
-    {
-        out_val = int16_val(0, in_val.token_ix1, in_val.token_ix1);
-    }
-
-
-    // convert arithmetic values with C/C++ casting  -- ???????????????????????? need to use get_val() functions instead of casting for integer conversions ?????????????????????????? 
-
-    else if (is_value_arithmetic(in_val))
-    {
-         M_verb_unary_fvalix_arith(out_val, verb__to_int16, in_val, in_val.token_ix1, in_val.token_ix2)
-    } 
-
-
-    // special conversion to numeric for strings
-
-    else if (in_val.ty == type_E::string)
-    {
-        // convert from string to int16_t -- complain about any conversion errors
-
-        int16_t  int16 { }; 
-        auto trc = to_int16(in_val.string, int16);
-        if (trc != 0)
-        {            
-            M_out_emsg1(L"verb_to_int16() -- error occurred when converting from string = «%s» to int16 value") % in_val.string; 
-            msgend_loc(in_val, expression);   
-        
-            results = error_results(); 
-            return -1; 
-        }   
-
-        out_val = int16_val(int16, in_val.token_ix1, in_val.token_ix1);
-    }  
-
-    results = to_results(out_val);
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @TO_INT32 xxx
-//---------------------------------------------------------------------------------
-
-int verb_to_int32(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
-    M__(M_out(L"verb_to_int32() called");)
-          
-    value_S in_val  {expression.rparms.values.at(0)};
-    value_S out_val {                              };
-
-
-    // convert unit value to 0
-
-    if (in_val.ty == type_E::unit)
-    {
-        out_val = int32_val(0, in_val.token_ix1, in_val.token_ix1);
-    }
-
-
-    // convert arithmetic values with C/C++ casting     -- ???????????????????????? need to use get_val() functions instead of casting for integer conversions ?????????????????????????? 
-
-    else if (is_value_arithmetic(in_val))
-    {
-         M_verb_unary_fvalix_arith(out_val, verb__to_int32, in_val, in_val.token_ix1, in_val.token_ix2)
-    } 
-
-
-    // special conversion to numeric for strings
-
-    else if (in_val.ty == type_E::string)
-    {
-        // convert from string to int32_t -- complain about any conversion errors
-
-        int32_t  int32 { }; 
-        auto trc = to_int32(in_val.string, int32);
-        if (trc != 0)
-        {            
-            M_out_emsg1(L"verb_to_int32() -- error occurred when converting from string = «%s» to int32 value") % in_val.string; 
-            msgend_loc(in_val, expression);
-            results = error_results(); 
-            return -1; 
-        }   
-
-        out_val = int32_val(int32, in_val.token_ix1, in_val.token_ix1);
-    }  
-
-    results = to_results(out_val);
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @TO_INT64 xxx
-//---------------------------------------------------------------------------------
-
-int verb_to_int64(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
-    M__(M_out(L"verb_to_int64() called");)
-          
-    value_S in_val  {expression.rparms.values.at(0)};
-    value_S out_val {                              };
-
-
-    // convert unit value to 0
-
-    if (in_val.ty == type_E::unit)
-    {
-        out_val = int64_val(0, in_val.token_ix1, in_val.token_ix1);
-    }
-
-
-    // convert arithmetic values with C/C++ casting    -- ???????????????????????? need to use get_val() functions instead of casting for integer conversions ?????????????????????????? 
-
-    else if (is_value_arithmetic(in_val))
-    {
-         M_verb_unary_fvalix_arith(out_val, verb__to_int64, in_val, in_val.token_ix1, in_val.token_ix2)
-    } 
-
-
-    // special conversion to numeric for strings
-
-    else if (in_val.ty == type_E::string)
-    {
-        // convert from string to int64_t -- complain about any conversion errors
-
-        int64_t  int64 { }; 
-        auto trc = to_int64(in_val.string, int64);
-        if (trc != 0)
-        {            
-            M_out_emsg1(L"verb_to_int64() -- error occurred when converting from string = «%s» to int64 value") % in_val.string; 
-            msgend_loc(in_val, expression);   
-        
-            results = error_results(); 
-            return -1; 
-        }   
-
-        out_val = int64_val(int64, in_val.token_ix1, in_val.token_ix1);
-    }  
-
-    results = to_results(out_val);
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @TO_UINT8 xxx
-//---------------------------------------------------------------------------------
-
-int verb_to_uint8(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
-    M__(M_out(L"verb_to_uint8() called");)
-          
-    value_S in_val  {expression.rparms.values.at(0)};
-    value_S out_val {                              };
-
-
-    // convert unit value to 0
-
-    if (in_val.ty == type_E::unit)
-    {
-        out_val = uint8_val(0, in_val.token_ix1, in_val.token_ix1);
-    }
-
-
-    // convert arithmetic values with C/C++ casting    -- ???????????????????????? need to use get_val() functions instead of casting for integer conversions ?????????????????????????? 
-
-    else if (is_value_arithmetic(in_val))
-    {
-         M_verb_unary_fvalix_arith(out_val, verb__to_uint8, in_val, in_val.token_ix1, in_val.token_ix2)
-    } 
-
-
-    // special conversion to numeric for strings
-
-    else if (in_val.ty == type_E::string)
-    {
-        // convert from string to uint8_t -- complain about any conversion errors
-
-        uint8_t  uint8 { }; 
-        auto trc = to_uint8(in_val.string, uint8);
-        if (trc != 0)
-        {            
-            M_out_emsg1(L"verb_to_uint8() -- error occurred when converting from string = «%s» to uint8 value") % in_val.string; 
-            msgend_loc(in_val, expression);   
-        
-            results = error_results(); 
-            return -1; 
-        }   
-
-        out_val = uint8_val(uint8, in_val.token_ix1, in_val.token_ix1);
-    }  
-
-    results = to_results(out_val);
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @TO_UINT16 xxx
-//---------------------------------------------------------------------------------
-
-int verb_to_uint16(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
-    M__(M_out(L"verb_to_uint16() called");)
-          
-    value_S in_val  {expression.rparms.values.at(0)};
-    value_S out_val {                              };
-
-
-    // convert unit value to 0
-
-    if (in_val.ty == type_E::unit)
-    {
-        out_val = uint16_val(0, in_val.token_ix1, in_val.token_ix1);
-    }
-
-
-    // convert arithmetic values with C/C++ casting   -- ???????????????????????? need to use get_val() functions instead of casting for integer conversions ?????????????????????????? 
-
-    else if (is_value_arithmetic(in_val))
-    {
-         M_verb_unary_fvalix_arith(out_val, verb__to_uint16, in_val, in_val.token_ix1, in_val.token_ix2)
-    } 
-
-
-    // special conversion to numeric for strings
-
-    else if (in_val.ty == type_E::string)
-    {
-        // convert from string to uint16_t -- complain about any conversion errors
-
-        uint16_t  uint16 { }; 
-        auto trc = to_uint16(in_val.string, uint16);
-        if (trc != 0)
-        {            
-            M_out_emsg1(L"verb_to_uint16() -- error occurred when converting from string = «%s» to uint16 value") % in_val.string; 
-            msgend_loc(in_val, expression);   
-        
-            results = error_results(); 
-            return -1; 
-        }   
-
-        out_val = uint16_val(uint16, in_val.token_ix1, in_val.token_ix1);
-    }  
-
-    results = to_results(out_val);
-    return 0; 
-}
-M_endf
-
-
-
-
-//---------------------------------------------------------------------------------
-//   @TO_UINT32 xxx
-//---------------------------------------------------------------------------------
-
-int verb_to_uint32(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
-    M__(M_out(L"verb_to_uint32() called");)
-          
-    value_S in_val  {expression.rparms.values.at(0)};
-    value_S out_val {                              };
-
-
-    // convert unit value to 0
-
-    if (in_val.ty == type_E::unit)
-    {
-        out_val = uint32_val(0, in_val.token_ix1, in_val.token_ix1);
-    }
-
-
-    // convert arithmetic values with C/C++ casting   -- ???????????????????????? need to use get_val() functions instead of casting for integer conversions ?????????????????????????? 
-
-    else if (is_value_arithmetic(in_val))
-    {
-         M_verb_unary_fvalix_arith(out_val, verb__to_uint32, in_val, in_val.token_ix1, in_val.token_ix2)
-    } 
-
-
-    // special conversion to numeric for strings
-
-    else if (in_val.ty == type_E::string)
-    {
-        // convert from string to uint32_t -- complain about any conversion errors
-
-        uint32_t  uint32 { }; 
-        auto trc = to_uint32(in_val.string, uint32);
-        if (trc != 0)
-        {            
-            M_out_emsg1(L"verb_to_uint32() -- error occurred when converting from string = «%s» to uint32 value") % in_val.string; 
-            msgend_loc(in_val, expression);  
-        
-            results = error_results(); 
-            return -1; 
-        }   
-
-        out_val = uint32_val(uint32, in_val.token_ix1, in_val.token_ix1);
-    }  
-
-    results = to_results(out_val);
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @TO_UINT64 xxx
-//---------------------------------------------------------------------------------
-
-int verb_to_uint64(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
-    M__(M_out(L"verb_to_uint64() called");)
-          
-    value_S in_val  {expression.rparms.values.at(0)};
-    value_S out_val {                              };
-
-
-    // convert unit value to 0
-
-    if (in_val.ty == type_E::unit)
-    {
-        out_val = uint64_val(0, in_val.token_ix1, in_val.token_ix1);
-    }
-
-
-    // convert arithmetic values with C/C++ casting    -- ???????????????????????? need to use get_val() functions instead of casting for integer conversions ?????????????????????????? 
-
-    else if (is_value_arithmetic(in_val))
-    {
-         M_verb_unary_fvalix_arith(out_val, verb__to_uint64, in_val, in_val.token_ix1, in_val.token_ix2)
-    } 
-
-
-    // special conversion to numeric for strings
-
-    else if (in_val.ty == type_E::string)
-    {
-        // convert from string to uint64_t -- complain about any conversion errors
-
-        uint64_t  uint64 { }; 
-        auto trc = to_uint64(in_val.string, uint64);
-        if (trc != 0)
-        {            
-            M_out_emsg1(L"verb_to_uint64() -- error occurred when converting from string = «%s» to uint64 value") % in_val.string; 
-            msgend_loc(in_val, expression); 
-        
-            results = error_results(); 
-            return -1; 
-        }   
-
-        out_val = uint64_val(uint64, in_val.token_ix1, in_val.token_ix1);
-    }  
-
-    results = to_results(out_val);
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @TO_FLOAT32 xxx
-//---------------------------------------------------------------------------------
-
-int verb_to_float32(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
-    M__(M_out(L"verb_to_float32() called");)
-          
-    value_S in_val  {expression.rparms.values.at(0)};
-    value_S out_val {                              };
-
-
-    // convert unit value to 0
-
-    if (in_val.ty == type_E::unit)
-    {
-        out_val = float32_val(0.0, in_val.token_ix1, in_val.token_ix1);
-    }
-
-
-    // convert arithmetic values with C/C++ casting
-
-    else if (is_value_arithmetic(in_val))
-    {
-         M_verb_unary_fvalix_arith(out_val, verb__to_float32, in_val, in_val.token_ix1, in_val.token_ix2)
-    } 
-
-
-    // special conversion to numeric for strings
-
-    else if (in_val.ty == type_E::string)
-    {
-        // convert from string to float32_t -- complain about any conversion errors
-
-        float32_T  float32 { }; 
-        auto trc = to_float32(in_val.string, float32);
-        if (trc != 0)
-        {            
-            M_out_emsg1(L"verb_to_float32() -- error occurred when converting from string = «%s» to float32 value") % in_val.string; 
-            msgend_loc(in_val, expression);  
-        
-            results = error_results(); 
-            return -1; 
-        }   
-
-        out_val = float32_val(float32, in_val.token_ix1, in_val.token_ix1);
-    }  
-
-    results = to_results(out_val);
-    return 0; 
-}
-M_endf
- 
-
-//---------------------------------------------------------------------------------
-//   @TO_FLOAT64 xxx
-//---------------------------------------------------------------------------------
-
-int verb_to_float64(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm -- type should be unit, int, float, or string 
-    M__(M_out(L"verb_to_float64() called");)
-          
-    value_S in_val  {expression.rparms.values.at(0)};
-    value_S out_val {                              };
-
-
-    // convert unit value to 0
-
-    if (in_val.ty == type_E::unit)
-    {
-        out_val = float64_val(0.0, in_val.token_ix1, in_val.token_ix1);
-    }
-
-
-    // convert arithmetic values with C/C++ casting
-
-    else if (is_value_arithmetic(in_val))
-    {
-         M_verb_unary_fvalix_arith(out_val, verb__to_float64, in_val, in_val.token_ix1, in_val.token_ix2)
-    } 
-
-
-    // special conversion to numeric for strings
-
-    else if (in_val.ty == type_E::string)
-    {
-        // convert from string to float64_T -- complain about any conversion errors
-
-        float64_T  float64 { }; 
-        auto trc = to_float64(in_val.string, float64);
-        if (trc != 0)
-        {            
-            M_out_emsg1(L"verb_to_float64() -- error occurred when converting from string = «%s» to float64 value") % in_val.string; 
-            msgend_loc(in_val, expression);  
-        
-            results = error_results(); 
-            return -1; 
-        }   
-
-        out_val = float64_val(float64, in_val.token_ix1, in_val.token_ix1);
-    }  
-
-    results = to_results(out_val);
-    return 0; 
-}
-M_endf
- 
-
-//---------------------------------------------------------------------------------
-//   @TO_STR xxx
-//---------------------------------------------------------------------------------
-
-int verb_to_str(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm -- type should be unit, int, float, string, or vlist  
-    M__(M_out(L"verb_to_str() called");)
-     
-    results = to_results(string_val( str_value(expression.rparms.values.at(0), false, false, true) ));   
-    return 0; 
-}
-M_endf  
- 
-
-//---------------------------------------------------------------------------------
-//   @TO_IDENT "string"
-//---------------------------------------------------------------------------------
-
-int verb_to_ident(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm -- type should be string 
-    M__(M_out(L"verb_to_ident() called");)
-    
-
-    // make sure string contains valid identifier name -- complain and return error, if not
-
-    std::wstring  id_str {expression.rparms.values.at(0).string };              // 1st right positional parm should be a string 
-
-
-    //  std::wregex   reg    {L"([_]|[[:alpha:]])([_]|[[:alnum:]])*"};    // pattern for identifier names -- does this handle unicode properly???         
-    //  if ( !(std::regex_match(id_str, reg)) )
-
-
-    if (!is_valid_identifier(id_str))
-    {
-        M_out_emsg1(L"verb_to_ident() -- error occurred when converting from string = «%s» to identifier") % id_str; 
-        msgend_loc(expression.rparms.values.at(0), expression); 
-  
-        results = error_results();    // return error results
-        return -1;                    // failure r/c
-    }
-
-
-    //  identifier name is OK -- pass back identifier results 
-
-    results = to_results(identifier_val(id_str));   
-    return 0; 
-}
-M_endf  
- 
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//    @IS_XXXXX type testing verbs
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-//---------------------------------------------------------------------------------
-//   @IS_BOOL xxx
-//---------------------------------------------------------------------------------
-
-int verb_is_bool(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_bool() called");)
-          
-    if (expression.rparms.values.at(0).ty == type_E::boolean)
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-
-
-//---------------------------------------------------------------------------------
-//   @IS_INT8 xxx
-//---------------------------------------------------------------------------------
-
-int verb_is_int8(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_int8() called");)
-          
-    if (expression.rparms.values.at(0).ty == type_E::int8)
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-
-//---------------------------------------------------------------------------------
-//   @IS_INT16 xxx
-//---------------------------------------------------------------------------------
-
-int verb_is_int16(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_int16() called");)
-          
-    if (expression.rparms.values.at(0).ty == type_E::int16)
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @IS_INT32 xxx
-//---------------------------------------------------------------------------------
-
-int verb_is_int32(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_int32() called");)
-          
-    if (expression.rparms.values.at(0).ty == type_E::int32)
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-
-//---------------------------------------------------------------------------------
-//   @IS_INT64 xxx
-//---------------------------------------------------------------------------------
-
-int verb_is_int64(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_int64() called");)
-          
-    if (expression.rparms.values.at(0).ty == type_E::int64)
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @IS_UINT8 xxx
-//---------------------------------------------------------------------------------
-
-int verb_is_uint8(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_uint8() called");)
-          
-    if (expression.rparms.values.at(0).ty == type_E::uint8)
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-
-//---------------------------------------------------------------------------------
-//   @IS_UINT16 xxx
-//---------------------------------------------------------------------------------
-
-int verb_is_uint16(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_uint16() called");)
-          
-    if (expression.rparms.values.at(0).ty == type_E::uint16)
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @IS_UINT32 xxx
-//---------------------------------------------------------------------------------
-
-int verb_is_uint32(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_uint32() called");)
-          
-    if (expression.rparms.values.at(0).ty == type_E::uint32)
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-
-//---------------------------------------------------------------------------------
-//   @IS_UINT64 xxx
-//---------------------------------------------------------------------------------
-
-int verb_is_uint64(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_uint64() called");)
-          
-    if (expression.rparms.values.at(0).ty == type_E::uint64)
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @IS_FLOAT32 xxxx
-//---------------------------------------------------------------------------------
-
-int verb_is_float32(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_float32() called");)
-          
-    if (expression.rparms.values.at(0).ty == type_E::float32)
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-
-
-//---------------------------------------------------------------------------------
-//   @IS_FLOAT64 xxxx
-//---------------------------------------------------------------------------------
-
-int verb_is_float64(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_float64() called");)
-          
-    if (expression.rparms.values.at(0).ty == type_E::float64)
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @IS_INT xxxx
-//---------------------------------------------------------------------------------
-
-int verb_is_int(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_int() called");)
-          
-    if ( is_value_integer(expression.rparms.values.at(0)) )
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @IS_FLOAT xxxx
-//---------------------------------------------------------------------------------
-
-int verb_is_float(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_float() called");)
-          
-    if ( is_value_float(expression.rparms.values.at(0)) )
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @IS_NUMERIC xxxx
-//---------------------------------------------------------------------------------
-
-int verb_is_numeric(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_numeric() called");)
-          
-    if ( is_value_arithmetic(expression.rparms.values.at(0)) )
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @IS_ATOM xxxx
-//---------------------------------------------------------------------------------
-
-int verb_is_atom(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_atom() called");)
-          
-    if ( is_value_comparable(expression.rparms.values.at(0)) )
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @IS_SIGNED xxxx
-//---------------------------------------------------------------------------------
-
-int verb_is_signed(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_signed() called");)
-          
-    if ( is_value_signed(expression.rparms.values.at(0)) )
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @IS_UNSIGNED xxxx
-//---------------------------------------------------------------------------------
-
-int verb_is_unsigned(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_unsigned() called");)
-          
-    if ( is_value_unsigned(expression.rparms.values.at(0)) )
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @IS_TRUE xxxx
-//---------------------------------------------------------------------------------
-
-int verb_is_true(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_true() called");)
-          
-    if ( is_value_true(expression.rparms.values.at(0)) )
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @IS_FALSE xxxx
-//---------------------------------------------------------------------------------
-
-int verb_is_false(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_false() called");)
-          
-    if ( is_value_false(expression.rparms.values.at(0)) )
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @IS_STRING xxxx
-//---------------------------------------------------------------------------------
-
-int verb_is_string(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_string() called");)
-          
-    if (expression.rparms.values.at(0).ty == type_E::string)
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @IS_UNIT xxxx
-//---------------------------------------------------------------------------------
-
-int verb_is_unit(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_unit() called");)
-          
-    if (expression.rparms.values.at(0).ty == type_E::unit)
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
- 
-
-//---------------------------------------------------------------------------------
-//   @IS_ITEM xxxx
-//---------------------------------------------------------------------------------
-
-int verb_is_expression(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_expression() called");)
-          
-    if (expression.rparms.values.at(0).ty == type_E::expression)
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @IS_VLIST xxxx
-//---------------------------------------------------------------------------------
-
-int verb_is_vlist(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_vlist() called");)
-          
-    if (expression.rparms.values.at(0).ty == type_E::vlist)
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @IS_BLOCK xxxx
-//---------------------------------------------------------------------------------
-
-int verb_is_block(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional parm of any type
-    M__(M_out(L"verb_is_block() called");)
-          
-    if (expression.rparms.values.at(0).ty == type_E::block)
-        results = true_results();
-    else
-        results = false_results();
-
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @IS_DEF xxxx
-//---------------------------------------------------------------------------------
-
-int verb_is_def(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side unevaluated identifier positional, and an optional keyword = all: global: local: (all: is default)
-    M__(M_out(L"verb_is_def() called");)
-    
-    bool tf {false};                                                                          // output value                                 
-
-
-    // see if global:, static:, verbmain:, or local: are defined -- only one of these (or none) should be defined
-                                                                  
-    auto global_rc   = get_right_keyword(expression, L"global");                              // get value of global:   keyword -- if not present, R/C is -1 
-    auto static_rc   = get_right_keyword(expression, L"static");                              // get value of static:   keyword -- if not present, R/C is -1 
-    auto verbmain_rc = get_right_keyword(expression, L"verbmain");                            // get value of verbmain: keyword -- if not present, R/C is -1 
-    auto local_rc    = get_right_keyword(expression, L"local" );                              // get value of local:    keyword -- if not present, R/C is -1 
-
-    if (global_rc == 0)                                                                       // global present?
-        tf = is_global_identifier_defined(expression.rparms.values.at(0).string);             // identifier name should be in .string field 
-    else if (static_rc == 0 )                                                                 // static: present?
-        tf = is_static_identifier_defined(frame, expression.rparms.values.at(0).string);      // identifier name should be in .string field 
-    else if (verbmain_rc == 0 )                                                               // verbmain: present?
-        tf = is_verbmain_identifier_defined(frame, expression.rparms.values.at(0).string);    // identifier name should be in .string field 
-    else if (local_rc == 0 )                                                                  // local: present?
-        tf = is_local_identifier_defined(frame, expression.rparms.values.at(0).string);       // identifier name should be in .string field 
-    else                                                                                      // neither global: verbmain: static: or local: -- must be all: or default
-        tf = is_identifier_defined(frame, expression.rparms.values.at(0).string);             // identifier name should be in .string field  
-
-    results = tf_results(tf);                                                                 // pass back 0 or 1 as output results
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @IS_VAR xxxx
-//---------------------------------------------------------------------------------
-
-int verb_is_var(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side unevaluated identifier positional, and an optional keyword = all: global: local: (all: is default)
-    M__(M_out(L"verb_is_var() called");)
-    
-    bool tf {false};                                                                          // output value                                 
-
-
-    // see if global:, static:, verbmain:, or local: are defined -- only one of these (or none) should be defined
-                                                                  
-    auto global_rc   = get_right_keyword(expression, L"global");                              // get value of global:   keyword -- if not present, R/C is -1 
-    auto static_rc   = get_right_keyword(expression, L"static");                              // get value of static:   keyword -- if not present, R/C is -1 
-    auto verbmain_rc = get_right_keyword(expression, L"verbmain");                            // get value of verbmain: keyword -- if not present, R/C is -1 
-    auto local_rc    = get_right_keyword(expression, L"local" );                              // get value of local:    keyword -- if not present, R/C is -1 
-
-
-    // set tf to true if variable is defined, and not constant
-
-    if (global_rc == 0)                                                                       // global present?
-        tf = is_global_identifier_variable(expression.rparms.values.at(0).string);            // identifier name should be in .string field 
-    else if (static_rc == 0)                                                                  // static: present?
-        tf = is_static_identifier_variable(frame, expression.rparms.values.at(0).string);     // identifier name should be in .string field 
-    else if (verbmain_rc == 0 )                                                               // verbmain: present?
-        tf = is_verbmain_identifier_variable(frame, expression.rparms.values.at(0).string);   // identifier name should be in .string field 
-    else if (local_rc == 0)                                                                   // local: present?
-        tf = is_local_identifier_variable(frame, expression.rparms.values.at(0).string);      // identifier name should be in .string field 
-    else                                                                                      // neither global: verbmain: static: or local: -- must be all: or default
-        tf = is_identifier_variable(frame, expression.rparms.values.at(0).string);            // identifier name should be in .string field 
-
-    results = tf_results(tf);                                                                 // pass back 0 or 1 as output results
-    return 0; 
-}
-M_endf
-
-
-//---------------------------------------------------------------------------------
-//   @IS_CONST xxxx
-//---------------------------------------------------------------------------------
-
-int verb_is_const(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side unevaluated identifier positional, and an optional keyword = all: global: local: (all: is default)
-    M__(M_out(L"verb_is_const() called");)
-    
-    bool tf {false};                                                                         // output value                                 
-
-
-    // see if global:, static:, verbmain:, or local: are defined -- only one of these (or none) should be defined
-                                                                  
-    auto global_rc   = get_right_keyword(expression, L"global");                              // get value of global:   keyword -- if not present, R/C is -1 
-    auto static_rc   = get_right_keyword(expression, L"static");                              // get value of static:   keyword -- if not present, R/C is -1 
-    auto verbmain_rc = get_right_keyword(expression, L"verbmain");                            // get value of verbmain: keyword -- if not present, R/C is -1 
-    auto local_rc    = get_right_keyword(expression, L"local" );                              // get value of local:    keyword -- if not present, R/C is -1 
-
-    if (global_rc == 0)                                                                       // global present?
-        tf = is_global_identifier_const(expression.rparms.values.at(0).string);               // identifier name should be in .string field 
-    else if (static_rc == 0)                                                                  // static: present?
-        tf = is_static_identifier_const(frame, expression.rparms.values.at(0).string);        // identifier name should be in .string field  
-    else if (verbmain_rc == 0 )                                                               // verbmain: present?
-        tf = is_verbmain_identifier_const(frame, expression.rparms.values.at(0).string);      // identifier name should be in .string field 
-    else if (local_rc == 0)                                                                   // local: present?
-        tf = is_local_identifier_const(frame, expression.rparms.values.at(0).string);         // identifier name should be in .string field  
-    else                                                                                      // neither global: verbmain: static: or local: -- must be all: or default
-        tf = is_identifier_const(frame, expression.rparms.values.at(0).string);               // identifier name should be in .string field 
-
-    results = tf_results(tf);                                                                 // pass back 0 or 1 as output results
-    return 0; 
-}
-M_endf
- 
-
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
@@ -2686,538 +1377,101 @@ M_endf
 
 
 
-//╔═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-//║╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳
-//║╳╳╔════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-//║╳╳║
-//║╳╳║      structure, array, argument and vlist extraction verbs
-//║╳╳║
-//║╳╳╚════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-//║╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳
-//╚═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//    array # nn -- array subscripting -- get n-th element
+//    @PASS identifier
 //
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int verb_subscript(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+int verb_pass(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
 {
-    ref_S ref { };                                                   // resulting lvalue/rvalue reference from subscripting operation                  
+    // already known that there is one positional identifier parm -- optional share: noshare: keyword 
+    M__(M_out(L"verb_pass() called");)
 
-    // -----------------------------------------------------------------------------------------------------
-    // already known that there is one left-side positional parm  -- can be: unevaluated variable identifier
-    //                                                                       unevaluated constant identifier
-    //                                                                       unevaluated ref -- to array value      
-    //                                                                       evaluated array value
-    //
-    // already known that there is one right-side positional parm -- type should be int64 
-    // -----------------------------------------------------------------------------------------------------
-
-
-    M__(M_out(L"verb_subscript() called");)
-
-
-    // get values from left-side and right-side parms (known to be present)
-
-    int64_t array_index  { M_get_right_pos_int64(expression, 0) };       // right-side parm should be index (int64_t)
-    value_S source_value { M_get_left_pos(       expression, 0) };       // left-side parm is source 
-  
-
-    // handle case with variable or constant (unevaluated) identifier -- needs to have an array value
-    // ==============================================================================================
-
-    if (source_value.ty == type_E::identifier)
-    {
-        // fetch symval for identifier -- should be defined with array type value  -- error, if not 
-        // ----------------------------------------------------------------------------------------
-
-        symval_S symval { };                                             // should point to real value_s for the variable/constant
-        auto get_rc = get_var(frame, source_value.string, symval);
-
-        if (get_rc != 0)
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_subscript() -- unexpected error -- identifier %S is not defined") % source_value.string; 
-            msgend_loc(M_get_left_pos(expression, 0), expression);
-       
-            results = error_results(); 
-            return -1; 
-        }
-
-        if (symval.value_sp->ty != type_E::array)
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_subscript() -- identifier %S is type <%S>, not array -- cannot apply subscript to a non-array value") % source_value.string % type_str(symval.value_sp->ty); 
-            msgend_loc(M_get_left_pos(expression, 0), expression);
-       
-            results = error_results(); 
-            return -1;         
-        }
-
-
-        // make sure array index is within range
-        // -------------------------------------
-
-        if ( (array_index < 0) || (array_index >= symval.value_sp->typdef_sp->acount) )
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_subscript() -- array index (%d) is out of bounds of array (0 - %d) currently assigned to identifier %S") % array_index %  (symval.value_sp->typdef_sp->acount - 1) % source_value.string ; 
-            msg_loc(M_get_left_pos( expression, 0), L"array");
-            msg_loc(M_get_right_pos(expression, 0), L"index");
-            msgend_loc(expression);
-       
-            results = error_results(); 
-            return -1;         
-        }
-
-
-        // create output reference for i-th array element
-        // ----------------------------------------------
-
-
-        //  get element typdef and compute offset for the i-th array element         
-
-        typdef_S elem_typdef { *(symval.value_sp->typdef_sp->atype_sp) };                // local copy of array element typdef
-        uint64_t elem_offset { array_index * elem_typdef.tsize         };                // starting offset for i-th array element 
-
-
-        // create ref_S and fill in rvalue or lvalue flag based on symval_S 
-
-        auto m_rc = make_reference(ref, symval.value_sp, elem_typdef, elem_offset);      // construct reference based on info from symval -- will have set in_buffer and auto_deref flags -- will not have set rvalue/lvalue flags
-                               
-        if (m_rc != 0)
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_subscript() -- make_reference() function failed -- see above error message for reason") ; 
-            msg_loc(M_get_left_pos( expression, 0), L"array");
-            msg_loc(M_get_right_pos(expression, 0), L"index");
-            msgend_loc(expression);
-       
-            results = error_results(); 
-            return -1;           
-        } 
-
-        if (symval.is_const)                                                             // if constant, can't have lvalue reference
-           ref.is_rvalue = true; 
-        else                                                                             // must be variable -- can have lvalue
-           ref.is_lvalue = true;   
-    }
-
-
-    // handle case with (anonymous) array value -- probably an immediately-subscripted    @AGGR array:[...] call
-    // =========================================================================================================
-
-    else  if (source_value.ty == type_E::array)
-    {
-        // make sure array index is within range
-        // -------------------------------------
-
-        if ( (array_index < 0) || (array_index >= source_value.typdef_sp->acount) )
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_subscript() -- array index (%d) is out of bounds of passed-in (anonymous) array (0 - %d)") % array_index %  (source_value.typdef_sp->acount - 1) ; 
-            msg_loc(M_get_left_pos( expression, 0), L"array");
-            msg_loc(M_get_right_pos(expression, 0), L"index");
-            msgend_loc(expression);
-       
-            results = error_results(); 
-            return -1;         
-        }
-
-
-        // create output reference for i-th array element
-        // ----------------------------------------------
-        
-        //  get element typdef and compute offset for the i-th array element         
-
-        typdef_S elem_typdef { *(source_value.typdef_sp->atype_sp)     };                // local copy of array element typdef
-        uint64_t elem_offset { array_index * elem_typdef.tsize         };                // starting offset for i-th array element 
-
-
-        // create ref_S (to a new copy of the anonymous value) and fill in as rvalue-only  
-
-        std::shared_ptr<value_S> value_sp { new value_S };                               // new value_S that can be controlled via shared ptr
-        *value_sp = source_value;                                                        // fill in new value_S, but leave everything pointed to by any shared_ptrs still shared (no unshare_value() issued) 
-
-        auto m_rc = make_reference(ref, value_sp, elem_typdef, elem_offset);             // construct reference based on info from copied value_S -- will have set in_buffer and auto_deref flags -- will not have set rvalue/lvalue flags
-
-        if (m_rc != 0)
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_subscript() -- make_reference() function failed -- see above error message for reason") ; 
-            msg_loc(M_get_left_pos( expression, 0), L"array");
-            msg_loc(M_get_right_pos(expression, 0), L"index");
-            msgend_loc(expression);
-       
-            results = error_results(); 
-            return -1;           
-        } 
-
-        ref.is_rvalue = true;                                                            // always rvalue-only, since this is (anonymous) passed-in value     
-    }
-
-
-    // handle case with reference value -- needs to be to an auto_defer reference to array (probably nested subscripting) 
-    // ==================================================================================================================
-
-    else  if (source_value.ty == type_E::ref)
-    {
-        // verify that passed-in reference is to array
-        // -------------------------------------------
-
-        // make sure passed-in reference is not explicitly-created reference (that needs de-referencing first)
- 
-        if ( !source_value.ref_sp->auto_deref )
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_subscript() -- left-side explicit reference needs to be dereferenced (to an array type) before subscripting"); 
-            msgend_loc(M_get_left_pos( expression, 0), expression);
-       
-            results = error_results(); 
-            return -1;         
-        }
-
-
-        // make sure passed-in (auto-deref) reference is to an array (not structure, etc.)
-
-        if ( source_value.ref_sp->typdef_sp->kind != type_E::array )
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_subscript() -- left-side parm refers to type <%S> -- it needs to refer to an array type before subscripting") % type_str(source_value.ref_sp->typdef_sp->kind);
-            msgend_loc(M_get_left_pos( expression, 0), expression);
-       
-            results = error_results(); 
-            return -1;         
-        }
-
-
-        // make sure array index is within range
-        // -------------------------------------
-
-        if ( (array_index < 0) || (array_index >= source_value.ref_sp->typdef_sp->acount) )
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_subscript() -- array index (%d) is out of bounds of referenced array (element) (0 - %d)") % array_index %  (source_value.ref_sp->typdef_sp->acount - 1) ; 
-            msg_loc(M_get_left_pos( expression, 0), L"array");
-            msg_loc(M_get_right_pos(expression, 0), L"index");
-            msgend_loc(expression);
-       
-            results = error_results(); 
-            return -1;         
-        }
-
-
-        // create output reference for i-th array element
-        // ----------------------------------------------
-        
-        //  get element typdef and compute offset for the i-th array element         
-
-        typdef_S elem_typdef { *(source_value.ref_sp->typdef_sp->atype_sp)                      };            // local copy of array element typdef
-        uint64_t elem_offset { source_value.ref_sp->offset + array_index * elem_typdef.tsize    };            // starting offset for i-th array element (within prior reference's offsetted sub-buffer) 
-
-        auto m_rc = make_reference(ref, source_value, elem_typdef, elem_offset );                             // construct reference based on info from value_S -- should have copied all required flags from source value_S
-
-        if (m_rc != 0)
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_subscript() -- make_reference() function failed -- see above error message for reason") ; 
-            msg_loc(M_get_left_pos( expression, 0), L"array");
-            msg_loc(M_get_right_pos(expression, 0), L"index");
-            msgend_loc(expression);
-       
-            results = error_results(); 
-            return -1;           
-        }      
-    }
-
-
-    // handle unexpected value type -- error
-    // =====================================
-
-    else    
-    {
-        count_error(); 
-        M_out_emsg1(L"verb_subscript() -- unexpected left-side value -- type = %S") % type_str(source_value.ty) ; 
-        msgend_loc(M_get_left_pos(expression, 0), expression);
-      
-        results = error_results(); 
-        return -1;    
-    }   
-
-
-    // pass back completed lvalue or rvalue reference
-
-    results = to_results(ref_val(ref));
-    return 0;  
- 
+    results = to_results(expression.rparms.values.at(0));          // just copy 1st positional parm value to results 
+    results.suppress_eval_once = true;                             // suppress evaluation once when next verb is called (even if verb calls for evaluation)
+    return 0 ; 
 }
-M_endf  
+M_endf
 
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//    struct . fieldname  -- structure field selection -- get named field
+//    @NOEVAL identifier :share :unshare
 //
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int verb_select(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+int verb_noeval(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
 {
-    ref_S ref { };                                                            // resulting lvalue/rvalue reference from subscripting operation                  
-
-    // -----------------------------------------------------------------------------------------------------
-    // already known that there is one left-side positional parm  -- can be: unevaluated variable identifier
-    //                                                                       unevaluated constant identifier
-    //                                                                       unevaluated ref -- to struct value      
-    //                                                                       evaluated struct value
-    //
-    // already known that there is one right-side positional parm -- type should be string (fieldname) 
-    // -----------------------------------------------------------------------------------------------
+    // already known that there is one positional identifier parm -- optional share: noshare: keyword 
+    M__(M_out(L"verb_noeval() called");)
 
 
-    M__(M_out(L"verb_select() called");)
+    // see if caller wants unshared copy
 
-
-    // get values from left-side and right-side parms (known to be present)
-
-    std::wstring field_name   { M_get_right_pos_string(expression, 0) };      // right-side parm should be field name (string)
-    value_S      source_value { M_get_left_pos(        expression, 0) };      //  left-side parm is source 
-  
-
-    // handle case with variable or constant (unevaluated) identifier -- needs to have an structure value
-    // ==================================================================================================
-
-    if (source_value.ty == type_E::identifier)
+    if (0 == get_right_keyword(expression, L"unshare"))
     {
-        // fetch symval for identifier -- should be defined with array type value  -- error, if not 
-        // ----------------------------------------------------------------------------------------
-
-        symval_S symval { };                                                  // should point to real value_s for the variable/constant
-        auto get_rc = get_var(frame, source_value.string, symval);
-
-        if (get_rc != 0)
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_select() -- unexpected error -- identifier %S is not defined") % source_value.string; 
-            msgend_loc(M_get_left_pos(expression, 0), expression);
-       
-            results = error_results(); 
-            return -1; 
-        }
-
-        if (symval.value_sp->ty != type_E::structure)
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_select() -- identifier %S is type <%S>, not structy -- cannot apply field selection to a non-struct value") % source_value.string % type_str(symval.value_sp->ty); 
-            msgend_loc(M_get_left_pos(expression, 0), expression);
-       
-            results = error_results(); 
-            return -1;         
-        }
-
-
-        // make sure field name is defined in the structure
-        // ------------------------------------------------
-                
-        if ( symval.value_sp->typdef_sp->fnames.count(field_name) <= 0 )
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_seelct() -- field-name (%S) is not defined in the struct-type aggregate currently assigned to identifier %S") % field_name % source_value.string ; 
-            msg_loc(M_get_left_pos( expression, 0), L"struct"    );
-            msg_loc(M_get_right_pos(expression, 0), L"field-name");
-            msgend_loc(expression);
-       
-            results = error_results(); 
-            return -1;         
-        }
-
-
-        // create output reference for selected field
-        // ------------------------------------------
-
-        //  get field typdef and compute offset for this field 
-
-        auto      field_index  { symval.value_sp->typdef_sp->fnames.at(field_name) };    // get index of field definition in fdefs vector
-        fieldef_S field_def    { symval.value_sp->typdef_sp->fdefs.at(field_index) };    // fetch field definition 
-        typdef_S  field_typdef { *(field_def.ftype_sp)                             };    // local copy of field typdef_S
-        uint64_t  field_offset { field_def.offset                                  };    // starting offset for selected field 
-
-
-        // create ref_S and fill in rvalue or lvalue flag based on symval_S 
-
-        auto m_rc = make_reference(ref, symval.value_sp, field_typdef, field_offset);    // construct reference based on info from symval -- will have set in_buffer and auto_deref flags -- will not have set rvalue/lvalue flags
-                               
-        if (m_rc != 0)
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_select() -- make_reference() function failed -- see above error message for reason") ; 
-            msg_loc(M_get_left_pos( expression, 0), L"struct"    );
-            msg_loc(M_get_right_pos(expression, 0), L"field-name");
-            msgend_loc(expression);
-       
-            results = error_results(); 
-            return -1;           
-        } 
-
-        if (symval.is_const)                                                             // if constant, can't have lvalue reference
-           ref.is_rvalue = true; 
-        else                                                                             // must be variable -- can have lvalue
-           ref.is_lvalue = true;   
+        value_S value {expression.rparms.values.at(0)};            // just copy 1st positional parm value to local var -- nested items are still shared
+        unshare_value(value);
+        results = to_results(value); 
+    }
+    else
+    {
+        results = to_results(expression.rparms.values.at(0));      // just copy 1st positional parm value to results
     }
 
 
-    // handle case with (anonymous) array value -- probably an immediately-subscripted    @AGGR array:[...] call
-    // =========================================================================================================
-
-    else  if (source_value.ty == type_E::structure)
-    {
-        // make sure field-name is defined in the structure
-        // ------------------------------------------------
-
-        if ( source_value.typdef_sp->fnames.count(field_name) <= 0 )
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_select() -- field-name (%S) is not defined in passed-in (anonymous) struct") % field_name; 
-            msg_loc(M_get_left_pos( expression, 0), L"struct"    );
-            msg_loc(M_get_right_pos(expression, 0), L"field-name");
-            msgend_loc(expression);
-       
-            results = error_results(); 
-            return -1;         
-        }
-
-
-        // create output reference for selected field
-        // ------------------------------------------
-
-        //  get field typdef and compute offset for this field 
-
-        auto      field_index  { source_value.typdef_sp->fnames.at(field_name) };              // get index of field definition in fdefs vector
-        fieldef_S field_def    { source_value.typdef_sp->fdefs.at(field_index) };              // fetch field definition 
-        typdef_S  field_typdef { *(field_def.ftype_sp)                         };              // local copy of field typdef_S
-        uint64_t  field_offset { field_def.offset                              };              // starting offset for selected field 
-        
-        std::shared_ptr<value_S> value_sp { new value_S };                                     // new value_S that can be controlled via shared ptr
-        *value_sp = source_value;                                                              // fill in new value_S, but leave everything pointed to by any shared_ptrs still shared (no unshare_value() issued) 
-
-        auto m_rc = make_reference(ref, value_sp, field_typdef, field_offset);                 // construct reference based on info from copied value_S -- will have set in_buffer and auto_deref flags -- will not have set rvalue/lvalue flags
-
-        if (m_rc != 0)
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_select() -- make_reference() function failed -- see above error message for reason") ; 
-            msg_loc(M_get_left_pos( expression, 0), L"struct"    );
-            msg_loc(M_get_right_pos(expression, 0), L"field-name");
-            msgend_loc(expression);
-       
-            results = error_results(); 
-            return -1;           
-        } 
-
-        ref.is_rvalue = true;                                                            // always rvalue-only, since this is (anonymous) passed-in value     
-    }
-
-
-    // handle case with reference value -- needs to be to an auto_defer reference to array (probably nested subscripting) 
-    // ==================================================================================================================
-
-    else  if (source_value.ty == type_E::ref)
-    {
-        // verify that passed-in reference is to array
-        // -------------------------------------------
-
-        // make sure passed-in reference is not explicitly-created reference (that needs de-referencing first)
- 
-        if ( !source_value.ref_sp->auto_deref )
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_select() -- left-side explicit reference needs to be dereferenced (to a struct type) before field selection"); 
-            msgend_loc(M_get_left_pos( expression, 0), expression);
-       
-            results = error_results(); 
-            return -1;         
-        }
-
-
-        // make sure passed-in (auto-deref) reference is to a structure (not array, etc.)
-
-        if ( source_value.ref_sp->typdef_sp->kind != type_E::structure )
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_select() -- left-side parm refers to type <%S> -- it needs to refer to a struct type before field selection") % type_str(source_value.ref_sp->typdef_sp->kind);
-            msgend_loc(M_get_left_pos( expression, 0), expression);
-       
-            results = error_results(); 
-            return -1;         
-        }
-
-
-        // make sure field-name is defined in referred-to struct
-        // -----------------------------------------------------
-
-        if ( source_value.ref_sp->typdef_sp->fnames.count(field_name) <= 0 )
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_select() -- field-name (%S) is not defined in referenced struct") % field_name; 
-            msg_loc(M_get_left_pos( expression, 0), L"struct"    );
-            msg_loc(M_get_right_pos(expression, 0), L"field-name");
-            msgend_loc(expression);
-       
-            results = error_results(); 
-            return -1;         
-        }
-
-
-        // create output reference for selected field
-        // ------------------------------------------
-
-        //  get field typdef and compute offset for this field 
-
-        auto      field_index  { source_value.ref_sp->typdef_sp->fnames.at(field_name) };    // get index of field definition in fdefs vector
-        fieldef_S field_def    { source_value.ref_sp->typdef_sp->fdefs.at(field_index) };    // fetch field definition 
-        typdef_S  field_typdef { *(field_def.ftype_sp)                                 };    // local copy of field typdef_S
-        uint64_t  field_offset { field_def.offset                                      };    // starting offset for selected field (within prior reference's offsetted sub-buffer)
-
-        auto m_rc = make_reference(ref, source_value, field_typdef, field_offset );          // construct reference based on info from value_S -- should have copied all required flags from source value_S
-
-        if (m_rc != 0)
-        {
-            count_error(); 
-            M_out_emsg1(L"verb_select() -- make_reference() function failed -- see above error message for reason") ; 
-            msg_loc(M_get_left_pos( expression, 0), L"struct"    );
-            msg_loc(M_get_right_pos(expression, 0), L"field-name");
-            msgend_loc(expression);
-       
-            results = error_results(); 
-            return -1;           
-        }      
-    }
-
-
-    // handle unexpected value type -- error
-    // =====================================
-
-    else    
-    {
-        count_error(); 
-        M_out_emsg1(L"verb_select() -- unexpected left-side value -- type = %S") % type_str(source_value.ty) ; 
-        msgend_loc(M_get_left_pos(expression, 0), expression);
-      
-        results = error_results(); 
-        return -1;    
-    }   
-
-
-    // pass back completed lvalue or rvalue reference
-
-    results = to_results(ref_val(ref));
-    return 0;  
- 
+  //  results.suppress_eval_once = true;                             // suppress evaluation on return from this verb
+    return 0 ; 
 }
-M_endf  
+M_endf
 
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//    @EVAL -- return (already) evaluated input parms
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int verb_eval(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+{
+    // already known that there are 1-N right-side positional parms of any type 
+
+    M__(M_out(L"verb_eval() called");)
+
+    results = to_results(vlist_val(expression.rparms));                                         // place input vlist in results (should have been evaluated before verb_eval() was called) 
+    results.multiple_results = true;                                                            // indicate that mutiple results are perhaps being returned
+    return 0;
+}
+M_endf
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//    @UNSHARE value
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int verb_unshare(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+{
+    // already known that there is one positional assignable type parm
+    M__(M_out(L"verb_unshare() called");)
+
+    value_S value {expression.rparms.values.at(0)};      // just copy 1st positional parm value to local var -- nested items are still shared
+    unshare_value(value);
+    results = to_results(value); 
+    return 0 ; 
+}
+M_endf
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3249,637 +1503,6 @@ M_endf
 
 
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//    keys_vlist() -- helper function for @ARG_ASSIGN and @VL_ASSIGN -- build positional value vlist from keyword instance values
-//
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-static void keys_vlist(frame_S& frame, const e_expression_S& expression, const vlist_S& in_vlist, vlist_S& out_vlist, const std::wstring& keyname) try
-{
-    out_vlist = vlist_S { };      // clear out, in case no keyword values to add
-
-
-    // return imemdiately with empty out_vlist, if keyword is not present in in_vlist 
-
-    auto key_ct = in_vlist.eval_kws.count(keyname); 
-    if (key_ct <= 0)
-        return; 
-
-
-    // loop to extract matching keywords from in_vlist
-
-    auto it_k = in_vlist.eval_kws.find(keyname);         // it_k should be valid, since count was non-zero, above
-
-    for (auto i = 0; i < key_ct; i++)
-    {
-        add_positional_value(out_vlist, it_k->second);  // add in value for this keyword instance       
-        it_k++;                                         // advance to next instance of this keyword in in_vlist
-    }  
-
-    return; 
-}
-M_endf
-      
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//    assign_vlist() -- helper function for @ARG_ASSIGN and @VL_ASSIGN  -- assign 
-//
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-static int assign_vlist(frame_S& frame, const e_expression_S& expression, const vlist_S& vars_vlist, const vlist_S& values_vlist, const value_S& rest, bool define_vars = false, bool make_const = false) try
-{ 
-    M__(M_out(L"assign_vlist() -- called -- rest.string = %s    (rest.ty == type_E::identifier) = %d") % rest.string % (rest.ty == type_E::identifier);) 
-
-    bool        rest_valid      {rest.ty == type_E::identifier};                      // rest is valid if it contains variable name as the value string                                                                                                                                 
-    auto        var_ct       =  vars_vlist.value_ct;                                  // number of variable names in vars_vlist;     
-    auto        value_ct     =  values_vlist.value_ct;                                // number of values to assign to variables in values_vlist; 
-                                                                                     
-    value_S     unit_value      { unit_val() };                                       // unit value for pre-defining variables, as required     
-    vlist_S     rest_vlist      {};                                                   // vlist to be assigned to rest (if rest_valid)  
-   
-
-        // ???? does this need local: static: verbmain: keywords ????
-        // ???? does this need local: static: verbmain: keywords ????
-        // ???? does this need local: static: verbmain: keywords ????
-        // ???? does this need local: static: verbmain: keywords ????
-        // ???? does this need local: static: verbmain: keywords ????
-        // ???? does this need local: static: verbmain: keywords ????
-
-
-    // main loop to define/assign positional vlist values to corresponding variables
-    //------------------------------------------------------------------------------
-    
-    for (auto i = 0; i < std::max(var_ct, value_ct); i++)
-    {
-        // if is still in range of variables vlist, define any variables that don't yet exist (if requested by caller), and do value assignment (if values haven't been exhausted)
-    
-        if (i < var_ct)
-        {
-            bool just_defined {false};                                                // flag to indicate if variable was defined during this loop pass
-
-            std::wstring var_name = vars_vlist.values.at(i).string;                   // get variable name being defined/assigned-to
-    
-                                                
-            // define this variable, if required
-    
-            if ( (define_vars) &&  (!is_local_identifier_defined(frame, var_name) ) ) // need to define local variable before assignment? 
-            {
-                auto src = def_local_var(frame, var_name, unit_value);                // define local var with unit value
-                if (src != 0)
-                {
-                    count_error(); 
-                    M_out_emsg1(L"assign_vlist() -- unexpected error from def_local_var(,%s,)") % var_name; 
-                    msgend_loc(vars_vlist.values.at(i), expression);
-                    return -1;             
-                 }
-
-                 just_defined = true;                                                 // indicate that variable was just defined during this loop pass
-            }
-            else
-                just_defined = false;                                                 // variable was not just defined
-             
-    
-            // if i is also in range of values vlist  -- do variable/constant assignment: variable-n = value-n 
-    
-            if (i < value_ct)
-            {
-                if (!is_local_identifier_variable(frame, var_name))
-                {
-                    count_error(); 
-                    M_out_emsg1(L"assign_vlist() -- cannot update non-variable (constant or verb) identifier = %s") % var_name; 
-                    msgend_loc(vars_vlist.values.at(i), expression);
-                    return -1;         
-                } 
-
-                auto arc = update_local_var(frame, var_name, values_vlist.values.at(i), make_const);     // note: make_const should be true only when define_var is true
-                if (arc != 0)
-                {
-                    count_error(); 
-                    M_out_emsg1(L"assign_vlist() -- unexpected error from update_local_var(,%s,)") % var_name; 
-                    msgend_loc(vars_vlist.values.at(i), expression);
-                    return -1;             
-                } 
-            }
-            else    // variable exists, but has no corresponding value  -- assign unit value to this variable (if not just defined above)
-            {
-                if (!just_defined)
-                {
-                    if (!is_local_identifier_variable(frame, var_name))
-                    {
-                        count_error(); 
-                        M_out_emsg1(L"assign_vlist() -- cannot update non-variable (constant or verb) identifier = %s") % var_name; 
-                        msgend_loc(vars_vlist.values.at(i), expression);
-                        return -1;         
-                    }  
-
-                    auto arc = update_local_var(frame, var_name, unit_value, make_const);
-                    if (arc != 0)
-                    {
-                        count_error(); 
-                        M_out_emsg1(L"assign_vlist() -- unexpected error from update_local_var(,%s,) -- (unit value)") % var_name; 
-                        msgend_loc(vars_vlist.values.at(i), expression);
-                        return -1;             
-                    } 
-                }
-            }   
-        }              // i < var_ct
-        else           // must be i >= var_ct but < value_ct -- value exists but has no correspinging variable 
-        {
-             // append this value to the vlist for the "rest" keyword (if any)
-        
-             if (rest_valid)
-                add_positional_value(rest_vlist, values_vlist.values.at(i));   
-        }  
-    }           // end of main loop
-
-
-    // if rest variable was provided, attach vlist to value and assign to the "rest" variable
-
-    if (rest_valid)
-    {
-        M__(M_out(L"assign_vlist() -- rest_valid");)
-
-        if ( (define_vars) &&  (!is_local_identifier_defined(frame, rest.string) ) )            // need to define local variable before assignment? 
-        {
-            auto src = def_local_var(frame, rest.string, vlist_val(rest_vlist));                // define local variable with rest vlist
-            if (src != 0)
-            {
-                count_error(); 
-                M_out_emsg1(L"assign_vlist() -- unexpected error from def_local_var(,%s,) -- (rest of vlist)") % rest.string; 
-                msgend_loc(rest, expression);
-                return -1;             
-            }
-        }
-        else      // "rest" variable is already defined
-        {
-            M__(M_out(L"assign_vlist() -- update rest: var -- vlist.value_ct = %d") % rest_vlist.value_ct;)
-
-            if (!is_local_identifier_variable(frame, rest.string))
-            {
-                count_error(); 
-                M_out_emsg1(L"assign_vlist() -- cannot update non-variable (constant or verb) identifier = %s") % rest.string; 
-                msgend_loc(expression);
-                return -1;         
-            }  
-
-            auto arc = update_local_var(frame, rest.string, vlist_val(rest_vlist), make_const); 
-            if (arc != 0)
-            {
-                count_error(); 
-                M_out_emsg1(L"assign_vlist() -- unexpected error from update_local_var(,%s,) -- (rest of vlist)") % rest.string; 
-                msgend_loc(expression);
-                return -1;             
-            }         
-        }     
-    }         
-
-    return 0; 
-}
-M_endf
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////   
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//    v1 v2 v3 v4 ... v999 rest:v0 key:"string" @ARG_ASSIGN v11 v22 v33 ... v99999 rest:v00 key:"string"  -- assign positional values in arguments to variables on correspinging side 
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int verb_arg_assign(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    M__(M_out(L"verb_arg_assign() called");)
-
-    // known that there are zero or more variables (undefined, or defined and non-constant0 on each side, along with optional rest: keyword, also with a single undefined or defined non-constant variable
-    // also an optionsl key:"string"keyword can be present on each side     
-    
-
-    // do left side argument vlist, if any left-side parms are present 
-    // ---------------------------------------------------------------
-
-    if  ((expression.lparms.value_ct > 0) || (expression.lparms.kw_ct > 0) ) 
-    {
-        value_S key_val  { }; 
-        value_S rest_val { }; 
-        auto krc = get_left_keyword(expression, L"key" , key_val );                                     // get value of key: keyword  -- if not defined, value will be unit, and R/C -1 
-        auto lrc = get_left_keyword(expression, L"rest", rest_val);                                     // get value of rest: keyword -- if not defined, value will be unit, and R/C -1
-
-        M__(M_out(L"verb_arg_assign() -- left-side rest: = %s    key: = %s") % rest_val.string % key_val.string;)
-
-        if (krc != 0)
-        {
-            // key: not present -- do positional values in vlist 
-
-            auto arc = assign_vlist(frame, expression, expression.lparms, frame.lparms, rest_val, true, false); // define variables  -- non-const
-            if (arc != 0)
-            {
-                results = error_results(); 
-                return arc;
-            }
-        }
-        else   
-        {
-            // key: present -- do values associated with key:"keyname"
-    
-            vlist_S key_vlist {}; 
-            keys_vlist(frame, expression, frame.lparms, key_vlist, key_val.string);   // extract keyword instance values into key_vlist
-     
-            auto arc = assign_vlist(frame, expression, expression.lparms, key_vlist, rest_val, true, false);   // define variables  -- non-const
-            if (arc != 0)
-            {
-                results = error_results(); 
-                return arc;
-            }     
-        }
-    }          // end of left-side processing
-
-
-    // do right side argument vlist, if any right-side parms are present 
-    // -----------------------------------------------------------------
-
-    if  ((expression.rparms.value_ct > 0) || (expression.rparms.kw_ct > 0) ) 
-    {
-        value_S key_val  { }; 
-        value_S rest_val { }; 
-        auto krc = get_right_keyword(expression, L"key" , key_val );                                     // get value of key: keyword  -- if not defined, value will be unit, and R/C -1 
-        auto lrc = get_right_keyword(expression, L"rest", rest_val);                                     // get value of rest: keyword -- if not defined, value will be unit, and R/C -1
-
-        M__(M_out(L"verb_arg_assign() -- right-side rest: = %s    key: = %s") % rest_val.string % key_val.string;)
-
-        if (krc != 0)
-        {
-            // key: not present -- do positional values in vlist 
-
-            auto arc = assign_vlist(frame, expression, expression.rparms, frame.rparms, rest_val, true, false);        // define variables -- non-const
-            if (arc != 0)
-            {
-                results = error_results(); 
-                return arc;
-            }
-        }
-        else   
-        {
-            // key: present -- do values associated with key:"keyname"
-    
-            vlist_S key_vlist {}; 
-            keys_vlist(frame, expression, frame.rparms, key_vlist, key_val.string);                       // extract keyword instance values into key_vlist
-     
-            auto arc = assign_vlist(frame, expression, expression.rparms, key_vlist, rest_val , true, false);            // define variables -- non-const
-            if (arc != 0)
-            {
-                results = error_results(); 
-                return arc;
-            }      
-        }
-    }         // end of right-side processing   
-
-
-    // no error -- return normally
-               
-    results = unit_results();                   // return unit results
-    return 0; 
-}
-M_endf
-
-
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//    @ARG_CT    -or-     @ARG_CT left: key:"string"   -or    @ARG_CT right: key:"string"     -- get left-side or right-side positional or keyword argument counts for this frameblock/verb-block/mainblock
-//
-//
-//          @ARG_CT left:               -- return total number of left-side  positional arguments
-//          @ARG_CT right:              -- return total number of right-side positional arguments  
-//          @ARG_CT left:  allkeys:     -- return total number of left-side  keyword arguments
-//          @ARG_CT right: allkeys;     -- return total number of right-side keyword arguments     
-//          @ARG_CT left:  key:"xxx"    -- return number of times left-side  keyword "xxx" appears
-//          @ARG_CT right: key:"xxx"    -- return number of times right-side keyword "xxx" appears
-//
-//
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int verb_arg_ct(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there are no positional parms, and an optional right: or left: keyword 
-    //    also -- an optional key:"xxxx" string keyword or allkeys: keyword (both allkeys: and key: cannot both be present   
-
-    M__(M_out(L"verb_arg_ct() called");)
-    value_S ct_value { }; 
-
-    // see if left: or key:/allkeys: keywords are present on right side
-
-    value_S left_value      { };
-    value_S key_value       { };
-    value_S allkeys_value   { };
-
-    auto left_rc     = get_right_keyword(expression, L"left"    ,  left_value    ); // r/c = -1, if left: keyword is not present -- if left: not present, right: must be 
-    auto key_rc      = get_right_keyword(expression, L"key"     ,  key_value     ); // r/c = -1, if key:     keyword is not present 
-    auto allkeys_rc  = get_right_keyword(expression, L"allkeys" ,  allkeys_value ); // r/c = -1, if allkeys: keyword is not present
-
-
-    // get right/left positional/keyword count, as requested
-
-    if (key_rc == 0)                                                                // key: is present ?
-    {
-        // key:"xxx"-- get count of specified keyword
-    
-        if (left_rc == 0)                                                           // left: is present  
-            ct_value = int64_val(frame.lparms.eval_kws.count(key_value.string));    // get number of left keywords 
-        else                                                                        // left: is not present -- assume right: present, or neither left: or right: present (default is right-side count) 
-            ct_value = int64_val(frame.rparms.eval_kws.count(key_value.string));    // get number of right keywords
-    }
-    else if (allkeys_rc == 0)                                                       // allkeys: present  ?
-    {
-        // allkeys: -- get count of all keywords
-    
-        if (left_rc == 0)                                                           // left: is present  
-            ct_value = int64_val(frame.lparms.eval_kws.size());                     // get number of left keywords 
-        else                                                                        // left: is not present -- assume right: present, or neither left: or right: present (default is right-side count) 
-            ct_value = int64_val(frame.rparms.eval_kws.size());                     // get number of right keywords
-    }
-    else                                                                            // allkeys: and key: not present
-    {
-         // get count of positional parms
-
-         if (left_rc == 0)                                                          // left: is present 
-              ct_value = int64_val(frame.lparms.values.size());                     // get number of left positional parms 
-         else                                                                       // left: is not present -- assume right: present, or neither left: or right: present (default is right-side count) 
-              ct_value = int64_val(frame.rparms.values.size());                     // get number of right positional parms
-    }
-                                                                                   
-    results = to_results(ct_value);                                                 // return left/right arg count as output value
-    return 0;
-}
-M_endf
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//    @ARGS left: right: -- return vlist value with either left-side or right-side vlist for this frameblock/verb-block/mainblock
-//
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int verb_args(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there are no positional parms, and an optional right: or left: keyword  
-
-    M__(M_out(L"verb_args() called");)
-    value_S args_value { }; 
-
-    // see if left: keyword is present on right side
-
-    value_S left_value { };
-    auto lrc = get_right_keyword(expression, L"left", left_value);  // r/c = -1, if left: keyword is not present 
-
-
-    // get right/left vlist, as requested  
-
-    if (lrc == 0)                                            // left: is present  
-         args_value = vlist_val(frame.lparms);               // get left vlist for frameblock/verb-block/mainblock 
-    else                                                     // left: is not present -- assume right: present, or neither left: or right: present (default is right-side count) 
-         args_value = vlist_val(frame.rparms);               // get right vlist for frameblock/verb-block/mainblock
-
-                                                                                   
-    results = to_results(args_value);                        // return left/right frameblock/verb-block/mainblock parm vlist as output value
-    return 0;
-}
-M_endf  
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-//         @ARG n right: left: key:"string"           -- get n-th left_side/right-side positional/keyword parm for this frameblock/verb-block/mainblock
-//
-//               @ARG n left:               -- return n-th left-side  positional argument
-//               @ARG n right:              -- return n-th right-side positional argument  
-//               @ARG n left:  allkeys:     -- return n-th left-side  keyword arguments
-//               @ARG n right: allkeys;     -- return n-th right-side keyword arguments     
-//               @ARG n left:  key:"xxx"    -- return n-th left-side  keyword "xxx" argument
-//               @ARG n right: key:"xxx"    -- return n-th right-side keyword "xxx" argument
-//
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
-
-int verb_arg(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional int64 parm (0-N)
-    //  also -- an optional right: or left: keyword, and an optional key: string keyword or allkeys: keyword (both allkeys: and key: cannot both be present   
-
-    M__(M_out(L"verb_arg() called");)
-    value_S arg_value { unit_val() };                                                      // unit value, in case n-th parm does not exist
-
-
-    // get positional parm number requested by caller -- 1st right parm should be present and be >= 0
-
-    auto parm_n = expression.rparms.values.at(0).int64;          
-
- 
-    // see if left: or key:/allkeys: keywords are present on right side
-
-    value_S left_value      { };
-    value_S key_value       { };
-    value_S allkeys_value   { };
-
-    auto left_rc     = get_right_keyword(expression, L"left"    ,  left_value    );         // r/c = -1, if left: keyword is not present -- if left: not present, right: must be 
-    auto key_rc      = get_right_keyword(expression, L"key"     ,  key_value     );         // r/c = -1, if key:     keyword is not present 
-    auto allkeys_rc  = get_right_keyword(expression, L"allkeys" ,  allkeys_value );         // r/c = -1, if allkeys: keyword is not present
-     
-
-    if  (key_rc == 0)                                                                       // key:"xxxx" present -- caller wants keyword "key_value.string" parm 
-    {
-        // get n-th occurrence of key:"string" keyword 
-     
-        if (left_rc == 0)                                                                   // caller wants n-th occurrence of keyword  in left-side vlist 
-            (void) get_vlist_keyword(frame.lparms, key_value.string, arg_value, parm_n);    // r/c=-1 and at_value is unit, if n-th occurrence of this keyword is not present
-        else                                                                                // caller wants n-th occurrence of keyword  in left-side vlist
-            (void) get_vlist_keyword(frame.rparms, key_value.string, arg_value, parm_n);    // r/c=-1 and at_value is unit, if n-th occurrence of this keyword is not present                                                                                                
-    }
-    else if  (allkeys_rc == 0)                                                              // allkeys: present -- caller wants value for n-th keyword of any name 
-    {
-        // get n-th keyword in vlist -- with any keyword name
-     
-        if (left_rc == 0)                                                                   // caller wants value from n-th keyword  in left-side vlist 
-            (void) get_vlist_keyword(frame.lparms, arg_value, parm_n);                      // r/c=-1 and at_value is unit, if n-th occurrence of this keyword is not present
-        else                                                                                // caller wants value from n-th keyword  in left-side vlist
-            (void) get_vlist_keyword(frame.rparms, arg_value, parm_n);                      // r/c=-1 and at_value is unity, if n-th occurrence of this keyword is not present                                                                                                
-    }  
-    else                                                                                    // neither key:"xxxx" nor allkeys: present -- caller wants positional parm
-    {
-        // get n-th positional parm on requested side 
-     
-        if (left_rc == 0)                                                                   // caller wants n-th positional value in left-side vlist     
-            (void)get_vlist_positional(frame.lparms, arg_value, parm_n);                    // r/c=-1 and at_value is unit, if n-th  parm not present  
-        else                                                                                // caller wants n-th positional value in right-side vlist
-            (void)get_vlist_positional(frame.rparms, arg_value, parm_n);                    // r/c=-1 and at_value is unit, if n-th  parm not present
-    }
-
-    results = to_results(arg_value);                        // return value from n-th left/right parm as output value
-    return 0;
-}
-M_endf
-
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//    v1 v2 v3 v4 ... v999 rest:v0 @VL_ASSIGN [vlist] key:"string"  -- assign positional/keyword values in vlist to variables on left side 
-//
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int verb_vl_assign(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    M__(M_out(L"verb_vl_assign() called");)
-
-    // known that there are one or more variables (undefined, or defined and non-constant0 on left side, along with optional rest: keyword, also with a single undefined or defined non-constant variable
-    // right-side is known to contain one mandatory vlist parm, and one optional key:"string" parm     
-    
-    value_S key_val  { }; 
-    value_S rest_val { }; 
-    auto krc = get_right_keyword(expression, L"key" , key_val );                                     // get value of key: keyword  -- if not defined, value will be unit, and R/C -1 
-    auto lrc = get_left_keyword( expression, L"rest", rest_val);                                     // get value of rest: keyword -- if not defined, value will be unit, and R/C -1
-
-    M__(M_out(L"verb_vl_assign() -- rest: = %s    key: = %s") % rest_val.string % key_val.string;)
-
-    if (krc != 0)
-    {
-        // key: not present -- do positional values in vlist 
-
-        auto arc = assign_vlist(frame, expression, expression.lparms, *(expression.rparms.values.at(0).vlist_sp), rest_val, false); // don't define variables
-        if (arc != 0)
-        {
-            results = error_results(); 
-            return arc;
-        }
-    }
-    else   
-    {
-        // key: present -- do values associated with key:"keyname"
-    
-        vlist_S key_vlist {}; 
-        keys_vlist(frame, expression, *(expression.rparms.values.at(0).vlist_sp), key_vlist, key_val.string);   // extract keyword instance values into key_vlist
-     
-        auto arc = assign_vlist(frame, expression, expression.lparms, key_vlist, rest_val, false);              // don't define variables
-        if (arc != 0)
-        {
-            results = error_results(); 
-            return arc;
-        }     
-    }
-
-
-    // no error -- return normally
-               
-    results = unit_results();                       // return unit results
-    return 0; 
-}
-M_endf
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//    [vlist] @AT n key:"string"  -or-    [vlist] ° n key:"string"         -- get n-th positional value in vlist
-//
-//      [vlist] @AT n              -- return n-th positional value in vlist
-//      [vlist] @AT n allkeys:     -- return n-th keyword value in vlist
-//      [vlist] @AT n key:"xxx"    -- return value from n-th occurence of keyword "xxx" vlist
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int verb_at(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional int64 parm (0-N), and a left-side vlist positional parm.  
-    //  also -- an optional key:"xxxx" keyword or allkeys: keyword (both allkeys: and key: cannot both be present  
-
-    M__(M_out(L"verb_at() called");)
-    value_S at_value { unit_val() };                                                                                 // unit value, in case n-th value does not exist
-
-
-    // get positional value or keyword occurrence number  
-
-    auto value_n = expression.rparms.values.at(0).int64; 
-
-
-    // see if key:/allkeys: keywords are present on right side
-
-    value_S key_value       { };
-    value_S allkeys_value   { };
-
-    auto key_rc      = get_right_keyword(expression, L"key"     ,  key_value     );                                   // r/c = -1, if key:     keyword is not present 
-    auto allkeys_rc  = get_right_keyword(expression, L"allkeys" ,  allkeys_value );                                   // r/c = -1, if allkeys: keyword is not present
-                                                                                                                     
-
-    // extract requested positional or keyword value
-
-    if       (key_rc     == 0)                                                                                        // key:":xxxx" present? -- caller wants n-th keyword "xxxx" value in vlist 
-        (void)get_vlist_keyword(   *(expression.lparms.values.at(0).vlist_sp), key_value.string, at_value, value_n);  // r/c=-1 and at_value is unit, if n-th occurrence of this keyword is not present 
-    else if  (allkeys_rc == 0)                                                                                        // allkeys: present ? -- caller wants value from n-th keyword overall
-        (void)get_vlist_keyword(   *(expression.lparms.values.at(0).vlist_sp),                   at_value, value_n);  // r/c=-1 and at_value is unit, if n-th keyword overall is not present 
-    else                                                                                                              // neither allkey: nor key:"xxxx" -- caller wants n-th positional value
-        (void)get_vlist_positional(*(expression.lparms.values.at(0).vlist_sp),                   at_value, value_n);  // r/c=-1 and at_value is unit, if n-th  parm not present  
-                                                                                                              
-    
-    results = to_results(at_value);                                                                                   // return value from n-th value in vlist as output value
-    return 0;
-}
-M_endf
-
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//     @VL_CT [vlist] key:"string"   -- get number of values in vlist, or number of occurrences of keyword "string"
-//
-//        @VL_CT [vlist]              - return total number of positional values in vlist
-//        @VL_CT [vlist] allkeys:     - return total number of keywords in vlist
-//        @VL_CT [vlist] key:"xxx"    - return number occurrences of keyword "xxx" in vlist//
-//
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int verb_vl_ct(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
-{
-    // already known that there is one right-side positional int64 parm (0-N), and a left-side vlist positional parm.    
-
-    M__(M_out(L"verb_vl_ct() called");)
-    value_S ct_value { unit_val() };                                                                                 // unit value, in case n-th value does not exist
-
-
-    // see if key:/allkeys: keywords are present on right side
-
-    value_S key_value       { };
-    value_S allkeys_value   { };
-
-    auto key_rc      = get_right_keyword(expression, L"key"     ,  key_value     );                                  // r/c = -1, if key:     keyword is not present 
-    auto allkeys_rc  = get_right_keyword(expression, L"allkeys" ,  allkeys_value );                                  // r/c = -1, if allkeys: keyword is not present
-
-
-    // determine requested positional or value count 
-
-    if       (key_rc    == 0)                                                                                        // key:"xxxx"present -- caller wants number of occurrences of keyword "xxxx"
-        ct_value = int64_val( ((expression.rparms.values.at(0).vlist_sp)->eval_kws).count(key_value.string) );       // number of occurrences of requested keyword 
-    else if (allkeys_rc == 0)                                                                                        // allkey: present -- caller wants count of all keywords in vlist 
-        ct_value = int64_val( ((expression.rparms.values.at(0).vlist_sp)->eval_kws).size()                  );       // total number of all keywords in vlist  
-    else                                                                                                             // neither key:"xxxx"nor allkeys: present -- caller wants count of positional values
-        ct_value = int64_val( ((expression.rparms.values.at(0).vlist_sp)->values).size()                    );       // number of positional values 
-                                                                                                                                      
-    
-    results = to_results(ct_value);                                                                                  // return appropriate count
-    return 0;
-}
-M_endf
-
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3899,6 +1522,7 @@ M_endf
 //
 //    @STR   value value value ...  debug:    
 //    @SAY   value value value ...  debug: no_nl:
+//    @TEXT  block
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -3918,8 +1542,37 @@ static std::wstring build_ws(const vlist_S& vlist, bool debug_present, bool debu
 M_endf
 
 
+
+
 //---------------------------------------------------------------------------------
-//   verb_str() -- @STR
+//   @TEXT -- verb_text()
+//---------------------------------------------------------------------------------
+
+int verb_text(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+{
+    // already known there is 1 right positional block parm   
+
+    M__(M_out(L"verb_text() called");)
+    M__(display_vlist(expression.rparms, L"verb_text() -- expression.rparms");)
+        
+    value_S value = M_get_right_pos(expression, 0);
+
+
+    // create output string from right positional block parm -- known to be present
+
+    text_control_S ctl { }; 
+
+    results = to_results(string_val(text_block(*(value.block_sp), ctl)));   
+    return 0; 
+}
+M_endf
+
+
+
+
+
+//---------------------------------------------------------------------------------
+//   @STR -- verb_str()
 //---------------------------------------------------------------------------------
 
 int verb_str(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
@@ -3942,7 +1595,7 @@ M_endf
 
 
 //---------------------------------------------------------------------------------
-//   verb_say() -- @SAY 
+//   @SAY -- verb_say() 
 //---------------------------------------------------------------------------------
 
 int verb_say(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
@@ -4042,16 +1695,16 @@ int verb_stdin(frame_S& frame, const e_expression_S& expression, const verbdef_S
 M_endf
 
 
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//    @INTERPOLATE "string"     
-//    @FORMAT      "string" value_1 value_2 value_3 value_4 ... value_n         
-//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////
+////    @INTERPOLATE "string"     
+////    @FORMAT      fmt:"string" value_1 value_2 value_3 value_4 ... value_n         
+////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-// -------------------------------------------
 // input parm structure for interpolate_string
 // -------------------------------------------
 
@@ -4067,13 +1720,14 @@ struct i_parm_S
           bool             keep_begin         { false   };                                   // prepend delimited string with character/string that started it 
           bool             keep_end           { false   };                                   // append  delimited string with character/string that ended   it
 };
-                                                                  
 
 
 
-//---------------------------------------------------------------------------------
-//   interpolate_string() -- helper function for string interpolation verbs
-//---------------------------------------------------------------------------------
+//=========================================================================================================================
+//
+//   interpolate_string() -- internal helper function for string interpolation verbs
+//
+//=========================================================================================================================
 
 static int interpolate_string( i_parm_S&             iparm                                    // miscellaneous parms
                              , const value_S&        verb_in_value                            // value containing main input format string 
@@ -4083,7 +1737,7 @@ static int interpolate_string( i_parm_S&             iparm                      
                                                            , results_S&                       // (error) results to be returned from main verb, if R/C is non-0 
                                                            , const std::wstring&              // input string to be processed 
                                                            , std::wstring&                    // output string to be appended to main output string from verb
-                                                           , const std::wstring&              // acccumulated main output string from verb (may not be used)
+                                                           , std::wstring&                    // acccumulated main output string from verb (may not be used)
                                                            , void *                           // pointer to parm passed through from main verb
                                                            )                                  // function to call to process interpolated sections of the string -- R/C = 0 continue, -1 = return from main verb immediately
                              , void *parm_p                                                   // pointer to parm area passed through to called function 
@@ -4155,11 +1809,8 @@ try
 
         if (idx2 == std::wstring::npos)
         {
-            count_error(); 
             M_out_emsg1(L"%S -- closing \"%S\" not found after opening \"%S\" at offset %d in string being processed") % iparm.ws_message % iparm.ws_end % iparm.ws_begin % idx1;
-            msgend_loc(verb_in_value, *(iparm.expression_p));
-            results = error_results(); 
-            return -1;             
+            M_verb_error1_loc(results, verb_in_value, *(iparm.expression_p))              
         } 
 
 
@@ -4180,7 +1831,7 @@ try
         if (iparm.keep_end)                                                           // should we pass the ending delimiter through?
             idx2s = idx2 + end_step;                                                  // if so, end passthrough at stepped index right after delimiter
      
-        std::wstring ws_call_in { ws_verb_in.substr(idx1s, idx2s - idx1s) };         // isolate string for parsing, etc. (with or without start/end delimiters)
+        std::wstring ws_call_in { ws_verb_in.substr(idx1s, idx2s - idx1s) };          // isolate string for parsing, etc. (with or without start/end delimiters)
        
         M__(M_out(L"interpolate_string() -- ws_inter = «%S»") % ws_call_in;)
 
@@ -4195,13 +1846,17 @@ try
 
 
         // end loop and return imemdiately if called function returned with error
-
+        
         if (crc != 0)
         {
-             M_out_emsg1(L"%S -- string interpolation ending because called function failed for interpolated section = \"%S%S%S\"") % iparm.ws_message % iparm.ws_begin % ws_call_in % iparm.ws_end;
-             msgend_loc(verb_in_value, *(iparm.expression_p));
-             results = call_results;                                        // verb results = called function results 
-             return crc;                                                    // verb R/C     = called function R/C
+            if (iparm.keep_begin || iparm.keep_end)
+                M_out_emsg1(L"%S -- string interpolation ending because called function failed for interpolated section = \"%S\"") % iparm.ws_message % ws_call_in;
+            else
+                M_out_emsg1(L"%S -- string interpolation ending because called function failed for interpolated section = \"%S%S%S\"") % iparm.ws_message % iparm.ws_begin % ws_call_in % iparm.ws_end;
+
+            msgend_loc(verb_in_value, *(iparm.expression_p));
+            results = call_results;                                                     // verb results = called function results 
+            return crc;                                                                 // verb R/C     = called function R/C
         }
 
 
@@ -4242,20 +1897,25 @@ M_endf
 
 
 
-//---------------------------------------------------------------------------------
-//   verb_interpolate() -- @INTERPOLATE
-//---------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////////
+//
+//      verb_interpolate() -- @INTERPOLATE
+//
+/////////////////////////////////////////////////////////////////////////////////////
 
 
-// inner function passed in to interpolate_string() to do actual processing for one interpolated section
-// -----------------------------------------------------------------------------------------------------
+//=================================================================================================================================
+//
+// verb_interpolate_1() -- inner function passed in to interpolate_string() to do actual processing for one interpolated section
+//
+//=================================================================================================================================
 
 static int verb_interpolate_1( frame_S&              frame
                              , const e_expression_S& expression
                              ,       results_S&      results
                              , const std::wstring&   ws_in
                              ,       std::wstring&   ws_out
-                             , const std::wstring&   verb_out
+                             ,       std::wstring&   verb_out
                              ,       void*           parm_p
                              )
 try
@@ -4271,11 +1931,8 @@ try
     if (prc != 0)                                                                                                 // return with error, if parse_string() failed
     {
         M__(M_out(L"verb_interpolate() -- error rc from parse_string()");)       
-        count_error(); 
-        M_out_emsg1(L"verb_interpolate() -- parse_string() failed for interpolated section \"%S\"") % ws_in;
-        msgend_loc(expression.rparms.values.at(0), expression);
-        results = error_results(); 
-        return -1;    
+        M_out_emsg1(L"@INTERPOLATE -- parse_string() failed for interpolated section \"%S\"") % ws_in;
+        M_verb_error1_loc(results, expression.rparms.values.at(0), expression)    
     }
    
 
@@ -4294,11 +1951,8 @@ try
         {
             M__(M_out(L"verb_interpolate_1() -- eval_block() returned error");)
             M__(M_out(L"verb_interpolate_1() -- returning error");)
-            count_error(); 
-            M_out_emsg1(L"verb_interpolate_1() -- eval_block() failed for interpolated section \"%S\"") % ws_in;
-            msgend_loc(expression.rparms.values.at(0), expression);
-            results = error_results(); 
-            return erc;
+            M_out_emsg1(L"@INTERPOLATE -- eval_block() failed for interpolated section \"%S\"") % ws_in;
+            M_verb_error1_loc(results, expression.rparms.values.at(0), expression)  
         }
     
 
@@ -4338,9 +1992,11 @@ try
 M_endf
 
 
-// ------------------------------------
-// outer function for @INTERPOLATE verb
-// ------------------------------------
+//=========================================================================================================================
+//
+// verb_interpolate() -- outer function for @INTERPOLATE verb
+//
+//=========================================================================================================================
 
 int verb_interpolate(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
 {
@@ -4385,15 +2041,102 @@ M_endf
 
 
 
-//---------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////
+//
 //   verb_format() -- @FORMAT
-//---------------------------------------------------------------------------------
+//
+///////////////////////////////////////////////////////////////////////////////////
+
+//=========================================================================================================================
+//
+// format_eval() -- internal helper function to evaluete passed-in block parms
+//
+//=========================================================================================================================
+//
+//  R/C = 0 , if normal results (single value)
+//  R/C = 1 , if special results -- output results will have all the special results info 
+//  R/C = -1, if error results -- output parm_results will be set up with results for @FORMAT verb to return 
+//  R/C = -1, if normal results, but 0 or more than 1 value 
+
+static 
+int format_eval(frame_S& frame, const e_expression_S& expression, const value_S& parm_value, results_S& parm_results, const std::wstring& estr) try
+{
+    // if passed-in value is not for a block, just return that value as plain results
+
+    if (parm_value.ty != type_E::block)
+    {
+        parm_results = to_results(parm_value);    
+        return 0; 
+    }
 
 
-// verb_format_l() -- inner function passed in to interpolate_string() to do actual processing for one interpolated section
-// ------------------------------------------------------------------------------------------------------------------------
+    // need to evaluate block passed in to @FORMAT verb
+    // ------------------------------------------------
 
-static int verb_format_1(frame_S& frame, const e_expression_S& expression, results_S& results, const std::wstring& ws_in, std::wstring& ws_out, const std::wstring& verb_out, void* in_p) try
+    results_S block_results { }; 
+
+    auto erc = eval_block(frame, *(parm_value.block_sp), block_results);  
+
+
+    // return, if evaluation error, or special results
+
+    if (erc != 0)
+    {
+        M_out_emsg1(L"%S -- error evaluating passed-in block value") % estr;
+        M_verb_error1_loc(parm_results, parm_value, expression)    
+    }
+
+    if (block_results.special_results)
+    {   
+        parm_results = block_results; 
+        M__(M_out(L"format_eval() -- R/C = 1 -- special results");)
+        return 1;                              // no error message, since special results may be wanted
+    }
+   
+
+    // normal results, no error R/C -- return with error, if no results or error results
+    // ---------------------------------------------------------------------------------
+
+    if (block_results.error)
+    {
+        M_out_emsg1(L"%S -- evaluation of passed-in block value returned error results") % estr;
+        M_verb_error1_loc(parm_results, parm_value, expression)   
+    }
+
+    if (block_results.no_results)
+    {
+        M_out_emsg1(L"%S -- evaluation of passed-in block value returned no (empty) results") % estr;
+        M_verb_error1_loc(parm_results, parm_value, expression)  
+    }
+
+
+    // convert normal results to "plain" results, if possible -- complain if error occurs 
+
+    auto src = to_single_results(block_results);          // if r/c = 0, block results has been converted to single-type results, if required
+
+    if (src != 0)                                         // must be that passed-in block results had 0 values, multiple values, or keyword values     
+    {
+        M_out_emsg1(L"%S -- results from evaluation of passed-in block contained 0 values, contained more than 1 value, or contained keyword values") % estr;
+        M_verb_error1_loc(parm_results, parm_value, expression)   
+    }
+ 
+
+    // return normally, if block evaluation results cound be converted to single results (or were already single results) 
+ 
+    parm_results = block_results;                        // block results are OK as-is
+    return 0; 
+}
+M_endf
+
+
+
+//=========================================================================================================================
+//
+// verb_format_1() -- inner function passed in to interpolate_string() to do actual processing for one interpolated section
+//
+//=========================================================================================================================
+
+static int verb_format_1(frame_S& frame, const e_expression_S& expression, results_S& results, const std::wstring& ws_in, std::wstring& ws_out, std::wstring& verb_out, void* in_p) try
 {
     M__(M_out(L"verb_format_1(): called -- ws_in = \"%S\"") % ws_in;)
 
@@ -4419,7 +2162,14 @@ static int verb_format_1(frame_S& frame, const e_expression_S& expression, resul
     M__(M_out(L"verb_format_1(): called  --  ws_in = \"%S\"  --  ws_fmt = \"%S\"   --  ws_orig_fmt = \"%S\"") % ws_in % ws_fmt % ws_orig_fmt;) 
 
 
-    // just put out "%", if format spec is just "%%" -- don't pass this through the regex scanners  
+    // =====================================================================================================================
+    // process non-standard format specifications  -- %%   %n  %N etc.  -- don't pass these through the regex scanners 
+    // =====================================================================================================================
+    
+
+    // ----------------------------------------------------------------
+    // just put out "%", if format spec is "%%" -- no modifiers allowed
+    // ----------------------------------------------------------------
 
     if (ws_fmt == L"%%")                                                                                        
     {   
@@ -4427,143 +2177,269 @@ static int verb_format_1(frame_S& frame, const e_expression_S& expression, resul
         return 0;                                           // don't need to advance the positional parm                                                    
     }                                                                                                        
    
+    // ---------------------------------------------------------
+    // special handling for  "%n" and %N -- no modifiers allowed
+    // ---------------------------------------------------------
+
+    if ( (ws_fmt == L"%n") || (ws_fmt == L"%N") )                                                                                        
+    {   
+        // make sure needed positional parm exists
+
+        if (*parm_index_p >= parm_count) 
+        {
+            M_out_emsg1(L"@FORMAT -- output variable for format spec \"%S\" refers to non-existent parm -- value needed index = %d   number of input parms = %d") % ws_orig_fmt % *parm_index_p % parm_count;
+            M_verb_error1_loc(results, fmt_value, expression)              
+        }
+
+
+        // make sure n-th positional parm is an (unevaluated) identifier
+
+        auto parm_val  { expression.rparms.values.at(*parm_index_p) } ;
+
+        if (parm_val.ty != type_E::identifier)
+        {
+            M_out_emsg1(L"@FORMAT -- output parameter for format spec \"%S\" at parm %d is not an unevaluated identifier (variable name) -- value type = \"%S\"") % ws_orig_fmt % *parm_index_p % type_str(parm_val.ty);
+            M_verb_error1_loc(results, fmt_value, expression)         
+        }
+
+
+        // process the %N or %n spec
+        // =========================
+
+        if (ws_fmt == L"%n")
+        { 
+            // process %n format spec -- assign number of wchar_t items in formatted string (so far) to caller's variable 
+
+            auto urc = update_var( frame, parm_val.string, int64_val(verb_out.length()) );
+          
+            if (urc != 0)
+            {
+                M_out_emsg1(L"@FORMAT -- could not set output variable \"%S\" for format spec \"%S\" using parm number %d to output string width = %d") % parm_val.string % ws_orig_fmt % *parm_index_p % verb_out.length();
+                M_verb_error1_loc(results, fmt_value, expression)         
+            }
+        }
+        else                                                                                               // must be %N
+        {
+            // process %N format spec -- assign formatted string (so far) to caller's variable
+
+            auto urc = update_var(frame, parm_val.string, string_val(verb_out));
+          
+            if (urc != 0)
+            {
+                M_out_emsg1(L"@FORMAT -- could not set output variable \"%S\" for format spec \"%S\" using parm number %d to output string data = \"%S\"") % parm_val.string % ws_orig_fmt % *parm_index_p % shorten_str(verb_out, 50);
+                M_verb_error1_loc(results, fmt_value, expression)           
+            }
+        }
+
+
+        // advance parm index by 1 and return normally 
+        // -------------------------------------------
+
+        (*parm_index_p)++;                                  // advance to next positional parm for outer verb 
+        return 0; 
+    }     
+   
 
     // ==============================================================================================================
     // extract variable length and precision ( examples: %*.10X    %10.*X   %0#-*.*X ), if present in the format spec  
     // ==============================================================================================================
 
-    int v_1     { -1 };                                                                                       // -1 indicates that 1st variable is not being used 
-    int v_2     { -1 };                                                                                       // -1 indicates that 2nd variable is not being used 
-    int v_count {  0 };                                                                                       // number of variable parms in format spec 
-
-    std::wregex  rpatv { LR"(\%([0\-\+\ \#]*)(\*|[[:digit:]]+)?(\.\*|\.[[:digit:]]+)?[acAeEfFgGdiuosxX])" };  // general pattern for a A c e E f F g G d i o u x X format specification -- final verification will take place later
-    std::wsmatch mv    { };                                                                                   // match results for std::wstring
-
-    auto foundv { std::regex_match(ws_fmt, mv, rpatv) };                                                      // see if passed-in format specification matches most general valid type
+    int v_1         { -1  };                                                                                                   // -1 indicates that 1st variable is not being used 
+    int v_2         { -1  };                                                                                                   // -1 indicates that 2nd variable is not being used 
+    int v_count     {  0  };                                                                                                   // number of variable parms in format spec 
+                    
+    bool w_valid    {false};                                                                                                   // true indicates width is present
+    bool p_valid    {false};                                                                                                   // true indicates precision is present 
+    
+    int width       {  -1 };                                                                                                   // width     (variable or fixed)
+    int precision   {  -1 };                                                                                                   // precision (variable or fixed)
+                                                                                                                              
+    std::wregex  rpatv { LR"(\%([0\-\+\ \#]*)(\*|[[:digit:]]+)?(\.\*|\.[[:digit:]]+)?[aAceEfFgGdiostuxX])" };                  // general pattern for a A c e E f F g G d i o s t u x X format specification -- final verification done later
+    std::wsmatch mv    { };                                                                                                    // match results for std::wstring
+                                                                                                                              
+    auto foundv { std::regex_match(ws_fmt, mv, rpatv) };                                                                       // see if passed-in format specification matches most general valid type
 
 
     // if format spec is not valid here, don't bother looking for *.* -- one of the more specific tests down below will fail (and the error will be reported then)
 
     if (foundv)
     {
-        // format spec looks fairly good -- proceed with getting variable width/precision
+        // format spec looks fairly good -- proceed with getting width/precision
 
-         M__(M_out(    L"verb_format_1() -- mv.size()             = %d") % mv.size()                  ;) 
-       
-         for (auto i = 0; i < mv.size(); i++)
-         {
-             M__(M_out(L"verb_format_1() -- mv.length(%d)      = %d")     % i % mv.length(i)           ;)
-             M__(M_out(L"verb_format_1() -- mv.position(%d)    = %d")     % i % mv.position(i)         ;)
-             M__(M_out(L"verb_format_1() -- mv.str(%d)         = \"%S\"") % i % mv.str(i)              ;)   
-         }
-
- 
-         // process variable width, if specified
-         // ------------------------------------
-
-         if ( (mv.size() >= 3) && (mv.str(2) == L"*") )                                         // check for variable width
-         {
-             // make sure needed positional parm exists
-
-             if (*parm_index_p >= parm_count) 
-             {
-                 count_error(); 
-                 M_out_emsg1(L"verb_format_1() -- variable width ('*') in format spec \"%S\"; refers to non-existent input value -- value needed index = %d   number of input parms = %d") % ws_orig_fmt % *parm_index_p % parm_count;
-                 msgend_loc(fmt_value, expression);
-                 results = error_results();  
-                 return -1;              
-             }
+        M__(M_out(    L"verb_format_1() -- mv.size()             = %d") % mv.size()                   ;) 
+      
+        for (auto i = 0; i < mv.size(); i++)
+        {
+            M__(M_out(L"verb_format_1() -- mv.length(%d)      = %d")     % i % mv.length(i)           ;)
+            M__(M_out(L"verb_format_1() -- mv.position(%d)    = %d")     % i % mv.position(i)         ;)
+            M__(M_out(L"verb_format_1() -- mv.str(%d)         = \"%S\"") % i % mv.str(i)              ;)   
+        }
 
 
-             // make sure needed positional parm is of integer type  -- don't check values - let swprintf() do it's checking
+        // ---------------------------
+        // process width, if specified
+        // ---------------------------
 
-             auto parm_val  { expression.rparms.values.at(*parm_index_p) } ;
-             int  v_width   { -1                                         } ;
+        if (mv.size() >= 3)
+        {
+            if (mv.str(2) == L"*")                                                                // check for variable width
+            {
+                // make sure needed positional parm exists
+               
+                if (*parm_index_p >= parm_count) 
+                {
+                    M_out_emsg1(L"@FORMAT -- variable width ('*') in format spec \"%S\" refers to non-existent input value -- value needed index = %d   number of input parms = %d") % ws_orig_fmt % *parm_index_p % parm_count;
+                    M_verb_error1_loc(results, fmt_value, expression)            
+                }
+               
+               
+                // evaluate any passed-in block parm, which neeeds to evaluate to an integer type 
+               
+                auto      parm_value    { expression.rparms.values.at(*parm_index_p) } ;         // capture current @FORMAT parm
+                results_S parm_results  {  };                                                    // empty results to be filled in by format_eval()
+               
+                std::wstring estr { L"@FORMAT -- variable width ('*') in format spec \"" + ws_orig_fmt + L"\" refers to positional parm " +  fmt_str(L"%d", *parm_index_p) };
+                auto erc = format_eval(frame, expression, parm_value, parm_results, estr);
+                
+                if (erc != 0)                                                                    // just pass back any error or special results to caller
+                {
+                    M__(M_out(L"verb_format_1() -- erc = %d") % erc;)
+                    results = parm_results;                                                      // format_eval() has already prepared appropriate return results for @FORMAT verb
+                    return std::min(0, erc);                                                     // convert R/C = 1 to 0, -1 stays at -1  -- format_eval() has put out any require error messages 
+                }
+               
+               
+                // make sure needed positional parm is of integer type  -- don't check values - let swprintf() do it's checking
+               
+                if (!is_value_integer(parm_results))
+                {
+                    M_out_emsg1(L"@FORMAT -- variable width ('*') in format spec \"%S\" refers to mismatched positional parm %d of type = \"%S\"") % ws_orig_fmt % *parm_index_p % type_str(parm_results.ty);
+                    M_verb_error1_loc(results, fmt_value, expression)          
+                }
+                
+               
+                int  v_width   { -1  } ;
+                auto gv_rc = get_val(parm_results, v_width);                                      // extract value_S integer type data into C++ int variable, for passing to swprintf() later
+               
+                if (gv_rc != 0)
+                {
+                    M_out_emsg1(L"@FORMAT -- variable width ('*') in format spec \"%S\" refers to positional parm %d = %S -- cannot be converted to 31-bit signed integer value") % ws_orig_fmt % *parm_index_p % str_value(parm_results);
+                    M_verb_error1_loc(results, fmt_value, expression)               
+                }
+               
 
-             if (!is_value_integer(parm_val))
-             {
-                 count_error(); 
-                 M_out_emsg1(L"verb_format_1() -- variable width ('*') in format spec \"%S\"; refers to mismatched positional parm %d of type = \"%S\"") % ws_orig_fmt % *parm_index_p % type_str(parm_val.ty);
-                 msgend_loc(fmt_value, expression);
-                 results = error_results();  
-                 return -1;            
-             }
-             
-             auto gv_rc = get_val(parm_val, v_width);                                           // extract value_S integer type data into C++ int variable, for passing to swprintf() later
+                // set width field, and indicate that width field is valid 
 
-             if (gv_rc != 0)
-             {
-                 count_error(); 
-                 M_out_emsg1(L"verb_format_1() -- variable width ('*') in format spec \"%S\"; refers to positional parm %d = %S -- cannot be converted to 31-bit signed integer value") % ws_orig_fmt % *parm_index_p % str_value(parm_val);
-                 msgend_loc(fmt_value, expression);
-                 results = error_results();  
-                 return -1;               
-             }
- 
+                width   = v_width;
+                w_valid = true; 
 
-             //  valid integer value -- save away for later swprintf() call 
+               
+                //  valid integer value -- save away for later swprintf() call 
+               
+                v_count++;                                                                         // indicate we have at least one variable parm 
+                v_1 = v_width;                                                                     // variable width is always 1st  
+                (*parm_index_p)++;                                                                 // advance to next positional parm for outer verb 
+            }                                                                                      // variable width field present
+            else if (mv.str(2) != L"")                                                             // should be fixed width -- if empty string, precision is not present
+            {
+               // try to convert fixed width string to int32 -- complain if this fails
 
-             v_count++;                                                                         // indicate we have at least one variable parm 
-             v_1 = v_width;                                                                     // variable width is always 1st  
-             (*parm_index_p)++;                                                                 // advance to next positional parm for outer verb 
-         }                                                                                      // variable width specified
-        
+               auto trc = to_int32(mv.str(2), width);                                              // try to convert string to int32_t                 
+            
+               if (trc != 0)
+               {
+                    M_out_emsg1(L"@FORMAT -- fixed width (\"%S\") in format spec \"%S\" cannot be converted to 31-bit signed integer value") % mv.str(2) % ws_orig_fmt;
+                    M_verb_error1_loc(results, fmt_value, expression)  
+               }
 
-         // process variable precision, if specified
-         // ----------------------------------------
-
-         if ( (mv.size() >= 4) && (mv.str(3) == L".*") )                                        // check for variable precision
-         {
-             // make sure needed positional parm exists
-
-             if (*parm_index_p >= parm_count) 
-             {
-                 count_error(); 
-                 M_out_emsg1(L"verb_format_1() -- variable precision ('.*') in format spec \"%S\"; refers to non-existent input value -- value needed index = %d   number of input parms = %d") % ws_orig_fmt % *parm_index_p % parm_count;
-                 msgend_loc(fmt_value, expression);
-                 results = error_results();  
-                 return -1;              
-             }
+               w_valid = true;                                                                     // integer is OK -- indicate that precision is valid            
+            }                                                                                      // fixed width field present
+        }                                                                                          // width field present in this format spec
 
 
-             // make sure needed positional parm is of integer type  -- don't check values - let swprintf() do it's checking
+        // ----------------------------------------
+        // process variable precision, if specified
+        // ----------------------------------------
 
-             auto parm_val      { expression.rparms.values.at(*parm_index_p) } ;
-             int  v_precision   { -1                                         } ;
+        if (mv.size() >= 4)
+        {
+            if (mv.str(3) == L".*")                                                                // check for variable precision
+            {
+                // make sure needed positional parm exists
+           
+                if (*parm_index_p >= parm_count) 
+                {
+                    M_out_emsg1(L"@FORMAT -- variable precision ('.*') in format spec \"%S\" refers to non-existent input value -- value needed index = %d   number of input parms = %d") % ws_orig_fmt % *parm_index_p % parm_count;
+                    M_verb_error1_loc(results, fmt_value, expression)            
+                }
+           
+           
+                // evaluate any passed-in block parm, which neeeds to evaluate to an integer type 
+           
+                auto      parm_value    { expression.rparms.values.at(*parm_index_p) } ;         // capture current @FORMAT parm
+                results_S parm_results  {  };                                                    // empty results to be filled in by format_eval()
+           
+                std::wstring estr { L"@FORMAT -- variable precision ('*') in format spec \"" + ws_orig_fmt + L"\" refers to positional parm " +  fmt_str(L"%d", *parm_index_p) };
+                auto erc = format_eval(frame, expression, parm_value, parm_results, estr);
+                
+                if (erc != 0)                                                                    // just pass back any error or special results to caller
+                {
+                    results = parm_results;                                                      // format_eval() has already prepared appropriate retuen results for @FORMAT verb
+                    return erc;                                                                  // format_eval() has put out any require error messages 
+                }
+                             
+           
+                // make sure needed positional parm is of integer type  -- don't check values - let swprintf() do it's checking
+           
+                if (!is_value_integer(parm_results))
+                {
+                    M_out_emsg1(L"@FORMAT -- variable precision ('*') in format spec \"%S\" refers to mismatched positional parm %d of type = \"%S\"") % ws_orig_fmt % *parm_index_p % type_str(parm_results.ty);
+                    M_verb_error1_loc(results, fmt_value, expression)            
+                }
+                
+                int  v_precision { -1 } ;
+                auto gv_rc = get_val(parm_results, v_precision);                                   // extract value_S integer type data into C++ int variable, for passing to swprintf() later
+           
+                if (gv_rc != 0)
+                {
+                    M_out_emsg1(L"@FORMAT -- variable precision ('*') in format spec \"%S\" refers to positional parm %d = %S -- cannot be converted to 31-bit signed integer value") % ws_orig_fmt % *parm_index_p % str_value(parm_results);
+                    M_verb_error1_loc(results, fmt_value, expression)             
+                }
+           
 
-             if (!is_value_integer(parm_val))
-             {
-                 count_error(); 
-                 M_out_emsg1(L"verb_format_1() -- variable precision ('*') in format spec \"%S\"; refers to mismatched positional parm %d of type = \"%S\"") % ws_orig_fmt % *parm_index_p % type_str(parm_val.ty);
-                 msgend_loc(fmt_value, expression);
-                 results = error_results();  
-                 return -1;            
-             }
-             
-             auto gv_rc = get_val(parm_val, v_precision);                                       // extract value_S integer type data into C++ int variable, for passing to swprintf() later
+                // set precision field, and indicate that precision field is valid 
 
-             if (gv_rc != 0)
-             {
-                 count_error(); 
-                 M_out_emsg1(L"verb_format_1() -- variable precision ('*') in format spec \"%S\"; refers to positional parm %d = %S -- cannot be converted to 31-bit signed integer value") % ws_orig_fmt % *parm_index_p % str_value(parm_val);
-                 msgend_loc(fmt_value, expression);
-                 results = error_results();  
-                 return -1;               
-             }
+                precision  = v_precision;
+                p_valid    = true; 
 
+           
+                //  valid integer value -- save away for later swprintf() call 
+           
+                v_count++;                                                                         // indicate we have another variable parm 
+                                                                                          
+                if (v_count == 1)                                                         
+                    v_1 = v_precision;                                                             // no variable width -- variable precision is 1st 
+                else                                                                              
+                    v_2 = v_precision;                                                             // had variable width -- variable precision is 2nd
+                                                                                                  
+                (*parm_index_p)++;                                                                 // advance to next positional parm for outer verb 
+            }                                                                                      // variable precision specified
+            else if (mv.str(3) != L"")                                                             // should be fixed precision -- empty string means no precision 
+            {
+               // try to convert fixed precision string to int32 -- complain if this fails
 
-             //  valid integer value -- save away for later swprintf() call 
+               auto trc = to_int32(mv.str(3).substr(1), precision);                                // try to convert string to int32_t                 
+            
+               if (trc != 0)
+               {
+                    M_out_emsg1(L"@FORMAT -- fixed precision (\"%S\") in format spec \"%S\" cannot be converted to 31-bit signed integer value") % mv.str(3).substr(1) % ws_orig_fmt;
+                    M_verb_error1_loc(results, fmt_value, expression)  
+               }
 
-             v_count++;                                                                         // indicate we have another variable parm 
-                                                                                       
-             if (v_count == 1)                                                         
-                 v_1 = v_precision;                                                             // no variable width -- variable precision is 1st 
-             else                                                                              
-                 v_2 = v_precision;                                                             // had variable width -- variable precision is 2nd
-                                                                                               
-             (*parm_index_p)++;                                                                 // advance to next positional parm for outer verb 
-         }                                                                                      // variable precision specified
-    }                                                                                           // format spec looks reasonably correct 
+               p_valid = true;                                                                     // integer is OK -- indicate that precision is valid            
+            }                                                                                      // fixed precision field
+        }                                                                                          // precision field present 
+    }                                                                                              // format spec looks reasonably correct 
 
     M__(M_out( L"verb_format_1() -- v_count = %d    v_1 = %d      v_2 = %d   *parm_index_p = %d ") % v_count % v_1 % v_2 % *parm_index_p;) 
 
@@ -4583,6 +2459,119 @@ static int verb_format_1(frame_S& frame, const e_expression_S& expression, resul
     auto last_char { ws_fmt.back() };                                                                   // get last chr in format specification  
     switch ( last_char )
     {
+        // process non-simple %n or %N format specification -- invalid -- only "%n" or "%N" is allowed and has been taken care of earlier
+        // ------------------------------------------------------------------------------------------------------------------------------
+
+        case    L'n' :
+        {
+            M_out_emsg1(L"@FORMAT -- apparent %%n-type format spec \"%S\" is not valid") % ws_orig_fmt;
+            M_verb_error1_loc(results, fmt_value, expression) 
+        }
+
+
+        case    L'N' :
+        {
+            M_out_emsg1(L"@FORMAT -- apparent %%N-type format spec \"%S\" is not valid") % ws_orig_fmt;
+            M_verb_error1_loc(results, fmt_value, expression) 
+        }
+        
+
+        // process %t -- tab to position format specification (similar to %t in boost::format)
+        // -----------------------------------------------------------------------------------
+        //
+        //   %t      -- does nothing (spaces over to current length)
+        //   %99t    -- spaces over to position 99 or current length
+        //   %.20t   -- adds 20 spaces (spaces over to current length, making sure to add at least 20 spaces)
+        //   %99.20t -- spaces over to position 99 or current length, making sure to add at least 20 spaces
+        //   %*t     -- same as above, but uses n-th positional parm to get width and/or precision
+        //   %.*t       ''     note: negative precision is invalid
+        //   %*.*t      ''     note: negative precision is invalid
+        //                     note: negative width says chop off current string to absolute value of width, if string is longer already  
+
+        case    L't' :
+        {                       
+            std::wregex  rpat { LR"(\%(\*|[[:digit:]]+)?(\.\*|\.[[:digit:]]+)?[t])" };                  // more restrictive pattern for %t format specification
+            std::wsmatch mr   { };                                                                      // match results for std::wstring
+
+            auto found { std::regex_match(ws_fmt, mr, rpat) };                                          // see if passed-in format sp[ecification matches
+           
+            if (!found) 
+            {
+                M_out_emsg1(L"@FORMAT -- Apparent %%t-type format spec \"%S\" is not valid") % ws_orig_fmt;
+                M_verb_error1_loc(results, fmt_value, expression) 
+            }  
+
+
+            // set up working length, width, and precision values
+            // --------------------------------------------------
+
+            bool   truncate { false             };                                                       // default is no truncation 
+            int    w        { 0                 };                                                       // default width = 0
+            size_t wide     { 0                 };                                                       // default width = 0
+            int    p        { 0                 };                                                       // default precision = 0
+            size_t prec     { 0                 };                                                       // default precision = 0
+            size_t len      { verb_out.length() };                                                       // current length of output string     
+
+
+            // set up working width and truncate flag (negative width means truncate/pad to length = -w, if required -- positive width means pad to length = w, if required -- never truncate)
+
+            if (w_valid) 
+                w = width; 
+
+            if (w < 0)
+            {
+                w        = -w;
+                truncate = true; 
+            }
+
+            wide = w; 
+
+
+            // set up working precision -- negative precision is invalid
+            
+            if (p_valid) 
+                p = precision;
+
+            if (p < 0)
+            {
+                M_out_emsg1(L"@FORMAT -- Precision value in %t-type format spec \"%S\" is %d -- negative values are not valid") % ws_orig_fmt % p;
+                M_verb_error1_loc(results, fmt_value, expression)   
+            }
+
+            prec = p;
+
+
+            // truncate existing output string, if required -- refresh length value
+
+            if ( truncate && (len > wide) )
+            {
+                verb_out.erase(wide);
+                len = verb_out.length();            
+            }
+          
+
+            // compute number of characters need to pad existing string to desired length
+
+            size_t pad {0};
+
+            if (wide > len)
+                pad = wide - len;                          // need this much padding to reach desired width
+
+            pad = std::max(pad, prec);                     // also make sure to pad by at least prec characters
+
+
+            // output string is just a string of 'pad' blanks to be added to end of string
+
+            ws_out = std::wstring { };                     // start out with empty uotput string
+
+            if (pad > 0)
+               ws_out.append(pad, L' ');                   // output string = 'pad' blanks
+
+            return 0; 
+            break;
+        }
+                                                                                          
+
         // process string type format specification
         // ----------------------------------------  
        
@@ -4595,11 +2584,8 @@ static int verb_format_1(frame_S& frame, const e_expression_S& expression, resul
            
             if (!found) 
             {
-                count_error(); 
-                M_out_emsg1(L"verb_format_1() -- string-type format spec \"%S\"; is not valid") % ws_orig_fmt;
-                msgend_loc(fmt_value, expression);
-                results = error_results();  
-                return -1;   
+                M_out_emsg1(L"@FORMAT -- string-type format spec \"%S\" is not valid") % ws_orig_fmt;
+                M_verb_error1_loc(results, fmt_value, expression) 
             }  
 
           
@@ -4607,11 +2593,8 @@ static int verb_format_1(frame_S& frame, const e_expression_S& expression, resul
 
             if (*parm_index_p >= parm_count) 
             {
-                count_error(); 
-                M_out_emsg1(L"verb_format_1() -- string-type format spec \"%S\"; refers to non-existent input value -- value needed index = %d   number of input parms = %d") % ws_orig_fmt % *parm_index_p % parm_count;
-                msgend_loc(fmt_value, expression);
-                results = error_results();  
-                return -1;              
+                M_out_emsg1(L"@FORMAT -- string-type format spec \"%S\" refers to non-existent input value -- value needed index = %d   number of input parms = %d") % ws_orig_fmt % *parm_index_p % parm_count;
+                M_verb_error1_loc(results, fmt_value, expression)            
             } 
 
 
@@ -4621,11 +2604,8 @@ static int verb_format_1(frame_S& frame, const e_expression_S& expression, resul
 
             if (parm_type != type_E::string)
             {
-                count_error(); 
-                M_out_emsg1(L"verb_format_1() -- string-type format spec \"%S\"; refers to mismatched positional parm %d of type = \"%S\"") % ws_orig_fmt % *parm_index_p % type_str(parm_type);
-                msgend_loc(fmt_value, expression);
-                results = error_results();  
-                return -1;             
+                M_out_emsg1(L"@FORMAT -- string-type format spec \"%S\" refers to mismatched positional parm %d of type = \"%S\"") % ws_orig_fmt % *parm_index_p % type_str(parm_type);
+                M_verb_error1_loc(results, fmt_value, expression)         
             }  
 
 
@@ -4671,28 +2651,25 @@ static int verb_format_1(frame_S& frame, const e_expression_S& expression, resul
                 std::wregex  rpat { LR"(\%([0\-\+\ ]*)(\*|[[:digit:]]+)?(\.\*|\.[[:digit:]]+)?[cdiou])" };  // pattern for c, d, i, o, u format specification   (note # not supported here for o -- would need special code to prepend 0o, not just 0)
                 std::wsmatch mr   { };                                                                      // match results for std::wstring
 
-                found = std::regex_match(ws_fmt, mr, rpat);                                                 // see if passed-in format specification matches the required pattern for d i u specs 
+                found = std::regex_match(ws_fmt, mr, rpat);                                                 // see if passed-in format specification matches the required pattern for c d i o u specs 
             }
 
             if (!found) 
             {
-                count_error(); 
-                M_out_emsg1(L"verb_format_1() -- integer-type format spec \"%S\"; is not valid") % ws_orig_fmt;
-                msgend_loc(fmt_value, expression);
-                results = error_results();  
-                return -1;   
+                M_out_emsg1(L"@FORMAT -- integer-type format spec \"%S\" is not valid") % ws_orig_fmt;
+                M_verb_error1_loc(results, fmt_value, expression)   
             }    
                 
 
-            // check the matching positional input parm to see if it matches the spec  
+            // check the matching positional input parm to see if it matches the spec 
+            // ----------------------------------------------------------------------
+
+            // make sure n-th positional parm is present
 
             if (*parm_index_p >= parm_count) 
             {
-                count_error(); 
-                M_out_emsg1(L"verb_format_1() -- integer-type format spec \"%S\"; refers to non-existent input value -- value needed index = %d   number of input parms = %d") % ws_orig_fmt % *parm_index_p % parm_count;
-                msgend_loc(fmt_value, expression);
-                results = error_results();  
-                return -1;              
+                M_out_emsg1(L"@FORMAT -- integer-type format spec \"%S\" refers to non-existent input value -- value needed index = %d   number of input parms = %d") % ws_orig_fmt % *parm_index_p % parm_count;
+                M_verb_error1_loc(results, fmt_value, expression)           
             }
 
          
@@ -4711,11 +2688,8 @@ static int verb_format_1(frame_S& frame, const e_expression_S& expression, resul
             }
             else
             {
-                count_error(); 
-                M_out_emsg1(L"verb_format_1() -- integer-type  format spec \"%S\"; refers to mismatched positional parm %d of type = \"%S\"") % ws_orig_fmt % *parm_index_p % type_str(parm_type);
-                msgend_loc(fmt_value, expression);
-                results = error_results();  
-                return -1;             
+                M_out_emsg1(L"@FORMAT -- integer-type  format spec \"%S\" refers to mismatched positional parm %d of type = \"%S\"") % ws_orig_fmt % *parm_index_p % type_str(parm_type);
+                M_verb_error1_loc(results, fmt_value, expression)            
             }  
              
 
@@ -4730,11 +2704,8 @@ static int verb_format_1(frame_S& frame, const e_expression_S& expression, resul
 
                 if (gv_rc != 0)
                 {
-                    count_error(); 
-                    M_out_emsg1(L"verb_format_1() -- character-type format spec \"%S\"; refers to positional parm %d = %S -- cannot be converted to 31-bit signed integer value") % ws_orig_fmt % *parm_index_p % str_value(parm_value);
-                    msgend_loc(fmt_value, expression);
-                    results = error_results();  
-                    return -1;             
+                    M_out_emsg1(L"@FORMAT -- character-type format spec \"%S\" refers to positional parm %d = %S -- cannot be converted to 31-bit signed integer value") % ws_orig_fmt % *parm_index_p % str_value(parm_value);
+                    M_verb_error1_loc(results, fmt_value, expression)           
                 } 
 
 
@@ -4746,10 +2717,8 @@ static int verb_format_1(frame_S& frame, const e_expression_S& expression, resul
                 if ( (wc_val < 0) || (wc_val > const_N::utf16_plane0_max) )
                 {
                     count_error(); 
-                    M_out_emsg1(L"verb_format_1() -- character-type format spec \"%S\"; refers to positional parm %d = %d -- UTF-16 code point outside of valid range (u+0000 to u+FFFF)") % ws_orig_fmt % *parm_index_p % wc_val;
-                    msgend_loc(fmt_value, expression);
-                    results = error_results();  
-                    return -1;             
+                    M_out_emsg1(L"@FORMAT -- character-type format spec \"%S\" refers to positional parm %d = %d -- UTF-16 code point outside of valid range (u+0000 to u+FFFF)") % ws_orig_fmt % *parm_index_p % wc_val;
+                    M_verb_error1_loc(results, fmt_value, expression)           
                 } 
 
 
@@ -4838,7 +2807,7 @@ static int verb_format_1(frame_S& frame, const e_expression_S& expression, resul
                     default: 
                     {
                         count_error(); 
-                        M_out_emsg1(L"verb_format_1() -- internal error -- unknown integer parm type = \"%S\"") % type_str(parm_type);
+                        M_out_emsg1(L"@FORMAT -- internal error -- unknown integer parm type = \"%S\"") % type_str(parm_type);
                         msgend_loc(fmt_value, expression);                                                                                                              
                         M_throw_v(   "verb_format_1() -- internal error -- unknown integer parm type = \"%S\"") % out_ws(type_str(parm_type)) )); 
                         break;                                                      // should not get here
@@ -4875,11 +2844,8 @@ static int verb_format_1(frame_S& frame, const e_expression_S& expression, resul
 
             if (!found) 
             {
-                count_error(); 
-                M_out_emsg1(L"verb_format_1() -- floating point-type format spec \"%S\"; is not valid") % ws_orig_fmt;
-                msgend_loc(fmt_value, expression);
-                results = error_results();  
-                return -1;   
+                M_out_emsg1(L"@FORMAT -- floating point-type format spec \"%S\" is not valid") % ws_orig_fmt;
+                M_verb_error1_loc(results, fmt_value, expression)  
             } 
 
           
@@ -4887,11 +2853,8 @@ static int verb_format_1(frame_S& frame, const e_expression_S& expression, resul
 
             if (*parm_index_p >= parm_count) 
             {
-                count_error(); 
-                M_out_emsg1(L"verb_format_1() -- floating-point-type format spec \"%S\"; refers to non-existent input value -- value needed index = %d   number of input parms = %d") % ws_orig_fmt % *parm_index_p % parm_count;
-                msgend_loc(fmt_value, expression);
-                results = error_results();  
-                return -1;              
+                M_out_emsg1(L"@FORMAT -- floating-point-type format spec \"%S\" refers to non-existent input value -- value needed index = %d   number of input parms = %d") % ws_orig_fmt % *parm_index_p % parm_count;
+                M_verb_error1_loc(results, fmt_value, expression)            
             }
 
 
@@ -4905,11 +2868,8 @@ static int verb_format_1(frame_S& frame, const e_expression_S& expression, resul
                   (parm_type != type_E::float64 )
                 )
             {
-                count_error(); 
-                M_out_emsg1(L"verb_format_1() -- floating-point-type  format spec \"%S\"; refers to mismatched positional parm %d of type = \"%S\"") % ws_orig_fmt % *parm_index_p % type_str(parm_type);
-                msgend_loc(fmt_value, expression);
-                results = error_results();  
-                return -1;             
+                M_out_emsg1(L"@FORMAT -- floating-point-type  format spec \"%S\" refers to mismatched positional parm %d of type = \"%S\"") % ws_orig_fmt % *parm_index_p % type_str(parm_type);
+                M_verb_error1_loc(results, fmt_value, expression)           
             } 
 
 
@@ -4934,16 +2894,13 @@ static int verb_format_1(frame_S& frame, const e_expression_S& expression, resul
          }
 
 
-        // all other types are not supported -- 'p'  'n' , for example
-        // -----------------------------------------------------------
+        // all other types are not supported -- 'p'  'z'  for example
+        // ----------------------------------------------------------
 
         default : 
         {
-            count_error(); 
-            M_out_emsg1(L"verb_format_1() -- final character ('%c') in format spec \"%S\"; is unsupported -- must be:  'a'  'A'  'd'  'e'  'E'  'f'  'F'  'g'  'G'  'i'  'o'  's'  'u'  'x'  or  'X'") % ws_orig_fmt.back() % ws_fmt;
-            msgend_loc(fmt_value, expression);
-            results = error_results();  
-            return -1; 
+            M_out_emsg1(L"@FORMAT -- final character ('%c') in format spec \"%S\" is unsupported -- must be:  a,  A,  d,  e,  E,  f,  F,  g,  G,  i,  n,  o,  s,  u,  x,  or  X") % ws_orig_fmt.back() % ws_fmt;
+            M_verb_error1_loc(results, fmt_value, expression) 
             break;
         }
     }
@@ -4958,128 +2915,17 @@ M_endf
 
 
 
-// -------------------------------
-// outer function for @FORMAT verb
-// -------------------------------
+//=========================================================================================================================
+//
+//  verb_format() -- outer function for @FORMAT verb
+//
+//=========================================================================================================================
 
 int verb_format(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
 {
     // already known there is required   fmt:   kw parm, and optional   begin:  and   end:  keyword parms + likely positional parms (not looked at here, but passed through to called function) 
     M__(M_out(L"verb_format() called");)
 
-    /*
-    int8_t    i8  { }; 
-    int16_t   i16 { }; 
-    int32_t   i32 { }; 
-    int64_t   i64 { }; 
-    uint8_t   u8  { }; 
-    uint16_t  u16 { }; 
-    uint32_t  u32 { }; 
-    uint64_t  u64 { }; 
-
-
-    int rc {1};  
-    value_S { }; 
-
-    rc = get_val( type_val(( int64_t)111          ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % 111     %  i8  % rc ;
-    rc = get_val( type_val(( int64_t)222          ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % 222     %  i8  % rc ;
-    rc = get_val( type_val(( int64_t)-111         ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % -111    %  i8  % rc ;
-    rc = get_val( type_val(( int64_t)-222         ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % -222    %  i8  % rc ;
-    rc = get_val( type_val(( int64_t)33333        ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % 33333   %  i8  % rc ;
-    rc = get_val( type_val(( int64_t)-33333       ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % -33333  %  i8  % rc ;
-    rc = get_val( type_val(( int64_t)77777        ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % 77777   %  i8  % rc ;
-
-    rc = get_val( type_val(( int64_t)111          ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % 111     %  u8  % rc ;
-    rc = get_val( type_val(( int64_t)222          ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % 222     %  u8  % rc ;
-    rc = get_val( type_val(( int64_t)-111         ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % -111    %  u8  % rc ;
-    rc = get_val( type_val(( int64_t)-222         ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % -222    %  u8  % rc ;
-    rc = get_val( type_val(( int64_t)33333        ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % 33333   %  u8  % rc ;
-    rc = get_val( type_val(( int64_t)-33333       ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % -33333  %  u8  % rc ;
-    rc = get_val( type_val(( int64_t)77777        ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % 77777   %  u8  % rc ;
-    
-    rc = get_val( type_val(( int64_t)111          ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % 111     %  i16  % rc ;
-    rc = get_val( type_val(( int64_t)222          ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % 222     %  i16  % rc ;
-    rc = get_val( type_val(( int64_t)-111         ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % -111    %  i16  % rc ;
-    rc = get_val( type_val(( int64_t)-222         ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % -222    %  i16  % rc ;
-    rc = get_val( type_val(( int64_t)33333        ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % 33333   %  i16  % rc ;
-    rc = get_val( type_val(( int64_t)-33333       ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % -33333  %  i16  % rc ;
-    rc = get_val( type_val(( int64_t)77777        ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % 77777   %  i16  % rc ;
-
-    rc = get_val( type_val(( int64_t)111          ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % 111     %  u16  % rc ;
-    rc = get_val( type_val(( int64_t)222          ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % 222     %  u16  % rc ;
-    rc = get_val( type_val(( int64_t)-111         ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % -111    %  u16  % rc ;
-    rc = get_val( type_val(( int64_t)-222         ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % -222    %  u16  % rc ;
-    rc = get_val( type_val(( int64_t)33333        ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % 33333   %  u16  % rc ;
-    rc = get_val( type_val(( int64_t)-33333       ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % -33333  %  u16  % rc ;
-    rc = get_val( type_val(( int64_t)77777        ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % 77777   %  u16  % rc ;
-
-
-    add_separators_w(-123456789.789);
-    add_separators_w( 123456789.789);
-    add_separators_w( 123456789.);
-    add_separators_w(-123456789.);
-    add_separators_w( 123456789.E+66);
-    add_separators_w(-123456789.E+66);
-
-    add_separators_w(L"-1"                  ,  L',' , 3);
-    add_separators_w(L"-12"                 ,  L',' , 3);
-    add_separators_w(L"-123"                ,  L',' , 3);
-    add_separators_w(L"-1234"               ,  L',' , 3);
-    add_separators_w(L"-12345"              ,  L',' , 3);
-    add_separators_w(L"-123456"             ,  L',' , 3);
-    add_separators_w(L"-1234567"            ,  L',' , 3);
-    add_separators_w(L"-12345678"           ,  L',' , 3);
-    add_separators_w(L"-123456789"          ,  L',' , 3);
-    add_separators_w(L"-1234567890"         ,  L',' , 3);
-    add_separators_w(L"1"                   ,  L',' , 3);
-    add_separators_w(L"12"                  ,  L',' , 3);
-    add_separators_w(L"123"                 ,  L',' , 3);
-    add_separators_w(L"1234"                ,  L',' , 3);
-    add_separators_w(L"12345"               ,  L',' , 3);
-    add_separators_w(L"123456"              ,  L',' , 3);
-    add_separators_w(L"1234567"             ,  L',' , 3);
-    add_separators_w(L"12345678"            ,  L',' , 3);
-    add_separators_w(L"123456789"           ,  L',' , 3);
-    add_separators_w(L"1234567890"          ,  L',' , 3);
-
-
-    add_separators_w(L" 123456789");
-    add_separators_w(L"-123456789");
-    add_separators_w(L"+123456789");
-    add_separators_w( L"123456789");
-
-    add_separators_w(L"-123456789.789");
-    add_separators_w(L"+123456789.789");
-    add_separators_w(L" 123456789.789");
-    add_separators_w( L"123456789.789");
-
-    add_separators_w(L" 123456789.");
-    add_separators_w(L"-123456789.");
-    add_separators_w(L"+123456789.");
-    add_separators_w( L"123456789.");
-
-    add_separators_w(L" .123456789");
-    add_separators_w(L"-.123456789");
-    add_separators_w(L"+.123456789");
-    add_separators_w( L".123456789");
-
-
-    add_separators_w(L" 123456789E+66");
-    add_separators_w(L"-123456789e+66");
-    add_separators_w(L"+123456789E+66");
-    add_separators_w( L"123456789e+66");
-
-    add_separators_w(L" 123456789.E+66");
-    add_separators_w(L"-123456789.e+66");
-    add_separators_w(L"+123456789.E+66");
-    add_separators_w( L"123456789.e+66");
-
-    add_separators_w(L" .123456789E+66");
-    add_separators_w(L"-.123456789e+66");
-    add_separators_w(L"+.123456789E+66");
-    add_separators_w( L".123456789e+66");
-    return 0; 
-    */
 
     // get strings from verb parms -- main string, and optional begin marker/end marker strings
 
@@ -5099,8 +2945,8 @@ int verb_format(frame_S& frame, const e_expression_S& expression, const verbdef_
 
     iparm.frame_p      =      &frame;
     iparm.expression_p =      &expression;
-    iparm.ws_begin     =      L"%";                                     // format spec start s with %
-    iparm.ws_end       =      L"%aAcdeEfFgGiosuxX";                     // format spec ends with any one of these characters
+    iparm.ws_begin     =      L"%";                                     // format spec starts with %
+    iparm.ws_end       =      L"%aAcdeEfFgGinNostuxX";                  // format spec ends with any one of these characters
     iparm.ws_message   =      L"@FORMAT string";
     iparm.begin_any    =      false;                                    // whole string is start delimiter
     iparm.end_any      =      true;                                     // any single char in ws_end is the end delimiter for the format spec
@@ -5119,6 +2965,127 @@ M_endf
 
 
 
+/*************************************************************************************************************************************
+*
+*   test variations for get_val()
+*   ----------------------------- 
+*
+*   int8_t    i8  { }; 
+*   int16_t   i16 { }; 
+*   int32_t   i32 { }; 
+*   int64_t   i64 { }; 
+*   uint8_t   u8  { }; 
+*   uint16_t  u16 { }; 
+*   uint32_t  u32 { }; 
+*   uint64_t  u64 { }; 
+*
+*
+*   int rc {1};  
+*   value_S { }; 
+*
+*   rc = get_val( type_val(( int64_t)111          ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % 111     %  i8  % rc ;
+*   rc = get_val( type_val(( int64_t)222          ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % 222     %  i8  % rc ;
+*   rc = get_val( type_val(( int64_t)-111         ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % -111    %  i8  % rc ;
+*   rc = get_val( type_val(( int64_t)-222         ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % -222    %  i8  % rc ;
+*   rc = get_val( type_val(( int64_t)33333        ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % 33333   %  i8  % rc ;
+*   rc = get_val( type_val(( int64_t)-33333       ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % -33333  %  i8  % rc ;
+*   rc = get_val( type_val(( int64_t)77777        ), i8); M_out(L"u64=%d -> i8=%d   rc=%d") % 77777   %  i8  % rc ;
+*
+*   rc = get_val( type_val(( int64_t)111          ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % 111     %  u8  % rc ;
+*   rc = get_val( type_val(( int64_t)222          ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % 222     %  u8  % rc ;
+*   rc = get_val( type_val(( int64_t)-111         ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % -111    %  u8  % rc ;
+*   rc = get_val( type_val(( int64_t)-222         ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % -222    %  u8  % rc ;
+*   rc = get_val( type_val(( int64_t)33333        ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % 33333   %  u8  % rc ;
+*   rc = get_val( type_val(( int64_t)-33333       ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % -33333  %  u8  % rc ;
+*   rc = get_val( type_val(( int64_t)77777        ), u8); M_out(L"u64=%d -> u8=%d   rc=%d") % 77777   %  u8  % rc ;
+*   
+*   rc = get_val( type_val(( int64_t)111          ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % 111     %  i16  % rc ;
+*   rc = get_val( type_val(( int64_t)222          ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % 222     %  i16  % rc ;
+*   rc = get_val( type_val(( int64_t)-111         ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % -111    %  i16  % rc ;
+*   rc = get_val( type_val(( int64_t)-222         ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % -222    %  i16  % rc ;
+*   rc = get_val( type_val(( int64_t)33333        ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % 33333   %  i16  % rc ;
+*   rc = get_val( type_val(( int64_t)-33333       ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % -33333  %  i16  % rc ;
+*   rc = get_val( type_val(( int64_t)77777        ), i16); M_out(L"u64=%d -> i16=%d   rc=%d") % 77777   %  i16  % rc ;
+*
+*   rc = get_val( type_val(( int64_t)111          ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % 111     %  u16  % rc ;
+*   rc = get_val( type_val(( int64_t)222          ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % 222     %  u16  % rc ;
+*   rc = get_val( type_val(( int64_t)-111         ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % -111    %  u16  % rc ;
+*   rc = get_val( type_val(( int64_t)-222         ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % -222    %  u16  % rc ;
+*   rc = get_val( type_val(( int64_t)33333        ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % 33333   %  u16  % rc ;
+*   rc = get_val( type_val(( int64_t)-33333       ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % -33333  %  u16  % rc ;
+*   rc = get_val( type_val(( int64_t)77777        ), u16); M_out(L"u64=%d -> u16=%d   rc=%d") % 77777   %  u16  % rc ;
+*
+*
+*   add_separators() -- test variations
+*
+*   add_separators_w(-123456789.789);
+*   add_separators_w( 123456789.789);
+*   add_separators_w( 123456789.);
+*   add_separators_w(-123456789.);
+*   add_separators_w( 123456789.E+66);
+*   add_separators_w(-123456789.E+66);
+*
+*   add_separators_w(L"-1"                  ,  L',' , 3);
+*   add_separators_w(L"-12"                 ,  L',' , 3);
+*   add_separators_w(L"-123"                ,  L',' , 3);
+*   add_separators_w(L"-1234"               ,  L',' , 3);
+*   add_separators_w(L"-12345"              ,  L',' , 3);
+*   add_separators_w(L"-123456"             ,  L',' , 3);
+*   add_separators_w(L"-1234567"            ,  L',' , 3);
+*   add_separators_w(L"-12345678"           ,  L',' , 3);
+*   add_separators_w(L"-123456789"          ,  L',' , 3);
+*   add_separators_w(L"-1234567890"         ,  L',' , 3);
+*   add_separators_w(L"1"                   ,  L',' , 3);
+*   add_separators_w(L"12"                  ,  L',' , 3);
+*   add_separators_w(L"123"                 ,  L',' , 3);
+*   add_separators_w(L"1234"                ,  L',' , 3);
+*   add_separators_w(L"12345"               ,  L',' , 3);
+*   add_separators_w(L"123456"              ,  L',' , 3);
+*   add_separators_w(L"1234567"             ,  L',' , 3);
+*   add_separators_w(L"12345678"            ,  L',' , 3);
+*   add_separators_w(L"123456789"           ,  L',' , 3);
+*   add_separators_w(L"1234567890"          ,  L',' , 3);
+*
+*
+*   add_separators_w(L" 123456789");
+*   add_separators_w(L"-123456789");
+*   add_separators_w(L"+123456789");
+*   add_separators_w( L"123456789");
+*
+*   add_separators_w(L"-123456789.789");
+*   add_separators_w(L"+123456789.789");
+*   add_separators_w(L" 123456789.789");
+*   add_separators_w( L"123456789.789");
+*
+*   add_separators_w(L" 123456789.");
+*   add_separators_w(L"-123456789.");
+*   add_separators_w(L"+123456789.");
+*   add_separators_w( L"123456789.");
+*
+*   add_separators_w(L" .123456789");
+*   add_separators_w(L"-.123456789");
+*   add_separators_w(L"+.123456789");
+*   add_separators_w( L".123456789");
+*
+*
+*   add_separators_w(L" 123456789E+66");
+*   add_separators_w(L"-123456789e+66");
+*   add_separators_w(L"+123456789E+66");
+*   add_separators_w( L"123456789e+66");
+*
+*   add_separators_w(L" 123456789.E+66");
+*   add_separators_w(L"-123456789.e+66");
+*   add_separators_w(L"+123456789.E+66");
+*   add_separators_w( L"123456789.e+66");
+*
+*   add_separators_w(L" .123456789E+66");
+*   add_separators_w(L"-.123456789e+66");
+*   add_separators_w(L"+.123456789E+66");
+*   add_separators_w( L".123456789e+66");
+*
+***********************************************************************************************************************/
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //    @DISPLAY 
@@ -5130,25 +3097,28 @@ int verb_display(frame_S& frame, const e_expression_S& expression, const verbdef
     M__(M_out(L"verb_display() called");)
 
 
-    // get locale: and numerics: keywords (if present)  
+    // get keywords (if present)  
 
-    auto locale_rc           = get_right_keyword(expression, L"locale"           );     // r/c = 0, if locale:             keyword is present 
-    auto numerics_rc         = get_right_keyword(expression, L"numerics"         );     // r/c = 0, if numerics:           keyword is present
-    auto stack_rc            = get_right_keyword(expression, L"stack"            );     // r/c = 0, if stack:              keyword is present
-    auto all_vars_rc         = get_right_keyword(expression, L"all_vars"         );     // r/c = 0, if all_vars:           keyword is present
-    auto builtin_verbs_rc    = get_right_keyword(expression, L"builtin_verbs"    );     // r/c = 0, if builtin_verbs:      keyword is present
-    auto added_verbs_rc      = get_right_keyword(expression, L"added_verbs"      );     // r/c = 0, if added_verbs:        keyword is present
-    auto all_verbs_rc        = get_right_keyword(expression, L"all_verbs"        );     // r/c = 0, if all_verbs:          keyword is present
-    auto builtin_types_rc    = get_right_keyword(expression, L"builtin_types"    );     // r/c = 0, if builtin_types:      keyword is present
-    auto added_types_rc      = get_right_keyword(expression, L"added_types"      );     // r/c = 0, if added_types:        keyword is present
-    auto all_types_rc        = get_right_keyword(expression, L"all_types"        );     // r/c = 0, if all_types:          keyword is present
-    auto id_cache_rc         = get_right_keyword(expression, L"id_cache"         );     // r/c = 0, if id_cache:           keyword is present
-    auto statistics_rc       = get_right_keyword(expression, L"statistics"       );     // r/c = 0, if statistics:         keyword is present
-                                                                             
-    auto vars_rc             = get_right_keyword(expression, L"vars"             );     // r/c = 0, if vars:[ ... ]        keyword is present
-    auto verbs_rc            = get_right_keyword(expression, L"verbs"            );     // r/c = 0, if verbs:[ ... ]       keyword is present
-    auto types_rc            = get_right_keyword(expression, L"types"            );     // r/c = 0, if types:[ ... ]       keyword is present
+    value_S token_list_value { }; 
 
+    auto locale_rc           = get_right_keyword(expression, L"locale"                                    );     // r/c = 0, if locale:             keyword is present 
+    auto numerics_rc         = get_right_keyword(expression, L"numerics"                                  );     // r/c = 0, if numerics:           keyword is present
+    auto stack_rc            = get_right_keyword(expression, L"stack"                                     );     // r/c = 0, if stack:              keyword is present
+    auto all_vars_rc         = get_right_keyword(expression, L"all_vars"                                  );     // r/c = 0, if all_vars:           keyword is present
+    auto builtin_verbs_rc    = get_right_keyword(expression, L"builtin_verbs"                             );     // r/c = 0, if builtin_verbs:      keyword is present
+    auto added_verbs_rc      = get_right_keyword(expression, L"added_verbs"                               );     // r/c = 0, if added_verbs:        keyword is present
+    auto all_verbs_rc        = get_right_keyword(expression, L"all_verbs"                                 );     // r/c = 0, if all_verbs:          keyword is present
+    auto builtin_types_rc    = get_right_keyword(expression, L"builtin_types"                             );     // r/c = 0, if builtin_types:      keyword is present
+    auto added_types_rc      = get_right_keyword(expression, L"added_types"                               );     // r/c = 0, if added_types:        keyword is present
+    auto all_types_rc        = get_right_keyword(expression, L"all_types"                                 );     // r/c = 0, if all_types:          keyword is present
+    auto id_cache_rc         = get_right_keyword(expression, L"id_cache"                                  );     // r/c = 0, if id_cache:           keyword is present
+    auto statistics_rc       = get_right_keyword(expression, L"statistics"                                );     // r/c = 0, if statistics:         keyword is present
+    auto token_list_rc       = get_right_keyword(expression, L"token_list"    , token_list_value          );     // r/c = 0, if token_list:         keyword is present
+                                                                                       
+    auto vars_rc             = get_right_keyword(expression, L"vars"                                      );     // r/c = 0, if vars:[ ... ]        keyword is present
+    auto verbs_rc            = get_right_keyword(expression, L"verbs"                                     );     // r/c = 0, if verbs:[ ... ]       keyword is present
+    auto types_rc            = get_right_keyword(expression, L"types"                                     );     // r/c = 0, if types:[ ... ]       keyword is present
+                                                                                       
   
     M_out(L"\n------------------------------------------------------------------------------------------------------------------------------------------");
 
@@ -5223,6 +3193,13 @@ int verb_display(frame_S& frame, const e_expression_S& expression, const verbdef
          M_out(L" ");
          display_statistics();
     }  
+      
+    if (token_list_rc == 0) 
+    {
+         M_out(L" ");
+         display_token_list(token_list_value.int64);
+    } 
+
 
 
 

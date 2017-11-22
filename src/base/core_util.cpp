@@ -1608,7 +1608,7 @@ std::string shorten_str(std::string str, size_t parm_maxl) try
     auto sz = str.size();
 
     if (sz > maxl)   
-        s = str.substr(0, maxl / 2UL) + std::string{"\"...\""} + str.substr(sz - maxl / 2UL);  
+        s = str.substr(0, maxl / 2UL) + std::string{" ... "} + str.substr(sz - maxl / 2UL);  
     else
         s = str;            // already small enough 
 
@@ -1631,7 +1631,7 @@ std::wstring shorten_str(std::wstring ws_parm_in, size_t parm_maxl) try
     auto sz = ws_in.size();
 
     if (sz > maxl)   
-        ws_out = ws_in.substr(0, maxl / 2UL) + std::wstring{L"\"...\""} + ws_in.substr(sz - maxl / 2UL);  
+        ws_out = ws_in.substr(0, maxl / 2UL) + std::wstring{L" ... "} + ws_in.substr(sz - maxl / 2UL);  
     else
         ws_out = ws_in;                                            // already small enough 
 

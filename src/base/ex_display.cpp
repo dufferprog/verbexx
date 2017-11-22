@@ -41,6 +41,470 @@ static void         display_plist(       const plist_S&   , const std::wstring&,
 
 
 
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   text_raw_tokens() -- create text-like representation of consecutive group of raw tokens 
+////
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+std::wstring text_raw_tokens(int64_t ix1, int64_t ix2) try
+{
+    // get proper range for token indexes
+    // ----------------------------------
+
+    int64_t token_n1          { -1 }; 
+    int64_t token_n2          { -1 }; 
+
+    if ( (ix1 < 0) && (ix2 < 0) )
+        return std::wstring { L"\"?? unknown token raw text ??\"" };
+
+    if ( (ix1 >= 0) && (ix2 >=0) )
+    {
+        token_n1 = std::min(ix1, ix2);
+        token_n2 = std::max(ix1, ix2);     
+    } 
+    else
+    {
+        // ix1 or ix2 (but not both) are OK (not negative)
+      
+        if (ix1 >= 0)                // ix2 must be negative
+        {
+            token_n1 = ix1;
+            token_n2 = ix1;   
+        }
+        else                              // ix1 must be negative, ix2 OK
+        {
+            token_n1 = ix2;
+            token_n2 = ix2; 
+        }
+    }
+
+
+    // get token text string for tokens ix1 thru ix2 
+    // ---------------------------------------------
+   
+    M__(M_out(L"text_raw_tokens() -- ix1/ix2 = %d/%d  n1/n2 = %d/%d")   % ix1 % ix2 % token_n1 % token_n2;)
+
+    std::wstring token_text { };
+
+    if ( (token_n1 >= 0) && (token_n2 >= 0) )
+    {
+        bool need_space {false};
+
+        for (auto token_n = token_n1; token_n <= token_n2; token_n++)
+        {
+           if (need_space)
+              token_text += L" ";
+           token_text += token_list_at(token_n).orig_str;
+           need_space = true;
+        }
+    }
+     
+    M__(M_out(L"text_raw_tokens() -- ix1/ix2 = %d/%d  n1/n2 = %d/%d -- token_text = \"%S\"")   % ix1 % ix2 % token_n1 % token_n2 % token_text;)
+
+    return token_text;
+}
+M_endf
+
+
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   text_value() -- create text-like representation of passed-in value 
+////
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+std::wstring text_value(const value_S& value, text_control_S& ctl) try
+{
+    std::wstring str { };          // start with empty output string  
+
+    // use raw (unevaluated) input, if available
+
+    M__(M_out(L"text_value() -- ix1/ix2 = %d/%d")   % value.token_ix1 % value.token_ix2;)
+
+ //   if ( (value.token_ix1 >= 0) || (value.token_ix2 >= 0) ) 
+ //       return text_raw_tokens(value.token_ix1, value.token_ix2);
+
+
+    // create formatted text for this evaluated value
+
+    if       (value.ty == type_E::string)
+    {
+        // for strings, need to preserve string delimiters and escaped characters -- so use raw token values (if available)
+
+        if ( (value.token_ix1 >= 0) || (value.token_ix2 >= 0) ) 
+           return text_raw_tokens(value.token_ix1, value.token_ix2);
+        else
+           str = std::wstring { const_N::chws_string_start } + value.string  + std::wstring { const_N::chws_string_end }; 
+    }
+    else if  (value.ty == type_E::int8)
+    {   
+        str  = fmt_str(L"%hd", (int16_t )(value.int8 ));
+        str += std::wstring {L"_"} + std::wstring {const_N::chws_signed_lower} + std::wstring {L"8"}; 
+    }
+    else if  (value.ty == type_E::int16)
+    {
+        str     = fmt_str(L"%hd", value.int16);
+        str    += std::wstring {L"_"} + std::wstring {const_N::chws_signed_lower} + std::wstring {L"16"}; 
+    }
+    else if  (value.ty == type_E::int32)
+    {
+        str     = fmt_str(L"%d", value.int32);
+        str    += std::wstring {L"_"} + std::wstring {const_N::chws_signed_lower} + std::wstring {L"32"};
+    }
+    else if  (value.ty == type_E::int64)
+    {
+        str     = fmt_str(L"%I64d", value.int64);
+        //str    += std::wstring {L"_"} + std::wstring {const_N::chws_signed_lower} + std::wstring {L"64"};
+    }
+    else if  (value.ty == type_E::unit)
+    {
+        str     = std::wstring { L"0_" } + std::wstring {const_N::chws_unsigned_lower} + std::wstring {L"0"};  
+     }
+    else if  (value.ty == type_E::boolean)
+    {
+        if (value.boolean)
+            str  = std::wstring { L"1_" } + std::wstring {const_N::chws_unsigned_lower} + std::wstring {L"1"};
+        else
+            str  = std::wstring { L"0_" } + std::wstring {const_N::chws_unsigned_lower} + std::wstring {L"1"};
+    }
+    else if  (value.ty == type_E::uint8)
+    {
+        str     = fmt_str(L"%hu", (uint16_t)(value.uint8)); 
+        str    += std::wstring {L"_"} + std::wstring {const_N::chws_unsigned_lower} + std::wstring {L"8"};
+    }
+    else if  (value.ty == type_E::uint16)
+    {
+        str    = fmt_str(L"%hu", value.uint16); 
+        str   += std::wstring {L"_"} + std::wstring {const_N::chws_unsigned_lower} + std::wstring {L"16"};
+    }
+    else if  (value.ty == type_E::uint32)
+    {
+        str    = fmt_str(L"%u", value.uint32); 
+        str   += std::wstring {L"_"} + std::wstring {const_N::chws_unsigned_lower} + std::wstring {L"32"};
+    }
+    else if  (value.ty == type_E::uint64)
+    {
+        str    = fmt_str(L"%I64u", value.uint64); 
+        str   += std::wstring {L"_"} + std::wstring {const_N::chws_unsigned_lower} + std::wstring {L"64"};
+    }
+    else if  (value.ty == type_E::float32)
+    {
+        str    = fmt_str(L"%#.9g", (float64_T)(value.float32));
+        str   += std::wstring {L"_"} + std::wstring {const_N::chws_float_lower} + std::wstring {L"32"};;
+    }
+    else if  (value.ty == type_E::float64)
+    {
+        str    = fmt_str(L"%#.18g", value.float64);
+        str   += std::wstring {L"_"} + std::wstring {const_N::chws_float_lower} + std::wstring {L"64"};
+    }
+    else if  (value.ty == type_E::block) 
+    {
+        str =  L"{\n"; 
+        ctl.indent += 1;      
+        str += text_block(*(value.block_sp), ctl);
+        ctl.indent -= 1;              
+        str += L"}\n";
+    }
+    else if  (value.ty == type_E::verbset) 
+    {
+        str =  L"<verbset>";
+    }
+    else if  (value.ty == type_E::typdef) 
+    {
+        str =  std::wstring { L"<typedef:" } + type_str(value.typdef_sp->kind) + L">";
+    }
+    else if  (value.ty == type_E::ref) 
+    {
+        str =  L"<ref>";
+    }
+    else if  (value.ty == type_E::structure) 
+    {
+        str =  L"<struct>";
+    }
+    else if  (value.ty == type_E::array) 
+    {
+        str =  L"<array>";
+    }
+    else if  (value.ty == type_E::expression)
+    {
+        str =  L"(" + text_expression(*(value.expression_sp), ctl) + L")";
+    }
+    else if  (value.ty == type_E::vlist) 
+    {
+        str = L"[" + text_vlist(*(value.vlist_sp), ctl) + L"]";
+    }
+    else if  (value.ty == type_E::identifier)
+    {
+        str    = value.string;
+    }
+    else if  (value.ty == type_E::verbname)
+    {
+        str    = value.string;
+     }
+    else if  (value.ty == type_E::keyname)
+    {
+        str    = value.string + L":";
+    }
+    else if  (value.ty == type_E::none)
+    {
+        str    = L" ?? uninitialized value ??";
+    }
+    else if  (value.ty == type_E::no_value)
+    {
+        str    = L" ?? no value ??";
+    }
+    else if  (value.ty == type_E::error)
+    {
+        str    = L" ?? error ??";
+    }
+    else if  (value.ty == type_E::special)
+    {
+        str    = L" ?? special ??";
+    }
+    else  
+    {
+        str =  L"??? unknown value type ??? = " + fmt_str(L"%d", (int32_t)(value.ty));
+    }   
+
+    return str;             // return completed string
+}                                                
+M_endf
+
+
+
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   text_vlist() -- create text representation of passed-in vlist 
+////
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+std::wstring text_vlist(const vlist_S& vlist, text_control_S& ctl) try
+{
+    std::wstring str      {     };       // start with empty string 
+    bool        add_space {false};       // true -- need to add space before current formatted value 
+
+
+    M__(M_out(L"text_vlist -- ix1/ix2 = %d/%d   value_ct = %d   kw_ct = %d") % vlist.token_ix1 % vlist.token_ix2 % vlist.value_ct % vlist.kw_ct;)
+
+    // add positional values to string 
+
+    if (vlist.value_ct > 0)
+    {
+        for (const auto& value : vlist.values)
+        {
+             if (add_space)    
+                str += L" ";
+    
+             auto strv = text_value(value, ctl);
+
+             if (strv.length() > 0)
+             {
+                 str += strv;
+                 add_space = true;                         // space before next value is needed 
+             }
+             else
+             {
+                 add_space = false;                        // no space needed if value string is zero-length  
+             }
+        }
+    }
+
+
+    // add evaluated/unevaluated keyword values to string
+    // --------------------------------------------------
+
+    if (vlist.kw_eval_done)                                // keyword evaluation has been done for this vlist ? 
+    {
+        if (vlist.eval_kws.size() > 0)                     // add any evaluated keywords
+        {
+            for (const auto& elem : vlist.eval_kws)
+            {
+                 if (add_space)    
+                    str += L" ";
+                 
+                 if (elem.second.ty == type_E::no_value)
+                     str +=  elem.first + L":" ;
+                 else
+                     str +=  elem.first + L":" + text_value(elem.second, ctl);
+
+                 add_space = true;                         // space before next value is needed    
+            }
+        }
+    }
+    else                                                   // keyword evaluation has not yet been done for this vlist (or there was nothing to evaluate)
+    {
+        if (vlist.keywords.size() > 0)                     // add any unevaluated keywords to string    
+        {
+            for (const auto& elem : vlist.keywords)
+            {
+                if (add_space)    
+                   str += L" ";
+  
+                if (elem.name.ty == type_E::keyname)
+                {
+                    if (elem.value.ty == type_E::no_value)
+                        str += elem.name.string + L":";
+                    else
+                        str += elem.name.string + L":" + text_value(elem.value, ctl);
+                }
+                else 
+                {
+                    if (elem.value.ty == type_E::no_value)
+                        str +=  L":(" + text_value(elem.name, ctl) +  L"):";
+                    else
+                        str +=  L":(" + text_value(elem.name, ctl) +  L"):" + text_value(elem.value, ctl);
+                }                                        
+                add_space = true;                          // space before next value is needed    
+            }
+        }    
+    }  
+
+    return str;                                            // return completed string
+}
+M_endf
+
+
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   text_expression() -- create text representation of passed-in expression 
+////
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+std::wstring text_expression(const a_expression_S& expression, text_control_S& ctl) try
+{
+    std::wstring str      {       };       // start with empty string 
+    bool   space_needed   { false };       // assume no space needed for now   
+
+
+    M__(M_out(L"text_expression(a) -- ix1/ix2 = %d/%d    verb ix1/ix2 = %d/%d") % expression.token_ix1 % expression.token_ix2 % expression.verb_value.token_ix1 % expression.verb_value.token_ix2;)
+
+    std::wstring lstr { text_vlist(expression.lparms, ctl) };
+
+    if (lstr.length() > 0)
+    {
+        str += lstr;
+        space_needed = true;
+    }
+
+
+    // put out verbname or expression (in verb parens)
+
+    if (expression.has_verb)
+    {
+        M__(M_out(L"text_expresion() -- verb_value.ty = \"%S\"") % type_str(expression.verb_value.ty);)
+
+        if (space_needed)
+            str += L" ";
+
+        if (expression.verb_value.ty == type_E::verbname)
+            str += expression.verb_value.string;
+
+        else if (expression.verb_value.ty == type_E::expression)
+            str += L"@(" + text_expression(*(expression.verb_value.expression_sp), ctl) + L")@";
+
+        space_needed = true;
+    }
+
+
+    // if there is no verb, there won't be a right-side parm list
+    
+    std::wstring rstr { text_vlist(expression.rparms, ctl) };
+
+    if (rstr.length() > 0)
+    {
+        if (space_needed)
+            str += L" "; 
+        str += rstr;
+    }
+
+    return str;
+}
+M_endf
+
+
+std::wstring text_expression(const e_expression_S& expression, text_control_S& ctl) try
+{
+    std::wstring str      {     };       // start with empty string 
+    str = L"e_expression";
+    return str;
+}
+M_endf
+
+
+
+
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   text_block() -- create text representation of passed-in block 
+////
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+std::wstring text_block(const block_S& block, text_control_S& ctl) try
+{
+    std::wstring str      {     };       // start with empty string 
+
+
+    // ???? need to handle labels ??????
+
+    std::wstring indent { L"" };
+    int i = ctl.indent;
+    while ( i > 0)
+    {
+        indent += L"    ";
+        i--;
+    }
+    
+    for ( const auto& elem : block.expressions )
+    {
+        str += indent + text_expression(elem, ctl) + L";\n";   
+    }
+
+    return str;
+}
+M_endf
+
+
+
 
 //╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 //║╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳
@@ -339,7 +803,10 @@ std::wstring str_value(const value_S& value, bool debug, bool debugx, bool nest)
     }
     else if  (value.ty == type_E::expression)
     {
-        str =  L"(expression)";
+        if (nest)
+            str =  L"(" + str_expression(*(value.expression_sp),debug, debugx, nest) + L")";
+        else
+            str = L"(expression)";
     }
     else if  (value.ty == type_E::vlist) 
     {
@@ -365,12 +832,27 @@ std::wstring str_value(const value_S& value, bool debug, bool debugx, bool nest)
     }
     else if  (value.ty == type_E::none)
     {
-        str    = L"uninitialized value";
+        str    = L"none";
         str_d1 = L"none:"; 
+    }
+    else if  (value.ty == type_E::no_value)
+    {
+        str    = L"no value";
+        str_d1 = L"no_value:"; 
+    }
+    else if  (value.ty == type_E::special)
+    {
+        str    = L"special";
+        str_d1 = L"special:"; 
+    }
+    else if  (value.ty == type_E::error)
+    {
+        str    = L"error";
+        str_d1 = L"error:"; 
     }
     else  
     {
-        str =  L"??? unknown value type ???";
+        str =  L"??? unknown value type ???" + fmt_str(L"%d", (int32_t)(value.ty)) ;
     }   
 
 
@@ -383,6 +865,80 @@ std::wstring str_value(const value_S& value, bool debug, bool debugx, bool nest)
     return str;             // return completed string
 }                                                
 M_endf
+
+
+
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   str_results() -- create printable string from passed-in results 
+////
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+std::wstring str_results(const results_S& results, bool debug, bool debugx, bool nest) try
+{
+    std::wstring str { };
+
+    if (results.special_results)
+    {
+        str = results_msg_string(results);            // note that all debug settings are not honored
+    }
+    else
+    {
+        if (results.multiple_results)
+        {
+            // handle multiple results out in vlist 
+
+            str = L"multiple_results: ";
+
+            if (results.vlist_sp.get() == nullptr)
+                str += L"no vlist for multiple results -- assume number of results = 0";
+            else
+                str += str_vlist(*(results.vlist_sp), debug, debugx, nest);
+        }
+        else                                                          // not multiple results -- just format the single value
+            str = str_value(results, debug, debugx, nest);   
+    }
+    
+    return str;             // return completed string
+}                                                
+M_endf
+
+
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   str_results_string() -- pass back results.str or results.string if non-empty 
+////
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+std::wstring str_results_string(const results_S& results) try
+{
+    std::wstring str { };
+
+    if (results.str.size() > 0)
+        str = results.str;
+
+    else if (results.string.size() > 0)
+         str = results.string;
+
+    return str;  
+}                                                
+M_endf           
 
 
 
@@ -472,6 +1028,72 @@ std::wstring str_vlist(const vlist_S& vlist, bool debug, bool debugx, bool nest)
 M_endf
 
 
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   str_expression() -- create printable string from passed-in expression 
+////
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+std::wstring str_expression(const a_expression_S& expression, bool debug, bool debugx, bool nest) try
+{
+    std::wstring str      {     };       // start with open bracket 
+    bool        add_space {false};       // true -- need to add space before current formatted value 
+
+
+    // do left vlist 
+
+    std::wstring lstr { str_vlist(expression.lparms, debug, debugx, nest) };
+
+    if (lstr.length() > 0)
+    {
+        str += lstr;
+        add_space = true;
+    }
+
+
+    // put out verbname or expression (in verb parens)
+
+    if (expression.has_verb)
+    {
+        M__(M_out(L"str_expresion() -- verb_value.ty = \"%S\"") % type_str(expression.verb_value.ty);)
+
+        if (add_space)
+            str += L" ";
+
+        if (expression.verb_value.ty == type_E::verbname)
+            str += expression.verb_value.string;
+
+        else if (expression.verb_value.ty == type_E::expression)
+            str += L"@(" + str_expression(*(expression.verb_value.expression_sp), debug, debugx, nest) + L")@";
+
+        add_space = true;
+    }
+
+
+    // if there is no verb, there won't be a right-side parm list
+    
+    std::wstring rstr { str_vlist(expression.rparms, debug, debugx, nest) };
+
+    if (rstr.length() > 0)
+    {
+        if (add_space)
+            str += L" "; 
+
+        str += rstr;
+    }
+        
+    return str;                                            // return completed string
+}
+M_endf
+
 
 
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -507,6 +1129,7 @@ std::wstring results_msg_string(const results_S& results) try
     if (results.end_flag                     ) ret_ws += L"@END "                       ;
     if (results.leave_flag                   ) ret_ws += L"@LEAVE "                     ;
     if (results.goto_flag                    ) ret_ws += L"@GOTO "                      ;
+    if (results.lgoto_flag                   ) ret_ws += L"@GOTO-longjmp: "             ;
     if (results.xctl_flag                    ) ret_ws += L"@XCTL "                      ;
     if (results.return_flag                  ) ret_ws += L"@RETURN "                    ;
     if (results.throw_flag                   ) ret_ws += L"@THROW "                     ;
@@ -606,7 +1229,7 @@ void display_statistics() try
 
     M_out( L" "                                                                                   ) ;
     M_out( L"-----------------------------------------------------------------------------------" ) ;
-    M_out( L"                : characters=%d  tokens=%d"                                          )  % get_character_count()   % get_raw_token_count() ;
+    M_out( L"                : characters=%d  tokens=%d  token_ix=%d"                             )  % get_character_count()   % get_raw_token_count() % get_token_ix() ;
     M_out( L"                : blocks=%d  statements=%d  verbs=%d  values=%d"                     )  % get_eval_block_count()  % get_eval_statement_count() % get_eval_verb_count() % get_eval_value_count() ;
     M_out( L"                : stack frames = %d, max stack depth = %d"                           )  % get_eval_frame_serial() % get_eval_frame_max_depth() ;
     M_out( L"main parse phase: elapsed_time = %.6f seconds"                                       )  % p_elapsed                             ; 
@@ -617,7 +1240,59 @@ void display_statistics() try
 M_endf
 
 
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   display_token_list() -- display raw tokens saved in the token list 
+////
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+void display_token_list(int64_t num) try
+{
+    // figure out which tokens to display 
+
+    int64_t token_ix { get_token_ix() };
+    int64_t token_n1 { -1             };
+    int64_t token_n2 { -1             };
+
+    if (num <= 0)  num = 1;                   // make sure to display at least one token (if there are any in the token list) 
+
+    if (num <= token_ix)                      // caller wants less than whole list?
+    {
+        token_n2 = token_ix;                  // end with most recent
+        token_n1 = token_n2 - (num - 1);      // start 'num'tokens earlier
+    }
+    else                                      // need to return while token list  
+    {
+        token_n1 = 0;                         // start at beginning
+        token_n2 = token_ix;                  // end with newest token    
+    }
+
+
+    //  display requested tokens in the token list  
+
+    for (auto i = token_n1; i <= token_n2; i++)
+    {
+        token_C token { token_list_at(i) };
+
+        M_out(L"token_list.at(%d) %21t = « %S » %65t type= %S %96t loc= %S")
+             % i
+             % shorten_str(token.orig_str, 30)
+             % token.type_str()
+             % token.loc_str()
+             ;
+    }
+
+    return;
+}
+M_endf
 
 
 
@@ -685,12 +1360,13 @@ M_endf
 
 void display_expression(const a_expression_S& expression, const std::wstring& ws, const std::wstring& mod, bool suppress_nesting, const std::wstring& nest) try
 {
-    std::wstring type_s  {L"no verb   "}; 
+    std::wstring type_s  {L"no-verb   "}; 
      
 
     // set up type and location strings for main verb in this token
 
-    if (expression.has_verb)   type_s = L"has verb  ";
+    if (expression.has_verb)      type_s  = L"has-verb  ";
+    if (expression.auto_recurs)   type_s += L"auto-recurs  ";
 
     if (mod == L"") 
     {          
@@ -845,36 +1521,40 @@ void display_value(const value_S& value, const std::wstring& ws, const std::wstr
 
     std ::wstring ix = std::to_wstring(value.token_ix1) + L":" + std::to_wstring(value.token_ix2); 
 
-         if (value.ty == type_E::none        ) flags = L"none"         ; 
-    else if (value.ty == type_E::no_value    ) flags = L"no_value "    ;
-    else if (value.ty == type_E::identifier  ) flags = L"identifier "  ;
-    else if (value.ty == type_E::verbname    ) flags = L"verbname "    ;
-    else if (value.ty == type_E::keyname     ) flags = L"keyname "     ;
-    else if (value.ty == type_E::vlist       ) flags = L"vlist ["      + fmt_ptr(value.vlist_sp.get()       ) + L"] "  ;
-    else if (value.ty == type_E::expression  ) flags = L"expression (" + fmt_ptr(value.expression_sp.get()  ) + L") "  ;
-    else if (value.ty == type_E::block       ) flags = L"block {"      + fmt_ptr(value.block_sp.get()       ) + L"} "  ;
-    else if (value.ty == type_E::verbset     ) flags = L"verbset <"    + fmt_ptr(value.verbset_sp.get()    ) + L"> "  ;
-    else if (value.ty == type_E::typdef      ) flags = L"typedef <"    + fmt_ptr(value.typdef_sp.get()      ) + L"> "  ;
-    else if (value.ty == type_E::ref         ) flags = L"ref <"        + fmt_ptr(value.ref_sp.get()         ) + L"> "  ;
-    else if (value.ty == type_E::array       ) flags = L"array <"      + fmt_ptr(value.buffer_sp.get()      ) + L"> "  ;
-    else if (value.ty == type_E::structure   ) flags = L"structure <"  + fmt_ptr(value.buffer_sp.get()      ) + L"> "  ;
-    else if (value.ty == type_E::unit        ) flags = L"unit "        ;
-    else if (value.ty == type_E::boolean     ) flags = L"boolean "     ;
-    else if (value.ty == type_E::int8        ) flags = L"int8 "        ; 
-    else if (value.ty == type_E::int16       ) flags = L"int16 "       ; 
-    else if (value.ty == type_E::int32       ) flags = L"int32 "       ; 
-    else if (value.ty == type_E::int64       ) flags = L"int64 "       ; 
-    else if (value.ty == type_E::uint8       ) flags = L"uint8 "       ; 
-    else if (value.ty == type_E::uint16      ) flags = L"uint16 "      ; 
-    else if (value.ty == type_E::uint32      ) flags = L"uint32 "      ; 
-    else if (value.ty == type_E::uint64      ) flags = L"uint64 "      ;
-    else if (value.ty == type_E::float32     ) flags = L"float32 "     ; 
-    else if (value.ty == type_E::float64     ) flags = L"float64 "     ; 
-    else if (value.ty == type_E::string      ) flags = L"string "      ; 
-    else if (value.ty == type_E::error       ) flags = L"error "       ; 
-    else if (value.ty == type_E::special     ) flags = L"special "     ; 
-    else                                       flags = L" ???unknown value type???  " ; 
- 
+    if (value.suppress_eval_once             ) flags += L"(suppress_eval_once)  "    ; 
+    if (value.suppress_eval                  ) flags += L"(suppress_eval)  "         ; 
+                                                                                    
+         if (value.ty == type_E::none        ) flags += L"none"                      ; 
+    else if (value.ty == type_E::no_value    ) flags += L"no_value "                 ;
+    else if (value.ty == type_E::identifier  ) flags += L"identifier "               ;
+    else if (value.ty == type_E::verbname    ) flags += L"verbname "                 ;
+    else if (value.ty == type_E::keyname     ) flags += L"keyname "                  ;
+    else if (value.ty == type_E::vlist       ) flags += L"vlist ["                   + fmt_ptr(value.vlist_sp.get()       ) + L"] "  ;
+    else if (value.ty == type_E::expression  ) flags += L"expression ("              + fmt_ptr(value.expression_sp.get()  ) + L") "  ;
+    else if (value.ty == type_E::block       ) flags += L"block {"                   + fmt_ptr(value.block_sp.get()       ) + L"} "  ;
+    else if (value.ty == type_E::verbset     ) flags += L"verbset <"                 + fmt_ptr(value.verbset_sp.get()     ) + L"> "  ;
+    else if (value.ty == type_E::typdef      ) flags += L"typedef <"                 + fmt_ptr(value.typdef_sp.get()      ) + L"> "  ;
+    else if (value.ty == type_E::ref         ) flags += L"ref <"                     + fmt_ptr(value.ref_sp.get()         ) + L"> "  ;
+    else if (value.ty == type_E::array       ) flags += L"array <"                   + fmt_ptr(value.buffer_sp.get()      ) + L"> "  ;
+    else if (value.ty == type_E::structure   ) flags += L"structure <"               + fmt_ptr(value.buffer_sp.get()      ) + L"> "  ;
+    else if (value.ty == type_E::unit        ) flags += L"unit "                     ;
+    else if (value.ty == type_E::boolean     ) flags += L"boolean "                  ;
+    else if (value.ty == type_E::int8        ) flags += L"int8 "                     ; 
+    else if (value.ty == type_E::int16       ) flags += L"int16 "                    ; 
+    else if (value.ty == type_E::int32       ) flags += L"int32 "                    ; 
+    else if (value.ty == type_E::int64       ) flags += L"int64 "                    ; 
+    else if (value.ty == type_E::uint8       ) flags += L"uint8 "                    ; 
+    else if (value.ty == type_E::uint16      ) flags += L"uint16 "                   ; 
+    else if (value.ty == type_E::uint32      ) flags += L"uint32 "                   ; 
+    else if (value.ty == type_E::uint64      ) flags += L"uint64 "                   ;
+    else if (value.ty == type_E::float32     ) flags += L"float32 "                  ; 
+    else if (value.ty == type_E::float64     ) flags += L"float64 "                  ; 
+    else if (value.ty == type_E::string      ) flags += L"string "                   ; 
+    else if (value.ty == type_E::error       ) flags += L"error "                    ; 
+    else if (value.ty == type_E::special     ) flags += L"special "                  ; 
+    else                                       flags += L" ??unknown value type??  " ; 
+
+
     M__(M_out(L"display_value() -- point 1 -- value.ty = %S") % type_str(value.ty));
 
 
@@ -1061,6 +1741,7 @@ void display_results(const results_S& results, const std::wstring& ws, const std
     if (results.end_flag                     ) flags += L"end_flag "                   ;
     if (results.leave_flag                   ) flags += L"leave_flag "                 ;
     if (results.goto_flag                    ) flags += L"goto_flag "                  ;
+    if (results.lgoto_flag                   ) flags += L"lgoto_flag "                 ;
     if (results.xctl_flag                    ) flags += L"xctl_flag "                  ;
     if (results.return_flag                  ) flags += L"return_flag "                ;
     if (results.throw_flag                   ) flags += L"throw_flag "                 ;
@@ -1140,6 +1821,7 @@ static std::wstring str_parmtype(const parmtype_S& parmtype) try
     if (parmtype.eval.no_eval_expression )   parm_flags += L"no_eval_expression  "    ;
     if (parmtype.eval.no_eval_vlist      )   parm_flags += L"no_eval_vlist  "         ;
     if (parmtype.eval.no_eval_ref        )   parm_flags += L"no_eval_ref  "           ;
+    if (parmtype.eval.verbless           )   parm_flags += L"verbless  "              ;
     if (parmtype.anything_ok             )   parm_flags += L"anything_ok  "           ;
     if (parmtype.nval_ok                 )   parm_flags += L"nval_ok  "               ; 
     if (parmtype.unit_ok                 )   parm_flags += L"unit_ok  "               ; 
@@ -1160,6 +1842,8 @@ static std::wstring str_parmtype(const parmtype_S& parmtype) try
     if (parmtype.raw_ident_ok            )   parm_flags += L"raw_ident_ok  "          ;
     if (parmtype.var_ident_ok            )   parm_flags += L"var_ident_ok  "          ; 
     if (parmtype.const_ident_ok          )   parm_flags += L"const_ident_ok  "        ; 
+    if (parmtype.typdef_ident_ok         )   parm_flags += L"typdef_ident_ok  "       ; 
+    if (parmtype.verbset_ident_ok        )   parm_flags += L"vedrbset_ident_ok  "     ; 
     if (parmtype.undef_ident_ok          )   parm_flags += L"undef_ident_ok  "        ;
     if (parmtype.vlist_ok                )   parm_flags += L"vlist_ok  "              ;                 
     if (parmtype.expression_ok           )   parm_flags += L"expression_ok  "         ; 
@@ -1243,6 +1927,7 @@ static void display_plist(const plist_S& plist, const std::wstring& ws, const st
     if (plist.eval.no_eval_expression    )   parm_flags += L"no_eval_expression  "    ; 
     if (plist.eval.no_eval_vlist         )   parm_flags += L"no_eval_vlist  "         ; 
     if (plist.eval.no_eval_ref           )   parm_flags += L"no_eval_ref  "           ; 
+    if (plist.eval.verbless              )   parm_flags += L"verbless  "              ; 
 
     std::wstring max_str{ }; 
 
@@ -1408,10 +2093,12 @@ void display_verbset(const verbset_S& verbset) try
     if (verbset.left_associate                   )  verbset_flags += L"left_associate  "              ;
     if (verbset.custom_eval                      )  verbset_flags += L"**CUSTOM_EVAL**  "             ;
     if (verbset.has_builtin                      )  verbset_flags += L"has builtin  "                 ;
+    if (verbset.verbless                         )  verbset_flags += L"verbless  "                    ;
     if (verbset.left_eval.no_eval_ident          )  verbset_flags += L"left.no_eval_ident  "          ;
     if (verbset.left_eval.no_eval_expression     )  verbset_flags += L"left.no_eval_expression  "     ;
     if (verbset.left_eval.no_eval_vlist          )  verbset_flags += L"left.no_eval_vlist  "          ;
     if (verbset.left_eval.no_eval_ref            )  verbset_flags += L"left.no_eval_ref  "            ;
+    if (verbset.left_eval.verbless               )  verbset_flags += L"left.verbless  "               ;
   //if (verbset.left_eval.no_eval_kw_ident       )  verbset_flags += L"left.no_eval_kw_ident  "       ;
   //if (verbset.left_eval.no_eval_kw_expression  )  verbset_flags += L"left.no_eval_kw_expression  "  ;
   //if (verbset.left_eval.no_eval_kw_vlist       )  verbset_flags += L"left.no_eval_kw_vlist  "       ;
@@ -1420,6 +2107,7 @@ void display_verbset(const verbset_S& verbset) try
     if (verbset.right_eval.no_eval_expression    )  verbset_flags += L"right.no_eval_expression  "    ;
     if (verbset.right_eval.no_eval_vlist         )  verbset_flags += L"right.no_eval_vlist  "         ;
     if (verbset.right_eval.no_eval_ref           )  verbset_flags += L"right.no_eval_ref  "           ;
+    if (verbset.right_eval.verbless              )  verbset_flags += L"right.verbless  "              ;
   //if (verbset.left_eval.no_eval_kw_ident       )  verbset_flags += L"left.no_eval_kw_ident  "       ;
   //if (verbset.left_eval.no_eval_kw_expression  )  verbset_flags += L"left.no_eval_kw_expression  "  ;
   //if (verbset.left_eval.no_eval_kw_vlist       )  verbset_flags += L"left.no_eval_kw_vlist  "       ;
@@ -1440,8 +2128,11 @@ void display_verbset(const verbset_S& verbset) try
     {
         std::wstring verb_flags { }; 
   
+        if (verbset.verbs.at(i).verbless            )   verb_flags += L"verbless  "                    ;
         if (verbset.verbs.at(i).simplified_call     )   verb_flags += L"simplified_call  "             ;
+        if (verbset.verbs.at(i).by_alias_ok         )   verb_flags += L"by_alias_ok  "                 ;
         if (verbset.verbs.at(i).parms_same_type     )   verb_flags += L"parms_same_type  "             ;
+        if (verbset.verbs.at(i).parms_same_number   )   verb_flags += L"parms_same_number  "           ;
         if (verbset.verbs.at(i).parms_some_required )   verb_flags += L"parms_some_required  "         ;
         if (verbset.verbs.at(i).parms_left_xor_right)   verb_flags += L"parms_left_xor_right  "        ;
         if (verbset.verbs.at(i).parms_not_both_sides)   verb_flags += L"parms_not_both_sides  "        ;
@@ -1591,21 +2282,22 @@ void display_ref(const ref_S& ref) try
 
     // put out line with ref main info
  
-    M_out(L"%80t-- offset=%d (0x%04X)  flags=<%S>   typdef_sp=%S    value_sp=%S") 
+    M_out(L"%80t-- offset=%d (0x%04X)  flags=<%S>   typdef_sp=%S    refval_sp=%S") 
          % ref.offset
          % ref.offset
          % flags 
          % fmt_ptr(ref.typdef_sp.get())
-         % fmt_ptr(ref.value_sp.get())
+         % fmt_ptr(ref.refval_sp.get())
          ;
+
 
     // display nested array element types, or structure field types
 
     if (ref.typdef_sp.get() != nullptr)
          display_typdef(L"ref -- associated typdef", *(ref.typdef_sp), L"");
 
-    if (ref.value_sp.get() != nullptr)
-         display_value(*(ref.value_sp), L"             ", L"ref -- associated value:", false, L"    ");
+    if (ref.refval_sp.get() != nullptr)
+         display_value(*(ref.refval_sp), L"             ", L"ref -- associated value:", false, L"    ");
 
     return; 
 }
@@ -1652,39 +2344,27 @@ static std::wstring symval_flag_str(const symval_S& symval) try
 
     // add builtin prefix to (empty) string
 
-    if (symval.is_builtin)
-        str += L"built-in "; 
-         
+    if (symval.is_builtin)        str += L"is_builtin  "    ;          
+
 
     // add basic type to string
 
-    if (symval.is_verbset)
-    {
-        str += L"verbset ";
-    }
-    else if (symval.is_typdef)
-    {
-        str += L"typedef ";
-    }
-    else                                        // must be var or const 
-    {  
-        if (symval.is_const) 
-            str += L"const "; 
-        else
-            str += L"var ";
-    }
-             
+    if (symval.is_verbset   )     str += L"is_verbset  "    ;
+    if (symval.is_typdef    )     str += L"is_typdef  "     ;
+    if (symval.is_const     )     str += L"is_const  "      ; 
+    if (symval.is_var       )     str += L"is_var  "        ;  
+    if (symval.is_alias     )     str += L"is_alias  "      ; 
+    if (symval.is_weak      )     str += L"is_weak  "       ; 
 
-    // add alias and exposed flags (assume string is not empty at this point
 
-    std::wstring spacer = { };                  // spacing string between output words -- starts off empty
+    // add other flags to string
 
-    if (symval.is_alias     )     str += L" is_alias  "     ;
 #ifdef M_EXPOSE_SUPPORT
     if (symval.is_exposed   )     str += L" is_exposed  "   ;
 #endif
+
     if (symval.no_shadow    )     str += L" no_shadow  "    ;
-    if (symval.no_undefine  )     str += L" no_undefine  "  ;
+    if (symval.no_remove    )     str += L" no_remove  "    ;
     if (symval.no_update    )     str += L" no_update  "    ;  
 
     return str; 
@@ -1914,8 +2594,11 @@ void display_all_vars(const frame_S& frame_in) try
                     continue;                                                       // skip over any verb/type definitions in environment -- include all aliases (even to verbset or typdef)
             }
 
-            M_out(L"n= %-3d ID= %-20s %79t (%S)  use_ct=%d  serial=%d") % n % elem.first % symval_flag_str(elem.second) % elem.second.value_sp.use_count() % elem.second.serno;
-            display_value(*(elem.second.value_sp), L"                                                                  ", L"", false);
+            M_out(L"n= %-3d ID= %-20s %79t (%S)  use_ct=%d  serial=%d") % n % elem.first % symval_flag_str(elem.second) % elem.second.value_wp.use_count() % elem.second.serno;
+           
+            if (!elem.second.value_wp.expired())
+                display_value(*(elem.second.value_wp.lock()), L"                                                                  ", L"", false);
+
             n++;
         }
 
@@ -1942,8 +2625,11 @@ void display_all_vars(const frame_S& frame_in) try
                 continue;                                                             // skip over any verb/type definitions in environment (but do show aliases, even of verbdef or typdef)
         }
 
-        M_out(L"n= %-3d ID= %-20s %79t (%S)   use_ct=%d  serial=%d") % n % elem.first % symval_flag_str(elem.second) % elem.second.value_sp.use_count() % elem.second.serno;
-        display_value(*(elem.second.value_sp),     L"                                                                  ", L"", false);
+        M_out(L"n= %-3d ID= %-20s %79t (%S)   use_ct=%d  serial=%d") % n % elem.first % symval_flag_str(elem.second) % elem.second.value_wp.use_count() % elem.second.serno;
+                
+        if (!elem.second.value_wp.expired())
+            display_value(*(elem.second.value_wp.lock()),     L"                                                                  ", L"", false);
+        
         n++; 
     }   
       
@@ -1968,13 +2654,15 @@ void display_vars(const frame_S& frame, const vlist_S& vlist) try
     int n = 0; 
     for (const auto& value : vlist.values)
     {
-        symval_S symval { };                                                                                                                                         // will cause use_ct() to be one more than expected
+        symval_S symval { };                                                                                                                                              // will cause use_ct() to be one more than expected
         auto grc = get_var(frame, value.string, symval);
     
         if (grc == 0)
         {
-            M_out(L"n=%-3d ID= %-20s %79t (%S)  use_ct=%d  serial=%d") % n % value.string % symval_flag_str(symval) % (symval.value_sp.use_count() - 1) % symval.serno;  // correct for extra use_ct()
-            display_value(*(symval.value_sp),    L"                                                                  ", L"", false); 
+            M_out(L"n=%-3d ID= %-20s %79t (%S)  use_ct=%d  serial=%d") % n % value.string % symval_flag_str(symval) % (symval.value_wp.use_count() - 1) % symval.serno;   // correct for extra use_ct()
+            
+            if (!symval.value_wp.expired())
+                display_value(*(symval.value_wp.lock()),    L"                                                                  ", L"", false); 
         }
         else
             M_out(L"n=%-3d ID= %-20s %79t -- variable is undefined or not visible from this stack frame") % n % value.string; 
@@ -2047,9 +2735,12 @@ void display_all_verbsets(const frame_S& frame_in, bool show_builtin, bool show_
                     ( (!elem.second.is_builtin) && show_defined )
                    )
                 {
-                    M_out(L"n=%-3d ID=\"%S\" %25t(  %S)  use_ct=%d  serial=%d") % n % elem.first % symval_flag_str(elem.second) % elem.second.value_sp.use_count() % elem.second.serno;
-                    display_verbset(*(elem.second.value_sp->verbset_sp)); 
-                 // M_out(L" ");
+                    M_out(L"n=%-3d ID=\"%S\" %25t(  %S)  use_ct=%d  serial=%d") % n % elem.first % symval_flag_str(elem.second) % elem.second.value_wp.use_count() % elem.second.serno;
+                 
+                    if (!elem.second.value_wp.expired())
+                        display_verbset(*(elem.second.value_wp.lock()->verbset_sp)); 
+               
+                    // M_out(L" ");
                     n++;    
                 }
             }
@@ -2083,8 +2774,11 @@ void display_all_verbsets(const frame_S& frame_in, bool show_builtin, bool show_
                 ( (!elem.second.is_builtin) && show_defined )
                )
             {
-                M_out(L"n=%-3d ID=\"%S\" %25t(%S)  use_ct=%d  serial=%d") % n % elem.first % symval_flag_str(elem.second) % elem.second.value_sp.use_count() % elem.second.serno;
-                display_verbset(*(elem.second.value_sp->verbset_sp)); 
+                M_out(L"n=%-3d ID=\"%S\" %25t(%S)  use_ct=%d  serial=%d") % n % elem.first % symval_flag_str(elem.second) % elem.second.value_wp.use_count() % elem.second.serno;
+
+                if (!elem.second.value_wp.expired())
+                    display_verbset(*(elem.second.value_wp.lock()->verbset_sp)); 
+
                 n++;
             }
         }
@@ -2116,8 +2810,10 @@ void display_verbsets(const frame_S& frame, const vlist_S& vlist) try
     
         if (grc == 0)
         {
-            M_out(L"n=%-3d ID=\"%S\"%25t(%S)  use_ct=%d  serial=%d") % n % value.string % symval_flag_str(symval) % (symval.value_sp.use_count() - 1) % symval.serno;  // correct for extra use_ct()
-            display_verbset(*(symval.value_sp->verbset_sp)); 
+            M_out(L"n=%-3d ID=\"%S\"%25t(%S)  use_ct=%d  serial=%d") % n % value.string % symval_flag_str(symval) % (symval.value_wp.use_count() - 1) % symval.serno;  // correct for extra use_ct()
+           
+            if (!symval.value_wp.expired())
+                display_verbset(*(symval.value_wp.lock()->verbset_sp)); 
         }
         else
             M_out(L"n=%-3d ID=\"%S\"%25t-- verb is undefined or not visible from this stack frame") % n % value.string; 
@@ -2193,8 +2889,11 @@ void display_all_typdefs(const frame_S& frame_in, bool show_builtin, bool show_d
                     ( (!elem.second.is_builtin) && show_defined )
                    )
                 {
-                    M_out(L"n= %-3d ID= %-13s %78t (%S)  use_ct=%d  serial=%d") % n % elem.first % symval_flag_str(elem.second) % elem.second.value_sp.use_count() % elem.second.serno;
-                    display_typdef(L"", *(elem.second.value_sp->typdef_sp), L""); 
+                    M_out(L"n= %-3d ID= %-13s %78t (%S)  use_ct=%d  serial=%d") % n % elem.first % symval_flag_str(elem.second) % elem.second.value_wp.use_count() % elem.second.serno;
+               
+                    if (!elem.second.value_wp.expired())
+                        display_typdef(L"", *(elem.second.value_wp.lock()->typdef_sp), L""); 
+                 
                     M_out(L" ");
                     n++;    
                 }
@@ -2229,8 +2928,11 @@ void display_all_typdefs(const frame_S& frame_in, bool show_builtin, bool show_d
                 ( (!elem.second.is_builtin) && show_defined )
                )
             {
-                M_out(L"n= %-3d ID= %-13s %78t (%S)  use_ct=%d  serial=%d") % n % elem.first % symval_flag_str(elem.second) % elem.second.value_sp.use_count() % elem.second.serno;
-                display_typdef(L"", *(elem.second.value_sp->typdef_sp), L""); 
+                M_out(L"n= %-3d ID= %-13s %78t (%S)  use_ct=%d  serial=%d") % n % elem.first % symval_flag_str(elem.second) % elem.second.value_wp.use_count() % elem.second.serno;
+              
+                if (!elem.second.value_wp.expired())
+                    display_typdef(L"", *(elem.second.value_wp.lock()->typdef_sp), L""); 
+              
                 n++;
             }
         }
@@ -2262,8 +2964,10 @@ void display_typdefs(const frame_S& frame, const vlist_S& vlist) try
     
         if (grc == 0)
         {
-            M_out(L"n=%-3d ID= %-13s %78t (%S)  use_ct=%d  serial=%d") % n % value.string % symval_flag_str(symval) % (symval.value_sp.use_count() - 1) % symval.serno;    // correct for extra use count
-            display_typdef(L"", *(symval.value_sp->typdef_sp), L""); 
+            M_out(L"n=%-3d ID= %-13s %78t (%S)  use_ct=%d  serial=%d") % n % value.string % symval_flag_str(symval) % (symval.value_wp.use_count() - 1) % symval.serno;    // correct for extra use count
+          
+            if (!symval.value_wp.expired())
+                display_typdef(L"", *(symval.value_wp.lock()->typdef_sp), L""); 
         }
         else
             M_out(L"n=%-3d ID= %s%25t-- typedef is undefined or not visible from this stack frame") % n % value.string; 

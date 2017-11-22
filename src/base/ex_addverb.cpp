@@ -133,10 +133,88 @@ void add_predefined_verbs() try
     //   flow-of-control verbs
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    // =============================================================================================================================================================
+    //
+    //  v1 v2 v3 ... -> { function body }          // simplified version of @FN for lambdas
+    // info:"string"
+    // init:
+    // { 
+    //    initialization block --
+    //    run when verb is defined
+    // };
+    //             -- no function name (lambda only) 
+    //             -- no left side parms   
+    //             -- no keyword parms
+    //             -- no optional parms (number of right-side or left-side positional parms = number of arg variables in list
+    //             -- no parmtype info
+    //
+    //
+    //  sample invocation:
+    //  -----------------
+    //
+    //   @VAR vf = a b c ->              // define lambda
+    //   {
+    //       @SAY «lambda called»;
+    //       a a b b c c;
+    //   }
+    //   dynamic_scope: noclose:   
+    //      
+    //
+    //
+    // note: if no scope specification is present, it defaults to "lexical scope" if the enclosing scope is still around, or "no scope" if the enclosing scope has disappeared
+    // note: close: is the default, unlike with @VERB and @FN
+    //
+    // =============================================================================================================================================================
+
+    {    
+        M_vt_anyfix(                              vt, 0, M_int64_max, 1, 1                                    )            // 0-N left positional parms      /    1 right positional parm 
+
+
+        // left positional parms -- (optional) -- raw identifiers (argvar names)
+
+        M_vt_raw_ident_left_pos(                  vt                                                          )            // must be raw identifiers (not evaluated)
+
+
+        // 1st right positional parm is required -- must be code block
+
+        M_vt_block_right_pos(                      vt                                                         )           // required -- { main executable code for this verb }        
+
+
+        // optional init: or init:{ ...} right keyword parm --= causes allocation of persistetn environment at verb definition time 
+
+        {
+            M_vt_optional_kw_parm(                     kp                                                     )           // optional   init:{ ...  }   or   init:  right keyword parm
+            kp.nval_ok  = true;                                                                                           // allow init:  
+            kp.block_ok = true;                                                                                           // allow init:{ ... }
+            M_vt_add_r_kw(             L"init",    vt, kp                                                     )
+        }
+
+        M_vt_string_optional_right_kw(             vt, L"info"                                                )
+
+        M_vt_nval_optional_right_kw (              vt, L"close"                                               )
+        M_vt_nval_optional_right_kw (              vt, L"noclose"                                             )
+        M_vt_nval_optional_right_kw (              vt, L"by_alias"                                            )            // enable by-alias processing
+      
+        M_vt_int64rc_optional_right_kw (           vt, L"priority"   , (M_int64_min + 1) , M_int64_max        )            // don't collide with "not specified" value
+        M_vt_nval_optional_right_kw (              vt, L"left_associate"                                      )
+        M_vt_nval_optional_right_kw (              vt, L"right_associate"                                     )
+
+        M_vt_right_conflict_pair(                  vt, L"close" , L"noclose"                                  )
+        M_vt_right_conflict_pair(                  vt, L"left_associate" , L"right_associate"                 )
+
+        M_vt_custom_eval(                          vt                                                         ) 
+        M_vt_info(                                 vt, L"arg arg ... -> {code} |init:{code}| keywords: ..."   )
+        M_vt_add(L"->",                            vt, verb_lambda                                            )
+    }   
+
+
+
+
+
 
     // =============================================================================================================================================================
     //
-    // ident @FN [v1 v2 v3 ...] info:"string"          // simplified version of @VERB
+    // ident [v1 v2 v3 ...] @FN [v4 v5 v6 ...] info:"string"          // simplified version of @VERB
     // {
     //    function body ...
     // } 
@@ -145,9 +223,8 @@ void add_predefined_verbs() try
     //    initialization block --
     //    run when verb is defined
     // };
-    //             -- no keywords
-    //             -- no left-side parms
-    //             -- no optional parms (number of right-side positional parms = number of arg variables in list
+    //             -- no keyword parms
+    //             -- no optional parms (number of right-side or left-side positional parms = number of arg variables in list
     //             -- no parmtype info
     //
     //
@@ -174,23 +251,69 @@ void add_predefined_verbs() try
     //
     // =============================================================================================================================================================
 
-    {
-        M_vt_anyfix(                               vt, 0, 1, 2, 2                                             )   
-        M_vt_undef_ident_left_pos(                 vt                                                         )           // optional function name
-        {   
-            M_vt_nested_plist(                         pl, 0, std::numeric_limits<int64_t>::max()             )           // mandatory positional parm is list of 0-N variable names  
-            M_vt_raw_ident_nest_pos(                   pl                                                     )           // must be raw identifiers (not evaluated)
+    {    
+        M_vt_anyfix(                              vt, 0, 2, 1, 2                                                  )      // 0, 1, or 2 left positional parms      /    1, or 2 right positional parms 
 
-            M_vt_vlist_right_pos(                  vt, pl                                                     )           // var:[ ... ] allowed on right side
-        }    
-        M_vt_block_right_pos(                      vt                                                         )           // required -- { main executable code for this verb }        
-        M_vt_string_optional_right_kw(             vt, L"info"                                                )
+
+        // 1st left positional parm -- (optional) left positional parm -- undefined identifier, or string -- verb name, -or- vlist with arg var names
+
+        {   
+            M_vt_nested_plist(                             pln, 0, M_int64_max                                     )      // positional parm can be list of 0-N variable names  
+            M_vt_raw_ident_nest_pos(                       pln                                                     )      // must be raw identifiers (not evaluated)
+
+            M_vt_pos_parm(                            pt                                                           )                  
+            pt.undef_ident_ok      = true;                                                                               // undefind identifier is OK -- new verbset will be crested    
+            pt.verbset_ident_ok    = true;                                                                               // already-defined verbset identifier OK -- add new verb to existing verbset
+            pt.eval.no_eval_ident  = true;                                                                               // don't evaluate identifiers, since they might be undefined -- do evaluate expressions, etc.
+            pt.string_ok           = true;                                                                               // string is OK for verbname
+            pt.vlist_ok            = true;                                                                               // 1st parm can be a vlist 
+            M_vt_add_nested_plist(                    pt,  pln                                                     )     // nested parm list for vlist 
+            M_vt_add_l_pos(                       vt, pt                                                           )         
+        }
+
+
+        // 2nd left positional parm -- (optional) left positional parm -- vlist with arg var names
+
+        {   
+            M_vt_nested_plist(                             pln, 0, M_int64_max                                     )      // positional parm can be list of 0-N variable names  
+            M_vt_raw_ident_nest_pos(                       pln                                                     )      // must be raw identifiers (not evaluated)
+
+            M_vt_pos_parm(                            pt                                                           )                  
+            pt.vlist_ok = true;                                                                                          // 1st parm can be a vlist 
+            M_vt_add_nested_plist(                    pt,  pln                                                     )     // nested parm list for vlist 
+            M_vt_add_l_pos(                       vt, pt                                                           )         
+        }
+        
+
+        // 1st right positional parm -- required: can be -- vlist with argument variable names -or- code block  
+
+        {                                                                                                                // right-side positional parm -- vlist with parms  
+            M_vt_nested_plist(                             pln, 0, M_int64_max                                     )     // positional parm can be list of 0-N variable names  
+            M_vt_raw_ident_nest_pos(                       pln                                                     )     // must be raw identifiers (not evaluated)
+
+            M_vt_pos_parm(                             pt                                                          )            
+            pt.vlist_ok = true;                                                                                          // 1st parm can be a vlist 
+            pt.block_ok = true;                                                                                          // 1st parm can also be a block 
+            M_vt_add_nested_plist(                     pt, pln                                                     )     // nested parm list for vlist 
+            M_vt_add_r_pos(                        vt, pt                                                          )     
+        }   
+
+
+        // 2nd right parm is optional -- if present, it must be a block
+
+        M_vt_block_right_pos(                      vt                                                         )           // optional -- { main executable code for this verb }        
+
+
+        // optional init: or init:{ ...} right keyword parm --= causes allocation of persistetn environment at verb definition time 
+
         {
             M_vt_optional_kw_parm(                     kp                                                     )           // optional   init:{ ...  }   or   init:  right keyword parm
             kp.nval_ok  = true;                                                                                           // allow init:  
             kp.block_ok = true;                                                                                           // allow init:{ ... }
             M_vt_add_r_kw(             L"init",    vt, kp                                                     )
         }
+
+        M_vt_string_optional_right_kw(             vt, L"info"                                                )
         M_vt_nval_optional_right_kw (              vt, L"global"                                              )
         M_vt_nval_optional_right_kw (              vt, L"local"                                               )
         M_vt_nval_optional_right_kw (              vt, L"verbmain"                                            )
@@ -206,11 +329,14 @@ void add_predefined_verbs() try
         M_vt_nval_optional_right_kw (              vt, L"same_scope"                                          )
         M_vt_nval_optional_right_kw (              vt, L"no_scope"                                            )
         M_vt_nval_optional_right_kw (              vt, L"close"                                               )
+        M_vt_nval_optional_right_kw (              vt, L"noclose"                                             )
+        M_vt_nval_optional_right_kw (              vt, L"by_alias"                                            )            // enable by-alias processing
       
         M_vt_int64rc_optional_right_kw (           vt, L"priority"   , (M_int64_min + 1) , M_int64_max        )            // don't collide with "not specified" value
         M_vt_nval_optional_right_kw (              vt, L"left_associate"                                      )
         M_vt_nval_optional_right_kw (              vt, L"right_associate"                                     )
 
+        M_vt_right_conflict_pair(                  vt, L"close" , L"noclose"                                  )
         M_vt_right_conflict_pair(                  vt, L"left_associate" , L"right_associate"                 )
 
         M_vt_right_conflict_4way(                  vt, L"global", L"local", L"verbmain", L"static"            )
@@ -381,6 +507,8 @@ void add_predefined_verbs() try
         M_vt_nval_optional_right_kw (              vt, L"same_scope"                                          )
         M_vt_nval_optional_right_kw (              vt, L"no_scope"                                            )
         M_vt_nval_optional_right_kw (              vt, L"close"                                               )
+        M_vt_nval_optional_right_kw (              vt, L"noclose"                                             )
+        M_vt_nval_optional_right_kw (              vt, L"by_alias"                                            )      // enable by-alias processing
                                                                     
         M_vt_int64rc_optional_right_kw (           vt, L"priority"   , (M_int64_min + 1) , M_int64_max        )      // don't collide with "not specified" value
         M_vt_nval_optional_right_kw (              vt, L"left_associate"                                      )
@@ -391,6 +519,7 @@ void add_predefined_verbs() try
         M_vt_int64rc_optional_left_kw(             vt, L"min", 0, M_int64_max                                 )                
         M_vt_int64rc_optional_left_kw(             vt, L"max",-1, M_int64_max                                 )
         
+        M_vt_right_conflict_pair(                  vt, L"close" , L"noclose"                                  )
         M_vt_right_conflict_pair(                  vt, L"left_associate" , L"right_associate"                 )
         M_vt_right_match_pair(                     vt, L"min"   , L"max"                                      )   
         M_vt_left_match_pair(                      vt, L"min"   , L"max"                                      ) 
@@ -515,18 +644,20 @@ void add_predefined_verbs() try
     }   
         
 
-    // ================================================================================================
-    // @IMBED file:"name of file"   -or   @IMBED string:"text of string to be imbedded"                  (preprocessor only)
-    // ================================================================================================
+    // ===================================================================================================
+    // @INCLUDE file:"name of file"   -or   @INCLUDE string:"text of string to be included" id:"debug ID"  (preprocessor only)
+    // ===================================================================================================
    
     {
         M_vt_nofix(                         vt                        )  
-        M_vt_string_optional_right_kw(      vt, L"string"             )                      // optional string to imbed
-        M_vt_string_optional_right_kw(      vt, L"file"               )                      // optional file to imbed
+        M_vt_string_optional_right_kw(      vt, L"string"             )                      // optional string to include
+        M_vt_string_optional_right_kw(      vt, L"file"               )                      // optional file to include
+        M_vt_string_optional_right_kw(      vt, L"id"                 )                      // debug ID for included string
         M_vt_right_choice_pair(             vt, L"string", L"file"    )                      // must have one or the other
+        M_vt_right_conflict_pair(           vt, L"file", L"id"        )                      // can't have both id: and file:
 
-        M_vt_info(                          vt, L"@IMBED  file:'path | string:«string text»" )
-        M_vt_add(L"IMBED",                  vt, verb_imbed            )
+        M_vt_info(                          vt, L"@INCLUDE  file:'path | string:\"string text\" <id:\"debug ID\">" )
+        M_vt_add(L"INCLUDE",                vt, verb_include          )
     }   
 
 
@@ -637,13 +768,53 @@ void add_predefined_verbs() try
     }  
 
 
+#if 0 
+    // =================================
+    // , (@SEPARATE)  separator operator -- eval args   
+    // =================================
 
+    {
+        M_vt_nary_anyfix(             vt             ) 
+
+        {
+            M_vt_pos_parm(                pt)                  
+            pt.anything_ok                = true;                                                       // want to allow all parms (evaluated)
+            M_vt_add_l_pos(           vt, pt)
+        }   
+
+        {                             
+            M_vt_pos_parm(                pt)                  
+            pt.anything_ok                = true;                                                        // want to allow all parms (evaluated)
+            M_vt_add_r_pos(           vt, pt)    
+        } 
+
+
+        {                                                                                                // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            M_vt_multi_kw_parm(kp, 0, std::numeric_limits<int64_t>::max() );
+            kp.anything_ok             = true; 
+  
+            M_vt_add_r_kw(L"",        vt, kp         )                                                   // both left side and right side nameless KWs 
+            M_vt_add_l_kw(L"",        vt, kp         ) 
+        }
+            
+        vt.d.lparms.no_check_keyword_names  = true;                                                      // want to allow any keyword names
+        vt.d.rparms.no_check_keyword_names  = true;                                                      // want to allow any keyword names
+
+        M_vt_custom_eval(  vt                        )
+        M_vt_priority(     vt, verb_pri_N::_separate )    
+        M_vt_info(         vt, L"< any parms > , < any parms >"  )
+        M_vt_add(L",",     vt, verb_separate         )
+    }
+#endif
+
+    
     // ==================================
-    // , @SEP   binary separator operator    
+    // , (@SEPARATE)  separator operator -- no eval args    
     // ==================================
 
     {
         M_vt_nary_anyfix(             vt             ) 
+
         {
             M_vt_pos_parm(                pt)                  
             pt.anything_ok                = true;                                                       // want to pass through all parms verbatim (unevaluated)
@@ -652,7 +823,8 @@ void add_predefined_verbs() try
             pt.eval.no_eval_vlist         = true; 
             pt.eval.no_eval_ref           = true; 
             M_vt_add_l_pos(           vt, pt)
-        }                             
+        }   
+
         {                             
             M_vt_pos_parm(                pt)                  
             pt.anything_ok                = true;                                                        // want to pass through all parms verbatim (unevaluated)
@@ -682,11 +854,137 @@ void add_predefined_verbs() try
         M_vt_custom_eval(  vt                        )
         M_vt_priority(     vt, verb_pri_N::_separate )    
         M_vt_info(         vt, L"< any parms > , < any parms >"  )
-        M_vt_add(L","  ,   vt, verb_separate         )
-     // M_vt_add(L"SEP",   vt, verb_separate         )
+        M_vt_add(L","   ,  vt, verb_separate         )
     }
 
+
+#if 0 
+    // ======================================
+    // \ (@SEPARATE)  half-separator operator -- no eval args -- left-side args not allowed -- no keywords allowed   
+    // ======================================
+
+    {
+        M_vt_nary_prefix(             vt             ) 
+
+        {                             
+            M_vt_pos_parm(                pt)                  
+            pt.anything_ok                = true;                                                        // want to pass through all parms verbatim (unevaluated)
+            pt.eval.no_eval_ident         = true; 
+            pt.eval.no_eval_expression    = true; 
+            pt.eval.no_eval_vlist         = true; 
+            pt.eval.no_eval_ref           = true; 
+            M_vt_add_r_pos(           vt, pt)    
+        } 
+
+        M_vt_custom_eval(  vt                        )
+        M_vt_priority(     vt, verb_pri_N::_separate )    
+        M_vt_info(         vt, L"\\ parm1 parm2 parm3 ..."  )
+        M_vt_add(L"\\"  ,  vt, verb_separate         )
+    }
+ #endif
+
+
+
+ #if 0 
+    // =================================
+    // ,, (@SEQUENCE)  sequence operator -- eval args on right side (eval on left_side, too)    
+    // =================================
+
+    {
+        M_vt_nary_anyfix(             vt             ) 
+
+        {
+            M_vt_pos_parm(                pt)                  
+            pt.anything_ok                = true;                                                       // left side -- want to accept all parms (evaluated), before discarding the results
+            M_vt_add_l_pos(           vt, pt)
+        }   
+
+        {                             
+            M_vt_pos_parm(                pt)                  
+            pt.anything_ok                = true;                                                        // right side -- want to pass through all parms verbatim (unevaluated) -- like @SEPARATE
+            M_vt_add_r_pos(           vt, pt)    
+        } 
+
+
+        {                                                                                                // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            M_vt_multi_kw_parm(kp, 0, std::numeric_limits<int64_t>::max() );
+            kp.anything_ok             = true;             
+            M_vt_add_l_kw(L"",        vt, kp         )                                                   // left side -- accept all keywords (evaluated)
+        }
+            
+        vt.d.lparms.no_check_keyword_names  = true;                                                      // want to allow any keyword names on left side 
+
+        {                                                                                                // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            M_vt_multi_kw_parm(kp, 0, std::numeric_limits<int64_t>::max() );
+            kp.anything_ok             = true; 
+            M_vt_add_r_kw(L"",        vt, kp         )                                                   // right side -- accept all keywords (unevaluated) -- these will be passed through         
+        }
+
+        vt.d.rparms.no_check_keyword_names  = true;                                                      // want to allow any keyword names on rignt side
+
+        M_vt_custom_eval(  vt                        )
+        M_vt_priority(     vt, verb_pri_N::_sequence )    
+        M_vt_info(         vt, L"< any parms > ,, < any parms >"  )
+        M_vt_add(L",," ,   vt, verb_sequence         )
+    }
+#endif 
     
+    // ==================================
+    // ,, (@SEQUENCE)  sequence operator -- no-eval args on right side (eval on left_side)     
+    // ==================================
+
+    {
+        M_vt_nary_anyfix(             vt             ) 
+
+        {
+            M_vt_pos_parm(                pt)                  
+            pt.anything_ok                = true;                                                        // left side -- want to accept all parms (evaluated), before discarding the results
+            M_vt_add_l_pos(           vt, pt)
+        }   
+
+        {                             
+            M_vt_pos_parm(                pt)                  
+            pt.anything_ok                = true;                                                        // right side -- want to pass through all parms verbatim (unevaluated) -- like @SEPARATE
+            pt.eval.no_eval_ident         = true; 
+            pt.eval.no_eval_expression    = true; 
+            pt.eval.no_eval_vlist         = true; 
+            pt.eval.no_eval_ref           = true; 
+            M_vt_add_r_pos(           vt, pt)    
+        } 
+
+
+        {                                                                                                // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            M_vt_multi_kw_parm(kp, 0, std::numeric_limits<int64_t>::max() );
+            kp.anything_ok             = true; 
+           
+            M_vt_add_l_kw(L"",        vt, kp         )                                                   // left side -- accept all keywords (evaluated)
+        }
+            
+        vt.d.lparms.no_check_keyword_names  = true;                                                      // want to allow any keyword names on left side 
+
+        {                                                                                                // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            M_vt_multi_kw_parm(kp, 0, std::numeric_limits<int64_t>::max() );
+            kp.anything_ok             = true; 
+            kp.eval.no_eval_ident      = true;
+            kp.eval.no_eval_expression = true;
+            kp.eval.no_eval_vlist      = true;
+            kp.eval.no_eval_ref        = true;
+ 
+            M_vt_add_r_kw(L"",        vt, kp         )                                                   // right side -- accept all keywords (unevaluated) -- these will be passed through         
+        }
+
+        vt.d.rparms.no_check_keyword_names  = true;                                                      // want to allow any keyword names on rignt side
+
+        M_vt_custom_eval(  vt                        )
+        M_vt_priority(     vt, verb_pri_N::_sequence )    
+        M_vt_info(         vt, L"< any parms > ,,\\ < any parms >"  )
+        M_vt_add(L",,"   , vt, verb_sequence         )
+    }
+
+
+
+
+
     // ===========================================================
     // @CONTINUE   -- end @LOOP block evaluation -- keep looping (if in loop)
     // @END        -- end all evaluation (main block), if in evaluation phase   --OR--   end parsing/proprocessing, if in preprocessor phase 
@@ -808,24 +1106,25 @@ void add_predefined_verbs() try
     // ============================================================================
 
     {
-        M_vt_unary_prefix(    vt) 
-        M_vt_assigntype_right_pos(vt)
+        M_vt_unary_prefix(         vt            ) 
+        M_vt_assigntype_right_pos( vt            )
 
-        M_vt_info(         vt, L"@THROW value" )
-        M_vt_add(L"THROW", vt, verb_throw)
+        M_vt_info(                 vt, L"@THROW value" )
+        M_vt_add(L"THROW",         vt, verb_throw)
     }  
 
 
-    // ===========================================================
-    // @GOTO "target" -- restart block evaluation after label
-    // ===========================================================
+    // =============================================================================
+    // @GOTO "target" longjmp: -- restart active block evaluation after target label
+    // =============================================================================
 
     {
-        M_vt_unary_prefix(    vt       ) 
-        M_vt_string_right_pos(vt       )         // goto target needs to be a string
+        M_vt_unary_prefix(           vt              ) 
+        M_vt_string_right_pos(       vt              )                      // goto target needs to be a string
+        M_vt_nval_optional_right_kw( vt, L"longjmp"  )                      // optional longjmp:   allows jumping out of a function to target label in upper (calling) blocks
 
-        M_vt_info(            vt, L"@GOTO 'label" )
-        M_vt_add(L"GOTO",     vt, verb_goto)
+        M_vt_info(                   vt, L"@GOTO 'label <longjmp:>" )
+        M_vt_add(L"GOTO",            vt, verb_goto   )
     }
 
     
@@ -976,13 +1275,30 @@ void add_predefined_verbs() try
     }
 
 
+    // ======================================
+    // (@COND) = "?"  value ? {block} {block}
+    // ======================================
+
+    {
+        M_vt_anyfix(                  vt, 1, 1, 1, 2               )            // 1 left positional parms -- 1-2 right positional parm 
+        M_vt_int_left_pos(            vt                           )            // condition is an integer
+        M_vt_block_right_pos(         vt                           )            // block done, if true  -- required
+        M_vt_block_right_pos(         vt                           )            // block done, if false -- optional
+
+        M_vt_info(                    vt, L"(expr) ? {block} < {block} >" )
+        M_vt_add(L"?",                vt, verb_cond )
+    }
+
+
+
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //   variable definition and assignment verbs
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
     // =======================================================================================================
-    // @VAR ident ident ident ... value:value  global: expose: share: unshare:  -- value: keyword is optional
+    // @VAR ident ident ident ... value:value  global: local: static: expose: share: unshare:  -- value: keyword is optional
     // =======================================================================================================
    
     {
@@ -1011,7 +1327,7 @@ void add_predefined_verbs() try
 
    
     // =======================================================================================
-    // @CONST ident value:value global: expose: share: unshare:  -- value: keyword is required   
+    // @CONST ident value:value global: expose: local: static: share: unshare:  -- value: keyword is required   
     // =======================================================================================
 
     {
@@ -1039,6 +1355,51 @@ void add_predefined_verbs() try
     }
 
 
+    // =======================================================================================================
+    // ident ident ident ... @ALIAS ident ident ident ...   global: local: static: expose: 
+    // =======================================================================================================
+   
+    {
+        M_vt_nary_infix(                  vt                        )                                                                     
+
+        M_vt_nval_optional_right_kw (     vt, L"weak"               )
+
+        M_vt_nval_optional_right_kw (     vt, L"global"             )
+        M_vt_nval_optional_right_kw (     vt, L"local"              )
+        M_vt_nval_optional_right_kw (     vt, L"verbmain"           )
+        M_vt_nval_optional_right_kw (     vt, L"static"             )
+#ifdef M_EXPOSE_SUPPORT
+        M_vt_nval_optional_right_kw (     vt, L"expose"             )
+#endif
+        M_vt_right_conflict_4way(         vt, L"global", L"local", L"verbmain", L"static")
+
+        M_vt_any_ident_left_pos(          vt                        )
+        M_vt_no_eval_left_ident(          vt                        )
+        M_vt_any_ident_right_pos(         vt                        )
+        M_vt_no_eval_right_ident(         vt                        )
+        vt.d.parms_same_number            = true;
+        vt.d.parms_some_required          = true;
+
+        M_vt_info(                        vt, L"name1 name2 ... @ALIAS name3 name4 ... < global: | static: | verbmain: | local: >" )
+        M_vt_add(L"ALIAS",                vt, verb_alias            )
+    }
+
+
+    // ===============================
+    // \  (@PASS)   ident 
+    // ===============================
+
+    {
+        M_vt_unary_prefix(                vt                        )
+        M_vt_any_ident_right_pos(         vt                        )    
+        M_vt_no_eval_right_ident(         vt                        )
+
+        M_vt_info(                        vt, L"\\ identifier"      )
+        M_vt_add(L"\\"  ,                 vt, verb_pass             )
+    }  
+          
+
+#if 0
     // ===============================
     // @NOEVAL ident   share: noshare: 
     // ===============================
@@ -1069,6 +1430,7 @@ void add_predefined_verbs() try
         M_vt_info(                        vt, L"@EVAL val1 val2 ..." )
         M_vt_add(L"EVAL",                 vt, verb_eval              );        
     }
+#endif
 
     // ======================
     // @UNSHARE value 
@@ -1108,9 +1470,9 @@ void add_predefined_verbs() try
 #endif
 
 
-    // ====================================
-    // @UNVAR     ident ident ...   global:
-    // ====================================
+    // ===================================================
+    // @UNVAR     ident ident ...   global: local: static: 
+    // ===================================================
    
     {
         M_vt_nary_prefix(                 vt                        )
@@ -1126,8 +1488,28 @@ void add_predefined_verbs() try
     }   
 
 
+    // =====================================================
+    // @UNALIAS     ident ident ...   global: local: static:
+    // =====================================================
+   
+    {
+        M_vt_nary_prefix(                 vt                        )
+        M_vt_any_ident_right_pos(         vt                        )    
+        M_vt_nval_optional_right_kw(      vt, L"global"             ) 
+        M_vt_nval_optional_right_kw(      vt, L"local"              )
+        M_vt_nval_optional_right_kw (     vt, L"verbmain"           )
+        M_vt_nval_optional_right_kw(      vt, L"static"             )
+        M_vt_right_conflict_4way(         vt, L"global", L"verbmain", L"local", L"static")
+
+        M_vt_info(                        vt, L"@UNALIAS identifier  < global: | static: | verbmain: | local: >")
+        M_vt_add(L"UNALIAS",              vt, verb_unalias          )
+    }   
+
+
+
     // ===========================================
-    //  =  left assignment operator
+    //  =    left assignment operator
+    // >=>   right assignment operator
     // ===========================================
     
     {                                      /* 1 or more vars */
@@ -1399,8 +1781,8 @@ void add_predefined_verbs() try
 
         {                                          // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             M_vt_pos_parm(                pt         )
-            pt.eval.no_eval_ident       = true; 
-            pt.eval.no_eval_expression  = true; 
+       //     pt.eval.no_eval_ident       = true; 
+       //     pt.eval.no_eval_expression  = true; 
             pt.int8_ok                  = true;
             pt.int16_ok                 = true;
             pt.int32_ok                 = true;
@@ -1810,9 +2192,10 @@ void add_predefined_verbs() try
      //////////////////////////////////////////////////
 
      {
-        M_vt_unary_prefix(      vt               )
-        M_vt_string_right_pos(  vt               )
-        M_vt_add(L"TO_IDENT"  , vt, verb_to_ident) 
+        M_vt_unary_prefix(         vt                  )
+        M_vt_string_right_pos(     vt                  )
+        M_vt_add(L"TO_IDENT"     , vt, verb_to_ident   ) 
+        M_vt_add(L"TO_VERBNAME"  , vt, verb_to_verbname) 
      }
 
      ////////////////////////////////////////////////
@@ -1848,55 +2231,64 @@ void add_predefined_verbs() try
     // ==================================================== 
 
     {
-        M_vt_unary_prefix(      vt                 )
+        M_vt_unary_prefix(      vt                           )
+        M_vt_any_right_pos(     vt                           )                                                      
 
-        {                                                      // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-            M_vt_pos_parm(          pt             )
-            pt.anything_ok        = true;
-            pt.eval.no_eval_vlist = true;                      // no need to evaluate a vlist parm to see what type it is or isn't                 
-            M_vt_add_r_pos(     vt, pt             )
-        }
+        M_vt_add(L"IS_UNIT"         , vt, verb_is_unit       ) 
+        M_vt_add(L"IS_BOOL"         , vt, verb_is_bool       )
+        M_vt_add(L"IS_INT8"         , vt, verb_is_int8       )
+        M_vt_add(L"IS_INT16"        , vt, verb_is_int16      )
+        M_vt_add(L"IS_INT32"        , vt, verb_is_int32      )
+        M_vt_add(L"IS_INT64"        , vt, verb_is_int64      )
+        M_vt_add(L"IS_UINT8"        , vt, verb_is_uint8      )
+        M_vt_add(L"IS_UINT16"       , vt, verb_is_uint16     )
+        M_vt_add(L"IS_UINT32"       , vt, verb_is_uint32     )
+        M_vt_add(L"IS_UINT64"       , vt, verb_is_uint64     )
+        M_vt_add(L"IS_FLOAT32"      , vt, verb_is_float32    )
+        M_vt_add(L"IS_FLOAT64"      , vt, verb_is_float64    )
+        M_vt_add(L"IS_STRING"       , vt, verb_is_string     )
+        M_vt_add(L"IS_INT"          , vt, verb_is_int        )
+        M_vt_add(L"IS_FLOAT"        , vt, verb_is_float      )
+        M_vt_add(L"IS_SIGNED"       , vt, verb_is_signed     )
+        M_vt_add(L"IS_UNSIGNED"     , vt, verb_is_unsigned   )
+        M_vt_add(L"IS_NUMERIC"      , vt, verb_is_numeric    )
+        M_vt_add(L"IS_ATOM"         , vt, verb_is_atom       )
+        M_vt_add(L"IS_TRUE"         , vt, verb_is_true       )
+        M_vt_add(L"IS_FALSE"        , vt, verb_is_false      )
+        M_vt_add(L"IS_BLOCK"        , vt, verb_is_block      )
+        M_vt_add(L"IS_VERBNAME"     , vt, verb_is_verbname   )         // ?????
+    }
 
-        M_vt_no_eval_right_vlist(  vt                     ) 
-        M_vt_add(L"IS_BOOL"      , vt, verb_is_bool       )
-        M_vt_add(L"IS_INT8"      , vt, verb_is_int8       )
-        M_vt_add(L"IS_INT16"     , vt, verb_is_int16      )
-        M_vt_add(L"IS_INT32"     , vt, verb_is_int32      )
-        M_vt_add(L"IS_INT64"     , vt, verb_is_int64      )
-        M_vt_add(L"IS_UINT8"     , vt, verb_is_uint8      )
-        M_vt_add(L"IS_UINT16"    , vt, verb_is_uint16     )
-        M_vt_add(L"IS_UINT32"    , vt, verb_is_uint32     )
-        M_vt_add(L"IS_UINT64"    , vt, verb_is_uint64     )
-        M_vt_add(L"IS_FLOAT32"   , vt, verb_is_float32    )
-        M_vt_add(L"IS_FLOAT64"   , vt, verb_is_float64    )
-        M_vt_add(L"IS_INT"       , vt, verb_is_int        )
-        M_vt_add(L"IS_FLOAT"     , vt, verb_is_float      )
-        M_vt_add(L"IS_SIGNED"    , vt, verb_is_signed     )
-        M_vt_add(L"IS_UNSIGNED"  , vt, verb_is_unsigned   )
-        M_vt_add(L"IS_NUMERIC"   , vt, verb_is_numeric    )
-        M_vt_add(L"IS_ATOM"      , vt, verb_is_atom       )
-        M_vt_add(L"IS_TRUE"      , vt, verb_is_true       )
-        M_vt_add(L"IS_FALSE"     , vt, verb_is_false      )
-        M_vt_add(L"IS_STRING"    , vt, verb_is_string     )
-        M_vt_add(L"IS_VLIST"     , vt, verb_is_vlist      )
-        M_vt_add(L"IS_BLOCK"     , vt, verb_is_block      )
-        M_vt_add(L"IS_UNIT"      , vt, verb_is_unit       ) 
-     }
 
-     ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////
 
-     {
+    {
+        M_vt_unary_prefix(vt) 
+        M_vt_any_right_pos(                  vt                     )    
+    
+        M_vt_no_eval_right_ident(            vt                     ) 
+        M_vt_add(L"IS_IDENTIFIER"          , vt, verb_is_identifier )  
+    }
+
+
+    ////////////////////////////////////////////////////////////
+
+    {
         M_vt_unary_prefix(vt)                                                                                                    
-        
-        {                                                      // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-            M_vt_pos_parm(                  pt                 )
-            pt.anything_ok             = true;
-            pt.eval.no_eval_vlist      = true;                 // no need to evaluate vlists parm to see what type it is or isn't 
-            pt.eval.no_eval_expression = true;                 // want to leave any expression unevaluated, so expression parms can be reported
-            M_vt_add_r_pos(             vt, pt                 )
-        }
+        M_vt_any_right_pos(           vt                        )    
 
-        M_vt_no_eval_right_vlist(       vt                     ) 
+   //   M_vt_no_eval_right_vlist(     vt                        ) 
+        M_vt_add(L"IS_VLIST"        , vt, verb_is_vlist         )  
+    }
+          
+
+    ////////////////////////////////////////////////////////////
+
+    {
+        M_vt_unary_prefix(vt) 
+        M_vt_any_right_pos(             vt                     )    
+
+   //   M_vt_no_eval_right_vlist(       vt                     ) 
         M_vt_no_eval_right_expression(  vt                     ) 
         M_vt_add(L"IS_EXPRESSION"     , vt, verb_is_expression )  
     }
@@ -1913,7 +2305,7 @@ void add_predefined_verbs() try
         M_vt_nval_optional_right_kw ( vt, L"all"                     ) 
         M_vt_right_conflict_5way(     vt, L"local", L"verbmain", L"global", L"static", L"all") 
 
-        M_vt_no_eval_right_ident(     vt                             ) 
+        M_vt_no_eval_right_ident(     vt                             )            // no evaluation of right-side identifiers
         M_vt_add(L"IS_VAR"          , vt, verb_is_var                ) 
         M_vt_add(L"IS_CONST"        , vt, verb_is_const              )
         M_vt_add(L"IS_DEF"          , vt, verb_is_def                )
@@ -1936,8 +2328,8 @@ void add_predefined_verbs() try
 
         {                                                          
             M_vt_pos_parm(                    pt                     )
-            pt.eval.no_eval_ident   = true;                             // don't evaluate, if identifier -- need to get at original symval_s, value_S, and buffer, etc.
-            pt.eval.no_eval_ref     = true;                             // don't evaluate, if ref        -- need to get at original symval_s, value_S, and buffer, etc.
+         //   pt.eval.no_eval_ident   = true;                             // don't evaluate, if identifier -- need to get at original symval_s, value_S, and buffer, etc.
+         //   pt.eval.no_eval_ref     = true;                             // don't evaluate, if ref        -- need to get at original symval_s, value_S, and buffer, etc.
             pt.var_ident_ok         = true;                             // can be variable identifier -- must have array assigned to it currently (checked later)
             pt.const_ident_ok       = true;                             // can be constant identifier -- must have array assigned to it currently (checked later)
             pt.array_ok             = true;                             // can be an array value (after evaluation)
@@ -1968,8 +2360,8 @@ void add_predefined_verbs() try
                                                                    
         {                                                          
             M_vt_pos_parm(                    pt                     )
-            pt.eval.no_eval_ident   = true;                             // don't evaluate, if identifier -- need to get at original symval_s, value_S, and buffer, etc.
-            pt.eval.no_eval_ref     = true;                             // don't evaluate, if ref        -- need to get at original symval_s, value_S, and buffer, etc.
+       //     pt.eval.no_eval_ident   = true;                             // don't evaluate, if identifier -- need to get at original symval_s, value_S, and buffer, etc.
+       //     pt.eval.no_eval_ref     = true;                             // don't evaluate, if ref        -- need to get at original symval_s, value_S, and buffer, etc.
             pt.var_ident_ok         = true;                             // can be variable identifier -- must have struct assigned to it currently (checked later)
             pt.const_ident_ok       = true;                             // can be constant identifier -- must have struct assigned to it currently (checked later)
             pt.structure_ok         = true;                             // can be an struct value (after evaluation)
@@ -2066,6 +2458,7 @@ void add_predefined_verbs() try
     }
 
 
+#if 0
     // =========================================================================================================================================================
     // v1 v2 v3 ... v999 rest:v0 key:"keyname" @ARG_ASSIGN v11 v12 v13 ... v9999 rest:v00 key:"keyname" - assign positional/keyword values in args to  variables
     // =========================================================================================================================================================
@@ -2085,7 +2478,7 @@ void add_predefined_verbs() try
         M_vt_info(                            vt, L"ident1 ident2 ident3 ...  rest:ident  key:«keyword_name»  @ARG_ASSIGN  ident1 ident2 ident3 ...  rest:ident  key:«keyword_name»"     ) 
         M_vt_add(L"ARG_ASSIGN",               vt, verb_arg_assign               )
     }  
- 
+#endif 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
@@ -2093,7 +2486,7 @@ void add_predefined_verbs() try
     // =============================================================================
     // [vlist] @AT n              -- return n-th positional value in vlist
     // [vlist] @AT n allkeys:     -- return n-th keyword value in vlist
-    // [vlist] @AT n key:"xxx"    -- return value from n-th occurence of keyword "xxx" vlist      //
+    // [vlist] @AT n key:"xxx"    -- return value from n-th occurence of keyword "xxx" in vlist 
     // =============================================================================
 
     {
@@ -2128,7 +2521,8 @@ void add_predefined_verbs() try
         M_vt_add(L"VL_CT",                vt, verb_vl_ct           )
     }
       
-    
+
+#if 0   
     // ==================================================================================================================
     // v1 v2 v3 ... v999 rest:v0 @VL_ASSIGN [vlist] key:"string" - assign positional/keyword values in vlist to variables
     // ==================================================================================================================
@@ -2145,7 +2539,8 @@ void add_predefined_verbs() try
         M_vt_info(                            vt, L"ident1 ident2 ident3 ...  rest:ident @VL_ASSIGN [vlist] key:«keyword_name»"     ) 
         M_vt_add(L"VL_ASSIGN",                vt, verb_vl_assign      )
     } 
-       
+#endif
+
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //   output-oriented verbs
@@ -2158,19 +2553,19 @@ void add_predefined_verbs() try
 
     {
         M_vt_nofix(vt) 
-        M_vt_nval_optional_right_kw( vt, L"locale"              )
-        M_vt_nval_optional_right_kw( vt, L"numerics"            )
-        M_vt_nval_optional_right_kw( vt, L"stack"               )
-        M_vt_nval_optional_right_kw( vt, L"all_vars"            )
-        M_vt_nval_optional_right_kw( vt, L"builtin_verbs"       )
-        M_vt_nval_optional_right_kw( vt, L"added_verbs"         )
-        M_vt_nval_optional_right_kw( vt, L"all_verbs"           )
-        M_vt_nval_optional_right_kw( vt, L"builtin_types"       )
-        M_vt_nval_optional_right_kw( vt, L"added_types"         )
-        M_vt_nval_optional_right_kw( vt, L"all_types"           )
-        M_vt_nval_optional_right_kw( vt, L"id_cache"            )
-        M_vt_nval_optional_right_kw( vt, L"statistics"          )
-
+        M_vt_nval_optional_right_kw(  vt, L"locale"              )
+        M_vt_nval_optional_right_kw(  vt, L"numerics"            )
+        M_vt_nval_optional_right_kw(  vt, L"stack"               )
+        M_vt_nval_optional_right_kw(  vt, L"all_vars"            )
+        M_vt_nval_optional_right_kw(  vt, L"builtin_verbs"       )
+        M_vt_nval_optional_right_kw(  vt, L"added_verbs"         )
+        M_vt_nval_optional_right_kw(  vt, L"all_verbs"           )
+        M_vt_nval_optional_right_kw(  vt, L"builtin_types"       )
+        M_vt_nval_optional_right_kw(  vt, L"added_types"         )
+        M_vt_nval_optional_right_kw(  vt, L"all_types"           )
+        M_vt_nval_optional_right_kw(  vt, L"id_cache"            )
+        M_vt_nval_optional_right_kw(  vt, L"statistics"          )
+        M_vt_int64_optional_right_kw( vt, L"token_list"          )  
 
         // vars:  ['v1 'v2 'v3 'v4 ...] -- display specified variables
         // types: ['v1 'v2 'v3 'v4 ...] -- display specified type definitions
@@ -2197,7 +2592,10 @@ void add_predefined_verbs() try
     // ==========================
 
     {
-        M_vt_nary_prefix(             vt                        )      
+        M_vt_nary_prefix(             vt                        )  
+    //    M_vt_pos_parm(                     pt                   )                  
+    //        pt.anything_ok                = true;                           ????????                            // left side -- want to accept all parms (evaluated), before discarding the results
+    //        M_vt_add_l_pos(           vt, pt)                        ?????????
         M_vt_any_right_pos(           vt                        )      
         M_vt_nval_optional_right_kw(  vt, L"debug"              )
         M_vt_nval_optional_right_kw(  vt, L"debugx"             )
@@ -2220,6 +2618,117 @@ void add_predefined_verbs() try
     }
 
 
+    // ==========================
+    // @SAYQE value value value ...
+    // @STRQE value value value ...
+    // ==========================
+
+    {
+        M_vt_nary_prefix(             vt                        )      
+
+        M_vt_pos_parm(                     pt                   )                  
+        pt.anything_ok             = true;                                                      
+   //     pt.eval.no_eval_ident      = true; 
+  //      pt.eval.no_eval_expression = true;                              // allow expressions to get evaluated
+    //    pt.eval.no_eval_vlist      = true; 
+    //    pt.eval.no_eval_ref        = true; 
+        M_vt_add_r_pos(               vt, pt)
+
+        M_vt_nval_optional_right_kw(  vt, L"debug"              )
+        M_vt_nval_optional_right_kw(  vt, L"debugx"             )
+        M_vt_right_conflict_pair(     vt, L"debug" , L"debugx"  )    /// ??? need no_nl option here ????????? 
+
+        M_vt_no_eval_right_ident(     vt                        ) 
+        M_vt_no_eval_right_vlist(     vt                        ) 
+        M_vt_no_eval_right_ref(       vt                        ) 
+   //   M_vt_no_eval_right_expression(vt                        )   // allow expressions to get evaluated
+
+        M_vt_info(                    vt, L"@STRQE value1 value2 ...  < debug: | debugx: >" )
+        M_vt_add(L"STRQE",            vt, verb_str              );        
+    }
+
+    {
+        M_vt_nary_prefix(             vt                        ) 
+
+        M_vt_pos_parm(                     pt                   )                  
+        pt.anything_ok             = true;                                                      
+  //      pt.eval.no_eval_ident      = true; 
+  //      pt.eval.no_eval_expression = true;                              // allow expressions to get evaluated
+  //      pt.eval.no_eval_vlist      = true; 
+  //      pt.eval.no_eval_ref        = true; 
+        M_vt_add_r_pos(               vt, pt)
+  
+        M_vt_nval_optional_right_kw(  vt, L"debug"              )
+        M_vt_nval_optional_right_kw(  vt, L"debugx"             )
+        M_vt_right_conflict_pair(     vt, L"debug" , L"debugx"  ) 
+        M_vt_nval_optional_right_kw(  vt, L"no_nl"              )
+
+        M_vt_no_eval_right_ident(     vt                        ) 
+        M_vt_no_eval_right_vlist(     vt                        ) 
+        M_vt_no_eval_right_ref(       vt                        ) 
+   //   M_vt_no_eval_right_expression(vt                        )   // allow expressions to get evaluated
+
+        M_vt_info(                    vt, L"@SAYQE value1 value2 ...  < debug: | debugx: >  < no_nl: >" )
+        M_vt_add(L"SAYQE",            vt, verb_say              );       
+    }
+  
+
+    // ==========================
+    // @SAYQ value value value ...
+    // @STRQ value value value ...
+    // ==========================
+
+    {
+        M_vt_nary_prefix(             vt                        )      
+
+        M_vt_pos_parm(                     pt                   )                  
+        pt.anything_ok             = true;                                                      
+   //     pt.eval.no_eval_ident      = true; 
+   //     pt.eval.no_eval_expression = true; 
+   //     pt.eval.no_eval_vlist      = true; 
+   //     pt.eval.no_eval_ref        = true; 
+        M_vt_add_r_pos(               vt, pt)
+
+        M_vt_nval_optional_right_kw(  vt, L"debug"              )
+        M_vt_nval_optional_right_kw(  vt, L"debugx"             )
+        M_vt_right_conflict_pair(     vt, L"debug" , L"debugx"  )    /// ??? need no_nl option here ?????????
+  
+        M_vt_no_eval_right_ident(     vt                        ) 
+        M_vt_no_eval_right_vlist(     vt                        ) 
+        M_vt_no_eval_right_ref(       vt                        ) 
+        M_vt_no_eval_right_expression(vt                        )  
+
+        M_vt_info(                    vt, L"@STRQ value1 value2 ...  < debug: | debugx: >" )
+        M_vt_add(L"STRQ",             vt, verb_str              );        
+    }
+
+    {
+        M_vt_nary_prefix(             vt                        ) 
+
+        M_vt_pos_parm(                     pt                   )                  
+        pt.anything_ok             = true;                                                      
+   //     pt.eval.no_eval_ident      = true; 
+   //     pt.eval.no_eval_expression = true; 
+   //     pt.eval.no_eval_vlist      = true; 
+   //     pt.eval.no_eval_ref        = true; 
+        M_vt_add_r_pos(               vt, pt)
+  
+        M_vt_nval_optional_right_kw(  vt, L"debug"              )
+        M_vt_nval_optional_right_kw(  vt, L"debugx"             )
+        M_vt_right_conflict_pair(     vt, L"debug" , L"debugx"  ) 
+        M_vt_nval_optional_right_kw(  vt, L"no_nl"              )
+
+        M_vt_no_eval_right_ident(     vt                        ) 
+        M_vt_no_eval_right_vlist(     vt                        ) 
+        M_vt_no_eval_right_ref(       vt                        ) 
+        M_vt_no_eval_right_expression(vt                        )  
+
+        M_vt_info(                    vt, L"@SAYQ value1 value2 ...  < debug: | debugx: >  < no_nl: >" )
+        M_vt_add(L"SAYQ",             vt, verb_say              );       
+    }
+
+  
+
     // ===========================================
     // @INTERPOLATE "string"   begin:"{"   end:"}"
     // ===========================================
@@ -2234,6 +2743,19 @@ void add_predefined_verbs() try
         M_vt_add(L"INTERPOLATE",              vt, verb_interpolate      );        
     }
 
+
+    // ===================================================================================
+    // @TEXT {block}  -- format {BLOCK} to make it printable
+    // ===================================================================================
+
+    {
+        M_vt_unary_prefix(                    vt                        )      
+        M_vt_block_right_pos(                 vt                        ) 
+
+        M_vt_info(                            vt, L"@TEXT {block}"      )
+        M_vt_add(L"TEXT",                     vt, verb_text             );        
+    }
+    
 
     // ===================================================================================
     // @FORMAT fmt:"string"   value_1 value_2 ... value_N                  begin:"{"   end:"}"

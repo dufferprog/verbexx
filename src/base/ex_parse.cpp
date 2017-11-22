@@ -118,8 +118,8 @@ static float64_T                              eval_elapsed     { -1.0  };     //
 // ------------------------------------------
 
 float64_T get_parse_elapsed() {return static_N::parse_elapsed;}
-float64_T get_eval_elapsed()  {return static_N:: eval_elapsed;}
-
+float64_T get_eval_elapsed()  {return static_N::eval_elapsed; }
+int64_t   get_token_ix()      {return static_N::token_ix;     }
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -158,25 +158,25 @@ std::wstring process_cmdline(frame_S& frame, environ_S& st, int argc, wchar_t *a
     frame_cmdline_parms(frame, argc, argv);                 // set up main stack frame/global environment with command line args    
     
 
-    //  determine name of main (top-level) imbed file
-    //  ---------------------------------------------
+    //  determine name of main (top-level) include file
+    //  -----------------------------------------------
 
-    std::wstring imbed_filename { };
+    std::wstring include_filename { };
     
     if (argc > 1)        // 1st argument present?   
-        imbed_filename = argv[1];
+        include_filename = argv[1];
    
 
-    M__(M_out(L"imbed_filename = \"%s\"") % imbed_filename;)
+    M__(M_out(L"include_filename = \"%s\"") % include_filename;)
 
-    if (imbed_filename.size() == 0)
+    if (include_filename.size() == 0)
     {
         count_error();
-        M_out_emsg(L"parse_cmdline(): no main imbed filename provided");        
-        return imbed_filename;
+        M_out_emsg(L"parse_cmdline(): no main include filename provided");        
+        return include_filename;
     }
  
-    return imbed_filename; 
+    return include_filename; 
 }
 M_endf    
 
@@ -216,8 +216,8 @@ int process_main_file(frame_S& frame, const std::wstring& main_filename) try
     add_cached_id(L"????????????????????? uninitialized source_id=0 ????????????????????????"); 
               
 
-    // attach main imbed file to r stream -- check for errors 
-    // ------------------------------------------------------ 
+    // attach main include file to r stream -- check for errors 
+    // -------------------------------------------------------- 
 
     auto arc = pp_p->attach_file(main_filename);
     if (arc != 0) 
@@ -419,6 +419,7 @@ static int peek_token(pre_process_C& pp, token_C& tok, bool end_not_expected) tr
         static_N::token_list.push_back(token); 
         static_N::token_ix++; 
         static_N::just_peeked = true; 
+        M__(M_out(L"peek_token() -- added token_ix = %d -- loc = \"%S\"") % static_N::token_ix % token.loc_str();)
     }
 
 
@@ -716,11 +717,11 @@ M_endf
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-//        SSSS     L         IIIII      SSSS      TTTTT
-//       S         L           I       S            T  
-//        SSS      L           I        SSS         T  
-//           S     L           I           S        T  
-//       SSSS      LLLLL     IIIII     SSSS         T  
+//       BBBB      L         OOOOO      CCCC      K   K
+//       B   B     L         O   O     C          K  K 
+//       BBBB      L         O   O     C          KKK  
+//       B   B     L         O   O     C          K  K 
+//       BBBB      LLLLL     OOOOO      CCCC      K   K
 //
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
@@ -795,6 +796,7 @@ static int get_block(frame_S& frame, pre_process_C& pp, block_S& block, bool end
 
 
         // handle expected/unexpected END and other errors from peek token
+        // ---------------------------------------------------------------
 
         if (prc != 0) 
         {
@@ -808,12 +810,17 @@ static int get_block(frame_S& frame, pre_process_C& pp, block_S& block, bool end
 
             if (prc == 1)                                       // END -- expected or not
             {
-                if (!end_expected)
+                if (!end_expected)                              // unexpected END token    
                 {
                     M_out_emsg1(L"get_block(): unexpected END of input seen while parsing nested block -- possible missing closing brace");
                     M_out_emsg2(L"           : empty block is being returned rather than an incomplete one");
                     block = block_S { };                        // pass back empty block, rather than incomplete one                   
-                }   
+                }  
+                else                                            // expected END token
+                {
+                    M__(M_out(L"get_block() -- expected END token received -- expressions=%d   expression_ct=%d ") % block.expressions.size() % block.expression_ct;)                
+                }
+                discard_token(pp);                                  // consume the END token        
             }
             else                                                // token processing error
             {
@@ -821,7 +828,7 @@ static int get_block(frame_S& frame, pre_process_C& pp, block_S& block, bool end
                 M_out_emsg2(L"           : empty block is being returned rather than an incomplete one");
                 block = block_S { };                            // pass back empty block, rather than incomplete one          
             }                                                 
-                                                              
+         
             return prc;                                         // return immediately, if error or END -- pass back whatever has been accumulated so far in block (if no prior error was seen)
         }
 
@@ -830,7 +837,7 @@ static int get_block(frame_S& frame, pre_process_C& pp, block_S& block, bool end
         {
             if (end_by_brace)
             {
-                a_expression_S dummy_expression  { };           // dummy expression to add ending brace token to (for ending tokens index  in debug messages) 
+                a_expression_S dummy_expression  { };           // dummy expression to add ending brace token to (for ending tokens index  in debug messages) ?????
                 expression_add_token(dummy_expression, token);
 
                 discard_token(pp);                              // consume ending brace
@@ -974,6 +981,57 @@ static void expression_add_token(a_expression_S& expression, const token_C& toke
 M_endf
 
 
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   expression_add_token_ix() -- add ix1 and ix2 to expression start/end token indexes -- for debugging messages, etc.
+////   ========================
+////
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+static void expression_add_token_ix(a_expression_S& expression, int64_t ix1, int64_t ix2) try
+{  
+    // if both ix1 and ix2 are bad, return immediately without updating the expression token indexes
+
+    if ( (ix1 < 0) && (ix2 < 0) )
+        return; 
+
+
+    // if both incoming indexes are good, update first/last token indexes in expression  
+
+    if ( (ix1 >= 0) && (ix2 >= 0) )
+    {
+        if (expression.token_ix1 == -1)                                               // not set yet?
+            expression.token_ix1 = ix1;
+        else
+            expression.token_ix1 = std::min(expression.token_ix1, ix1);               // lowest token index yet seen
+
+        expression.token_ix2 = std::max(expression.token_ix2, ix2);                   // highest token index yet seen
+        return;
+    }
+    
+
+    // either ix1 or ix2 is bad (but not both)
+
+    int64_t good_ix { (ix1 >= 0) ? ix1 : ix2 };                                       // good_ix gets the value of ix1 or ix2, whichever one is good
+    
+    if (expression.token_ix1 == -1)                                                   // not set yet?
+        expression.token_ix1 = good_ix;
+    else
+        expression.token_ix1 = std::min(expression.token_ix1, good_ix);               // lowest token index yet seen
+
+    expression.token_ix2 = std::max(expression.token_ix2, good_ix);                   // highest token index yet seen
+    return;
+}
+M_endf
+
 
 
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -998,9 +1056,14 @@ static int get_verb_priority(frame_S& frame, const std::wstring& name) try
     auto gvrc = get_verb(frame, name, verbset); 
 
     if (gvrc == 0)
+    {
+        M__(M_out(L"get_verb_priority() -- returned priority = %d") % verbset.priority;)
         return verbset.priority;
+    }
     else
-        return 0; 
+    {
+        return 0;                                          // default priority
+    }
 }
 
 M_endf
@@ -1101,12 +1164,14 @@ void expression_set_verb(frame_S& frame, a_expression_S& expression, const a_exp
 
     // update location info in passed-in main token to include verb sub-token limits
 
-    if (expression.token_ix1 == -1)                                                           // not set yet?
-        expression.token_ix1 = verb_expression.token_ix1;                                     // verb sub-expression must be at start of main expression 
-    else
-        expression.token_ix1 = std::min(verb_expression.token_ix1, expression.token_ix1);     // lowest token index yet seen
+    expression_add_token_ix(expression, verb_expression.token_ix1, verb_expression.token_ix2);
+
+  //  if (expression.token_ix1 == -1)                                                           // not set yet?
+  ////      expression.token_ix1 = verb_expression.token_ix1;                                     // verb sub-expression must be at start of main expression in this case 
+  //  else
+  //      expression.token_ix1 = std::min(verb_expression.token_ix1, expression.token_ix1);     // lowest token index yet seen
     
-    expression.token_ix2 = std::max(verb_expression.token_ix2, expression.token_ix2);         // highest token index yet seen   
+   // expression.token_ix2 = std::max(verb_expression.token_ix2, expression.token_ix2);         // highest token index yet seen   
 
 
     // use default settings for has_sigil, verb priority, associations, etc.
@@ -1232,7 +1297,8 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
     bool priority_recursion { false };                                                // true -- recursive call due to finding higher priority verb 
     int  error_count        { 0     };                                                // local counter -- number of errors so far accumulating this expression  
     
-    M__(M_out(L"get_expression() called - end_by_paren=%d  end_by_verbname_bracket=%d  end_by_keyname_bracket=%d  end_expected=%d") % end_by_paren % end_by_verbname_bracket % end_by_keyname_bracket % end_expected;)
+    M__(M_out(L"get_expression() called - end_by_paren=%d  end_by_verbname_bracket=%d  end_by_keyname_bracket=%d  end_expected=%d") % end_by_paren % end_by_verbname_bracket % end_by_keyname_bracket % end_expected;) 
+    M__(M_out(L"get_expression() called -- has_verb=%d  auto_recurs=%d") % expression.has_verb % expression.auto_recurs;) 
 
 
     // set expression gathering flags before starting main loop, if verb (and left parms) are already set in the incoming expression
@@ -1246,19 +1312,20 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
     }
 
 
-    // if this is a nested expression, set starting token index to accound for already-discarded open paren or open angle bracket token
+    // if this is a nested expression, set starting token index to account for already-discarded open paren or open angle bracket token
 
     if (end_by_paren || end_by_verbname_bracket || end_by_keyname_bracket)
         expression.token_ix1 = static_N::token_ix; 
 
 
-    // =================================================================================== 
+    // ======================================================================================== 
     // main loop to fetch tokens, until a complete expression (or error/END) can be passed back
-    // ===================================================================================
+    // ========================================================================================
 
     for(;;)
     {
-        // look at next token -- end immediately (perhaps with empty expression), if error or unexpected end 
+        // look at next token -- end immediately (perhaps with empty expression), if error 
+        // -------------------------------------------------------------------------------
 
         token_C token {}; 
         M__(M_out(L"get_expression() calling peek_token");)
@@ -1272,9 +1339,16 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
             expression = a_expression_S {};                                                         // pass back empty expression 
             return prc;                                                                             // leave unexpected token unconsumed for next time
         }                                                                                          
-                                                                                                   
+                           
+
+        // ----------------
+        // handle END token
+        // ----------------
+
         if (prc == 1)                                                                               // END seen?
-        {                                                                                          
+        {   
+            discard_token(pp);                                                                      // get rid of END token
+
             if (!end_expected)                                                                      // END not expected?
             {
                 M_out_emsg1(L"get_expression(): unexpected END of input reached while processing nested expression -- possible missing close parenthesis"); 
@@ -1301,8 +1375,17 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
                         ( (expression.lparms.value_ct <= 1) || (pp.m_allow_verbless_multi_parms) ) // not too many parms, dpending on how many are allowed
                        )
                     {    
-                        M__(M_out(L"get_expression() -- normal return due to END of input -- no verb present");)   
-                        return  (error_count > 0) ? 2 : 0;                                         // verbless expression is OK  
+                        M__(M_out(L"get_expression() -- normal return due to END of input -- no verb present");)
+
+                        if (error_count == 0)
+                        {
+                            return 0;
+                        }
+                        else
+                        {
+                            M_out_emsg(L"get_expression() -- END of input, no verb present -- error_count = %d -- returning with error") % error_count;  
+                            return 2;  
+                        }
                     }                                                                        
                     else                                                                           // disallowed positional or keyword parms in verbless expression
                     {  
@@ -1320,8 +1403,16 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
                     }                                                                      
                 }                                                                          
                                                                                            
-                M__(M_out(L"get_expression() -- normal return due to END of input -- verb present");)           
-                return  (error_count > 0) ? 2 : 1;                                                 // return with normal END, or indicate bad expression
+                M__(M_out(L"get_expression() -- normal return due to END of input -- verb present");)  
+                if (error_count == 0)
+                {
+                    return 0;
+                }
+                else
+                {
+                    M_out_emsg(L"get_expression() -- END of input, verb present -- error_count = %d -- returning with error") % error_count;  
+                    return 2;  
+                }
             }           
         }
 
@@ -1329,9 +1420,9 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
         M__(M_out(L"get_expression() -- token.utype2 = %d") % (int)(token.utype2);)
 
 
-        //  ----------------------     
-        //  check for ending token
-        //  ----------------------
+        //  ----------------------------------------------------------     
+        //  check for ending token  _ close paren, close bracket, etc.
+        //  ----------------------------------------------------------
 
         if (end_by_paren || end_by_verbname_bracket || end_by_keyname_bracket)                     // paren/bracket mode -- nested expression -- look only for close paren/bracket to end vlist (END should have been filtered out above)
         {
@@ -1373,7 +1464,15 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
                        )
                     {    
                         M__(M_out(L"get_expression() -- normal return due to close paren/bracket -- no verb present");)
-                        return  (error_count > 0) ? 2 : 0;                                         // verbless expression is OK  
+                        if (error_count == 0)
+                        {
+                            return 0;
+                        }
+                        else
+                        {
+                            M_out_emsg(L"get_expression() -- close paren/bracket seen, no verb present -- error_count = %d -- returning with error") % error_count;  
+                            return 2;  
+                        }                       
                     }                                                                        
                     else                                                                           // disallowed positional or keyword parms in verbless expression
                     {  
@@ -1392,7 +1491,15 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
                 }
                
                 M__(M_out(L"get_expression() -- normal return due to close paren/bracket -- verb present");)
-                return  (error_count > 0) ? 2 : 0;     
+                if (error_count == 0)
+                {
+                    return 0;
+                }
+                else
+                {
+                    M_out_emsg(L"get_expression() -- close paren/bracket seen, verb present -- error_count = %d -- returning with error") % error_count;  
+                    return 2;  
+                }   
             }
      
 
@@ -1408,7 +1515,7 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
             {
                 M__(M_out(L"get_(nested)_expression(): mismatched ending parenthesis/bracket seen");) 
 
-                expression_add_token(expression, token);                                  // add to token list for this expression -- for error message only  
+                expression_add_token(expression, token);     // ????                      // add to token list for this expression -- for error message only  
 
                 if (!priority_recursion)                                                  // leave ending token for upper-level get_expression() call, if priority recursion is active
                     discard_token(pp);                                                    // get rid of closing parenthesis (if not priority recursion)
@@ -1426,7 +1533,7 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
 
             if (token.utype2 == tok_u2_E::semicolon)                                      // unexpected semicolon -- overrides parens, marks end of expression -- consume semicolon
             {                                                                       
-                expression_add_token(expression, token);                                  // add to token list for this expression  -- for error message only 
+                expression_add_token(expression, token);    // ????                       // add to token list for this expression  -- for error message only 
                                                                                     
                 if (!priority_recursion)                                                  // leave ending token for upper-level get_expression() call, if priority recursion is active
                     discard_token(pp);                                                    // consume the semicolon, since this must be top level expression within braces
@@ -1444,7 +1551,7 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
                                                                                        
             if (token.utype2 == tok_u2_E::close_brace)                                    // closing brace -- must be end of expression list, without final semicolon
             {                                                                          
-                expression_add_token(expression, token);                                  // add to token list for this expression  -- for error message only
+                expression_add_token(expression, token);    // ???                        // add to token list for this expression  -- for error message only
                                                                                           // don't consume closing brace          
                 count_error(); 
                 M_out_emsg1(L"get_expression(): closing brace reached before closing parenthesis (or verbname/keyname bracket) for expression was seen"); 
@@ -1453,29 +1560,15 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
                 expression = a_expression_S {};                                           // pass back empty expression
                 return 2;                                                                 // indicate bad expression
             }
-
-
-            // check for unexpected (ending) close paren, if this is a verb-type or keyword-type expression (this is now allowed -- see above) 
-
- //         if ( (end_by_verbname_bracket || end_by_keyname_bracket) && (token.utype2 == tok_u2_E::close_paren) )  // closing paren while in verb sub-expression?-- must be end of whole (outer) expression, without missing close verbname/keyname bracket
- //         {                                               
- //             expression_add_token(expression, token);                                   // add to token list for this expression  -- for error message only
- //                                                                                        // don't consume closing paren, since this must be a sub-expression and caller needs the close paren to exit properly           
- //             count_error(); 
- //             M_out_emsg1(L"get_expression(): closing paren reached before closing verbname/keyname bracket for verb-type or keyword-type expression was seen"); 
- //             display_expression(expression, L"incomplete");
- //             M_out_emsg2(L"empty expression is being substituted");           
- //             expression = a_expression_S {};                                            // pass back empty expression
- //             return 2;                                                                  // indicate bad expression
- //         }   
-        }         // ------------------------------------------------------------------
+        }         // ----------------------------------------------------------------------
         else      // not in paren or verbname/keyname bracket mode -- not nested expression 
-                  // ------------------------------------------------------------------
+                  // ----------------------------------------------------------------------
         {
             if (token.utype2 == tok_u2_E::semicolon)                                      // semicolon -- consume semicolon at end
             {                                                                      
-                expression_add_token(expression, token);                                  // add to token list for this expression 
-                                                                                   
+              //expression_add_token(expression, token);       // ????                    // (don't) add to token list for this expression 
+                M__(M_out(L"get_expression() -- did not add semicolon to expression -- expression.ix1/2 = %d/%d -- semicolon token_ix = %d") % expression.token_ix1 % expression.token_ix2 % static_N::token_ix;)  
+
                 if (!priority_recursion)                                                  // leave ending token for upper-level get_expression() call, if priority recursion is active
                     discard_token(pp);                                                    // consume the semicolon, since this must be top level expression within braces
                                                                 
@@ -1496,7 +1589,15 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
                        )
                     {    
                         M__(M_out(L"get_expression() -- normal return due to semicolon -- no verb present");)
-                        return  (error_count > 0) ? 2 : 0;                                         // verbless expression is OK  
+                        if (error_count == 0)
+                        {
+                            return 0;
+                        }
+                        else
+                        {
+                            M_out_emsg(L"get_expression() -- semicolon seen, no verb present -- error_count = %d -- returning with error") % error_count;  
+                            return 2;  
+                        }   
                     }                                                                        
                     else                                                                           // disallowed positional or keyword parms in verbless expression
                     {  
@@ -1515,7 +1616,15 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
                 }              
      
                 M__(M_out(L"get_expression() -- normal return due to semicolon -- verb present");)
-                return  (error_count > 0) ? 2 : 0;                                                 // return normally, or indicate bad expression
+                if (error_count == 0)
+                {
+                    return 0;
+                }
+                else
+                {
+                    M_out_emsg(L"get_expression() -- semicolon seen, verb present -- error_count = %d -- returning with error") % error_count;  
+                    return 2;  
+                }   
             }                                                                               
                                                                                             
             if (token.utype2 == tok_u2_E::close_brace)                                             // closing brace -- must be end of expression list, without final semicolon
@@ -1542,7 +1651,15 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
                        )
                     {    
                         M__(M_out(L"get_expression() -- normal return due to closing brace -- no verb present");)
-                        return  (error_count > 0) ? 2 : 0;                                          // verbless expression is OK  
+                        if (error_count == 0)
+                        {
+                            return 0;
+                        }
+                        else
+                        {
+                            M_out_emsg(L"get_expression() -- close brace, no verb present -- error_count = %d -- returning with error") % error_count;  
+                            return 2;  
+                        }   
                     }                                                                        
                     else                                                                            // disallowed positional or keyword parms in verbless expression
                     {  
@@ -1561,7 +1678,15 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
                 }   
   
                 M__(M_out(L"get_expression() -- normal return due to closing brace -- verb present");)
-                return  (error_count > 0) ? 2 : 0;                                                 // return normally, or indicate bad expression
+                if (error_count == 0)
+                {
+                    return 0;
+                }
+                else
+                {
+                    M_out_emsg(L"get_expression() -- close brace seen, verb present -- error_count = %d -- returning with error") % error_count;  
+                    return 2;  
+                }   
             }
         }
 
@@ -1577,6 +1702,13 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
         }
 
 
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //
+        //   handle tokens other than END, errors, close paren/brace, etc.
+        //
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
         //  get left-side vlist (if any)  
         //  ----------------------------
 
@@ -1584,10 +1716,22 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
         {
             left_parms_done = true; 
 
-            M__(M_out(L"get_expression() -- calling get_vlist() for left-side vlist");)
-            auto grc = get_vlist(frame, pp, expression, expression.lparms); 
+            M__(M_out(L"get_expression() -- calling get_vlist() for left-side vlist -- expression.ix1/2 = %d/%d ") % expression.token_ix1 % expression.token_ix2;)
+            M__(M_out(L"get_expression() -- (before call to get_vlist() -- left vlist ix1/2 = %d/%d") % expression.lparms.token_ix1 % expression.lparms.token_ix2;) 
+            auto grc = get_vlist(frame, pp, expression, expression.lparms);
             if (grc != 0)
                 error_count++; 
+            M__(M_out(L"get_expression() -- (after call to get_vlist() -- left vlist ix1/2 = %d/%d") % expression.lparms.token_ix1 % expression.lparms.token_ix2;) 
+            expression_add_token_ix(expression, expression.lparms.token_ix1, expression.lparms.token_ix2);
+            M__(M_out(L"get_expression() -- after adding left vlist -- expression.ix1/2 = %d/%d -- token_ix = %d") % expression.token_ix1 % expression.token_ix2 % static_N::token_ix;) 
+            M__(M_out(L"expression: token_ix=%d -- ix1/2=%d/%d -- left-ix1/2 = %d/%d -- verb_ix1/2 = %d/%d  right-ix1/2 = %d/%d  ")
+                     % static_N::token_ix 
+                     % expression.token_ix1            % expression.token_ix1 
+                     % expression.lparms.token_ix1     % expression.lparms.token_ix1
+                     % expression.verb_value.token_ix1 % expression.verb_value.token_ix1
+                     % expression.rparms.token_ix1     % expression.rparms.token_ix1
+                     ; 
+                )   
             continue;                                                                               // loop back to look for ending token (flush), if error seen -- should not have consumed ending token 
         }
 
@@ -1600,24 +1744,30 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
             // get priority of verb (if known at parse time) -- some verbs are undefined at this point -- use default priority (0) for these
             // use special high priority if this verb was indicated by an attached parenthesis -- this works right, only if all vlists have full comma punctuation, and only when unary/binary operators are used without commas 
 
-            int       priority    { verb_pri_N::_default };                            // start with default verb priority     
-            verbset_S verbset     { };                                                  // temporary verbset to be filled in
-
-            if (token.utype2 == tok_u2_E::verbname)                                     // can get real priority only for simple verbdef expressions
-            {   
-                auto gvrc = get_verb(frame, token.str, verbset);                        // look up verb name in environ_S and extract verbdef info to local copy 
-
-                if (gvrc == 0)
-                    priority = verbset.priority;                                        // can use real priority only if verb is pre-defined (built-in) or defined at the time of this parser invocation
-
-
-                if (token.attached_paren)                                               // this verb indicated by attached paren -- example   verb(a, b, c)
-                {                                                                       
-                    priority         = verb_pri_N::_attached_paren;                     // use special high priority for verbs indicated by attached parenthesis 
-                    verbset.priority = priority;                                        // override usual priority for this verb
+            int       priority    { verb_pri_N::_default };                                         // start with default verb priority     
+            verbset_S verbset     { };                                                              // temporary verbset to be filled in
+                                                                                               
+            if (token.utype2 == tok_u2_E::verbname)                                                 // can get real priority only for simple verbdef expressions
+            {                                                                                  
+                auto gvrc = get_verb(frame, token.str, verbset);                                    // look up verb name in environ_S and extract verbdef info to local copy 
+                                                                                               
+                if (gvrc == 0)                                                                 
+                    priority = verbset.priority;                                                    // can use real priority only if verb is pre-defined (built-in) or defined at the time of this parser invocation
+                else                                                                           
+                    verbset.priority = verb_pri_N::_default;                                        // if verb is not defined at parse time, set default priority into the verbset_S (rather than "non-specified" priority from the default initialization of verbset_S)
+                                                                                               
+                if (token.attached_paren)                                                           // this verb indicated by attached paren -- example   verb(a, b, c)
+                {                                                                                   
+                    priority         = verb_pri_N::_attached_paren;                                 // use special high priority for verbs indicated by attached parenthesis 
+                    verbset.priority = priority;                                                    // override usual priority for this verb
                 }
             }
+            else
+            {
+                verbset.priority = verb_pri_N::_default;                                // if verb expression present, set default priority into the verbset_S (rather than "non-specified" priority from the default initialization of verbset_S)  
+            }
 
+            M__(M_out(L"get_expression() -- expression.priority = %d   verbset.priority = %d") % expression.priority % verbset.priority;)
 
             // if no verb yet seen for this expression, just add the verb value to the expression
 
@@ -1657,38 +1807,56 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
                     //
                     // new verb has lower effective priority than verb already in in the expression: 
                     //
+                    //  - if this is an implicit/recursive expression caused by priority parsing -- return immediately    
                     //  - save the results from prior verb's execution as the first (only) left-side positional parm for new verb
                     //
                     // -------------------------------------------------------------------------------------------------------------------------------------------------------- 
 
-                    // copy everything from current expression into a new expression, clear out current expression, and attach new expression as the first (only) left positional parm of current expression 
+                    // lower priority verb ends any priority-caused recursive call to get_expression()
 
-                    value_S value    {      };                                                  // temp value for set_expression_value()
-                    a_expression_S left_expression { expression };                              // copy everything to new a_expression_S for adding in   (including set up verb and vlists, etc.)
-                                                                                               
-                    expression = a_expression_S {};                                             // clear out existing expression                   
-                    set_expression_value(value, left_expression, true);                         // move OK -- temp_expression no longer needed 
-                    add_positional_value(expression.lparms, value);                             // add to start of left positional parms vector in cleared-out original expression 
-                    expression.lparms.token_ix1 = left_expression.token_ix1;                    // vlist location is same is prior verb's expression location
-                    expression.lparms.token_ix2 = left_expression.token_ix2;                    // vlist location is same is prior verb's expression location
-                                                                                                // !!!!!!!!!!!!!! note: that new expression's location does not include left parms in this case
+                    if (priority_recursion)                                                                            // this call to get_expression() was done because of priority recursion ??
+                       return 0;                                                                                       // lower-priority verb ends the implicit expression
+                                                                                                                                                            
+
+                    // copy everything from current expression into a new expression, clear out current expression, and attach new expression as the first (only) left positional parm of current expression 
+                    // -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+                    value_S value    {      };                                                                         // temp value for set_expression_value()
+                    a_expression_S left_expression { expression };                                                     // copy everything to new a_expression_S for adding in   (including set up verb and vlists, token indexes, etc.)
+                                                                                                                      
+                    expression = a_expression_S {};                                                                    // clear out existing expression 
+                    expression.lparms.token_ix1 = left_expression.token_ix1;                                           // vlist location is same as prior verb's expression location  -- do this before the MOVE operation
+                    expression.lparms.token_ix2 = left_expression.token_ix2;                                           // vlist location is same as prior verb's expression location  -- do this before the MOVE operation
+                    set_expression_value(value, left_expression, true);                                                // move OK -- temp_expression no longer needed 
+                    add_positional_value(expression.lparms, value);                                                    // add to start of left positional parms vector in cleared-out original expression 
+                    expression_add_token_ix(expression, expression.lparms.token_ix1, expression.lparms.token_ix2);     // update token indexes in expression to account for updated lparms
+                                                                                                
+                    M__(M_out(L"get_expression() -- new expression for lower pri verb -- left vlist.ix1/ix2 = %d/%d") % expression.lparms.token_ix1 % expression.lparms.token_ix2;)
+                    M__(M_out(L"expression: token_ix=%d -- ix1/2=%d/%d -- left-ix1/2 = %d/%d -- verb_ix1/2 = %d/%d  right-ix1/2 = %d/%d  ")
+                             % static_N::token_ix 
+                             % expression.token_ix1            % expression.token_ix1 
+                             % expression.lparms.token_ix1     % expression.lparms.token_ix1
+                             % expression.verb_value.token_ix1 % expression.verb_value.token_ix1
+                             % expression.rparms.token_ix1     % expression.rparms.token_ix1
+                             ; 
+                        )   
                     
                     // set up cleared-out existing expression with the new verb   
 
-                    auto vrc = get_expression_verb(frame, pp, expression, token, verbset);      // fill in expression verb-oriented fields for main expression 
-                    if (vrc != 0)                                                 
-                    {                                                             
-                        error_count++;                                                          // cause flush mode to start because of error
-                        continue;                                                               // start flushing 
+                    auto vrc = get_expression_verb(frame, pp, expression, token, verbset);                              // fill in expression verb-oriented fields for main expression 
+                    if (vrc != 0)                                                                                      
+                    {                                                                                                  
+                        error_count++;                                                                                  // cause flush mode to start because of error
+                        continue;                                                                                       // start flushing 
                     }
 
 
                     // reset expression processing flags (for new verb) indicating left parms and verb are done, and right parms are not yet done
 
-                    right_parms_done = false;                                                   // any right parms were moved into left_expression, so updated original expression doesn't have any yet   
-                    left_parms_done  = true;                                                    // left parms for original expression are done (just the one nested expression)
-                    verb_done        = true;                                                    // 2nd verb becomes 1st verb for original expression 
-                    continue;                                                                   // loop back to get next token -- should be right parms for update original expression
+                    right_parms_done = false;                                                                           // any right parms were moved into left_expression, so updated original expression doesn't have any yet   
+                    left_parms_done  = true;                                                                            // left parms for original expression are done (just the one nested expression)
+                    verb_done        = true;                                                                            // 2nd verb becomes 1st verb for original expression 
+                    continue;                                                                                           // loop back to get next token -- should be right parms for update original expression
                 }                                                                              
                 else // new verb priority is higher (or prior expression is effectively right-associative, and both verbs have same priority)
                 {
@@ -1701,22 +1869,32 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
                     // ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- 
                 
                     value_S    value       {    };                                      
-                    a_expression_S   right_expression  {    };                                    // expression for new (hi-priority) verb 
+                    a_expression_S   right_expression  {    };                                                                          // expression for new (hi-priority) verb 
 
 
                     // transfer prior verb's right-side parms (positional and kw) to left sideparms for new higher-priority verb
 
-                    right_expression.lparms = expression.rparms;                                   // new verb's left parms are prior verb's right parms
-                    expression.rparms       = vlist_S {};                                          // clear out right parms for prior verb (will be set below to results from new hi-priority verb);
-
+                    right_expression.lparms      = expression.rparms;                                                                   // new verb's left parms are prior verb's right parms
+                    expression_add_token_ix(right_expression, right_expression.lparms.token_ix1, right_expression.lparms.token_ix2);    // update token indexes in right_expression to account for transferred lparms
+                    expression.rparms            = vlist_S {};                                                                          // clear out right parms for prior verb (will be set below to results from new hi-priority verb);
+                    right_expression.auto_recurs = true;                                                                                // indicate that this expression created automatically
+                    M__(M_out(L"get_expression() -- rparms transferred to right_expression lparms");)
+                    M__(M_out(L"right_expression: token_ix=%d -- ix1/2=%d/%d -- left-ix1/2 = %d/%d -- verb_ix1/2 = %d/%d  right-ix1/2 = %d/%d  ")
+                             % static_N::token_ix 
+                             % right_expression.token_ix1            % right_expression.token_ix1 
+                             % right_expression.lparms.token_ix1     % right_expression.lparms.token_ix1
+                             % right_expression.verb_value.token_ix1 % right_expression.verb_value.token_ix1
+                             % right_expression.rparms.token_ix1     % right_expression.rparms.token_ix1
+                             ; 
+                        ) 
 
                     // set up new right_expression with the new higher-priority verb   
                     
-                    auto vrc = get_expression_verb(frame, pp, right_expression, token, verbset);  // fill in expression verb-oriented fields for main expression 
-                    if (vrc != 0)
-                    {                                                                
-                        error_count++;                                                            // cause flush mode to start because of error
-                        continue;                                                                 // loop back to start flushing
+                    auto vrc = get_expression_verb(frame, pp, right_expression, token, verbset);                                          // fill in expression verb-oriented fields for main expression 
+                    if (vrc != 0)                                                                                                        
+                    {                                                                                                                    
+                        error_count++;                                                                                                    // cause flush mode to start because of error
+                        continue;                                                                                                         // loop back to start flushing
                     }                                                                      
 
 
@@ -1726,22 +1904,44 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
                     //   -- partially-complete right_expression parm should cause nested get_expression() to go into "priority_recursive" mode, where ending token is left unconsumed for top-level get_expression() call 
                     //
 
-                    M__(M_out(L"get_expression() -- doing priority-recursive call to get_expression()");)
+                    M__(M_out(L"get_expression() -- doing priority-recursive call to get_expression() to fill out right_expression");)
+
                     auto grc = get_expression(frame, pp, right_expression, end_by_paren, end_by_verbname_bracket, end_by_keyname_bracket, end_expected);
+
+                    M__(M_out(L"get_expression() -- right_expression token_ix1/ix2 = %d/%d") % right_expression.token_ix1 % right_expression.token_ix2;)
+                    M__(M_out(L"right_expression: token_ix=%d -- ix1/2=%d/%d -- left-ix1/2 = %d/%d -- verb_ix1/2 = %d/%d  right-ix1/2 = %d/%d  ")
+                             % static_N::token_ix 
+                             % right_expression.token_ix1            % right_expression.token_ix1 
+                             % right_expression.lparms.token_ix1     % right_expression.lparms.token_ix1
+                             % right_expression.verb_value.token_ix1 % right_expression.verb_value.token_ix1
+                             % right_expression.rparms.token_ix1     % right_expression.rparms.token_ix1
+                             ; 
+                        )
+
                     if (grc != 0)
                         error_count++; 
 
 
                     // add completed higher-priority expression from priority-recursive get_expression() call to current expression's right-side positional parms -- will be the only right-side parm
 
-                    set_expression_value(value, right_expression, true);                           // value points to completed higher-priority expression -- move is OK, since right_expression will soon go away
-                    add_positional_value(expression.rparms, value);                                // first (only) right-size positional parm for prior verb = results from higher-priority verb
-                    expression.rparms.token_ix1 = right_expression.token_ix1;                      // vlist location is same is higher_priority verb's expression location
-                    expression.rparms.token_ix2 = right_expression.token_ix2;                      // vlist location is same is higher_priority verb's expression location
-                                                                                       
-                    right_parms_done = true;                                                       // expression for prior verb is done -- should next see end token (left unconsumed from recursive call to get_expression())
-                    continue;                                                                      // loop back to get next token -- should be unconsumed ending token
-                }                                                                   
+                    set_expression_value(value, right_expression, true);                                                                  // value points to completed higher-priority expression -- move is OK, since right_expression will soon go away
+                    add_positional_value(expression.rparms, value);                                                                       // first (only) right-size positional parm for prior verb = results from higher-priority verb
+                    expression.rparms.token_ix1 = right_expression.token_ix1;                                                             // vlist location is same is higher_priority verb's expression location
+                    expression.rparms.token_ix2 = right_expression.token_ix2;                                                             // vlist location is same is higher_priority verb's expression location
+                    expression_add_token_ix(expression, expression.rparms.token_ix1, expression.rparms.token_ix2);                        // update token indexes in expression to account for updated right vlist
+                    M__(M_out(L"get_expression() -- updated right vlist for lower pri verb -- right vlist.ix1/ix2 = %d/%d") % expression.rparms.token_ix1 % expression.rparms.token_ix2;)
+                    M__(M_out(L"expression: token_ix=%d -- ix1/2=%d/%d -- left-ix1/2 = %d/%d -- verb_ix1/2 = %d/%d  right-ix1/2 = %d/%d  ")
+                             % static_N::token_ix 
+                             % expression.token_ix1            % expression.token_ix1 
+                             % expression.lparms.token_ix1     % expression.lparms.token_ix1
+                             % expression.verb_value.token_ix1 % expression.verb_value.token_ix1
+                             % expression.rparms.token_ix1     % expression.rparms.token_ix1
+                             ; 
+                        )  
+
+                    right_parms_done = true;                                                                                              // expression for prior verb is done -- should next see end token (left unconsumed from recursive call to get_expression())
+                    continue;                                                                                                             // loop back to get next token -- should be unconsumed ending token
+                }                                                                                                                      
             }
         }
 
@@ -1751,9 +1951,22 @@ static int get_expression(frame_S& frame, pre_process_C& pp, a_expression_S& exp
         if (left_parms_done && verb_done && !right_parms_done)
         {
             right_parms_done = true; 
+            M__(M_out(L"get_expression() -- calling get_vlist() for right-side vlist -- expression.ix1/2 = %d/%d ") % expression.token_ix1 % expression.token_ix2;)
             auto grc = get_vlist(frame, pp, expression, expression.rparms); 
+
             if (grc != 0)
                 error_count++; 
+
+            expression_add_token_ix(expression, expression.rparms.token_ix1, expression.rparms.token_ix2); 
+            M__(M_out(L"get_expression() -- after adding right vlist -- expression.ix1/2 = %d/%d -- token_ix = %d") % expression.token_ix1 % expression.token_ix2 % static_N::token_ix;)  
+            M__(M_out(L"expression: token_ix=%d -- ix1/2=%d/%d -- left-ix1/2 = %d/%d -- verb_ix1/2 = %d/%d  right-ix1/2 = %d/%d  ")
+                     % static_N::token_ix 
+                     % expression.token_ix1            % expression.token_ix1 
+                     % expression.lparms.token_ix1     % expression.lparms.token_ix1
+                     % expression.verb_value.token_ix1 % expression.verb_value.token_ix1
+                     % expression.rparms.token_ix1     % expression.rparms.token_ix1
+                     ; 
+                )     
             continue;                                                                      // loop back to look for ending token if error seen -- should not consume ending token 
         }
 
@@ -2040,7 +2253,7 @@ static int get_vlist_value(frame_S& frame, pre_process_C& pp, a_expression_S& ex
     
 
     // open parenthesis -- process nested expression 
-    // ----------------------------------------
+    // ---------------------------------------------
 
     if (token.utype2 == tok_u2_E::open_paren)
     {
@@ -2153,10 +2366,10 @@ static int get_vlist(frame_S& frame, pre_process_C& pp, a_expression_S& expressi
         M_throw("get_vlist(): passed-in vlist is not empty")
     }
  
-    M__(M_out(L"get_vlist() -- token_ix at start = %d") % static_N::token_ix); 
+    M__(M_out(L"get_vlist() -- called -- token_ix at start = %d") % static_N::token_ix); 
 
-    int64_t token_ix1 = -1;         // needs to be filled in after 1st peek    
-
+    int64_t token_ix1 { -1 };         // needs to be filled in after 1st peek    
+    int64_t value_ct  {  0 };         // count of values in this vlist, so far
 
     // ===========================================================================================
     // loop to process values in vlist -- should get 0 or more values, and then valid ending token
@@ -2170,25 +2383,37 @@ static int get_vlist(frame_S& frame, pre_process_C& pp, a_expression_S& expressi
         M__(M_out(L"get_vlist() calling peek_token");)
         auto prc = peek_token(pp, token, false);
 
-        if (token_ix1 == -1) token_ix1 = static_N::token_ix;                   // capture starting token index on first pass only  
-
         if ((prc < 0))
         {
             M_out_emsg1(L"get_vlist(): Input token error while parsing un-nested vlist"); 
             token.display(L"bad-token", true);
-            vlist.token_ix1 = std::min(static_N::token_ix, token_ix1);         // capture starting token index for vlist -- for error message
-            vlist.token_ix2 = std::max(static_N::token_ix, token_ix1);         // capture ending token index for vlist   -- for error message 
+
+            if (token_ix1 != -1)
+            {
+                vlist.token_ix1 = std::min(static_N::token_ix, token_ix1);     // capture starting token index for vlist -- for error message
+                vlist.token_ix2 = std::max(static_N::token_ix, token_ix1);     // capture ending token index for vlist   -- for error message 
+            }
+
             display_vlist(vlist, L"incomplete vlist");
             M_out_emsg2(L"Passing back empty vlist in place of incomplete vlist");
             
             vlist = vlist_S {};
-            vlist.token_ix1 = std::min(static_N::token_ix, token_ix1);         // capture starting token index for vlist
-            vlist.token_ix2 = std::max(static_N::token_ix, token_ix1);         // capture ending token index for vlist
-            
+
+            if (token_ix1 != -1)
+            {
+                vlist.token_ix1 = std::min(static_N::token_ix, token_ix1);     // capture starting token index for output empty vlist
+                vlist.token_ix2 = std::max(static_N::token_ix, token_ix1);     // capture ending token index for output empty vlist
+            }
+
             return prc;                                                        // leave unexpected token unconsumed for next time
         }           
 
         M__(token.display(L"get_vlist()");) 
+
+
+        //  R/C from peek_token() is not error -- capture token index on 1st loop pass
+
+        if (token_ix1 == -1) token_ix1 = static_N::token_ix;                   // capture starting token index on first pass only 
 
 
         //  check for ending token or R/C
@@ -2214,10 +2439,15 @@ static int get_vlist(frame_S& frame, pre_process_C& pp, a_expression_S& expressi
             (token.utype2 == tok_u2_E::close_keyname_bracket)                    // close keyname bracket  - normal end for keyword name sub-expression
            )
         {
-            M__(M_out(L"get_vlist() -- ending normally: token_ix1=%d") % token_ix1;)
+            M__(M_out(L"get_vlist() -- ending normally-1:  token_ix1 = %d   static_N::token_ix = %d") % token_ix1 % static_N::token_ix;)
 
-            vlist.token_ix1 = std::min(static_N::token_ix - 1, token_ix1);       // capture starting token index for vlist
-            vlist.token_ix2 = std::max(static_N::token_ix - 1, token_ix1);       // capture ending token index for vlist
+            if (value_ct > 0)                                                    // only set token indexes if vlist has one of more values 
+            {                                                                    // token_ix1 should not be -1 here 
+                vlist.token_ix1 = std::min(static_N::token_ix - 1, token_ix1);   // capture starting token index for vlist
+                vlist.token_ix2 = std::max(static_N::token_ix - 1, token_ix1);   // capture ending token index for vlist
+            }
+            M__(M_out(L"get_vlist() -- ending normally-2:  vlist.token_ix1 = %d   vlist.token_ix2 = %d") % vlist.token_ix1 % vlist.token_ix2;) 
+
             return 0;                                                            // return normally, with whatever has been accumulated -- do not consume ending token
         }
 
@@ -2240,9 +2470,11 @@ static int get_vlist(frame_S& frame, pre_process_C& pp, a_expression_S& expressi
             (token.utype2 == tok_u2_E::identifier)
            )
         {
+            value_ct++;                                                            // increment value counter (even for bad value)
+
             auto rc = get_vlist_value(frame, pp, expression, vlist, token);        // pass through all parms
             if (rc != 0) 
-            {
+            {                                                                      // token_ix1 should not be -1  and  value_ct should not be 0 here 
                 vlist.token_ix1 = std::min(static_N::token_ix, token_ix1);         // capture starting token index for vlist
                 vlist.token_ix2 = std::max(static_N::token_ix, token_ix1);         // capture ending token index for vlist
                 return rc;                                                         // just return with error -- get_vlist_value() does all needed error processing 
@@ -3015,13 +3247,16 @@ M_endf
 
 static std::wstring loc_str(int64_t ix1, int64_t ix2 = -1) try
 {
-    std::wstring start_pos    {}; 
-    std::wstring start_source {}; 
-    std::wstring end_pos      {}; 
-    std::wstring end_source   {};
+    std::wstring start_pos    {    }; 
+    std::wstring start_source {    }; 
+    std::wstring end_pos      {    }; 
+    std::wstring end_source   {    };
 
-    int64_t start_source_id   {-1}; 
-    int64_t   end_source_id   {-1};
+    int64_t token_n1          { -1 }; 
+    int64_t token_n2          { -1 }; 
+
+    int64_t start_source_id   { -1 }; 
+    int64_t   end_source_id   { -1 };
    
 
     // handle case where neither token index is known
@@ -3034,14 +3269,14 @@ static std::wstring loc_str(int64_t ix1, int64_t ix2 = -1) try
 
     if ( (ix1 >= 0) && (ix2 < 0) )
     {
-        token_C token = static_N::token_list.at(ix1);
+        token_C token = token_list_at(ix1);
     
         start_source_id = token.source_id1;  
         start_source    = L"«" + get_cached_id(token.source_id1) + L"»";
-        start_pos       = L" -- start line:column = " + std::to_wstring(token.lineno1) + L":" + std::to_wstring(token.linepos1); 
+        start_pos       = L" -- start line:col = " + std::to_wstring(token.lineno1) + L":" + std::to_wstring(token.linepos1); 
         end_source_id   = token.source_id2;  
         end_source      = L"«" + get_cached_id(token.source_id2) + L"»";
-        end_pos         = L" -- end line:column = "   + std::to_wstring(token.lineno2) + L":" + std::to_wstring(token.linepos2);
+        end_pos         = L" -- end line:col = "   + std::to_wstring(token.lineno2) + L":" + std::to_wstring(token.linepos2);
     }
     
     
@@ -3049,14 +3284,14 @@ static std::wstring loc_str(int64_t ix1, int64_t ix2 = -1) try
 
     if ( (ix1 < 0) && (ix2 >= 0) )
     {
-        token_C token = static_N::token_list.at(ix2);
+        token_C token = token_list_at(ix2);
      
         start_source_id = token.source_id1;  
         start_source    = L"«" + get_cached_id(token.source_id1) + L"»";
-        start_pos       = L" -- start line:column = " + std::to_wstring(token.lineno1) + L":" + std::to_wstring(token.linepos1);
+        start_pos       = L" -- start line:col = " + std::to_wstring(token.lineno1) + L":" + std::to_wstring(token.linepos1);
         end_source_id   = token.source_id2;  
         end_source      = L"«" + get_cached_id(token.source_id2) + L"»";
-        end_pos         = L" -- end line:column = "   + std::to_wstring(token.lineno2) + L":" + std::to_wstring(token.linepos2);    
+        end_pos         = L" -- end line:col = "   + std::to_wstring(token.lineno2) + L":" + std::to_wstring(token.linepos2);    
     }
 
 
@@ -3064,23 +3299,33 @@ static std::wstring loc_str(int64_t ix1, int64_t ix2 = -1) try
 
     if ( (ix1 >= 0) && (ix2 >= 0) )
     {
-        token_C token1 = static_N::token_list.at(ix1);
-        token_C token2 = static_N::token_list.at(ix2);
+        token_C token1 = token_list_at(ix1);
+        token_C token2 = token_list_at(ix2);
      
         start_source_id = token1.source_id1;  
         start_source    = L"«" + get_cached_id(token1.source_id1) + L"»";
-        start_pos       = L" -- start line:column = " + std::to_wstring(token1.lineno1) + L":" + std::to_wstring(token1.linepos1);
+        start_pos       = L" -- start line:col = " + std::to_wstring(token1.lineno1) + L":" + std::to_wstring(token1.linepos1);
         end_source_id   = token2.source_id2;  
         end_source      = L"«" + get_cached_id(token2.source_id2) + L"»";
-        end_pos         = L" -- end line:column = "   + std::to_wstring(token2.lineno2) + L":" + std::to_wstring(token2.linepos2);    
+        end_pos         = L" -- end line:col = "   + std::to_wstring(token2.lineno2) + L":" + std::to_wstring(token2.linepos2);    
     }
 
     std::wstring loc {}; 
 
     if (start_source_id != end_source_id)
-        return  L"starting source = " + start_source + start_pos + L" -- ending_source = " + end_source + end_pos;   
+        loc =  L"starting source = " + start_source + start_pos + L" -- ending_source = " + end_source + end_pos;   
     else    
-        return  L"input source = "    + start_source + start_pos                                        + end_pos;       
+        loc =  L"input source = "    + start_source + start_pos                                        + end_pos;   
+
+
+    // get token text string for tokens ix1 - ix2 
+
+    std::wstring token_text { L" -- text = « " + text_raw_tokens(ix1, ix2) + L" »"};
+
+
+    // return combined string with location and nearby text
+
+    return loc + shorten_str(token_text, const_N::loctext_max);
 }
 M_endf
 

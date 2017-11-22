@@ -71,6 +71,49 @@ results_S    tf_results(bool tf) {return to_results(type_val( tf    ));}
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
+////   to_single_results() -- convert input results (may be multiple results) to "plain" results -- if possible  
+////                   
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+ 
+int to_single_results(results_S& results) try
+{
+    // error R/C, if error results, special results, or no_results -- don't alter passed-in results value 
+
+    if (results.error || results.special_results || results.no_results)
+        return -1; 
+
+
+    // if not multiple results, passed-in results are OK as-is -- no need to alter anything 
+
+    if (!results.multiple_results)
+        return 0; 
+
+
+    // handle multiple results -- bad, if number of results is not 1, or there are keyword results in the vlist -- these results cannot be converted to "plain" results
+
+    if  ((results.vlist_sp->value_ct != 1) || (results.vlist_sp->kw_ct != 0) )
+        return -1;
+
+
+    // single result in vlist, even though "multiple results" flag was on -- convert these results to "plain" results to be passed back
+ 
+    results = to_results(results.vlist_sp->values.at(0));               // replace passed-in results with new "plain" results derived from 1st (only) value in vlist
+    return 0; 
+}
+M_endf
+   
+
+
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
 ////   unit_results() -- return unit results_S 
 ////                   
 ////
@@ -472,6 +515,41 @@ value_S identifier_val(const wchar_t *p, int64_t ix1, int64_t ix2) try
     return value; 
 }
 M_endf
+
+
+/////////////////////////////////////////////////////
+
+value_S verbname_val(const std::wstring& v, int64_t ix1, int64_t ix2) try
+{
+    value_S value {}; 
+
+    value.ty            = type_E::verbname; 
+    value.string        = v; 
+    value.token_ix1     = ix1;
+    value.token_ix2     = ix2;
+
+    return value; 
+}
+M_endf
+
+
+/////////////////////////////////////////////////////
+
+value_S verbname_val(const wchar_t *p, int64_t ix1, int64_t ix2) try
+{
+    value_S value {}; 
+
+    value.ty            = type_E::verbname; 
+    value.string        = std::wstring(p);
+    value.token_ix1     = ix1;
+    value.token_ix2     = ix2;
+
+    return value; 
+}
+M_endf
+
+
+
 
 
 /////////////////////////////////////////////////////
@@ -1342,6 +1420,27 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 
+/////////////  is_value_unit() ///////////////////// 
+
+bool is_value_unit(const value_S& value) try
+{
+    M__(M_out(L"is_value_unit() -- value.ty = %d") % (int)(value.ty); )
+
+    if (value.ty == type_E::unit)
+    {
+        M__(M_out(L"is_value_unit() -- return TRUE"); )
+        return true;
+    }
+    else
+    {
+        M__(M_out(L"is_value_unit() -- return FALSE"); )
+        return false; 
+    }
+}
+M_endf
+ 
+
+
 /////////////  is_value_boolean() ///////////////////// 
 
 bool is_value_boolean(const value_S& value) try
@@ -1360,10 +1459,29 @@ bool is_value_boolean(const value_S& value) try
     }
 }
 M_endf
+ 
+
+
+/////////////  is_value_string() ///////////////////// 
+
+bool is_value_string(const value_S& value) try
+{
+    M__(M_out(L"is_value_string() -- value.ty = %d") % (int)(value.ty); )
+
+    if (value.ty == type_E::string)
+    {
+        M__(M_out(L"is_value_string() -- return TRUE"); )
+        return true;
+    }
+    else
+    {
+        M__(M_out(L"is_value_string() -- return FALSE"); )
+        return false; 
+    }
+}
+M_endf
+ 
   
-
-
-
 
 /////////////  is_value_integer() ///////////////////// 
 
@@ -1394,6 +1512,7 @@ bool is_value_integer(const value_S& value) try
 M_endf
 
 
+
 /////////////  is_value_signed() ///////////////////// 
 
 bool is_value_signed(const value_S& value) try
@@ -1409,6 +1528,7 @@ bool is_value_signed(const value_S& value) try
         return false;  
 }
 M_endf
+
 
 
 /////////////  is_value_unsigned() ///////////////////// 
@@ -1470,6 +1590,7 @@ bool is_value_arithmetic(const value_S& value) try
 M_endf
 
 
+
 /////////////  is_value_comparable() ///////////////////// 
 
 bool is_value_comparable(const value_S& value) try
@@ -1527,6 +1648,7 @@ bool is_value_false(const value_S& value) try
 M_endf
 
 
+
 /////////////  is_value_true() ///////////////////// 
 
 bool is_value_true(const value_S& value) try
@@ -1564,7 +1686,7 @@ M_endf
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ////
 ////
-////   is_same_class() -- return true if both value type belong to same "class" (int, float, unit, string only) 
+////   is_same_class() -- return true if both value type belong to same "class" (int, float, boolean, unit, string only) 
 ////
 ////
 ////_________________________________________________________________________________________________________________________________________________________________
@@ -1574,12 +1696,11 @@ M_endf
 
 bool is_same_class(const value_S& value1, const value_S& value2) try
 {
-    if ( (value1.ty == type_E::string     ) && (value2.ty == type_E::string ) ) return true;
-    if ( (value1.ty == type_E::boolean    ) && (value2.ty == type_E::boolean) ) return true; 
-    if ( (value1.ty == type_E::unit       ) && (value2.ty == type_E::unit   ) ) return true; 
-
+    if ( is_value_unit(   value1) && is_value_unit(   value2) )                 return true;
+    if ( is_value_boolean(value1) && is_value_boolean(value2) )                 return true;
     if ( is_value_integer(value1) && is_value_integer(value2) )                 return true;
     if ( is_value_float(  value1) && is_value_float(  value2) )                 return true;
+    if ( is_value_string( value1) && is_value_string( value2) )                 return true;
 
     return false; 
 }
@@ -3214,15 +3335,15 @@ M_endf
 
 
 // ====================================================================================================
-// version for making aggregate-type lvalue reference -- value_sp normally points to non-reference type
+// version for making aggregate-type lvalue reference -- val_sp normally points to non-reference type
 //
 //
 //  note:  allocates new typdef_S and attaches to passed-in ref_S
-//  note:  value_sp needs to point to allocated value_S anchored in an symval_St
+//  note:  val_sp needs to point to allocated value_S anchored in an symval_S
 //
 // ====================================================================================================
 
-int make_reference(ref_S& ref, const std::shared_ptr<value_S>& value_sp, const typdef_S& typdef, uint64_t offset) try
+int make_reference(ref_S& ref, const std::shared_ptr<value_S>& val_sp, const typdef_S& typdef, uint64_t offset) try
 {
     // not valid if passed-in typedef is not for fixed-length type (for now)
     // ---------------------------------------------------------------------
@@ -3238,12 +3359,12 @@ int make_reference(ref_S& ref, const std::shared_ptr<value_S>& value_sp, const t
     // handle ref-type values (not expected here)
     // ======================
 
-    if (value_sp->ty == type_E::ref)
+    if (val_sp->ty == type_E::ref)
     {
         // not valid, if value does not have associated ref_S 
         // --------------------------------------------------
        
-        if (value_sp->ref_sp.get() == nullptr)
+        if (val_sp->ref_sp.get() == nullptr)
         {
             count_error();
             M_out_emsg(L"make_reference() -- cannot make lvalue ref to ref-type value_S that has no associated ref_S");   
@@ -3254,7 +3375,7 @@ int make_reference(ref_S& ref, const std::shared_ptr<value_S>& value_sp, const t
         // not valid, if value's ref_S does not have associated value_S 
         // ------------------------------------------------------------
      
-        if (value_sp->ref_sp->value_sp.get() == nullptr)
+        if (val_sp->ref_sp->refval_sp.get() == nullptr)
         {
             count_error();
             M_out_emsg(L"make_reference() -- cannot make lvalue ref to ref-type value_S that has no associated value_S");   
@@ -3265,7 +3386,7 @@ int make_reference(ref_S& ref, const std::shared_ptr<value_S>& value_sp, const t
         // not valid, if value's ref_S does not have associated typdef_S 
         // -------------------------------------------------------------
      
-        if (value_sp->ref_sp->typdef_sp.get() == nullptr)
+        if (val_sp->ref_sp->typdef_sp.get() == nullptr)
         {
             count_error();
             M_out_emsg(L"make_reference() -- cannot make lvalue ref to ref-type value_S that has no associated typdef_S");   
@@ -3276,7 +3397,7 @@ int make_reference(ref_S& ref, const std::shared_ptr<value_S>& value_sp, const t
         // not valid, if value is not buffer-type reference 
         // ------------------------------------------------
      
-        if ( !(value_sp->ref_sp->in_buffer) )
+        if ( !(val_sp->ref_sp->in_buffer) )
         {
             count_error();
             M_out_emsg(L"make_reference() -- cannot make lvalue ref to non-buffer ref-type value_S");   
@@ -3287,10 +3408,10 @@ int make_reference(ref_S& ref, const std::shared_ptr<value_S>& value_sp, const t
         // not valid, if passed-in offset is smaller than offset in passed-in value's ref_S 
         // --------------------------------------------------------------------------------
      
-        if (offset < value_sp->ref_sp->offset)
+        if (offset < val_sp->ref_sp->offset)
         {
             count_error();
-            M_out_emsg(L"make_reference() -- passed-in offset (%d) is less than in value.ref_sp->offset (%d) -- cannot make lvalue ref") % offset % value_sp->ref_sp->offset;   
+            M_out_emsg(L"make_reference() -- passed-in offset (%d) is less than in value.ref_sp->offset (%d) -- cannot make lvalue ref") % offset % val_sp->ref_sp->offset;   
             return -1; 
         }
      
@@ -3298,11 +3419,11 @@ int make_reference(ref_S& ref, const std::shared_ptr<value_S>& value_sp, const t
         // not valid, if passed-in offset + size in passed-in typdef exceeds offset in passed-in value's ref_S + size in that ref_S->typdef (i.e. goes past end of data covered in existing ref_S)
         // --------------------------------------------------------------------------------------------------------------------------------
      
-        if (offset + typdef.tsize > value_sp->ref_sp->offset + value_sp->ref_sp->typdef_sp->tsize)
+        if (offset + typdef.tsize > val_sp->ref_sp->offset + val_sp->ref_sp->typdef_sp->tsize)
         {
             count_error();
             M_out_emsg(L"make_reference() -- passed-in offset (%d) + typedef.tsize (%d) exceeds value.ref_sp->offset (%d) + sze in that ref_S->typdef -- cannot make lvalue ref") 
-                       % offset % typdef.tsize % value_sp->ref_sp->offset % value_sp->ref_sp->typdef_sp->tsize;   
+                       % offset % typdef.tsize % val_sp->ref_sp->offset % val_sp->ref_sp->typdef_sp->tsize;   
             return -1; 
         }  
 
@@ -3318,12 +3439,12 @@ int make_reference(ref_S& ref, const std::shared_ptr<value_S>& value_sp, const t
         // fill in fields in caller's ref_S
         // --------------------------------
 
-        ref.in_buffer   = value_sp->ref_sp->in_buffer;                       // copy over buffer flag
-        ref.is_lvalue   = value_sp->ref_sp->is_lvalue;                       // copy over lvalue flag
-        ref.is_rvalue   = value_sp->ref_sp->is_rvalue;                       // copy over rvalue flag
-        ref.auto_deref  = value_sp->ref_sp->auto_deref;                      // copy over deref  flag
+        ref.in_buffer   = val_sp->ref_sp->in_buffer;                         // copy over buffer flag
+        ref.is_lvalue   = val_sp->ref_sp->is_lvalue;                         // copy over lvalue flag
+        ref.is_rvalue   = val_sp->ref_sp->is_rvalue;                         // copy over rvalue flag
+        ref.auto_deref  = val_sp->ref_sp->auto_deref;                        // copy over deref  flag
 
-        ref.value_sp    = value_sp->ref_sp->value_sp;                        // point this ref_S to passed-in value_S's ref_S's value_S
+        ref.refval_sp   = val_sp->ref_sp->refval_sp;                         // point this ref_S to passed-in value_S's ref_S's value_S
         ref.typdef_sp   = typdef_sp;                                         // attach newly-allocated typdef_sp to ref 
         ref.offset      = offset;                                            // save passed-in offset
     }
@@ -3337,7 +3458,7 @@ int make_reference(ref_S& ref, const std::shared_ptr<value_S>& value_sp, const t
         // not valid, if value does not have buffer (for now) 
         // --------------------------------------------------
        
-        if (value_sp->buffer_sp.get() == nullptr)
+        if (val_sp->buffer_sp.get() == nullptr)
         {
             count_error();
             M_out_emsg(L"make_reference() -- cannot make lvalue ref to value_S that has no aggregate buffer");   
@@ -3348,10 +3469,10 @@ int make_reference(ref_S& ref, const std::shared_ptr<value_S>& value_sp, const t
         // not valid if offset + typdef_S length exceeds buffer length
         // -----------------------------------------------------------
        
-        if (typdef.tsize + offset > value_sp->buffer_sp->sz1)
+        if (typdef.tsize + offset > val_sp->buffer_sp->sz1)
         {
             count_error();
-            M_out_emsg(L"make_reference() -- requested offset (%d) + typedef length (%d) exceeds buffer length (%d) -- cannot make lvalue reference") % offset % typdef.tsize % value_sp->buffer_sp->sz1;   
+            M_out_emsg(L"make_reference() -- requested offset (%d) + typedef length (%d) exceeds buffer length (%d) -- cannot make lvalue reference") % offset % typdef.tsize % val_sp->buffer_sp->sz1;   
             return -1; 
         }
        
@@ -3367,12 +3488,12 @@ int make_reference(ref_S& ref, const std::shared_ptr<value_S>& value_sp, const t
         // fill in fields in caller's ref_S
         // --------------------------------
 
-        ref.in_buffer  = true;                                              // indicate that this reference is to data in value_sp->buffer  
+        ref.in_buffer  = true;                                              // indicate that this reference is to data in refval_sp->buffer  
         ref.auto_deref = true;                                              // indicate that ref was created under-the-covers (not explicitly) 
        
               // note:  caller must set  is_rvalue  or  is_lvalue  flag in this case   
 
-        ref.value_sp   = value_sp;                                          // point this ref_S to passed-in value
+        ref.refval_sp  = val_sp;                                            // point this ref_S to passed-in value
         ref.typdef_sp  = typdef_sp;                                         // attach newly-allocated typdef_sp to ref 
         ref.offset     = offset;                                            // save passed-in offset
     }
@@ -3389,7 +3510,6 @@ M_endf
 //
 //
 //  note:  allocates new typdef_S and attaches to passed-in ref_S
-//  note:  value_sp needs to point to another allocated value_S anchored in symval_S
 //
 // ==========================================================================================================================
 
@@ -3425,7 +3545,7 @@ int make_reference(ref_S& ref, const value_S& value, const typdef_S& typdef, uin
         // not valid, if value's ref_S does not have associated value_S 
         // ------------------------------------------------------------
      
-        if (value.ref_sp->value_sp.get() == nullptr)
+        if (value.ref_sp->refval_sp.get() == nullptr)
         {
             count_error();
             M_out_emsg(L"make_reference() -- cannot make lvalue ref to ref-type value_S that has no associated value_S");   
@@ -3494,7 +3614,7 @@ int make_reference(ref_S& ref, const value_S& value, const typdef_S& typdef, uin
         ref.is_rvalue   = value.ref_sp->is_rvalue;                          // copy over rvalue flag
         ref.auto_deref  = value.ref_sp->auto_deref;                         // copy over deref  flag
 
-        ref.value_sp    = value.ref_sp->value_sp;                           // point this ref_S to passed-in value_S's ref_S's value_S
+        ref.refval_sp   = value.ref_sp->refval_sp;                          // point this ref_S to passed-in value_S's ref_S's value_S
         ref.typdef_sp   = typdef_sp;                                        // attach newly-allocated typdef_sp to ref 
         ref.offset      = offset;                                           // save passed-in offset
     }
@@ -3505,8 +3625,8 @@ int make_reference(ref_S& ref, const value_S& value, const typdef_S& typdef, uin
 
     else
     {         
-        // error if not reference -- must use version with passed-in value_sp 
-        // ------------------------------------------------------------------
+        // error if not reference -- must use version with passed-in val_sp 
+        // ----------------------------------------------------------------
        
         count_error();
         M_out_emsg(L"make_reference() -- version with passed-in value (not std:shared_ptr<value_S>) can only be used for making references from other references");   
@@ -3557,15 +3677,24 @@ int make_reference(ref_S& ref, const symval_S& symval, const std::wstring& ident
     // ---------------------------------
 
     if(symval.is_const)
-        ref.is_rvalue = true;                   // refers to const -- can only be rvalue 
-    else
-        ref.is_lvalue = true;                   // refers to var   -- can be lvalue 
-
-        // note: caller must set auto_deref flag in this case  
-
-    ref.value_sp = symval.value_sp;             // value_sp should never be unshared 
+        ref.is_rvalue = true;                                               // refers to const -- can only be rvalue 
+    else                                                                  
+        ref.is_lvalue = true;                                               // refers to var   -- can be lvalue 
 
 
+    // check to see if weak pointer in symval is still valid 
+  
+    if (symval.value_wp.expired())
+    {
+        count_error(); 
+        M_out_emsg(L"make_reference() -- symval (weak alias?) for identifier (\"%S\") no longer points to a valid value -- cannot make reference") % ident;   
+        return -1;
+    }
+
+    // note: caller must set auto_deref flag in this case  
+
+    ref.refval_sp = symval.value_wp.lock();                                 // value_wp should never be unshared 
+                                           
     return 0; 
 }
 M_endf
@@ -3620,10 +3749,10 @@ int dereference_value(value_S& out_value, const value_S& in_value) try      // ?
          return -1; 
     }
 
-    if (in_value.ref_sp->value_sp.get() == nullptr)
+    if (in_value.ref_sp->refval_sp.get() == nullptr)
     {
          count_error();
-         M_out_emsg1(L"dereference_value() -- unexpected error -- value_sp in input value_S attached reference is not initialized");
+         M_out_emsg1(L"dereference_value() -- unexpected error -- value_wp in input value_S attached reference is not initialized");
          msgend_loc(in_value);
          return -1; 
     }
@@ -3643,7 +3772,7 @@ int dereference_value(value_S& out_value, const value_S& in_value) try      // ?
              return -1;          
         }   
 
-        if (in_value.ref_sp->value_sp->buffer_sp.get() == nullptr)
+        if (in_value.ref_sp->refval_sp->buffer_sp.get() == nullptr)
         {
              count_error();
              M_out_emsg1(L"dereference_value() -- unexpected error -- in_buffer type reference referred-to value has uninitialized buffer_sp (i.e. no buffer)");
@@ -3685,13 +3814,13 @@ int dereference_value(value_S& out_value, const value_S& in_value) try      // ?
         }   
 
         if (                                                            // should not be reference to expression or identifier requiring further evaluation
-            (in_value.ref_sp->value_sp->ty == type_E::identifier)
+            (in_value.ref_sp->refval_sp->ty == type_E::identifier)
             ||
-            (in_value.ref_sp->value_sp->ty == type_E::expression)
+            (in_value.ref_sp->refval_sp->ty == type_E::expression)
            )
         {
              count_error();
-             M_out_emsg1(L"dereference_value() -- unexpected error -- unexpected type requiring further evaluation in referenced value = %S") % type_str(in_value.ref_sp->value_sp->ty);
+             M_out_emsg1(L"dereference_value() -- unexpected error -- unexpected type requiring further evaluation in referenced value = %S") % type_str(in_value.ref_sp->refval_sp->ty);
              msgend_loc(in_value);
              return -1;         
         } 
@@ -3705,16 +3834,16 @@ int dereference_value(value_S& out_value, const value_S& in_value) try      // ?
     {
         // set up for data copy operation into new (shorter?) buffer, or value_S fixed-types union -- make sure we don't go off of end of from-data buffer
 
-        void  *data_p        { in_value.ref_sp->value_sp->buffer_sp->p1 };                   // get local copy of start of from-buffer
-        size_t data_len      { in_value.ref_sp->typdef_sp->tsize        };                   // get local copy of data length to copy 
-        size_t data_offset   { in_value.ref_sp->offset                  };                   // get local copy of data offset (within buffer)
+        void  *data_p        { in_value.ref_sp->refval_sp->buffer_sp->p1 };                   // get local copy of start of from-buffer
+        size_t data_len      { in_value.ref_sp->typdef_sp->tsize         };                   // get local copy of data length to copy 
+        size_t data_offset   { in_value.ref_sp->offset                   };                   // get local copy of data offset (within buffer)
 
-        M__(M_out(L"dereference_value() -- data_offset = %d   data_len = %d   data_p = %p   from-buffer size = %d") % data_offset % data_len % data_p % in_value.ref_sp->value_sp->buffer_sp->sz1;)
+        M__(M_out(L"dereference_value() -- data_offset = %d   data_len = %d   data_p = %p   from-buffer size = %d") % data_offset % data_len % data_p % in_value.ref_sp->refval_sp->buffer_sp->sz1;)
 
-        if  (data_len + data_offset > in_value.ref_sp->value_sp->buffer_sp->sz1)
+        if  (data_len + data_offset > in_value.ref_sp->refval_sp->buffer_sp->sz1)
         {
              count_error();
-             M_out_emsg1(L"dereference_value() -- unexpected error -- data_offset (%d) + data_len (%d) exceeds from-buffer size (%d)") % data_offset % data_len % in_value.ref_sp->value_sp->buffer_sp->sz1;
+             M_out_emsg1(L"dereference_value() -- unexpected error -- data_offset (%d) + data_len (%d) exceeds from-buffer size (%d)") % data_offset % data_len % in_value.ref_sp->refval_sp->buffer_sp->sz1;
              msgend_loc(in_value);
              return -1;       
         }
@@ -3769,9 +3898,9 @@ int dereference_value(value_S& out_value, const value_S& in_value) try      // ?
 
         // set output value_S token indexes from referenced value's token indexes
 
-        out_value.kw_token_ix = in_value.ref_sp->value_sp->kw_token_ix;           // just copy over token indexes
-        out_value.token_ix1   = in_value.ref_sp->value_sp->token_ix1;             // just copy over token indexes
-        out_value.token_ix2   = in_value.ref_sp->value_sp->token_ix2;             // just copy over token indexes  
+        out_value.kw_token_ix = in_value.ref_sp->refval_sp->kw_token_ix;           // just copy over token indexes
+        out_value.token_ix1   = in_value.ref_sp->refval_sp->token_ix1;             // just copy over token indexes
+        out_value.token_ix2   = in_value.ref_sp->refval_sp->token_ix2;             // just copy over token indexes  
     }
 
 
@@ -3780,7 +3909,7 @@ int dereference_value(value_S& out_value, const value_S& in_value) try      // ?
     
     else
     {
-          out_value =  *(in_value.ref_sp->value_sp);      // just copy all 1st-level fields from referenced value to output value 
+          out_value =  *(in_value.ref_sp->refval_sp);                              // just copy all 1st-level fields from referenced value to output value 
          
           // note: no unshare_value() is done here, since this should be used as an rvalue, and no modifications to referred value will be done     
     }
@@ -3835,7 +3964,7 @@ int set_via_reference(const value_S& ref_val, const value_S& from_val, bool unsh
     // complain if referred-to value is not present
     // --------------------------------------------
 
-    if (ref_p->value_sp.get() == nullptr)
+    if (ref_p->refval_sp.get() == nullptr)
     {
         count_error();
         M_out_emsg1(L"set_via_reference() -- passed-in reference has no associated value");
@@ -3861,7 +3990,7 @@ int set_via_reference(const value_S& ref_val, const value_S& from_val, bool unsh
             return -1;   
         }
 
-        if (ref_p->value_sp->buffer_sp.get() == nullptr)
+        if (ref_p->refval_sp->buffer_sp.get() == nullptr)
         {
             count_error();
             M_out_emsg1(L"set_via_reference() -- in-buffer reference, but referred-to value has no data buffer");
@@ -3873,9 +4002,9 @@ int set_via_reference(const value_S& ref_val, const value_S& from_val, bool unsh
         // complain if 0-length or length + offset exceeds size of target buffer
         // ---------------------------------------------------------------------
       
-        uint64_t offset { ref_p->offset                                             };     // local copy of data offset in referenced buffer
-        uint64_t to_len { ref_p->typdef_sp->tsize                                   };     // length of data to be set in referenced buffer
-        void    *to_p   { (void *)M_add_ptr(ref_p->value_sp->buffer_sp->p1, offset) };     // start of data to be set in referred-to buffer
+        uint64_t offset { ref_p->offset                                              };     // local copy of data offset in referenced buffer
+        uint64_t to_len { ref_p->typdef_sp->tsize                                    };     // length of data to be set in referenced buffer
+        void    *to_p   { (void *)M_add_ptr(ref_p->refval_sp->buffer_sp->p1, offset) };     // start of data to be set in referred-to buffer
 
 
         if (to_len == 0)
@@ -3886,10 +4015,10 @@ int set_via_reference(const value_S& ref_val, const value_S& from_val, bool unsh
             return -1;         
         }
 
-        if (offset + to_len > ref_p->value_sp->buffer_sp->sz1)
+        if (offset + to_len > ref_p->refval_sp->buffer_sp->sz1)
         {
             count_error();
-            M_out_emsg1(L"set_via_reference() -- offset (%d) + length (%d) exceeds target buffer size (%d)") % offset % to_len % ref_p->value_sp->buffer_sp->sz1;
+            M_out_emsg1(L"set_via_reference() -- offset (%d) + length (%d) exceeds target buffer size (%d)") % offset % to_len % ref_p->refval_sp->buffer_sp->sz1;
             msgend_loc(ref_val, L"ref value");
             return -1;         
         }
@@ -4025,10 +4154,10 @@ int set_via_reference(const value_S& ref_val, const value_S& from_val, bool unsh
 
     else
     {
-        *(ref_p->value_sp) = from_val;                            // replace referred-to value with passed-in from value
+        *(ref_p->refval_sp) = from_val;                           // replace referred-to value with passed-in from value
                                                                
         if (unshare)                                              // caller requests unshared value after update?
-           unshare_value(*(ref_p->value_sp));                     // unshare all nested pointers, etc. in updated value 
+           unshare_value(*(ref_p->refval_sp));                    // unshare all nested pointers, etc. in updated value 
     }
 
     return 0; 

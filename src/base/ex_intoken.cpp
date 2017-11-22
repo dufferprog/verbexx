@@ -370,9 +370,11 @@ std::wstring token_C::type_str() const try
              (type == token_E::whitespace                  ) ?           L"whitespace             "   :
              (type == token_E::line_comment                ) ?           L"line_comment           "   :
              (type == token_E::block_comment               ) ?           L"block_comment          "   :
+             (type == token_E::nestable_comment            ) ?           L"nestable_comment       "   :
+             (type == token_E::eof_comment                 ) ?           L"EOF_comment            "   :
              (type == token_E::retained_line_comment       ) ?           L"retained_line_comment  "   :
              (type == token_E::retained_block_comment      ) ?           L"retained_block_comment "   :
-             (type == token_E::nestable_comment            ) ?           L"nestable_comment       "   :
+             (type == token_E::retained_eof_comment        ) ?           L"retained_EOF_comment   "   :
              (type == token_E::full_stop                   ) ?           L"full_stop              "   :
              (type == token_E::comma                       ) ?           L"comma                  "   :
              (type == token_E::semicolon                   ) ?           L"semicolon              "   :
@@ -1360,6 +1362,7 @@ void token_stream_C::set_allow_leading_op_sigils(         bool     tf           
 void token_stream_C::set_allow_trailing_op_sigils(        bool     tf                    ) try { m_allow_trailing_op_sigils       = tf  ; return; }  M_endf
 void token_stream_C::set_allow_paren_sigils(              bool     tf                    ) try { m_allow_paren_sigils             = tf  ; return; }  M_endf
 void token_stream_C::set_allow_attached_paren(            bool     tf                    ) try { m_allow_attached_paren           = tf  ; return; }  M_endf
+void token_stream_C::set_allow_in_same_char_op(           bool     tf                    ) try { m_allow_in_same_char_op          = tf  ; return; }  M_endf
                                  
 
 // functions to set configurable characters
@@ -1386,18 +1389,20 @@ void token_stream_C::set_comment_1st_char(                char32_t ch32         
 void token_stream_C::set_unechoed_line_comment_2nd_char(  char32_t ch32                  ) try { m_unechoed_line_comment_2nd_ch   = ch32; return; }  M_endf      
 void token_stream_C::set_echoed_line_comment_2nd_char(    char32_t ch32                  ) try { m_echoed_line_comment_2nd_ch     = ch32; return; }  M_endf      
 void token_stream_C::set_suppress_eol_comment_2nd_char(   char32_t ch32                  ) try { m_suppress_eol_comment_2nd_ch    = ch32; return; }  M_endf      
-void token_stream_C::set_eof_comment_2nd_char(            char32_t ch32                  ) try { m_eof_comment_2nd_ch             = ch32; return; }  M_endf      
-void token_stream_C::set_retained_line_comment_2nd_char(  char32_t ch32                  ) try { m_retained_line_comment_2nd_ch   = ch32; return; }  M_endf      
-                                                                                                                                  
+                                                                                                                             
 void token_stream_C::set_block_comment_2nd_char(          char32_t ch32                  ) try { m_block_comment_2nd_ch           = ch32; return; }  M_endf      
 void token_stream_C::set_block_comment_3rd_char(          char32_t ch32                  ) try { m_block_comment_3rd_ch           = ch32; return; }  M_endf      
 void token_stream_C::set_block_comment_4th_char(          char32_t ch32                  ) try { m_block_comment_4th_ch           = ch32; return; }  M_endf      
 void token_stream_C::set_nest_comment_2nd_char(           char32_t ch32                  ) try { m_nest_comment_2nd_ch            = ch32; return; }  M_endf      
 void token_stream_C::set_nest_comment_3rd_char(           char32_t ch32                  ) try { m_nest_comment_3rd_ch            = ch32; return; }  M_endf      
-void token_stream_C::set_nest_comment_4th_char(           char32_t ch32                  ) try { m_nest_comment_4th_ch            = ch32; return; }  M_endf      
+void token_stream_C::set_nest_comment_4th_char(           char32_t ch32                  ) try { m_nest_comment_4th_ch            = ch32; return; }  M_endf 
+void token_stream_C::set_eof_comment_2nd_char(            char32_t ch32                  ) try { m_eof_comment_2nd_ch             = ch32; return; }  M_endf    
+
+void token_stream_C::set_retained_line_comment_2nd_char(  char32_t ch32                  ) try { m_retained_line_comment_2nd_ch   = ch32; return; }  M_endf 
 void token_stream_C::set_retained_block_comment_2nd_char( char32_t ch32                  ) try { m_retained_block_comment_2nd_ch  = ch32; return; }  M_endf      
-void token_stream_C::set_retained_block_comment_3rd_char( char32_t ch32                  ) try { m_retained_block_comment_3rd_ch  = ch32; return; }  M_endf      
+void token_stream_C::set_retained_block_comment_3rd_char( char32_t ch32                  ) try { m_retained_block_comment_3rd_ch  = ch32; return; }  M_endf 
 void token_stream_C::set_retained_block_comment_4th_char( char32_t ch32                  ) try { m_retained_block_comment_4th_ch  = ch32; return; }  M_endf 
+void token_stream_C::set_retained_eof_comment_2nd_char(   char32_t ch32                  ) try { m_retained_eof_comment_2nd_ch    = ch32; return; }  M_endf 
                                                                                                                           
 void token_stream_C::set_leading_sigils(          const std::vector<char32_t>& ls        ) try { m_leading_sigils           = ls  ;       return; }  M_endf
 void token_stream_C::set_leading_ident_sigils(    const std::vector<char32_t>& ls        ) try { m_leading_ident_sigils     = ls  ;       return; }  M_endf
@@ -1405,6 +1410,7 @@ void token_stream_C::set_trailing_ident_sigils(   const std::vector<char32_t>& t
 void token_stream_C::set_leading_oper_sigils(     const std::vector<char32_t>& ls        ) try { m_leading_oper_sigils      = ls  ;       return; }  M_endf
 void token_stream_C::set_trailing_oper_sigils(    const std::vector<char32_t>& ts        ) try { m_trailing_oper_sigils     = ts  ;       return; }  M_endf
 void token_stream_C::set_paren_sigils(            const std::vector<char32_t>&  s        ) try { m_paren_sigils             =  s  ;       return; }  M_endf
+void token_stream_C::set_in_same_char_op(         const std::vector<char32_t>&  s        ) try { m_in_same_char_op          =  s  ;       return; }  M_endf
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1617,19 +1623,22 @@ M_endf
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void token_stream_C::start_token(token_C& token, token_E type) try
+void token_stream_C::start_token(token_C& token, token_E type, bool preserve_orig_str) try
 {
-    token.type       = type; 
-    token.str        = std::wstring{}; 
-    token.orig_str   = std::wstring{}; 
-    token.lineno1    = 0; 
-    token.linepos1   = 0;
-    token.lineno2    = 0; 
-    token.linepos2   = 0;
-    token.source_id1 = 0; 
-    token.source_id2 = 0;
-   // token.filename1  = std::wstring{}; 
-   // token.filename2  = std::wstring{}; 
+    token.type = type; 
+    token.str  = std::wstring{}; 
+    
+    if (!preserve_orig_str)
+    {
+        token.orig_str   = std::wstring{};  
+        token.lineno1    = 0; 
+        token.linepos1   = 0;
+        token.lineno2    = 0; 
+        token.linepos2   = 0;
+        token.source_id1 = 0; 
+        token.source_id2 = 0;
+    }
+
     return;
 }
 M_endf
@@ -1652,13 +1661,11 @@ int token_stream_C::addto_token(token_C& token, const in_char_S& ch) try
          token.source_id1 = ch.source_id;
          token.lineno1    = ch.lineno; 
          token.linepos1   = ch.linepos;
-       //  token.filename1  = ch.filename; 
      }
 
      token.source_id2 = ch.source_id;
      token.lineno2    = ch.lineno; 
      token.linepos2   = ch.linepos;
-   //  token.filename2  = ch.filename;
 
      if (ch.wch1 != (wchar_t)0x0000)
      {
@@ -1706,13 +1713,11 @@ int token_stream_C::addto_token_subst(token_C& token, const in_char_S& ch, const
          token.source_id1 = ch.source_id;
          token.lineno1    = ch.lineno; 
          token.linepos1   = ch.linepos;
-       //  token.filename1  = ch.filename; 
      }
 
      token.source_id2 = ch.source_id;
      token.lineno2    = ch.lineno; 
      token.linepos2   = ch.linepos;
-   //  token.filename2  = ch.filename;
 
      token.str += subst;
 
@@ -1734,13 +1739,11 @@ int token_stream_C::addto_token_subst(token_C& token, const in_char_S& ch, char3
          token.source_id1 = ch.source_id;
          token.lineno1    = ch.lineno; 
          token.linepos1   = ch.linepos;
-       //  token.filename1  = ch.filename; 
      }
 
      token.source_id2 = ch.source_id;
      token.lineno2    = ch.lineno; 
      token.linepos2   = ch.linepos;
-   //  token.filename2  = ch.filename;
 
      token.str += (wchar_t)subst;
 
@@ -1768,13 +1771,11 @@ void token_stream_C::addto_orig_token(token_C& token, const in_char_S& ch) try
          token.source_id1 = ch.source_id;
          token.lineno1    = ch.lineno; 
          token.linepos1   = ch.linepos;
-     //    token.filename1  = ch.filename;
      }
 
      token.source_id2 = ch.source_id;
      token.lineno2    = ch.lineno; 
      token.linepos2   = ch.linepos;
-  //   token.filename2  = ch.filename;
 
      if (ch.wch1 != (wchar_t)0x0000)     
          token.orig_str += ch.wch1;
@@ -1973,21 +1974,23 @@ int token_stream_C::operator_token(token_C& token, bool leading_sigil_present) t
            peek_char(ch1);                                              // look at char following the 1st comment char = solidus?   
                                             
            if (
-               (ch1.ch32 == m_unechoed_line_comment_2nd_ch  )           // "//" -- must be start of line           comment
+               (ch1.ch32 == m_unechoed_line_comment_2nd_ch  )           // "//"  -- must be start of line           comment
                ||                                                     
-               (ch1.ch32 == m_echoed_line_comment_2nd_ch    )           // "/!" -- must be start of echoed line    comment
+               (ch1.ch32 == m_echoed_line_comment_2nd_ch    )           // "/??" -- must be start of echoed line    comment
                ||                                                     
-               (ch1.ch32 == m_eof_comment_2nd_ch            )           // "/~" -- must be start of EOF            comment
+               (ch1.ch32 == m_eof_comment_2nd_ch            )           // "/]"  -- must be start of EOF            comment
                ||                                           
-               (ch1.ch32 == m_retained_line_comment_2nd_ch  )           // "/#" -- must be start of retained line  comment
+               (ch1.ch32 == m_block_comment_2nd_ch          )           // "/*"  -- must be start of block          comment
+               ||                                                     
+               (ch1.ch32 == m_suppress_eol_comment_2nd_ch   )           // "/??" -- must be start of suppress eol   comment
+               ||                                                     
+               (ch1.ch32 == m_nest_comment_2nd_ch           )           // "/["  -- must be start of nestable block comment
                ||                                           
-               (ch1.ch32 == m_block_comment_2nd_ch          )           // "/*" -- must be start of block          comment
+               (ch1.ch32 == m_retained_line_comment_2nd_ch  )           // "/#"  -- must be start of retained line  comment
                ||                                                     
-               (ch1.ch32 == m_suppress_eol_comment_2nd_ch   )           // "/^" -- must be start of suppress eol   comment
+               (ch1.ch32 == m_retained_block_comment_2nd_ch )           // "/{"  -- must be start of retained block comment
                ||                                                     
-               (ch1.ch32 == m_nest_comment_2nd_ch           )           // "/<" -- must be start of nestable block comment
-               ||                                                     
-               (ch1.ch32 == m_retained_block_comment_2nd_ch )           // "/{" -- must be start of retained block comment
+               (ch1.ch32 == m_retained_eof_comment_2nd_ch   )           // "/}"  -- must be start of retained EOF   comment
               )                                                 
            {
                 M__(M_out(L"operator_token() -- comment starting while gathering operator token");)
@@ -2011,11 +2014,7 @@ int token_stream_C::operator_token(token_C& token, bool leading_sigil_present) t
        {       
            M__(M_out(L"operator_token() -- operator-ending char = %d") % (int)(ch.ch32)); 
        
-           if ( 
-               m_allow_trailing_op_sigils
-               &&
-               ( std::find(m_trailing_oper_sigils.begin(), m_trailing_oper_sigils.end(), ch.ch32) != m_trailing_oper_sigils.end() ) 
-              )
+           if ( m_allow_trailing_op_sigils && is_in_vector(ch.ch32, m_trailing_oper_sigils) )
            {
                M__(M_out(L"operator_token() -- adding trailing sigil");)
                add_trailing_sigil(token, ch);               
@@ -2037,7 +2036,7 @@ M_endf
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-//  same_operator_token() -- gather up longest string of dot/comma,etc. characters into an operator token (all chars in token must be same (ex: ...   ,,  ''''', etc.)  
+//  same_operator_token() -- gather up longest string of dot/comma,etc. characters into an operator token (all chars in token must be same (ex: ...   ,,  ''''', etc.) -or- \ (backslash) 
 //  ---------------------
 //                
 //
@@ -2051,7 +2050,7 @@ int token_stream_C::same_operator_token(token_C& token, const in_char_S& op_char
    start_token(token, token_E::oper);
 
 
-    // handle any leading sigil character -- if flag is on, 1st char is known to be sigil, and 2nd one is known to be alpha, currency, or separator 
+    // handle any leading sigil character -- if flag is on, 1st char is known to be sigil, and 2nd one is known to be a same operator character 
 
     if (leading_sigil_present)                                   // add sigil to token (or just the original token), as requested 
     {   
@@ -2061,15 +2060,19 @@ int token_stream_C::same_operator_token(token_C& token, const in_char_S& op_char
     }
 
 
-   // look at characters that are part of dot operator itself
-   // -------------------------------------------------------
+   // look at characters that are part of same char operator itself
+   // -------------------------------------------------------------
 
    for(;;)
    {
        get_char(ch);                                                     // 1st one is known to be an operator char         
 
-       if (ch.ch32 == op_char.ch32)                                      // only same char as 1st one is allowed in same-char operator token
-           addto_token(token, ch);                                                                        
+       if (ch.ch32 == op_char.ch32)                                      // same char as 1st one is allowed in same-char operator token
+           addto_token(token, ch);  
+
+       else if ( is_in_vector(ch.ch32, m_in_same_char_op) )              // -or- is in the list of extra characters allowed in same-char operator tokens 
+           addto_token(token, ch); 
+
        else
 
        // reached a character that is trailing sigil or not part of operator at all 
@@ -2077,11 +2080,7 @@ int token_stream_C::same_operator_token(token_C& token, const in_char_S& op_char
        {       
            M__(M_out(L"same_operator_token() -- operator-ending char = %d") % (int)(ch.ch32)); 
        
-           if ( 
-               m_allow_trailing_op_sigils
-               &&
-               ( std::find(m_trailing_oper_sigils.begin(), m_trailing_oper_sigils.end(), ch.ch32) != m_trailing_oper_sigils.end() ) 
-              )
+           if ( m_allow_trailing_op_sigils && is_in_vector(ch.ch32, m_trailing_oper_sigils ) )
            {
                M__(M_out(L"same_operator_token() -- adding trailing sigil");)
                add_trailing_sigil(token, ch);               
@@ -2242,11 +2241,7 @@ int token_stream_C::identifier_token(token_C& token, bool leading_sigil_present)
         {       
             M__(M_out(L"identifier_token() -- identifier-ending char = %d") % (int)(ch.ch32)); 
 
-            if (
-                m_allow_trailing_id_sigils
-                &&
-                ( std::find(m_trailing_ident_sigils.begin(), m_trailing_ident_sigils.end(), ch.ch32) != m_trailing_ident_sigils.end() ) 
-               ) 
+            if ( m_allow_trailing_id_sigils && is_in_vector(ch.ch32, m_trailing_ident_sigils) ) 
             {
                 M__(M_out(L"identifier_token() -- adding trailing sigil");)
                 add_trailing_sigil(token, ch);               
@@ -2383,13 +2378,80 @@ int token_stream_C::retained_line_comment(token_C& token) try
             if (ct > 2)                                 // don't include 1st two chars ("/#") in output token
                addto_token(token, ch);                  // add char to to output token 
             else                                        // 1st two chars
-               addto_orig_token(token, ch);             // always add characters to to original token (for error messages), but nt the output token
+               addto_orig_token(token, ch);             // always add characters to to original token (for error messages), but not the output token
         }           
     } 
    
     return rc; 
 }
 M_endf
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//  retained_eof_comment() -- gather up retained EOF comment token   
+//  ----------------------
+//
+//      "/}" ,  has been peek()ed before this routine is called, but not consumed
+//
+//      note: trigraph processing is not disabled in retained line comments, which are passed back up to the parser for processing
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+int token_stream_C::retained_eof_comment(token_C& token) try       
+{
+    int         rc { 0 }; 
+    in_char_S   ch {   }; 
+    int         ct { 0 };
+
+    M__(M_out(L"retained_eof_comment() -- called");)
+
+    start_token(token, token_E::retained_eof_comment); 
+
+    for(;;)   // loop until EOF, or error stops the retained line comment
+    {
+        get_char(ch);                                               // first 1 or 2 can be   "/#"  (defaults)
+                                                                   
+        if (ch.subtype == char_E::eof)                              // normal end of EOF comment
+        {   
+            M__(M_out(L"retained_eof_comment() -- EOF reached");)
+            past_end_token(token, ch);                              // EOF is past end of token, so put it back for next time
+            break;                                                  // end the for(;;) loop
+        }  
+        else if (ch.subtype == char_E::eol)
+        {
+            M__(M_out(L"retained_eof_comment() -- adding new-line");)
+            addto_orig_token(token, ch );                           // add the EOL char to orig token string only
+            addto_token_subst(token, ch, std::wstring {L"\n"});     // add the substitute NL char(s) to token only (not orig_token)
+        } 
+        else if (ch.subtype == char_E::error)        
+        {
+            rc = past_end_token(token, ch);                         // went past end of token                  
+            break;                                                  
+        }                                                           
+        else if (ch.subtype == char_E::eol  )                       
+        {                                                           
+            break;                                                  // stop accumulating retained line comment in either case
+        }                                                           
+        else                                                        
+        {                                                         
+            ct++;                                                   // increment valid char counter
+            M__(M_out(L"retained_eof_comment() -- adding char -- ct=%d") % ct;) 
+
+            if (ct > 2)                                             // don't include 1st two chars ("/#") in output token
+               addto_token(token, ch);                              // add char to to output token 
+            else                                                    // 1st two chars
+               addto_orig_token(token, ch);                         // always add characters to to original token (for error messages), but not the output token
+        }           
+    } 
+   
+    return rc; 
+}
+M_endf
+
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -2790,7 +2852,7 @@ int token_stream_C::simple_string(token_C& token, char32_t end_delim) try
     
     m_char_stream_p->set_process_trigraphs(false);         // suppress trigraph processing in simple strings
 
-    start_token(token, token_E::string); 
+    start_token(token, token_E::string, true);             // note: at this time, the token.orig_str may have the "M" or "R"  -- this needs to be preserved 
     get_char(ch);                                          // consume 1st character, which is not part of the string contents -- should be the opening delimiter (allow out-of-string escape processing)
     addto_orig_token(token, ch);                           // add the leading string delimiter to original token text for error messages only 
                                                           
@@ -2863,7 +2925,7 @@ int token_stream_C::escaped_string(token_C& token, char32_t end_delim, char32_t 
     
     M__(M_out(L"escaped_string() -- called");)
 
-    start_token(token, token_E::string); 
+    start_token(token, token_E::string, true);  // note: at this time, the token.orig_str may have the "M" or "R"  -- this needs to be preserved 
     get_char(ch);                               // consume 1st character, which is not part of the string contents -- should be the opening delimiter
     addto_orig_token(token, ch);                // add the leading string delimiter to original token text for error messages only 
     
@@ -3885,6 +3947,9 @@ M_endf
   
 int token_stream_C::fetch_raw_token(token_C& token) try            
 {
+    token = token_C { };          // initially clean out token being passed back
+
+
     // note: Raw token putback stack is assumed to be empty at this time
 
     int rc = 0;
@@ -3922,7 +3987,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
     else if  (ch.ch32 == m_type1_string_start_ch    )   ch_subtype = char_E::f_type1_string_start   ;
     else if  (ch.ch32 == m_type2_string_start_ch    )   ch_subtype = char_E::f_type2_string_start   ;
   
-    else if  ( std::find(m_leading_sigils.begin(), m_leading_sigils.end(), ch.ch32) != m_leading_sigils.end() )
+    else if  ( is_in_vector(ch.ch32, m_leading_sigils) )
        ch_subtype = char_E::f_leading_sigil; 
 
     M__(M_out(L"token_stream_C::fetch_raw_token() -- ch_orig_subtype = %d -- ch_subtype = %d   f_leading_sigil = %d    ") % (int)ch_orig_subtype % (int)ch_subtype % (int)(char_E::f_leading_sigil);)
@@ -4089,11 +4154,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
 
                 // see if a valid trailing sigil for close paren immediately follows
 
-                if (
-                    m_allow_paren_sigils
-                    &&
-                    ( std::find(m_paren_sigils.begin(), m_paren_sigils.end(), ch1.ch32) != m_paren_sigils.end() ) 
-                   ) 
+                if ( m_allow_paren_sigils && is_in_vector(ch1.ch32, m_paren_sigils) )
                 {
                     M__(M_out(L"token_stream_C::fetch_raw_token() -- parenthesis token -- adding trailing sigil");)
                     add_trailing_sigil(token, ch1); 
@@ -4136,13 +4197,15 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                          
        
             //  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-            //  1st comment char -- can be start of line_comment ( // ), echoed line comment ( /!), block_comment ( /* ),  EOF comment ( /~ ), nestable comment ( /< ),  or start of operator
+            //  1st comment char -- can be start of line_comment ( // ),  block_comment ( /* ),  EOF comment ( /~ ), nestable comment ( /[ ),  etc., or start of operator
             //  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
        
             case char_E::f_comment_1st :
             {
                 in_char_S ch1 {}; 
-                peek_char(ch1, 2);                                            // look at char following the "/" -- 2nd oldest one -- leave it in the char stream                     
+                peek_char(ch1, 2);                                            // look at char following the "/" -- 2nd oldest one -- leave it in the char stream    
+
+                M__(M_out(L"fetch_raw_token() -- 1st comment char seen -- ch1.ch32 = %08X") % ch1.ch32;)
                 
                 if      (ch1.ch32 == m_unechoed_line_comment_2nd_ch  )          // "//" starts a line comment 
                     line_comment(token, false, false, 2);                       //      do not suppress EOL after comment -- do not echo, introducer length = 2 
@@ -4153,22 +4216,25 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                 else if (ch1.ch32 == m_suppress_eol_comment_2nd_ch   )          //      (support is not not activated) 
                     line_comment(token, true, false, 2);                        //      do     suppress EOL after comment -- do not echo, introducer length = 2 
                                                                      
-                else if (ch1.ch32 == m_eof_comment_2nd_ch            )          // "/~" starts an EOF comment -- ends with EOF
+                else if (ch1.ch32 == m_eof_comment_2nd_ch            )          // "/]" starts an EOF comment -- ends with EOF
                     eof_comment(token);                                                              
-                                                                     
-                else if (ch1.ch32 == m_retained_line_comment_2nd_ch  )          // "/#" starts a retained line comment -- ends with EOL
-                    retained_line_comment(token);                         
-                                                                     
+                                
                 else if (ch1.ch32 == m_block_comment_2nd_ch          )          // "/*" starts a block comment -- ends with "*/" or with error or EOF (not valid)
                     block_comment(token);                                     
                                                                               
-                else if (ch1.ch32 == m_nest_comment_2nd_ch           )          // "/<" starts a nestable block comment  
+                else if (ch1.ch32 == m_nest_comment_2nd_ch           )          // "/[" starts a nestable block comment -- ends with "]/" or with error or EOF (not valid) 
                     nestable_comment(token);                                         
               
-                else if (ch1.ch32 == m_retained_block_comment_2nd_ch )          // "/{" starts a retained block comment  
+                else if (ch1.ch32 == m_retained_line_comment_2nd_ch  )          // "/#" starts a retained line comment -- ends with EOL (or EOF)
+                    retained_line_comment(token);                         
+
+                else if (ch1.ch32 == m_retained_block_comment_2nd_ch )          // "/{" starts a retained block comment -- ends with "}/" or with error or EOF (not valid) 
                     retained_block_comment(token);                                                             
               
-                else                                                            // not "//", "/*", "/<", "/#", "/{  or "/~" -- must be start of start an operator token 
+                else if (ch1.ch32 == m_retained_eof_comment_2nd_ch   )          // "/}" starts a retained EOF comment -- ends EOF (not valid) 
+                    retained_eof_comment(token); 
+
+                else                                                            // not   //   /*   /[   /]  /#   /{   /}   /~     -- must be start of start an operator token 
                 {
                     operator_token(token);                                      // this assumes the comment starting character is a valid operator character, like "/" 
                 }
@@ -4284,11 +4350,13 @@ int token_stream_C::fetch_raw_token(token_C& token) try
        
                 if (ch.ch32 == m_type1_string_start_ch)
                 {
+                    start_token(token, token_E::string);                                               // needed since escaped_string() and simple_string() preserve orig_str field in passed-in token 
                     escaped_string(token, m_type1_string_end_ch, m_type1_string_escape_ch, false);     // ending delim = ",   1st escape_char, NL in string is error   
                     break; 
                 }
                 else if (ch.ch32 == m_type2_string_start_ch)
                 {
+                    start_token(token, token_E::string);                                               // needed since escaped_string() and simple_string() preserve orig_str field in passed-in token 
                     escaped_string(token, m_type2_string_end_ch, m_type2_string_escape_ch, false);     // ending delim = »,   2nd escape_char, NL in string is error   
                     break; 
                 }
@@ -4344,6 +4412,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                         // must be a modified string -- simple or multi-line
                         // -------------------------------------------------    
 
+                        start_token(token, token_E::string);                                                                    // needed before adding to orig_token 
                         in_char_S ch0 {};   
                         get_char(ch0);                                                                                          // consume modified string prefix char, which simple_string()/escaped_string() does not expect to see
                         addto_orig_token(token, ch0);                                                                           // add the modified string prefix char to original token text for error messages only   
@@ -4398,11 +4467,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
 
                 // check for leading sigils for operator  (allow only operator leading sigil subset -- must not include  ":"  "@"  etc.)
 
-                if (
-                    m_allow_leading_op_sigils
-                    &&
-                    ( std::find(m_leading_oper_sigils.begin(), m_leading_oper_sigils.end(), ch.ch32) != m_leading_oper_sigils.end() )
-                   )
+                if ( m_allow_leading_op_sigils && is_in_vector(ch.ch32, m_leading_oper_sigils) )
                 {
                     M__(M_out(L"token_stream_C::fetch_raw_token() -- leading operator sigil found");)
 
@@ -4439,8 +4504,6 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                             ||                                            
                             ( ch2.ch32 == m_eof_comment_2nd_ch            )
                             ||                                                                  
-                            ( ch2.ch32 == m_retained_line_comment_2nd_ch  )
-                            ||                                            
                             ( ch2.ch32 == m_block_comment_2nd_ch          )
                             ||                                            
                             ( ch2.ch32 == m_nest_comment_2nd_ch           )
@@ -4448,6 +4511,10 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                             ( ch2.ch32 == m_eof_comment_2nd_ch            )
                             ||                                           
                             ( ch2.ch32 == m_retained_block_comment_2nd_ch )
+                            ||
+                            ( ch2.ch32 == m_retained_line_comment_2nd_ch  )
+                            || 
+                            ( ch2.ch32 == m_retained_eof_comment_2nd_ch   )
                            )
                         {
                             // this is sigil followed immediately by comment -- treat as isolated sigil 
@@ -4495,11 +4562,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
 
                 M__(M_out(L"token_stream_C::fetch_raw_token() --check for leading identifier sigil");)
 
-                if (
-                    m_allow_leading_id_sigils
-                    &&
-                    ( std::find(m_leading_ident_sigils.begin(), m_leading_ident_sigils.end(), ch.ch32) != m_leading_ident_sigils.end() )
-                   )
+                if ( m_allow_leading_id_sigils && is_in_vector(ch.ch32, m_leading_ident_sigils) )
                 {
                     M__(M_out(L"token_stream_C::fetch_raw_token() -- leading identifier sigil found");)
 
@@ -4534,9 +4597,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
                 if (
                     ch1.subtype == char_E::open_paren1
                     &&
-                    m_allow_paren_sigils
-                    &&
-                    ( std::find(m_paren_sigils.begin(), m_paren_sigils.end(), ch.ch32) != m_paren_sigils.end() )
+                    ( m_allow_paren_sigils && is_in_vector(ch.ch32, m_paren_sigils) )
                    )
                 {
                     M__(M_out(L"token_stream_C::fetch_raw_token() -- open parenthesis sigil found");) 
@@ -4584,7 +4645,7 @@ int token_stream_C::fetch_raw_token(token_C& token) try
        
 
             // --------------------
-            // colon operator token --  :   ::   :::   ::::   etc.    (must be after leading sigile test ) 
+            // colon operator token --  :   ::   :::   ::::   etc.    (must be after leading sigil test ) 
             // --------------------
 
             case char_E::colon                 :                            

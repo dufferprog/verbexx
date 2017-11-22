@@ -50,6 +50,7 @@ uint64_t            persistent_env_sernum       {0};                  // serial 
 ////
 ////     @VERB
 ////     @FN
+////     (@LAMBDA)  "->"
 ////     @UNVERB
 ////     @CALL
 ////     @XCTL 
@@ -57,10 +58,10 @@ uint64_t            persistent_env_sernum       {0};                  // serial 
 ////     @SHELL
 ////
 ////
-////     @IMBED
+////     @INCLUDE
 ////     @SKIPTO
 ////     @PARSE
-////     @SEP   -or-  ,
+////     (@SEPARATE)  ==  ","
 ////
 ////     @DO
 ////     @BLOCK
@@ -146,6 +147,12 @@ static int define_user_verb(frame_S& frame, const e_expression_S expression, ver
     auto priority_rc        = get_right_keyword(   expression, L"priority", priority);             // priority_rc        = -1, if priority:        is not present 
     auto left_associate_rc  = get_right_keyword(   expression, L"left_associate"    );             // left_associate_rc  = -1, if left_associate:  is not present 
     auto right_associate_rc = get_right_keyword(   expression, L"right_associate"   );             // right_associate_rc = -1, if right_associate: is not present 
+    auto by_alias_rc        = get_right_keyword(   expression, L"by_alias"          );             // by_alias_rc        = -1, if by_alias:        is not present 
+
+
+   // finish up passed-in verbdef,before adding it to the verbset
+
+    if (by_alias_rc         == 0)       verbdef.by_alias_ok      = true; 
 
 
     // add passed-in verbdef to new/empty verbset 
@@ -162,6 +169,8 @@ static int define_user_verb(frame_S& frame, const e_expression_S expression, ver
 
     // if name: was provided, add this verb to the global:, verbmain: static: or local: environments
     // ---------------------------------------------------------------------------------------------
+    //
+    // note: verbname will always be empty string for lambda definitions
 
     if (verbname.size() > 0)                                                               // verb name present -- means that new verbdef needs to be added to some environemnt 
     {
@@ -281,11 +290,8 @@ M_endf
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int build_verb_scopes(frame_S& frame, const e_expression_S expression, verbdef_S& verbdef) try
+static void build_verb_scopes(frame_S& frame, const e_expression_S expression, verbdef_S& verbdef, bool lambda = false) try
 {
-    int rc { 0 }; 
-
-
     // set up scope/closure info in verbdef
     // ------------------------------------
 
@@ -299,10 +305,12 @@ static int build_verb_scopes(frame_S& frame, const e_expression_S expression, ve
     auto same_rc    = get_right_keyword(expression, L"same_scope"                   );       // same_rc    = -1, if same_scope:    is not present
     auto no_rc      = get_right_keyword(expression, L"no_scope"                     );       // no_rc      = -1, if no_scope:      is not present
     auto close_rc   = get_right_keyword(expression, L"close"                        );       // close_rc   = -1, if close:         is not present 
+    auto noclose_rc = get_right_keyword(expression, L"noclose"                      );       // noclose_rc = -1, if noclose:       is not present 
     auto init_rc    = get_right_keyword(expression, L"init"         , init_value    );       // init_rc    = -1  if init:          is not present 
 
 
     // put scoping info in verbdef for use when verb-block is executed -- note: if neither dynamic_scope: nor dynall_scope: was present, default is lexical scope/no scope  (maximum of 1 of dynall_scope:, dynamic_scope:, no_scope: same_scope: or lexical_scope: can appear)
+    // note: for lambda, ann scope-oriented options are not present, so scope defaults to lexical
 
     if (dynamic_rc == 0)
     {
@@ -331,7 +339,7 @@ static int build_verb_scopes(frame_S& frame, const e_expression_S expression, ve
         if (lexical_rc == -1)                                                                // was scope defaulted (to lexical/no) ?
           verbdef.scope_defaulted = true;                                                    // set flag to indicate this   
 
-        if (close_rc == 0)                                                                   // need to close on enclosing stack frame? 
+        if ( (close_rc == 0) || (lambda && (noclose_rc == -1) ) )                            // need to close on enclosing stack frame? -- always close if close: present, -or- if lambda and noclose: is not present  
           verbdef.defining_scope_sp = std::shared_ptr<frame_S> { frame.self_wp };            //    also save shared pointer to stack frame where verb is defined (i.e. current frame_S) 
                                                                                              //    note: this should prevent the defining scope from going away if the function that defined this verb returns and the verb definition still exists somewhere 
                                                                                              //    note: this verb definition becomes a closure in this case 
@@ -364,7 +372,7 @@ static int build_verb_scopes(frame_S& frame, const e_expression_S expression, ve
         // (note -- init: block is executed in define_user_verb() helper function)
     }
 
-    return rc;
+    return;
 }
 M_endf
 
@@ -892,7 +900,7 @@ int verb_verb(frame_S& frame, const e_expression_S& expression, const verbdef_S&
 
             if (verbdef.lparms.keywords.count(pos0_value.string) > 0)                          // this keyword name already in map? 
             {
-                M_out_emsg1(L"verb_verb() -- left-side keyword «%s» has already been added for verb «%s»") % pos0_value.string % name_value.string; 
+                M_out_emsg1(L"@VERB -- left-side keyword «%s» has already been added for verb «%s»") % pos0_value.string % name_value.string; 
                 msgend_loc(expression);
                 rc = -1;                              // set error r/c but keep going
             }
@@ -929,7 +937,7 @@ int verb_verb(frame_S& frame, const e_expression_S& expression, const verbdef_S&
 
             if (verbdef.rparms.keywords.count(pos0_value.string) > 0)                             // this keyword name already in map? 
             {
-                M_out_emsg1(L"verb_verb() -- right-side keyword «%s» has already been added for verb «%s»") % pos0_value.string % name_value.string; 
+                M_out_emsg1(L"@VERB -- right-side keyword «%s» has already been added for verb «%s»") % pos0_value.string % name_value.string; 
                 msgend_loc(expression);
                 rc = -1;                              // set error r/c but keep going
             }
@@ -941,7 +949,7 @@ int verb_verb(frame_S& frame, const e_expression_S& expression, const verbdef_S&
     }
 
 
-    // set up argvar_S values in verbdef_S -- keft/right variable names for parms
+    // set up argvar_S values in verbdef_S -- left/right variable names for parms
     // --------------------------------------------------------------------------
 
     value_S l_var_value { }; 
@@ -991,7 +999,7 @@ int verb_verb(frame_S& frame, const e_expression_S& expression, const verbdef_S&
     else
     {
         if (name_rc == 0)
-            verbdef.info = name_value.string;
+            verbdef.info = std::wstring { L"user-defined verb: "} + name_value.string;
         else
             verbdef.info = L"un-named verb";
     }
@@ -1037,6 +1045,79 @@ M_endf
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////
+////    (@LAMBDA)  == "->" -- verb_lambda() -- simplified way to define lambda function
+////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////  
+
+int verb_lambda(frame_S& frame, const e_expression_S& expression, const verbdef_S& parm_verbdef, results_S& results) try
+{
+    M__(M_out(L"verb_lambda() called");)
+        
+    // left-side vlist will have argvars (and no keywords_ -- may have 0-N argvars -- these become the right-side argvars for the lambda function  
+    // right side positional parm 0 will be code block for function
+   
+    value_S info_value       {    };                                                   // info: optional string for error messages
+    value_S block_value      {    };                                                   // required code block value
+
+    auto block_rc = get_right_positional( expression,           block_value, 0);       // note that 1st parm is required to be a block by initial verb parm checking 
+    auto info_rc  = get_right_keyword(    expression, L"info",  info_value    );       // info:  keyword is optional 
+
+
+    // main verb block -- allocate new non-autodata block_S on heap, anchor in verbdef_S, and copy passed-in block_S into new block_S in heap 
+
+    verbdef_S verbdef { } ;                                                            // verbdef_S for new user-defined verb 
+    verbdef.verb_block_sp.reset(new block_S {});                                       // allocate new empty block_S
+    *(verbdef.verb_block_sp) = *(block_value.block_sp);                                // copy block_S from parm to new block_S anchored in verb definition 
+    
+
+    /// set up min/max positional parm counts on each side based on number of arg vars present
+
+    verbdef.lparms.min_ct = 0;
+    verbdef.lparms.max_ct = 0;
+    verbdef.rparms.min_ct = expression.lparms.value_ct;                                // argvars on left of "->" verb become right-side argument vars in defined function
+    verbdef.rparms.max_ct = expression.lparms.value_ct; 
+
+
+    // build argvar lists (left argvar list will be empty), and eturn immediately, if any error found
+
+    auto avrc = build_verb_argvar(frame, expression, verbdef, vlist_S { }, expression.lparms);  
+    if (avrc != 0)
+    {
+        results = error_results(); 
+        return -1; 
+    }   
+   
+
+    // set up pointer to non-builtin verb-block: evaluation function
+    
+    verbdef.fcn_p      = &verb_non_builtin;
+
+
+    // put scoping/persistent SF info in verbdef
+
+    build_verb_scopes(frame, expression, verbdef, true);            // indicate this is defining a lambda -- alters handling of close:/noclose: keywords
+
+
+    // add in information string for error messages
+
+    if (info_rc == 0)
+        verbdef.info = info_value.string;
+    else
+        verbdef.info = L"un-named lambda function";
+    
+
+    // add the completed verbset to the proper environment (no name is passed here, so no verb will be added to any environment
+
+    return define_user_verb(frame, expression, verbdef, std::wstring { }, results);
+}
+M_endf
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////
 ////    @FN -- verb_fn() -- simplified way to define non-built-in (user-defined) verb in verb_table
 ////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1048,11 +1129,24 @@ int verb_fn(frame_S& frame, const e_expression_S& expression, const verbdef_S& p
 
     int rc = 0; 
     
+    // if no  left-side positional parms: no left-side arg list or name, meaning anonymous function with no left-side positional parms
 
-    // optional left-side undefined identifier -- verb name (unless anonymous function)      -- present = add to environment -- absent = don't add (just return completed verb as results)
-    // required right-side vlist (may be empty) with argument variable names
-    // required right-side block with function body for this verb
+    // if one left-side positional parm: 
+    //        --   string or undefined identifier for function name (meaning named function with no left-side positional parms)
+    //        -or- vlist (may be empty) with left-side argument variable names (meaning anonymous function)
+
+    // if two left-side positional parms: 
+    //   1st  --   string or undefined identifier for function name 
+    //   2nd  --   vlist (may be empty) with left-side argument variable names (meaning anonymous function)
+
+    // if one right-side positional parm: 
+    //        --   block with function body for this verb (meaning defined function takes no right-side positional parms)
+    
+    // if two right-side positional parms: 
+    //   1st  --   vlist (may be empty) with right-side argument variable names
+    //   2nd  --   block with function body for this verb 
   
+    // keyword parms: 
     // optional global:/etc.     keyword on right side (local: is default)                   -- ignored if name: is not present
     // optional expose:          keyword on right side  (assumed if global: present)         -- ignored if name: is not present
     // optional lexical_scope:   keyword on right side                                       -- default is lexical_scope:, if dynamic_scope: not present
@@ -1062,19 +1156,126 @@ int verb_fn(frame_S& frame, const e_expression_S& expression, const verbdef_S& p
     // optional no_scope:        keyword on right side 
     // optional close:           keyword in right side
    
-    value_S name_value  { };                                                           // optional left-side positional value with verb name
-    value_S info_value  { };                                                           // info: optional string for error messages
-    value_S block_value { };                                                          
-    value_S r_var_value { };                                                           // should be vlist with variable names (may be empty)
-    vlist_S r_var_vlist { };                                                           // extracted vlist from r_var_value 
-    vlist_S l_var_vlist { };                                                           // always empty -- verbs defined with @FN don't have left-side parms
-    int64_t r_var_ct    {0};                                                           // nimber of right positional parms required
+    value_S info_value       {    };            // info: optional string for error messages
+    value_S block_value      {    };            // required code block value
+    value_S name_value       {    };            // optional verbname value
+    value_S l_var_value      {    };            // optional vlist with left-side  variable names (may be empty)
+    value_S r_var_value      {    };            // optional vlist with right-side variable names (may be empty)
+                             
+    int     name_rc          { -1 };            // indicate that name string is not filled in (yet)
+    int     l_var_rc         { -1 };            // indicate that l_var_value is not fileld in (yet)  
+    int     r_var_rc         { -1 };            // indicate that r_var_value is not fileld in (yet)  
 
-    auto name_rc    = get_left_positional( expression, name_value        , 0);         // name_rc = -1, if no function name supplied  
-    auto r_var_rc   = get_right_positional(expression, r_var_value       , 0);         // argvars vlist shold always be present, but may be empty
-    auto block_rc   = get_right_positional(expression, block_value       , 1);         // function block should always be present  
+    std::wstring name_string {    };            // extracted function name string   -- may be empty   
+    vlist_S l_var_vlist      {    };            // extracted vlist from r_var_value -- may be empty 
+    vlist_S r_var_vlist      {    };            // extracted vlist from r_var_value -- may be empty
+    int64_t l_var_ct         { 0  };            // number of left  positional parms required for new verb
+    int64_t r_var_ct         { 0  };            // number of right positional parms required for new verb
+
+
     auto info_rc    = get_right_keyword(   expression, L"info",  info_value );         // info:  keyword is optional 
-                                                                              
+   
+
+    // get left-side positional parms:  @FN ...  -or-   [arg-list] @FN ...  -or-   name @FN ...  -or- -- "name" @FN ...    -or-   name [arg-list] @FN ...    -or-    "name" [arg-list] @FN  
+    // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    if (expression.lparms.value_ct == 1)
+    {
+        // only one left-side positional parm -- can be name (identifier or string)  -or-  vlist with left-side argvars 
+
+        value_S parm1_value   {   };
+        auto parm1_rc = get_left_positional(expression, parm1_value, 0);              // known to be present
+
+        if (parm1_value.ty == type_E::vlist)                                          // left parm is vlist? 
+        {
+            l_var_value = parm1_value;                                                // must be list of left-side arg variables
+            l_var_rc = 0;                                                             // indicate that l_var_value is valid
+        }
+        else
+        {
+            name_value = parm1_value;                                                 // must be verbname (string or identifier)
+            name_rc = 0;                                                              // indicate that name_value is valid        
+        }
+    }
+    else if (expression.lparms.value_ct == 2)
+    {
+        // two left side positional parms -- 1st one must be name (string or identifier) -- need to check since initial verb parm checking allows name string, identifier, or vlist 
+    
+        value_S parm1_value   {   };
+        value_S parm2_value   {   };
+
+        auto parm1_rc = get_left_positional(expression, parm1_value, 0);              // known to be present
+        auto parm2_rc = get_left_positional(expression, parm2_value, 1);              // known to be present
+
+
+        // make sure parm1 is not vlist (in case two vlists were coded)
+
+        if (parm1_value.ty == type_E::vlist)                                           // two vlists coded?
+        {
+            count_error(); 
+            M_out_emsg1(L"@FN -- first left-side positional parm was a vlist -- needs to be the function/verb name");
+            msgend_loc(parm1_value, expression);
+            results = error_results(); 
+            return -1;         
+        }
+
+        name_value = parm1_value;       // name must be string or identifier -- verbname
+        name_rc = 0;                    // mark as valid
+
+
+        // initial parm checking requires 2nd parm to be vlist, so no checking needed here
+
+        l_var_value = parm2_value;      // should be right-side variables list 
+        l_var_rc    = 0;                // mark as valid  
+    }
+    // else {} -- no left -side parms
+
+
+    // get right-side positional parms -- either  ... @FN [arg-list] {code block}  -or-  @FN {code block}  -- [arg-list] is optional, {code block} is required  
+    // ---------------------------------------------------------------------------------------------------------------------------------------------------
+
+    if (expression.rparms.value_ct == 1)
+    {
+        // only one right-side positional parm -- must be the code block 
+
+        auto block_rc = get_right_positional( expression, block_value, 0); 
+        if (block_value.ty != type_E::block)
+        {
+             count_error(); 
+             M_out_emsg1(L"@FN -- code block for new verb (\"%S\") is not valid -- verb cannot be defined without a code block") % name_value.string;
+             msgend_loc(block_value, expression);
+             results = error_results(); 
+             return -1;             
+        }
+    }
+    else           // must have two right-side positional parms
+    {
+        // make sure first parm is a vlist, since initial verb parm checking has to allow either vlist or block 
+
+        r_var_rc = get_right_positional(expression, r_var_value , 0);         // 1st parm must be arg-vars list -- can be empty
+        if (r_var_value.ty != type_E::vlist)
+        {
+             count_error(); 
+             M_out_emsg1(L"@FN -- right-side argument veriable list for new verb (\"%S\") is not valid -- verb cannot be defined with an invalid argument variable list") % name_value.string;
+             msgend_loc(r_var_value, expression);
+             results = error_results(); 
+             return -1;             
+        }
+
+        // note: intial verb checking only accepts a block as the 2nd positional parm, so no check is needed here
+
+         auto block_rc = get_right_positional( expression, block_value, 1); 
+    }
+
+
+    // fill in left and right argument variable lists -- for build_verb_argvar
+
+    if ( (l_var_rc == 0) && (l_var_value.vlist_sp.get() != nullptr ) )
+    {
+        l_var_ct    = l_var_value.vlist_sp->values.size();                             // number of args expected
+        l_var_vlist = *(l_var_value.vlist_sp);                                         // vlist with arg var names
+    }  
+    
     if ( (r_var_rc == 0) && (r_var_value.vlist_sp.get() != nullptr ) )
     {
         r_var_ct    = r_var_value.vlist_sp->values.size();                             // number of args expected
@@ -1088,6 +1289,21 @@ int verb_fn(frame_S& frame, const e_expression_S& expression, const verbdef_S& p
     verbdef_S verbdef { } ;                                                            // verbdef_S for new user-defined verb
 
 
+    // validate verb name, if it's a string (not identifier)
+
+    if (name_value.ty == type_E::string)
+    {
+        if (!is_valid_verbname(name_value.string))
+        {
+             count_error(); 
+             M_out_emsg1(L"@FN -- specified verb name (\"%S\") is not valid -- verb cannot be defined with this name") % name_value.string;
+             msgend_loc(name_value, expression);
+             results = error_results(); 
+             return -1; 
+        }      
+    }
+
+
     // main verb block -- allocate new non-autodata block_S on heap, anchor in verbdef_S, and copy passed-in block_S into new block_S in heap 
 
     verbdef.verb_block_sp.reset(new block_S {});                                       // allocate new empty block_S
@@ -1096,8 +1312,8 @@ int verb_fn(frame_S& frame, const e_expression_S& expression, const verbdef_S& p
 
     /// set up min/max positional parm counts on each side based on number of arg vars present
 
-    verbdef.lparms.min_ct = 0;
-    verbdef.lparms.max_ct = 0;
+    verbdef.lparms.min_ct = l_var_ct;
+    verbdef.lparms.max_ct = l_var_ct;
     verbdef.rparms.min_ct = r_var_ct; 
     verbdef.rparms.max_ct = r_var_ct;
 
@@ -1133,14 +1349,16 @@ int verb_fn(frame_S& frame, const e_expression_S& expression, const verbdef_S& p
     }
     else
     {
+        M__(M_out(L"verb_fn() -- name_rc = %d") % name_rc;)
+
         if (name_rc == 0)
-            verbdef.info = name_value.string;
+            verbdef.info = std::wstring { L"user-defined function: "} + name_value.string;
         else
-            verbdef.info = L"un-named verb";
+            verbdef.info = L"un-named function";
     }
     
 
-    // add the completed verbset to the proper environment (if a name: was provided) 
+    // add the completed verbset to the proper environment (if a name: was provided) -- note that name_value.string will be verbneme if either string or identifier was provided for the name
 
     return define_user_verb(frame, expression, verbdef, name_value.string, results);
 }
@@ -1186,7 +1404,7 @@ int verb_initverb(frame_S& frame, const e_expression_S& expression, const verbde
         if (-1 == get_global_verb(verbname_val.string, verbset))
         {
              count_error(); 
-             M_out_emsg1(L"verb_initverb() -- global: verb \"%S\" not found -- cannot be re-initialized") % verbname_val.string;
+             M_out_emsg1(L"@INITVERB -- global: verb \"%S\" not found -- cannot be re-initialized") % verbname_val.string;
              msgend_loc(verbname_val, expression);
              results = error_results(); 
              return -1; 
@@ -1197,7 +1415,7 @@ int verb_initverb(frame_S& frame, const e_expression_S& expression, const verbde
         if (-1 == get_static_verb(frame, verbname_val.string, verbset))
         {
              count_error(); 
-             M_out_emsg1(L"verb_initverb() -- static: verb \"%S\" not found -- cannot be re-initialized") % verbname_val.string;
+             M_out_emsg1(L"@INITVERB -- static: verb \"%S\" not found -- cannot be re-initialized") % verbname_val.string;
              msgend_loc(verbname_val, expression);
              results = error_results(); 
              return -1; 
@@ -1208,7 +1426,7 @@ int verb_initverb(frame_S& frame, const e_expression_S& expression, const verbde
         if (-1 == get_verbmain_verb(frame, verbname_val.string, verbset))
         {
              count_error(); 
-             M_out_emsg1(L"verb_initverb() -- verbmain: verb \"%S\" not found -- cannot be re-initialized") % verbname_val.string;
+             M_out_emsg1(L"@INITVERB -- verbmain: verb \"%S\" not found -- cannot be re-initialized") % verbname_val.string;
              msgend_loc(verbname_val, expression);
              results = error_results(); 
              return -1; 
@@ -1219,7 +1437,7 @@ int verb_initverb(frame_S& frame, const e_expression_S& expression, const verbde
         if (-1 == get_local_verb(frame, verbname_val.string, verbset))
         {
              count_error(); 
-             M_out_emsg1(L"verb_initverb() -- local: verb \"%S\" not found -- cannot be re-initialized") % verbname_val.string;
+             M_out_emsg1(L"@INITVERB -- local: verb \"%S\" not found -- cannot be re-initialized") % verbname_val.string;
              msgend_loc(verbname_val, expression);
              results = error_results(); 
              return -1; 
@@ -1230,7 +1448,7 @@ int verb_initverb(frame_S& frame, const e_expression_S& expression, const verbde
         if (-1 == get_verb(frame, verbname_val.string, verbset))
         {
              count_error(); 
-             M_out_emsg1(L"verb_initverb() -- verb \"%S\" not found -- cannot be re-initialized") % verbname_val.string;
+             M_out_emsg1(L"@INITVERB -- verb \"%S\" not found -- cannot be re-initialized") % verbname_val.string;
              msgend_loc(verbname_val, expression);
              results = error_results(); 
              return -1; 
@@ -1243,7 +1461,7 @@ int verb_initverb(frame_S& frame, const e_expression_S& expression, const verbde
     if (verbset.verbs.size() != 1)
     {
         count_error(); 
-        M_out_emsg1(L"verb_initverb() -- located verbset for verb \"%S\" has more than one verb definition (overloaded) -- verb with name \"%S\" cannot be re-initialized") % verbname_val.string % verbname_val.string;
+        M_out_emsg1(L"@INITVERB -- located verbset for verb \"%S\" has more than one verb definition (overloaded) -- verb with name \"%S\" cannot be re-initialized") % verbname_val.string % verbname_val.string;
         msgend_loc(verbname_val, expression);
         results = error_results(); 
         return -1; 
@@ -1255,7 +1473,7 @@ int verb_initverb(frame_S& frame, const e_expression_S& expression, const verbde
     if (verbset.verbs.at(0).persist_env_sp.get() == nullptr)
     {
         count_error(); 
-        M_out_emsg1(L"verb_initverb() -- verb \"%S\" has no persistent environment -- cannot be re-initialized") % verbname_val.string;
+        M_out_emsg1(L"@INITVERB -- verb \"%S\" has no persistent environment -- cannot be re-initialized") % verbname_val.string;
         msgend_loc(verbname_val, expression);
         results = error_results(); 
         return -1;     
@@ -1339,10 +1557,10 @@ int verb_unverb(frame_S& frame, const e_expression_S& expression, const verbdef_
 
             if (is_global_identifier_defined(val.string))               // see if this identifier is currently defined -- global scope only
             {
-                if (!is_global_identifier_verb(val.string))
+                if (!is_global_identifier_verbset(val.string))
                 {
                      count_error(); 
-                     M_out_emsg1(L"verb_unverb() -- cannot remove global verb = %s, because global identifier %s is not a verb") % val.string % val.string;
+                     M_out_emsg1(L"@UNVERB -- cannot remove global verb = %s, because global identifier %s is not a verb") % val.string % val.string;
                      msgend_loc(val, expression);
                      rc = -1; 
                 }
@@ -1356,7 +1574,7 @@ int verb_unverb(frame_S& frame, const e_expression_S& expression, const verbdef_
                     if (rrc != 0)
                     {
                         //count_error(); already counted in undef_global_verb()
-                        M_out_emsg1(L"verb_unverb() -- unexpected error from undef_global_verb() -- unable to undefine verb = %s") % val.string;
+                        M_out_emsg1(L"@UNVERB -- unexpected error from undef_global_verb() -- unable to undefine verb = %s") % val.string;
                         msgend_loc(val, expression);
                         rc = -1;  
                     } 
@@ -1364,7 +1582,7 @@ int verb_unverb(frame_S& frame, const e_expression_S& expression, const verbdef_
                 else
                 {
                      count_error(); 
-                     M_out_emsg1(L"verb_unverb() -- cannot remove (built-in?) global verb = %s") % val.string;
+                     M_out_emsg1(L"@UNVERB -- cannot remove (built-in?) global verb = %s") % val.string;
                      msgend_loc(val, expression);
                      rc = -1; 
                 }
@@ -1372,7 +1590,7 @@ int verb_unverb(frame_S& frame, const e_expression_S& expression, const verbdef_
             else
             {
                 count_error(); 
-                M_out_emsg1(L"verb_unverb() -- cannot remove global verb = %s, because global identifier %s is not defined") % val.string % val.string;
+                M_out_emsg1(L"@UNVERB -- cannot remove global verb = %s, because global identifier %s is not defined") % val.string % val.string;
                 msgend_loc(val, expression);
                 rc = -1;        
             }
@@ -1384,10 +1602,10 @@ int verb_unverb(frame_S& frame, const e_expression_S& expression, const verbdef_
         
             if (is_static_identifier_defined(frame, val.string))               // see if this identifier is currently defined -- static scope only
             {
-                if (!is_static_identifier_verb(frame, val.string))
+                if (!is_static_identifier_verbset(frame, val.string))
                 {
                      count_error(); 
-                     M_out_emsg1(L"verb_unverb() -- cannot remove static verb = %s, because identifier %s in static environment is not a verb") % val.string % val.string;
+                     M_out_emsg1(L"@UNVERB -- cannot remove static verb = %s, because identifier %s in static environment is not a verb") % val.string % val.string;
                      msgend_loc(val, expression);
                      rc = -1; 
                 }
@@ -1401,7 +1619,7 @@ int verb_unverb(frame_S& frame, const e_expression_S& expression, const verbdef_
                     if (rrc != 0)
                     {
                         //count_error(); already counted in undef_local_verb()
-                        M_out_emsg1(L"verb_unverb() -- unexpected error from undef_static_verb() -- unable to undefine verb = %s") % val.string;
+                        M_out_emsg1(L"@UNVERB -- unexpected error from undef_static_verb() -- unable to undefine verb = %s") % val.string;
                         msgend_loc(val, expression);
                         rc = -1;  
                     } 
@@ -1409,7 +1627,7 @@ int verb_unverb(frame_S& frame, const e_expression_S& expression, const verbdef_
                 else                                                        // shouldn't get here
                 {
                      count_error(); 
-                     M_out_emsg1(L"verb_unverb() -- cannot remove static (built-in?) verb = %s") % val.string;
+                     M_out_emsg1(L"@UNVERB -- cannot remove static (built-in?) verb = %s") % val.string;
                      msgend_loc(val, expression);
                      rc = -1; 
                 }
@@ -1417,7 +1635,7 @@ int verb_unverb(frame_S& frame, const e_expression_S& expression, const verbdef_
             else
             {
                 count_error(); 
-                M_out_emsg1(L"verb_unverb() -- cannot remove static verb = %s, because identifier %s is not defined in static environment") % val.string % val.string;
+                M_out_emsg1(L"@UNVERB -- cannot remove static verb = %s, because identifier %s is not defined in static environment") % val.string % val.string;
                 msgend_loc(val, expression);
                 rc = -1;        
             }
@@ -1429,10 +1647,10 @@ int verb_unverb(frame_S& frame, const e_expression_S& expression, const verbdef_
         
             if (is_verbmain_identifier_defined(frame, val.string))               // see if this identifier is currently defined -- verbmain scope only
             {
-                if (!is_verbmain_identifier_verb(frame, val.string))
+                if (!is_verbmain_identifier_verbset(frame, val.string))
                 {
                      count_error(); 
-                     M_out_emsg1(L"verb_unverb() -- cannot remove verbmain verb = %s, because identifier %s in verbmain environment is not a verb") % val.string % val.string;
+                     M_out_emsg1(L"@UNVERB -- cannot remove verbmain verb = %s, because identifier %s in verbmain environment is not a verb") % val.string % val.string;
                      msgend_loc(val, expression);
                      rc = -1; 
                 }
@@ -1446,7 +1664,7 @@ int verb_unverb(frame_S& frame, const e_expression_S& expression, const verbdef_
                     if (rrc != 0)
                     {
                         //count_error(); already counted in undef_verbmain_verb()
-                        M_out_emsg1(L"verb_unverb() -- unexpected error from undef_verbmain_verb() -- unable to undefine verb = %s") % val.string;
+                        M_out_emsg1(L"@UNVERB -- unexpected error from undef_verbmain_verb() -- unable to undefine verb = %s") % val.string;
                         msgend_loc(val, expression);
                         rc = -1;  
                     } 
@@ -1454,7 +1672,7 @@ int verb_unverb(frame_S& frame, const e_expression_S& expression, const verbdef_
                 else                                                        // shouldn't get here
                 {
                      count_error(); 
-                     M_out_emsg1(L"verb_unverb() -- cannot remove verbmain (built-in?) verb = %s") % val.string;
+                     M_out_emsg1(L"@UNVERB -- cannot remove verbmain (built-in?) verb = %s") % val.string;
                      msgend_loc(val, expression);
                      rc = -1; 
                 }
@@ -1462,7 +1680,7 @@ int verb_unverb(frame_S& frame, const e_expression_S& expression, const verbdef_
             else
             {
                 count_error(); 
-                M_out_emsg1(L"verb_unverb() -- cannot remove verbmain verb = %s, because identifier %s is not defined in verbmain environment") % val.string % val.string;
+                M_out_emsg1(L"@UNVERB -- cannot remove verbmain verb = %s, because identifier %s is not defined in verbmain environment") % val.string % val.string;
                 msgend_loc(val, expression);
                 rc = -1;        
             }
@@ -1474,10 +1692,10 @@ int verb_unverb(frame_S& frame, const e_expression_S& expression, const verbdef_
         
             if (is_local_identifier_defined(frame, val.string))               // see if this identifier is currently defined -- local scope only
             {
-                if (!is_local_identifier_verb(frame, val.string))
+                if (!is_local_identifier_verbset(frame, val.string))
                 {
                      count_error(); 
-                     M_out_emsg1(L"verb_unverb() -- cannot remove local verb = %s, because identifier %s in local environment is not a verb") % val.string % val.string;
+                     M_out_emsg1(L"@UNVERB -- cannot remove local verb = %s, because identifier %s in local environment is not a verb") % val.string % val.string;
                      msgend_loc(val, expression);
                      rc = -1; 
                 }
@@ -1491,7 +1709,7 @@ int verb_unverb(frame_S& frame, const e_expression_S& expression, const verbdef_
                     if (rrc != 0)
                     {
                         //count_error(); already counted in undef_local_verb()
-                        M_out_emsg1(L"verb_unverb() -- unexpected error from undef_local_verb() -- unable to undefine verb = %s") % val.string;
+                        M_out_emsg1(L"@UNVERB -- unexpected error from undef_local_verb() -- unable to undefine verb = %s") % val.string;
                         msgend_loc(val, expression);
                         rc = -1;  
                     } 
@@ -1499,7 +1717,7 @@ int verb_unverb(frame_S& frame, const e_expression_S& expression, const verbdef_
                 else                                                        // shouldn't get here
                 {
                      count_error(); 
-                     M_out_emsg1(L"verb_unverb() -- cannot remove local (built-in?) verb = %s") % val.string;
+                     M_out_emsg1(L"@UNVERB -- cannot remove local (built-in?) verb = %s") % val.string;
                      msgend_loc(val, expression);
                      rc = -1; 
                 }
@@ -1507,7 +1725,7 @@ int verb_unverb(frame_S& frame, const e_expression_S& expression, const verbdef_
             else
             {
                 count_error(); 
-                M_out_emsg1(L"verb_unverb() -- cannot remove local verb = %s, because identifier %s is not defined in local environment") % val.string % val.string;
+                M_out_emsg1(L"@UNVERB -- cannot remove local verb = %s, because identifier %s is not defined in local environment") % val.string % val.string;
                 msgend_loc(val, expression);
                 rc = -1;        
             }
@@ -1722,30 +1940,30 @@ M_endf
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//    @IMBED file:"filename"   -or-     @IMBED string:"text to be imbedded"                                                                                                            
+//    @INCLUDE file:"filename"   -or-     @INCLUDE string:"text to be included"                                                                                                            
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int verb_imbed(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+int verb_include(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
 {
     // already known that either string: or file: string keywords are present (but not both)
-    M__(M_out(L"verb_imbed() called");)
+    M__(M_out(L"verb_include() called");)
  
     value_S file_value   {};                                                          // file:   should be string 
     value_S string_value {};                                                          // string: should be string 
 
 
-    // imbed file, if file: was present
-    // --------------------------------
+    // include file, if file: was present
+    // ----------------------------------
 
     if (0 == get_right_keyword(expression, L"file", file_value))                    // file: keyword  present? 
     {
-        M__(M_out(L"verb_imbed() -- file= \"%S\"") % file_value.string; )
+        M__(M_out(L"verb_include() -- file= \"%S\"") % file_value.string; )
 
-        auto arc = pending_attach_ext(file_value.string); 
+        auto arc = pending_attach_file_ext(file_value.string); 
         if (arc != 0)
         {
-            M_out_emsg1(L"verb_imbed() -- error from pending_attach_ext() for file \"%S\" -- @IMBED called outside of pre-processor text (in plain code)") % file_value.string; 
+            M_out_emsg1(L"@INCLUDE -- error from pending_attach_ext() for file \"%S\" -- @INCLUDE called outside of pre-processor text (in plain code)") % file_value.string; 
             msgend_loc(expression);
             results = error_results();                                                               // return error
             return -1;     
@@ -1753,17 +1971,20 @@ int verb_imbed(frame_S& frame, const e_expression_S& expression, const verbdef_S
     }
 
 
-    // imbed string, if file: was present
-    // --------------------------------
+    // include string, if string: was present
+    // --------------------------------------
 
     if (0 == get_right_keyword(expression, L"string", string_value))                    // string: keyword  present? 
     {
-        M__(M_out(L"verb_imbed() -- string= \"%S\"") % string_value.string; )
+        M__(M_out(L"verb_include() -- string= \"%S\"") % string_value.string; )
 
-        auto arc = pending_attach_ext(string_value.string, L"string from @IMBED"); 
+        value_S id_value { string_val(L"string from @INCLUDE") }; 
+        (void)get_right_keyword(expression, L"id", id_value);                           // get id:"string ID for debugging" value
+
+        auto arc = pending_attach_string_ext(string_value.string, id_value.string); 
         if (arc != 0)
         {
-            M_out_emsg1(L"verb_imbed() -- error from pending_attach_ext() for string id = \"%S\" -- @IMBED called outside of pre-processor text (in plain code)") % L"ID not supported yet"; 
+            M_out_emsg1(L"@INCLUDE -- error from pending_attach_ext() for string id = \"%S\" -- @INCLUDE called outside of pre-processor text (in plain code)") % id_value.string; 
             msgend_loc(expression);
             results = error_results();                                                               // return error
             return -1;     
@@ -1790,7 +2011,17 @@ int verb_skip(frame_S& frame, const e_expression_S& expression, const verbdef_S&
 {
     M_y(M_out(L"verb_skip() called");)
  
-        
+    
+    auto src = set_skip_ext(L"");                                   
+    if (src != 0)
+    {
+        M_out_emsg1(L"@SKIP -- error from set_skip_ext() -- @SKIP  called outside of pre-processor text (in plain code)"); 
+        msgend_loc(expression);
+        results = error_results();                                                               // return error
+        return -1;     
+    } 
+
+
     // return with special @SKIP results -- will cause frameblocks, blocks, etc. to be ended until pre-processor sees/handles it
 
     results = special_results();
@@ -1813,8 +2044,16 @@ int verb_skipto(frame_S& frame, const e_expression_S& expression, const verbdef_
     // already known that there is one right positional string parm = target label
     M__(M_out(L"verb_skipto() called");)
 
-    auto to_label = M_get_right_pos_string(expression, 0);   
-    set_skip_ext(to_label);                                  // maybe let pre-processor do this ???????????????????????? 
+    auto to_label = M_get_right_pos_string(expression, 0); 
+
+    auto src = set_skip_ext(to_label);                                   
+    if (src != 0)
+    {
+        M_out_emsg1(L"@SKIPTO -- error from set_skip_ext() -- @SKIPTO \"%S\"  called outside of pre-processor text (in plain code)") % to_label; 
+        msgend_loc(expression);
+        results = error_results();                                                               // return error
+        return -1;     
+    }
     
 
     // return with special @SKIPTO results -- will cause frameblocks, blocks, etc. to be ended until pre-processor sees/handles it
@@ -1855,7 +2094,7 @@ int verb_import(frame_S& frame, const e_expression_S& expression, const verbdef_
     if (irc != 0)
     {
          M__(M_out(L"verb_import() -- error: bad R/C from import_dll(\"%S\", \"\"") % dll_name;) 
-         M_out_emsg1(L"verb_import() -- error from import_dll() for dll = \"%S\"") % dll_name; 
+         M_out_emsg1(L"@IMPORT -- error from import_dll() for dll = \"%S\"") % dll_name; 
          msgend_loc(expression);
          results = error_results();          
          return -1;   
@@ -2001,7 +2240,7 @@ M_endf
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//    ,  @SEP -- separate verb
+//    ,  (@SEPARATE) -- separate verb
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2016,7 +2255,7 @@ int verb_separate(frame_S& frame, const e_expression_S& expression, const verbde
     auto c_rc = combine_vlists(ret_vlist, expression.lparms, expression.rparms, false);          // output =  left parms + right parms (verbatim flag = false -- get kws from (l/r)parms.eval_kws, but put into ret_vlist.keywords) 
     if (c_rc != 0)
     {
-        M_out_emsg1(L"verb_separate() -- unexpected error from combine_vlists() -- separator verb (\",\") failed"); 
+        M_out_emsg1(L"verb , -- unexpected error from combine_vlists() -- separate verb (\",\") failed"); 
         M_out(L"     lparms location -- %s" ) %  vlist_loc_str(expression.lparms);
         M_out(L"     rparms location -- %s" ) %  vlist_loc_str(expression.rparms);
         msgend_loc(expression);
@@ -2032,6 +2271,41 @@ int verb_separate(frame_S& frame, const e_expression_S& expression, const verbde
 M_endf
 
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//    ,,  (@SEQUENCE) -- sequence verb
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int verb_sequence(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+{
+    // already known that there are 1-N left-side and 1-N right-side positional parms of any type 
+
+    M__(M_out(L"verb_sequence() called");)
+
+    vlist_S ret_vlist  {  };                                                                     // start with empty vlist as return value 
+
+    auto c_rc = combine_vlists(ret_vlist, vlist_S { }, expression.rparms, false);                // output =  (empty vlist) + right parms (verbatim flag = false -- get kws from rparms.eval_kws, but put into ret_vlist.keywords) 
+    if (c_rc != 0)
+    {
+        M_out_emsg1(L"verb ,, -- unexpected error from combine_vlists() -- sequence verb (\",\") failed"); 
+        M_out(L"     lparms location -- %s" ) %  vlist_loc_str(expression.lparms);
+        M_out(L"     rparms location -- %s" ) %  vlist_loc_str(expression.rparms);
+        msgend_loc(expression);
+        results = error_results();                                                               // return error
+        return -1;     
+    } 
+
+    M__(display_vlist(ret_vlist, L"verb_sequence() -- output from ,, verb");)
+    results = to_results(vlist_val(ret_vlist));                                                  // place output vlist in results 
+    results.multiple_results = true;                                                             // indicate that multiple results are being returned
+    return 0;
+}
+M_endf
+
+
+                                                                                       
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -2045,9 +2319,16 @@ int verb_goto(frame_S& frame, const e_expression_S& expression, const verbdef_S&
 
     M__(M_out(L"verb_goto() called");)
 
+    auto longjmp_rc = get_right_keyword(expression, L"longjmp");        // see if longjmp: is present 
+
     results                 = special_results(); 
-    results.goto_flag       = true;
-    results.str             = M_get_right_pos_string(expression, 0); // @GOTO target label = 1st right string parm
+
+    if (longjmp_rc == 0)                                                // longjmp: present ?
+        results.lgoto_flag = true;                                      // indicate @GOTO longjmp:
+    else
+        results.goto_flag  = true;                                      // indicate plain @GOTO
+
+    results.str = M_get_right_pos_string(expression, 0);                // @GOTO target label = 1st right string parm
 
     return 0; 
 }
@@ -2658,7 +2939,7 @@ int verb_case(frame_S& frame, const e_expression_S& expression, const verbdef_S&
 
     if (when_ct != pos_ct)
     {
-        M_out_emsg1(L"verb_case() -- number of when: keywords (%d) does not match the number of positional {block} parms (%d) -- case verb is not executed") % when_ct % pos_ct; 
+        M_out_emsg1(L"@CASE -- number of when: keywords (%d) does not match the number of positional {block} parms (%d) -- case verb is not executed") % when_ct % pos_ct; 
         msgend_loc(expression.rparms, expression);
         results = error_results();                             // return error results
         return -1; 
@@ -2783,11 +3064,56 @@ int verb_if(frame_S& frame, const e_expression_S& expression, const verbdef_S& v
         }    
     }
 
-    results = if_results;     // output results, directly from any successful then: or else: block evaluation -- special results flags mey be set
+    results = if_results;                                               // output results, directly from any successful then: or else: block evaluation -- special results flags mey be set
     return rc; 
 }
 M_endf
- 
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//    (@COND) = "?"  --  condition ? { true-block } { optional-false-block }
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int verb_cond(frame_S& frame, const e_expression_S& expression, const verbdef_S& verbdef, results_S& results) try
+{
+    // already known that there is one left positional integer parm (condition)
+    // already known that there are 1 or 2 right positional block parms
+
+    int rc = 0; 
+    results_S cond_results { unit_results() };                           // output value = unit (if no block executed) 
+    M__(M_out(L"verb_cond() called");)
+
+    if ( is_value_true(expression.lparms.values.at(0)) )               // test condition is non-zero (true) ?   
+    {    
+        auto erc = eval_block(frame, *(expression.rparms.values.at(0).block_sp), cond_results); 
+        if (erc != 0)
+        {
+            cond_results = error_results(); 
+            rc = erc; 
+        }
+    }
+    else                                                               // test condition is 0 (false)
+    {
+        if (expression.rparms.value_ct >= 2)                           // don't do anything, if only one code block provided 
+        {
+            auto erc = eval_block(frame, *(expression.rparms.values.at(1).block_sp), cond_results);
+            if (erc != 0)
+            {
+                cond_results = error_results(); 
+                rc = erc; 
+            }  
+        }    
+    }
+
+    results = cond_results;                                            // output results, directly from any successful then: or else: block evaluation -- special results flags mey be set
+    return rc; 
+}
+M_endf
+
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -2884,7 +3210,7 @@ int verb_loop(frame_S& frame, const e_expression_S& expression, const verbdef_S&
 
         if (erc != 0)
         {
-            M_out_emsg1(L"verb_loop() -- error running loop body -- loop ends"); 
+            M_out_emsg1(L"@LOOP -- error running loop body -- loop ends"); 
             msgend_loc(expression);
             results = error_results();     // pass back error results 
             return -1; 

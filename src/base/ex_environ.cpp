@@ -368,13 +368,23 @@ static int def_identifier(environ_S& env, const std::wstring& ident, symval_S& s
     }
 
 
+    // check to see if weak pointer in symval is still valid 
+
+    if (symval.value_wp.expired())
+    {
+        count_error(); 
+        M_out_emsg(L"def_identifier() -- symval (weak alias?) no longer points to a valid value -- cannot define identifier (\"%S\")") % ident;     
+        return -1;
+    }
+
+
     // make sure any nested objects are unshared, if requested by caller
   
     if (unshare)                             
-        unshare_value(*(symval.value_sp)); 
+        unshare_value(*(symval.value_wp.lock())); 
 
 
-    // add in new identifier to environment
+    // add in new identifier (symval) to environment
 
     symval.serno = ++(static_N::symval_ctr);
     auto rc = env.symbols.emplace(ident, symval);     
@@ -516,18 +526,33 @@ static int make_identifier_const(environ_S& env, const std::wstring& ident) try
         if (env.symbols.at(ident).is_verbset)
         {
             count_error();  
-            M_out_emsg(L"make_identifier_const() -- identifier \"%s\" is a verb -- cannot make ito a constant") % ident;
+            M_out_emsg(L"make_identifier_const() -- identifier \"%s\" is for a verb overload set -- cannot change it to a constant") % ident;
             return -1; 
         }
         else if (env.symbols.at(ident).is_typdef)
         {
             count_error();
-            M_out_emsg(L"make_identifier_const() -- identifier \"%s\" is a typdef -- cannot make ito a constant") % ident;
+            M_out_emsg(L"make_identifier_const() -- identifier \"%s\" is for a typdef -- cannot change it to a constant") % ident;
+            return -1; 
+        }
+        else if (env.symbols.at(ident).is_alias)
+        {
+            count_error();
+            M_out_emsg(L"make_identifier_const() -- identifier \"%s\" is for an alias -- cannot change it to a constant") % ident;
+            return -1; 
+        }
+        else if (env.symbols.at(ident).is_const)
+        {
+            count_error();
+            M_out_emsg(L"make_identifier_const() -- identifier \"%s\" is already for a constant -- cannot change it to a constant") % ident;
             return -1; 
         }
         else
         {
-            env.symbols.at(ident).is_const = true;
+            env.symbols.at(ident).is_const    = true;
+            env.symbols.at(ident).is_var      = false;
+            env.symbols.at(ident).no_update   = true;      // constants can't be updated
+            env.symbols.at(ident).no_remove   = true;      // constants can't be undefined
             return 0;
         }
     }
@@ -565,7 +590,7 @@ static int undef_identifier(environ_S& env, const std::wstring& ident) try
 
     if (ct > 0)
     {
-       if (env.symbols.at(ident).no_undefine)     
+       if (env.symbols.at(ident).no_remove)     
        {
            if (env.symbols.at(ident).is_const)
            {
@@ -584,7 +609,7 @@ static int undef_identifier(environ_S& env, const std::wstring& ident) try
            if (env.symbols.at(ident).is_verbset) 
            {
                count_error(); 
-               M_out_emsg(L"undef_identifier() -- cannot remove verbset definition \"%s\"") % ident; 
+               M_out_emsg(L"undef_identifier() -- cannot remove verb overload set (verbset) definition \"%s\"") % ident; 
                return -1;
            }
 
@@ -596,7 +621,7 @@ static int undef_identifier(environ_S& env, const std::wstring& ident) try
            } 
            
            count_error(); 
-           M_out_emsg(L"undef_identifier() -- identifier \"%s\" is flagged as not undefinable -- cannot be undefined") % ident; 
+           M_out_emsg(L"undef_identifier() -- identifier \"%s\" is flagged as not undefinable -- cannot be undefined") % ident;  
            return -1;
        }
 
@@ -781,7 +806,7 @@ M_endf
 
 //////////////////////////////////////////////////////////
 
-static bool is_identifier_verb(environ_S& env, const std::wstring& ident) try
+static bool is_identifier_verbset(environ_S& env, const std::wstring& ident) try
 {
     if (!is_identifier_defined(env, ident)) 
         return false;
@@ -843,13 +868,23 @@ static bool is_identifier_mutable(environ_S& env, const std::wstring& ident) try
            return false; 
      
 
+        // check to see if weak pointer in symval is still valid 
+      
+        if (symval.value_wp.expired())
+        {
+        //  count_error(); 
+        //  M_out_emsg(L"is_identifier_mutable() -- symval (weak alias?) no longer points to a valid value -- cannot determine whether or not identifier (\"%S\") is mutable") % ident;     
+            return false;
+        }
+
+
         // also can't be updated if this is a verbset that has one or more built-in verbs
 
         if (symval.is_verbset)
         {
-            if (symval.value_sp->verbset_sp.get() != nullptr)               // should not be nullptr
+            if (symval.value_wp.lock()->verbset_sp.get() != nullptr)               // should not be nullptr
             {
-                if (symval.value_sp->verbset_sp->has_builtin == true)
+                if (symval.value_wp.lock()->verbset_sp->has_builtin == true)
                     return false;           
             }        
         }
@@ -877,17 +912,39 @@ static bool is_identifier_removable(environ_S& env, const std::wstring& ident) t
 
         symval_S symval = env.symbols.at(ident);
 
-        if (symval.no_undefine)
+        if (symval.no_remove)
            return false; 
 
 
-        // also can't be removed if this is a verbset that has one or more built-in verbs
+        // aliases can be removed (regardless of what they point to), as long as the "no remove" flag is off in the alias itself
+
+        if (symval.is_alias)
+            return true;
+
+
+        // can't be removed if identifier  is constant built-in, or typdef ("no_remove" flag should be on, however, unless it's an alias)
+
+        if ( symval.is_const | symval.is_typdef | symval.is_builtin)
+           return false; 
+        
+
+        // check to see if weak pointer in symval is still valid 
+      
+        if (symval.value_wp.expired())
+        {
+        //  count_error(); 
+        //  M_out_emsg(L"is_identifier_removable() -- symval (weak alias?) no longer points to a valid value -- cannot determine whether or not identifier (\"%S\") is removable") % ident;     
+            return false;
+        }
+
+
+        // also can't be removed if this is a verbset that has one or more built-in verbs ("no_remove" flag should be on, however, unless it's an alias)
 
         if (symval.is_verbset)
         {
-            if (symval.value_sp->verbset_sp.get() != nullptr)             // should not be nullptr
+            if (symval.value_wp.lock()->verbset_sp.get() != nullptr)             // should not be nullptr
             {
-                if (symval.value_sp->verbset_sp->has_builtin == true)
+                if (symval.value_wp.lock()->verbset_sp->has_builtin == true)
                     return false;           
             }        
         }
@@ -951,7 +1008,7 @@ M_endf
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool is_identifier_verb(const frame_S& frame, const std::wstring& ident) try
+bool is_identifier_verbset(const frame_S& frame, const std::wstring& ident) try
 {
     environ_S *p {nullptr};
     auto rc = find_environ_ident(frame, ident, p);
@@ -959,7 +1016,7 @@ bool is_identifier_verb(const frame_S& frame, const std::wstring& ident) try
     if (rc != 0)                                                    // identifier not found in any environment
          return false;                                              // failure r/c
     else                                                            // environment found with identifier
-        return is_identifier_verb(*p, ident);                       // proper environment found -- check for verb
+        return is_identifier_verbset(*p, ident);                    // proper environment found -- check for verb
 }
 M_endf
 
@@ -1033,7 +1090,7 @@ M_endf
 bool is_global_identifier_defined(   const std::wstring& ident) try   { return is_identifier_defined(   *get_global_environ()  , ident); } M_endf
 bool is_global_identifier_variable(  const std::wstring& ident) try   { return is_identifier_variable(  *get_global_environ()  , ident); } M_endf
 bool is_global_identifier_const(     const std::wstring& ident) try   { return is_identifier_const(     *get_global_environ()  , ident); } M_endf
-bool is_global_identifier_verb(      const std::wstring& ident) try   { return is_identifier_verb(      *get_global_environ()  , ident); } M_endf
+bool is_global_identifier_verbset(   const std::wstring& ident) try   { return is_identifier_verbset(   *get_global_environ()  , ident); } M_endf
 bool is_global_identifier_typdef(    const std::wstring& ident) try   { return is_identifier_typdef(    *get_global_environ()  , ident); } M_endf
 bool is_global_identifier_builtin(   const std::wstring& ident) try   { return is_identifier_builtin(   *get_global_environ()  , ident); } M_endf
 bool is_global_identifier_alias(     const std::wstring& ident) try   { return is_identifier_alias(     *get_global_environ()  , ident); } M_endf       
@@ -1073,12 +1130,12 @@ bool is_local_identifier_const(const frame_S& frame, const std::wstring& ident) 
 M_endf
 
 
-bool is_local_identifier_verb(const frame_S& frame, const std::wstring& ident) try  
+bool is_local_identifier_verbset(const frame_S& frame, const std::wstring& ident) try  
 {
     if (frame.local_sf_p == nullptr)
         return false;
     else
-        return is_identifier_verb(*(frame.local_sf_p->environ_p), ident); 
+        return is_identifier_verbset(*(frame.local_sf_p->environ_p), ident); 
 }
 M_endf
 
@@ -1165,12 +1222,12 @@ bool is_verbmain_identifier_const(const frame_S& frame, const std::wstring& iden
 M_endf
 
 
-bool is_verbmain_identifier_verb(const frame_S& frame, const std::wstring& ident) try  
+bool is_verbmain_identifier_verbset(const frame_S& frame, const std::wstring& ident) try  
 {
     if (frame.verbmain_sf_p == nullptr)
         return false;
     else
-        return is_identifier_verb(*(frame.verbmain_sf_p->environ_p), ident); 
+        return is_identifier_verbset(*(frame.verbmain_sf_p->environ_p), ident); 
 }
 M_endf
 
@@ -1257,12 +1314,12 @@ bool is_static_identifier_const(const frame_S& frame, const std::wstring& ident)
 M_endf
 
 
-bool is_static_identifier_verb(const frame_S& frame, const std::wstring& ident) try  
+bool is_static_identifier_verbset(const frame_S& frame, const std::wstring& ident) try  
 {
     if (frame.persist_sf_p == nullptr)
         return false;
     else
-        return is_identifier_verb(*(frame.persist_sf_p->environ_p), ident); 
+        return is_identifier_verbset(*(frame.persist_sf_p->environ_p), ident); 
 }
 M_endf
 
@@ -1335,27 +1392,41 @@ M_endf
 /////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 ////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+// ----------------------------------------------------------------------------------------------------------
 // internal function -- version that returns identifier value from passed-in environment (UNIT, if not found)
+// ----------------------------------------------------------------------------------------------------------
 
 static int get_identifier(environ_S& env, const std::wstring& ident, value_S& value) try
 {
-    if (!is_identifier_defined(env, ident))                 // return with R/C = -1 and unit value, if identifier is not there 
+    if (!is_identifier_defined(env, ident))                       // return with R/C = -1 and unit value, if identifier is not there 
     {
         value = unit_val(); 
         return -1;
     }
-    else                                                    // identifier is found -- might be verb or variable/constant
+    else                                                          // identifier is found -- might be verb or variable/constant
     {
+        // check to see if weak pointer in symval is still valid 
+      
+        if (env.symbols.at(ident).value_wp.expired())
+        {
+            count_error(); 
+            M_out_emsg(L"get_identifier() -- symval for identifier (\"%S\") (weak alias?) no longer points to a valid value -- cannot get value of this identifier") % ident;     
+            return -1;
+        }
+
+
         // identifier is defined -- return associated value
 
-        value = *(env.symbols.at(ident).value_sp);          // value found -- pass it back
+        value = *(env.symbols.at(ident).value_wp.lock());         // value found -- pass it back
         return 0; 
     }
 }
 M_endf
 
 
+// -----------------------------------------------------------------------------------------------
 // internal function -- version that returns complete symval entry (or empty symval, if not found)
+// -----------------------------------------------------------------------------------------------
 
 static int get_identifier(environ_S& env, const std::wstring& ident, symval_S& symval) try
 {
@@ -1373,6 +1444,41 @@ static int get_identifier(environ_S& env, const std::wstring& ident, symval_S& s
     }
 }
 M_endf
+
+
+// ------------------------------------------------------------------------------------------------------------------------------
+// internal function -- version taking pointer to environment and returning complete symval entry (or empty symval, if not found)
+// ------------------------------------------------------------------------------------------------------------------------------
+
+static int get_identifier(environ_S *env_p, const std::wstring& ident, symval_S& symval) try
+{
+    // screen out passed-in null ptr
+
+    if (env_p == nullptr)
+    {
+        symval = symval_S {};
+        return -1;
+    }
+
+
+    if (!is_identifier_defined(*env_p, ident))                 // return with R/C = -1 and empty value, if identifier is not there 
+    {
+        symval = symval_S {}; 
+        return -1;
+    }
+    else                                                    // identifier is found -- might be verb or variable/constant
+    {
+        // identifier is defined -- return associated value
+
+        symval = env_p->symbols.at(ident);                     // value found -- pass it back
+        return 0; 
+    }
+}
+M_endf
+
+
+
+
 
 
 
@@ -1674,7 +1780,7 @@ static int def_verb(environ_S& env, const std::wstring& verbname, const verbset_
     if (is_identifier_defined(env, verbname))
     {
         // locate existing verbset definition in environment -- verify that it's for a verb 
-        // ---------------------------------------------------------------------------------
+        // --------------------------------------------------------------------------------
 
         symval_S symval { };
         auto grc = get_identifier(env, verbname, symval);
@@ -1694,7 +1800,16 @@ static int def_verb(environ_S& env, const std::wstring& verbname, const verbset_
         }
 
 
-        verbset_S *verbset_p = symval.value_sp->verbset_sp.get();      
+        // check to see if weak pointer in symval is still valid 
+      
+        if (symval.value_wp.expired())
+        {
+            count_error(); 
+            M_out_emsg(L"def_verb() -- symval (weak alias?) for identifier (\"%S\") no longer points to a valid value -- cannot add new verb definition with this name") % verbname;     
+            return -1;
+        }
+
+        verbset_S *verbset_p = symval.value_wp.lock()->verbset_sp.get();      
 
         if (verbset_p == nullptr)
         {
@@ -1836,14 +1951,15 @@ static int def_verb(environ_S& env, const std::wstring& verbname, const verbset_
     // identifier is not yet defined -- add in new verbset to passed-in environment
     // ----------------------------------------------------------------------------
 
-    symval_S                  symval    {             };       // local environ_S to fill in 
-    std::shared_ptr<value_S>  value_sp  { new value_S };       // temporary shared pointer -- will release ownership when this function returns 
+    symval_S                  symval     {             };       // local environ_S to fill in 
+    std::shared_ptr<value_S>  newval_sp  { new value_S };       // temporary shared pointer -- will release ownership when this function returns 
 
     M__(last_place(L"def_verb() 5");) 
 
     symval.is_verbset  = true; 
     symval.is_builtin  = parm.builtin;
-    symval.value_sp    = value_sp;
+    symval.value_sp    = newval_sp;                             // set shared ptr to hold onto the new value being added 
+    symval.value_wp    = newval_sp;                             // also set weak ptr for access to value (if it's still around)
 
 
     // use default priority, if priority is not specified in the passed-in verbset
@@ -1856,7 +1972,7 @@ static int def_verb(environ_S& env, const std::wstring& verbname, const verbset_
 
     // add symval with new verbset_S to the sepcified environment
 
-    *(symval.value_sp) = verbset_val(verbset_in);                // everything still shared  
+    *(symval.value_wp.lock()) = verbset_val(verbset_in);         // everything still shared  
     return def_identifier(env, verbname, symval, parm.unshare);  // make sure everything is unshared  
 }
 M_endf
@@ -2010,7 +2126,7 @@ static int undef_verb(environ_S& env, const std::wstring& verbname) try
 
     // make sure this identifier is for a verb
 
-    if (!is_identifier_verb(env, verbname))
+    if (!is_identifier_verbset(env, verbname))
     {
         count_error(); 
         M_out_emsg(L"undef_verb() -- identifier \"%s\" is not a verbset -- remove verbset request failed") % verbname; 
@@ -2213,7 +2329,16 @@ static int get_verb(environ_S& env, const std::wstring& verbname, symval_S& out_
 
         if (grc == 0)
         {
-            if (symval.value_sp->verbset_sp.get() != nullptr)
+            // check to see if weak pointer in symval is still valid 
+      
+            if (symval.value_wp.expired())
+            {
+                count_error(); 
+                M_out_emsg(L"get_verb() -- symval (weak alias?) for identifier (\"%S\") no longer points to a valid value -- cannot get verb") % verbname;     
+                return -1;
+            }
+
+            if (symval.value_wp.lock()->verbset_sp.get() != nullptr)
             {
                 out_symval = symval;                        // return symval for this verbset identifier 
                 return 0;  
@@ -2465,19 +2590,20 @@ static int def_typdef(environ_S& env, const std::wstring& typdef_name, const typ
 
     // add in new typdef to passed-in environment
 
-    symval_S                 symval    {             };      // local symval_S to fill in 
-    std::shared_ptr<value_S> value_sp  { new value_S };      // temporary shared pointer -- will release ownership when this function returns 
+    symval_S                 symval    {             };     // local symval_S to fill in 
+    std::shared_ptr<value_S> newval_sp { new value_S };     // temporary shared pointer -- will release ownership when this function returns 
 
-    symval.is_typdef     = true; 
-    symval.no_update     = true;
-    symval.no_undefine   = true;
-    symval.is_builtin    = parm.builtin;
-#ifdef M_EXPOSE_SUPPORT
-    symval.is_exposed    = parm.exposed;
-#endif
-    symval.no_shadow     = parm.no_shadow;
-    symval.value_sp      = value_sp;
-    *(symval.value_sp)   = typdef_val(typdef); 
+    symval.is_typdef            = true; 
+    symval.no_update            = true;
+    symval.no_remove            = true;
+    symval.is_builtin           = parm.builtin;
+#ifdef M_EXPOSE_SUPPORT        
+    symval.is_exposed           = parm.exposed;
+#endif                         
+    symval.no_shadow            = parm.no_shadow;
+    symval.value_sp             = newval_sp;                // set shared pointer to hold onto value
+    symval.value_wp             = newval_sp;                // set weak ptr to access the value later (if it's still here) 
+    *(symval.value_wp.lock())   = typdef_val(typdef); 
 
     return def_identifier(env, typdef_name, symval, parm.unshare);
 }
@@ -2826,7 +2952,16 @@ static int get_typdef(environ_S& env, const std::wstring& typdef_name, symval_S&
 
         if (grc == 0)
         {
-            if (symval.value_sp->typdef_sp.use_count() > 0)
+            // check to see if weak pointer in symval is still valid 
+           
+            if (symval.value_wp.expired())
+            {
+                count_error(); 
+                M_out_emsg(L"get_typdef() -- symval (weak alias?) for identifier (\"%S\")  no longer points to a valid value -- cannot get typdef for this identifier") % typdef_name;     
+                return -1;
+            }  
+
+            if (symval.value_wp.lock()->typdef_sp.use_count() > 0)
             {
                 symval_out = symval;                        // return symval_S associated with this typdef identifier or variable 
                 return 0;  
@@ -3059,27 +3194,29 @@ static int def_variable(environ_S& env, const std::wstring& ident, const value_S
 
     // set flags so that built-ins and constants can't be updated or undefined
 
-    if (inparm.constant)    parm.no_undefine  = true; 
+    if (inparm.constant)    parm.no_remove    = true; 
     if (inparm.constant)    parm.no_update    = true; 
-    if (inparm.builtin )    parm.no_undefine  = true; 
+    if (inparm.builtin )    parm.no_remove    = true; 
     if (inparm.builtin )    parm.no_update    = true; 
 
 
     // construct symval_S for new local variable identifier
 
-    symval_S                  symval    {             };   // local environ_S to fill in 
-    std::shared_ptr<value_S>  value_sp  { new value_S };   // temporary shared pointer -- will release ownership when this function returns 
+    symval_S                  symval    {             };            // local environ_S to fill in 
+    std::shared_ptr<value_S>  newval_sp { new value_S };            // temporary shared pointer -- will release ownership when this function returns 
 
-    symval.value_sp      = value_sp;
-    *(symval.value_sp)   = value;  
-    symval.is_builtin    = parm.builtin;
-    symval.is_const      = parm.constant;
-#ifdef M_EXPOSE_SUPPORT
-    symval.is_exposed    = parm.exposed;
-#endif
-    symval.no_shadow     = parm.no_shadow;
-    symval.no_update     = parm.no_update;                       
-    symval.no_undefine   = parm.no_update;                       
+    symval.value_sp             = newval_sp;                        // set shared pointer to hold onto value
+    symval.value_wp             = newval_sp;                        // set weak pointer for later access to value (if it's still there)
+    *(symval.value_wp.lock())   = value;  
+    symval.is_builtin            = parm.builtin;
+    symval.is_var                = parm.variable;
+    symval.is_const              = parm.constant;
+#ifdef M_EXPOSE_SUPPORT         
+    symval.is_exposed            = parm.exposed;
+#endif                          
+    symval.no_shadow             = parm.no_shadow;
+    symval.no_update             = parm.no_update;                       
+    symval.no_remove             = parm.no_remove;                       
                                         
     return def_identifier(env, ident, symval, parm.unshare); 
 }
@@ -3093,7 +3230,7 @@ int def_local_var(frame_S& frame, const std::wstring& ident, const value_S& valu
     def_parm_S parm = inparm; 
     parm.no_shadow  = false;                                                       // non-globals can't be no_shadow
     parm.builtin    = false;                                                       // non-globals can't be builtin
- 
+    parm.variable   = !parm.constant;                                              // parm.constant may have been set by def_local_constant() 
 
     // make sure current stack frame has an associated local enviromment
 
@@ -3123,7 +3260,9 @@ M_endf
 int def_local_const(frame_S& frame, const std::wstring& ident, const value_S& value, const def_parm_S& inparm) try
 {  
     def_parm_S parm = inparm; 
+
     parm.constant   = true;                                                        // mark this as constant
+
     
     //  ( local_sf_p check and shadowing check is in def_local_var() ) 
 
@@ -3141,6 +3280,7 @@ int def_parms_var(frame_S& frame, const std::wstring& ident, const value_S& valu
     def_parm_S parm = inparm; 
     parm.no_shadow  = false;                                                       // non-globals can't be no_shadow
     parm.builtin    = false;                                                       // non-globals can't be builtin
+    parm.constant   = false;                                                       
      
     return def_variable(*(frame.search_sf_p->environ_p), ident, value, parm);      // search_p is always newest SF -- no shadowing check needed
 }
@@ -3152,8 +3292,9 @@ M_endf
 int def_verbmain_var(frame_S& frame, const std::wstring& ident, const value_S& value, const def_parm_S& inparm) try
 {  
     def_parm_S parm = inparm; 
-    parm.no_shadow  = false;                                                                    // non-globals can't be no_shadow
-    parm.builtin    = false;                                                                    // non-globals can't be builtin
+    parm.no_shadow  = false;                                                       // non-globals can't be no_shadow
+    parm.builtin    = false;                                                       // non-globals can't be builtin
+    parm.variable   = !parm.constant;                                              // parm.constant may have been set by def_local_constant() 
     
 
     // make sure current stack frame has an associated verbmain enviromment
@@ -3200,8 +3341,9 @@ M_endf
 int def_static_var(frame_S& frame, const std::wstring& ident, const value_S& value, const def_parm_S& inparm) try
 {  
     def_parm_S parm = inparm; 
-    parm.no_shadow  = false;                                                                    // non-globals can't be no_shadow
-    parm.builtin    = false;                                                                    // non-globals can't be builtin
+    parm.no_shadow  = false;                                                       // non-globals can't be no_shadow
+    parm.builtin    = false;                                                       // non-globals can't be builtin
+    parm.variable   = !parm.constant;                                              // parm.constant may have been set by def_local_constant() 
     
 
     // make sure current stack frame has an associated static enviromment
@@ -3246,6 +3388,13 @@ M_endf
 
 int def_global_var(const std::wstring& ident, const value_S& value, const def_parm_S& inparm) try
 {  
+    def_parm_S parm = inparm; 
+#ifdef M_EXPOSE_SUPPORT
+    parm.exposed    = true;                                                        // globals are always exposed
+#endif
+    parm.variable   = !parm.constant;                                              // parm.constant may have been set by def_local_constant() 
+
+
     // make sure this identifier is not shadowed in an environment newer than the global environment
 
     if (is_global_ident_shadowed(ident))  
@@ -3254,11 +3403,6 @@ int def_global_var(const std::wstring& ident, const value_S& value, const def_pa
         M_out_emsg(L"def_global_var() -- global identifier = \"%S\" would be shadowed in a non-global environment -- it cannot be defined as a global identifier from this stack frame") % ident; 
         return -1;       
     }
-
-    def_parm_S parm = inparm; 
-#ifdef M_EXPOSE_SUPPORT
-    parm.exposed    = true;                                                        // globals are always exposed
-#endif
 
     return def_variable(*get_global_environ(), ident, value, parm);       
 }
@@ -3305,43 +3449,49 @@ static int undef_variable(environ_S& env, const std::wstring& ident) try
     if (!is_identifier_defined(env, ident))
     {
         count_error(); 
-        M_out_emsg(L"undef_typdef() -- variable identifier \"%s\" (to be removed) is not defined") % ident; 
+        M_out_emsg(L"undef_variable() -- variable identifier \"%s\" (to be removed) is not defined") % ident; 
         return -1;
     }
 
     if (is_identifier_typdef(env, ident))
     {
         count_error(); 
-        M_out_emsg(L"undef_var() -- cannot remove typdef \"%s\"") % ident; 
+        M_out_emsg(L"undef_variable() -- cannot remove typdef \"%s\"") % ident; 
         return -1;
     }
     
-    if (is_identifier_verb(env, ident)) 
+    if (is_identifier_verbset(env, ident)) 
     {
         count_error(); 
-        M_out_emsg(L"undef_var() -- cannot remove verb \"%s\"") % ident; 
+        M_out_emsg(L"undef_variable() -- cannot remove verb \"%s\"") % ident; 
         return -1;
     }
-
-
+    
     if (is_identifier_builtin(env, ident)) 
     {
         count_error(); 
-        M_out_emsg(L"undef_var() -- cannot remove builtin identifier \"%s\"") % ident; 
+        M_out_emsg(L"undef_variable() -- cannot remove builtin identifier \"%s\"") % ident; 
+        return -1;
+    }
+    
+    if (is_identifier_alias(env, ident)) 
+    {
+        count_error(); 
+        M_out_emsg(L"undef_variable() -- cannot remove alias identifier \"%s\" using @UNVAR, etc.") % ident; 
         return -1;
     }
     
     if (is_identifier_const(env,ident))
     {
         count_error(); 
-        M_out_emsg(L"undef_var() -- cannot remove constant identifier \"%s\"") % ident; 
+        M_out_emsg(L"undef_variable() -- cannot remove constant identifier \"%s\"") % ident; 
         return -1;
     }  
 
     if (!is_identifier_removable(env, ident))
     {
         count_error(); 
-        M_out_emsg(L"undef_var() -- identifier \"%s\" is not removable -- remove request failed") % ident; 
+        M_out_emsg(L"undef_variable() -- identifier \"%s\" is not removable -- remove request failed") % ident; 
         return -1;
     }
  
@@ -3484,27 +3634,36 @@ M_endf
                                
 static int get_variable(environ_S& env, const std::wstring& ident, value_S& value) try
 {
-    if (!is_identifier_defined(env, ident))                 // return with R/C = -1 and empty value, if identifier is not there 
-    {
-        value = value_S {}; 
-        return -1;
-    }
-    else                                                    // identifier is found -- might be verb or variable/constant
-    {
-        if (
-             is_identifier_verb(env, ident)                 // don't pass back verbs found in environment
-             ||
-             is_identifier_typdef(env, ident)               // don't pass back typedefs found in environment
-            )
+    if (!is_identifier_defined(env, ident))                         // return with R/C = -1 and empty value, if identifier is not there 
+    {                                                           
+        value = value_S {};                                     
+        return -1;                                              
+    }                                                           
+    else                                                            // identifier is found -- might be verb or variable/constant
+    {                                                           
+        if (                                                    
+             is_identifier_verbset(env, ident)                      // don't pass back verbs found in environment
+             ||                                                 
+             is_identifier_typdef(env, ident)                       // don't pass back typedefs found in environment
+            )                                                   
         {
            value = value_S {}; 
            return -1;           
         }               
+ 
 
+        // check to see if weak pointer in symval is still valid 
+      
+        if (env.symbols.at(ident).value_wp.expired())
+        {
+            count_error(); 
+            M_out_emsg(L"get_variable() -- symval (weak alias?) for identifier (\"%S\") no longer points to a valid value -- cannot determine get value for variable") % ident;     
+            return -1;
+        } 
 
         // identifier is variable/constant -- return it
 
-        value = *(env.symbols.at(ident).value_sp);         // value found -- pass it back
+        value = *(env.symbols.at(ident).value_wp.lock());           // value found -- pass it back
         return 0; 
     }
 }
@@ -3525,7 +3684,7 @@ static int get_variable(environ_S& env, const std::wstring& ident, symval_S& sym
     else                                                    // identifier is found -- might be verb or variable/constant or typedef, etc.
     {
         if (
-             is_identifier_verb(env, ident)                 // don't pass back verbs found in environment
+             is_identifier_verbset(env, ident)              // don't pass back verbs found in environment
              ||
              is_identifier_typdef(env, ident)               // don't pass back typedefs found in environment
             )
@@ -3733,12 +3892,11 @@ static int update_variable(environ_S& env, const std::wstring& ident, const valu
     }
 
 
-    // identifier exists in environment -- make sure it's not defined as const or verb or typdef
+    // identifier exists in environment -- make sure it's not defined as const or verb or typdef, and is not marked "no_update" 
 
-    symval_S symval { };                                      // local copy of symval from environ for this identifier
-    get_identifier(env, ident, symval);                       // should not fail, since identifier is known to be defined in target environment
-
-
+    symval_S symval { };                                                         // local copy of symval from environ for this identifier
+    get_identifier(env, ident, symval);                                          // should not fail, since identifier is known to be defined in target environment
+    
     if (symval.is_const)
     {
         count_error(); 
@@ -3746,31 +3904,61 @@ static int update_variable(environ_S& env, const std::wstring& ident, const valu
         return -1;
     }
    
-    if (symval.is_verbset)  // ??????? allow verbset assigned to a variable to be updated -- just not a real verbset
+    if (symval.is_verbset)                                                       // (allow a non-constant variable holding a verbset value to be updated -- just not a real verbset symbol)
     {
         count_error(); 
-        M_out_emsg(L"update_var() -- cannot alter/redefine verb definition \"%s\" with new value") % ident; 
+        M_out_emsg(L"update_var() -- cannot alter/redefine verb overload set definition \"%s\" with new value") % ident; 
         return -1;
     }   
 
-    if (symval.is_typdef)   // ??? allow typedef assigned to a variable to be updated -- just not a real typedef
+    if (symval.is_typdef)                                                        // (allow a non-constant variable holding a verbset value to be updated -- just not a real typdef symbol)
     {
         count_error(); 
         M_out_emsg(L"update_var() -- cannot alter/redefine type definition (typedef) \"%s\" with new value") % ident; 
         return -1;
     }   
 
+    if (symval.no_update)                                                        // above tests should have filtered out most/all cases where the "no update" flag is on
+    {
+        count_error(); 
+        M_out_emsg(L"update_var() -- cannot update identifier \"%s\" with new value") % ident; 
+        return -1;
+    }
+    
 
-    // update associated value for this symval entry -- in place update -- don't change location  (value_sp should decrement use count and run destructors, etc.)    
+    // check to see if weak pointer in symval is still valid 
+  
+    if (symval.value_wp.expired())
+    {
+        count_error(); 
+        M_out_emsg(L"update_var() -- symval (weak alias?) for identifier (\"%S\") no longer points to a valid value -- cannot update variable") % ident;     
+        return -1;
+    }
 
-    *(symval.value_sp) = value;                                
+
+    // update associated value for this symval entry -- in place update -- don't change value_S location  or address in value_wp -- destructors should be run on individual fields in the value_S structure
+
+    *(symval.value_wp.lock()) = value;                                
 
 
     // make sure any nested objects are unshared, if requested by caller
   
     if (unshare)                             
-        unshare_value(*(symval.value_sp)); 
+        unshare_value(*(symval.value_wp.lock())); 
 
+
+    //
+    //     symval flags settings:     before            after
+    //                                ---------------   --------------------
+    //  
+    //     is_exposed                 true or false     unchanged    
+    //     is_const                   false             false or can be set to true, if requested (see below) 
+    //     is_typdef                  false             false (even if value assigned to this variable is a typdef) 
+    //     is_verbset                 false             false (even if value assigned to this variable is a verbset)
+    //     no_update                  false           
+    //
+    //
+    //
 
     // make this symval entry constant, if requested
 
@@ -3903,14 +4091,642 @@ int update_var(frame_S& frame, const std::wstring& ident, const value_S& value, 
     auto rc = find_environ_ident(frame, ident, p);
                                                                      
     if (rc != 0)                                                        // identifier not found in any environment
+    {
+        count_error(); 
+        M_out_emsg(L"update_var() -- identifier = \"%S\" is not defined/visible -- it cannot be updated from this stack frame") % ident; 
         return -1;                                                      // failure r/c
-    else                                                                // environment found with variable
-        return update_variable(*p, ident, value, make_const, unshare);  // proper environment found -- update the variable in that environment
+    }
+
+    return update_variable(*p, ident, value, make_const, unshare);  // proper environment found -- update the variable in that environment
 }
 M_endf
 
 
 
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+//▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////
+////
+////                       A       L        IIIII       A         SSSS                                
+////                      A A      L          I        A A       S                                  
+////                     A   A     L          I       A   A       SSS                               
+////                     AAAAA     L          I       AAAAA          S                              
+////                     A   A     LLLLL    IIIII     A   A      SSSS                               
+////
+////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   def_local_alias()          -- defines new alias in local    environment 
+////   def_parms_alias()          -- defines new alias in search   environment -- used only for defining invocation parms aliases 
+////   def_verbmain_alias()       -- defines new alias in verbmain environment 
+////   def_static_alias()         -- defines new alias in static   environment 
+////   def_global_alias()         -- defines new alias in global   environment 
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+
+static int def_alias(environ_S& env, const std::wstring& ident, const std::wstring& alias, const def_parm_S& inparm) try
+{  
+    def_parm_S parm  = inparm; 
+    
+
+    // locate symval for existing identifier being aliased
+    // --------------------------------------------------- 
+
+    environ_S *environ_p {nullptr}; 
+    symval_S   symval    {       };    
+
+    (void)find_environ_ident(*(get_newest_sf()->search_sf_p), ident, environ_p);            // my return nullptr, if identifier not found
+    auto grc = get_identifier(environ_p, ident, symval);                                    // r/c = -1, if envron_p is nullptr (or ident not found, which should not happen here)
+        
+    if (grc != 0)
+    {
+        count_error(); 
+        M_out_emsg(L"def_alias() -- identifier being aliased (\"%S\") is not defined or cannot be found -- cannot create alias (\"%S\") for it") % ident % alias;     
+        return -1;
+    }
+    
+
+    // complain if trying to make a regular alias from a weak alias 
+
+    if (symval.is_weak)
+    {
+        count_error(); 
+        M_out_emsg(L"def_alias() -- identifier being aliased (\"%S\") is a weak alias -- cannot create a (regular) alias (\"%S\") from it") % ident % alias;     
+        return -1;
+    }
+   
+
+    // update symval_S for the alias
+    // -----------------------------
+    //
+    //  - keep existing flags settings for:   is_var        is_const     is_verbset    is_typdef     is_builtin       no_update  (can be overiden by input parms) 
+    //  - always set:                         is_alias 
+    //  - use passed-in parms for:            (is_exposed)  no_shadow    no_remove     (caller can request no_update to be set on, even if original identifier is updatable -- otherwise no_update is inherited from existing flags)
+    //
+    //  - symval serno will be set to a new value by def_identifier()
+    
+    symval.is_alias      = true;              //make sure this symbol is an alias (might already be on, if this is an alias of an alias)
+    symval.is_typdef     = false;
+
+#ifdef M_EXPOSE_SUPPORT
+    symval.is_exposed    = parm.exposed;
+#endif
+    symval.no_shadow     = parm.no_shadow;
+    symval.no_remove     = parm.no_remove; 
+
+    if (parm.no_update == true)
+        symval.no_update = true;                       
+                     
+
+    // add updated symval to caller's passed-in environment (def_identifier will check for duplicate)    
+
+    return def_identifier(env, alias, symval, false);                // never request unshare, since value_sp/value_wp needs to stay pointing to same value as the original identifier's value_sp/value_wp  
+}
+M_endf                          
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+int def_local_alias(frame_S& frame, const std::wstring& ident, const std::wstring& alias, const def_parm_S& inparm) try
+{  
+    def_parm_S parm = inparm; 
+    parm.no_shadow  = false;                                                       // non-globals can't be no_shadow
+    parm.builtin    = false;                                                       // non-globals can't be builtin
+ 
+
+    // make sure current stack frame has an associated local enviromment
+
+    if (frame.local_sf_p == nullptr)
+    {
+        count_error(); 
+        M_out_emsg(L"def_local_alias() -- current stack frame has no associated local environment -- alias = \"%S\" cannot be defined as local: in this stack frame") % alias;     
+        return -1;  
+    }
+
+
+    // make sure this identifier is not shadowed in a parms-only environment newer than the local environment
+
+    if (is_ident_sf_shadowed(frame.local_sf_p, alias))  
+    {                                                                          
+        count_error(); 
+        M_out_emsg(L"def_local_alias() -- local alias = \"%S\" would be shadowed by saved verb invocation parms -- it cannot be defined as a local alias from this stack frame") % alias; 
+        return -1;       
+    }
+
+    return def_alias(*(frame.local_sf_p->environ_p), ident, alias, parm);     
+}
+M_endf
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+// special version for defining verb invocation parms in search stack frame rather than local stack frame as usual
+
+int def_parms_alias(frame_S& frame, const std::wstring& ident, const std::wstring& alias, const def_parm_S& inparm) try
+{  
+    def_parm_S parm = inparm; 
+    parm.no_shadow  = false;                                                       // non-globals can't be no_shadow
+    parm.builtin    = false;                                                       // non-globals can't be builtin
+     
+    return def_alias(*(frame.search_sf_p->environ_p), ident, alias, parm);      // search_p is always newest SF -- no shadowing check needed
+}
+M_endf
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+int def_verbmain_alias(frame_S& frame, const std::wstring& ident, const std::wstring& alias, const def_parm_S& inparm) try
+{  
+    def_parm_S parm = inparm; 
+    parm.no_shadow  = false;                                                                    // non-globals can't be no_shadow
+    parm.builtin    = false;                                                                    // non-globals can't be builtin
+    
+
+    // make sure current stack frame has an associated verbmain enviromment
+
+    if (frame.verbmain_sf_p == nullptr)
+    {
+        count_error(); 
+        M_out_emsg(L"def_verbmain_alias() -- current stack frame has no associated verbmain environment -- alias = \"%S\" cannot be defined as verbmain: in this stack frame") % alias;     
+        return -1;  
+    }
+    
+
+    // make sure this identifier is not shadowed in an environment newer than the static environment
+
+    if (is_ident_sf_shadowed(frame.verbmain_sf_p, alias))  
+    {                                                                                     
+        count_error(); 
+        M_out_emsg(L"def_verbmain_alias() -- verbmain alias = \"%S\" would be shadowed in a local environment -- it cannot be defined as a verbmain alias from this stack frame") % alias; 
+        return -1;       
+    }
+
+    return def_alias(*(frame.verbmain_sf_p->environ_p), ident, alias, parm);       
+}
+M_endf
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+int def_static_alias(frame_S& frame, const std::wstring& ident, const std::wstring& alias, const def_parm_S& inparm) try
+{  
+    def_parm_S parm = inparm; 
+    parm.no_shadow  = false;                                                                    // non-globals can't be no_shadow
+    parm.builtin    = false;                                                                    // non-globals can't be builtin
+    
+
+    // make sure current stack frame has an associated static enviromment
+
+    if (frame.persist_sf_p == nullptr)
+    {
+        count_error(); 
+        M_out_emsg(L"def_static_alias() -- current stack frame has no associated static environment -- alias = \"%S\" cannot be defined as static: in this stack frame") % alias;     
+        return -1;  
+    }
+    
+
+    // make sure this identifier is not shadowed in an environment newer than the static environment
+
+    if (is_ident_sf_shadowed(frame.persist_sf_p, alias))  
+    {                                                                                     
+        count_error(); 
+        M_out_emsg(L"def_static_alias() -- static alias = \"%S\" would be shadowed in a local (non-static) environment -- it cannot be defined as a static alias from this stack frame") % alias; 
+        return -1;       
+    }
+
+    return def_alias(*(frame.persist_sf_p->environ_p), ident, alias, parm);       
+}
+M_endf
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+int def_global_alias(const std::wstring& ident, const std::wstring& alias, const def_parm_S& inparm) try
+{  
+    // make sure this identifier is not shadowed in an environment newer than the global environment
+
+    if (is_global_ident_shadowed(alias))  
+    {                                             // any global identifier is/would be shadowed
+        count_error(); 
+        M_out_emsg(L"def_global_alias() -- global alias = \"%S\" would be shadowed in a non-global environment -- it cannot be defined as a global alias from this stack frame") % alias; 
+        return -1;       
+    }
+
+    def_parm_S parm = inparm; 
+#ifdef M_EXPOSE_SUPPORT
+    parm.exposed    = true;                                                        // globals are always exposed
+#endif
+
+    return def_alias(*get_global_environ(), ident, alias, parm);       
+}
+M_endf
+
+
+///_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   undef_local_alias()    -- removes passed-in alias (if it is present in local    environment) 
+////   undef_verbmain_alias() -- removes passed-in alias (if it is present in verbmain environment) 
+////   undef_static_alias()   -- removes passed-in alias (if it is present in static   environment) 
+////   undef_global_alias()   -- removes passed-in alias (if it is present in global   environment) 
+////                   
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+static int undef_alias(environ_S& env, const std::wstring& ident) try
+{
+    // see if identifier already exists, and is constant
+
+    auto ct = env.symbols.count(ident);
+
+    if (!is_identifier_defined(env, ident))
+    {
+        count_error(); 
+        M_out_emsg(L"undef_alias() -- alias identifier \"%S\" (to be removed) is not defined") % ident; 
+        return -1;
+    }
+
+    if (!is_identifier_alias(env, ident))
+    {
+        count_error(); 
+        M_out_emsg(L"undef_alias() -- identifier \"%S\" is not an alias -- cannot remove it using @UNALIAS, etc.") % ident; 
+        return -1;
+    }
+  
+
+    // note that aliases for typdef verbset const, etc. can all be removed
+
+    if (!is_identifier_removable(env, ident))
+    {
+        count_error(); 
+        M_out_emsg(L"undef_var() -- alias \"%s\" is not removable -- remove request failed") % ident; 
+        return -1;
+    }
+ 
+    undef_identifier(env, ident);                     // get rid of old value 
+    return 0;
+}
+M_endf
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int undef_local_alias(frame_S& frame, const std::wstring& ident) try
+{
+    // make sure current stack frame has an associated local enviromment
+
+    if (frame.local_sf_p == nullptr)
+    {
+        count_error(); 
+        M_out_emsg(L"undef_local_alias() -- current stack frame has no associated local environment -- alias = \"%S\" cannot be undefined as local: in this stack frame") % ident;     
+        return -1;  
+    }
+
+#if 0
+    // make sure this identifier is not shadowed in a parms-only environment newer than the local environment
+
+    if (is_ident_sf_shadowed(frame.local_sf_p, ident))  
+    {                                                                          
+        count_error(); 
+        M_out_emsg(L"undef_local_alias() -- local alias = \"%S\" is shadowed by saved verb invocation parms -- it cannot be undefined from this stack frame") % ident; 
+        return -1;       
+    }
+#endif
+
+
+    return undef_alias(*(frame.local_sf_p->environ_p), ident);
+}
+M_endf
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int undef_verbmain_alias(frame_S& frame, const std::wstring& ident) try
+{
+    // make sure current stack frame has an associated verbmain enviromment
+
+    if (frame.verbmain_sf_p == nullptr)
+    {
+        count_error(); 
+        M_out_emsg(L"undef_verbmain_alias() -- current stack frame has no associated verbmain environment -- alias = \"%S\" cannot be undefined as verbmain: in this stack frame") % ident;     
+        return -1;  
+    }
+
+#if 0
+    // make sure this identifier is not shadowed in an environment newer than the verbmain environment
+
+    if (is_ident_sf_shadowed(frame.verbmain_sf_p, ident))  
+    {                                                                                     
+        count_error(); 
+        M_out_emsg(L"undef_verbmain_alias() -- verbmain alias = \"%S\" is shadowed in a local environment -- it cannot be undefined from this stack frame") % ident; 
+        return -1;       
+    }
+#endif
+    
+    return undef_alias(*(frame.verbmain_sf_p->environ_p), ident);
+}
+M_endf
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int undef_static_alias(frame_S& frame, const std::wstring& ident) try
+{
+    // make sure current stack frame has an associated static enviromment
+
+    if (frame.persist_sf_p == nullptr)
+    {
+        count_error(); 
+        M_out_emsg(L"undef_static_alias() -- current stack frame has no associated static environment -- alias = \"%S\" cannot be undefined as static: in this stack frame") % ident;     
+        return -1;  
+    }
+
+#if 0
+    // make sure this identifier is not shadowed in an environment newer than the static environment
+
+    if (is_ident_sf_shadowed(frame.persist_sf_p, ident))  
+    {                                                                                     
+        count_error(); 
+        M_out_emsg(L"undef_static_alias() -- static alias = \"%S\" is shadowed in a local (non-static) environment -- it cannot be undefined from this stack frame") % ident; 
+        return -1;       
+    }
+#endif
+    
+    return undef_alias(*(frame.persist_sf_p->environ_p), ident);
+}
+M_endf
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int undef_global_alias(const std::wstring& ident) try
+{
+
+#if 0
+    // make sure this identifier is not shadowed in a non-global environment
+
+    if (is_global_ident_shadowed(ident))  
+    {                                                                                     
+        count_error(); 
+        M_out_emsg(L"global_static_alias() -- global alias = \"%S\" is shadowed in a non-global environment -- it cannot be undefined from this stack frame") % ident; 
+        return -1;       
+    }
+#endif
+
+    return undef_alias(*get_global_environ(), ident);
+}
+M_endf
+
+
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+////"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+////
+////
+////   def_local_weak_alias()          -- defines new weak alias in local    environment 
+////   def_parms_weak_alias()          -- defines new weak alias in search   environment -- used only for defining invocation parms aliases 
+////   def_verbmain_weak_alias()       -- defines new weak alias in verbmain environment 
+////   def_static_weak_alias()         -- defines new weak alias in static   environment 
+////   def_global_weak_alias()         -- defines new weak alias in global   environment 
+////
+////_________________________________________________________________________________________________________________________________________________________________
+////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+/////\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+
+static int def_weak_alias(environ_S& env, const std::wstring& ident, const std::wstring& alias, const def_parm_S& inparm) try
+{  
+    def_parm_S parm  = inparm; 
+    
+
+    // locate symval for existing identifier being aliased
+    // --------------------------------------------------- 
+
+    environ_S *environ_p {nullptr}; 
+    symval_S   symval    {       };    
+
+    (void)find_environ_ident(*(get_newest_sf()->search_sf_p), ident, environ_p);            // my return nullptr, if identifier not found
+    auto grc = get_identifier(environ_p, ident, symval);                                    // r/c = -1, if envron_p is nullptr (or ident not found, which should not happen here)
+        
+    if (grc != 0)
+    {
+        count_error(); 
+        M_out_emsg(L"def_weak_alias() -- identifier being aliased (\"%S\") is not defined or cannot be found -- cannot create weak alias (\"%S\") for it") % ident % alias;     
+        return -1;
+    }
+    
+
+    // update symval_S for the alias
+    // -----------------------------
+    //
+    //  - keep existing flags settings for:   is_var        is_const     is_verbset    is_typdef     is_builtin       no_update  (can be overiden by input parms) 
+    //  - always set:                         is_alias 
+    //  - use passed-in parms for:            (is_exposed)  no_shadow    no_remove     (caller can request no_update to be set on, even if original identifier is updatable -- otherwise no_update is inherited from existing flags)
+    //
+    //  -- shared_Ptr to value_S is reset, so as to not assert ownership over the weak-aliased value_S 
+    //
+    //  - symval serno will be set to a new value by def_identifier()
+    
+    symval.value_sp.reset();                  // get rid of ownership of aliased value_S -- value_wp will remain pointing to the value_S, while it's still around   
+
+    symval.is_alias      = true;              // make sure this symbol is an alias (might already be on, if this is an alias of an alias)
+    symval.is_weak       = true;              // indicate this is a weak alias 
+    symval.is_typdef     = false;
+
+#ifdef M_EXPOSE_SUPPORT
+    symval.is_exposed    = parm.exposed;
+#endif
+    symval.no_shadow     = parm.no_shadow;
+    symval.no_remove     = parm.no_remove; 
+
+    if (parm.no_update == true)
+        symval.no_update = true;                       
+                     
+
+    // add updated symval to caller's passed-in environment (def_identifier will check for duplicate)    
+
+    return def_identifier(env, alias, symval, false);                // never request unshare, since value_sp/value_wp needs to stay pointing to same value as the original identifier's value_sp/value_wp  
+}
+M_endf                          
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+int def_local_weak_alias(frame_S& frame, const std::wstring& ident, const std::wstring& alias, const def_parm_S& inparm) try
+{  
+    def_parm_S parm = inparm; 
+    parm.no_shadow  = false;                                                       // non-globals can't be no_shadow
+    parm.builtin    = false;                                                       // non-globals can't be builtin
+ 
+
+    // make sure current stack frame has an associated local enviromment
+
+    if (frame.local_sf_p == nullptr)
+    {
+        count_error(); 
+        M_out_emsg(L"def_local_weak_alias() -- current stack frame has no associated local environment -- weak alias = \"%S\" cannot be defined as local: in this stack frame") % alias;     
+        return -1;  
+    }
+
+
+    // make sure this identifier is not shadowed in a parms-only environment newer than the local environment
+
+    if (is_ident_sf_shadowed(frame.local_sf_p, alias))  
+    {                                                                          
+        count_error(); 
+        M_out_emsg(L"def_local_weak_alias() -- local weak alias = \"%S\" would be shadowed by saved verb invocation parms -- it cannot be defined as a local weak alias from this stack frame") % alias; 
+        return -1;       
+    }
+
+    return def_weak_alias(*(frame.local_sf_p->environ_p), ident, alias, parm);     
+}
+M_endf
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+// special version for defining verb invocation parms in search stack frame rather than local stack frame as usual
+
+int def_parms_weak_alias(frame_S& frame, const std::wstring& ident, const std::wstring& alias, const def_parm_S& inparm) try
+{  
+    def_parm_S parm = inparm; 
+    parm.no_shadow  = false;                                                          // non-globals can't be no_shadow
+    parm.builtin    = false;                                                          // non-globals can't be builtin
+     
+    return def_weak_alias(*(frame.search_sf_p->environ_p), ident, alias, parm);       // search_p is always newest SF -- no shadowing check needed
+}
+M_endf
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+int def_verbmain_weak_alias(frame_S& frame, const std::wstring& ident, const std::wstring& alias, const def_parm_S& inparm) try
+{  
+    def_parm_S parm = inparm; 
+    parm.no_shadow  = false;                                                                    // non-globals can't be no_shadow
+    parm.builtin    = false;                                                                    // non-globals can't be builtin
+    
+
+    // make sure current stack frame has an associated verbmain enviromment
+
+    if (frame.verbmain_sf_p == nullptr)
+    {
+        count_error(); 
+        M_out_emsg(L"def_verbmain_weak_alias() -- current stack frame has no associated verbmain environment -- weak alias = \"%S\" cannot be defined as verbmain: in this stack frame") % alias;     
+        return -1;  
+    }
+    
+
+    // make sure this identifier is not shadowed in an environment newer than the static environment
+
+    if (is_ident_sf_shadowed(frame.verbmain_sf_p, alias))  
+    {                                                                                     
+        count_error(); 
+        M_out_emsg(L"def_verbmain_weak_alias() -- verbmain weak alias = \"%S\" would be shadowed in a local environment -- it cannot be defined as a verbmain weak alias from this stack frame") % alias; 
+        return -1;       
+    }
+
+    return def_weak_alias(*(frame.verbmain_sf_p->environ_p), ident, alias, parm);       
+}
+M_endf
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+int def_static_weak_alias(frame_S& frame, const std::wstring& ident, const std::wstring& alias, const def_parm_S& inparm) try
+{  
+    def_parm_S parm = inparm; 
+    parm.no_shadow  = false;                                                                    // non-globals can't be no_shadow
+    parm.builtin    = false;                                                                    // non-globals can't be builtin
+    
+
+    // make sure current stack frame has an associated static enviromment
+
+    if (frame.persist_sf_p == nullptr)
+    {
+        count_error(); 
+        M_out_emsg(L"def_static_weak_alias() -- current stack frame has no associated static environment -- weak alias = \"%S\" cannot be defined as static: in this stack frame") % alias;     
+        return -1;  
+    }
+    
+
+    // make sure this identifier is not shadowed in an environment newer than the static environment
+
+    if (is_ident_sf_shadowed(frame.persist_sf_p, alias))  
+    {                                                                                     
+        count_error(); 
+        M_out_emsg(L"def_static_weak_alias() -- static weak alias = \"%S\" would be shadowed in a local (non-static) environment -- it cannot be defined as a static weak alias from this stack frame") % alias; 
+        return -1;       
+    }
+
+    return def_weak_alias(*(frame.persist_sf_p->environ_p), ident, alias, parm);       
+}
+M_endf
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+int def_global_weak_alias(const std::wstring& ident, const std::wstring& alias, const def_parm_S& inparm) try
+{  
+    // make sure this identifier is not shadowed in an environment newer than the global environment
+
+    if (is_global_ident_shadowed(alias))  
+    {                                             // any global identifier is/would be shadowed
+        count_error(); 
+        M_out_emsg(L"def_global_weak_alias() -- global weak alias = \"%S\" would be shadowed in a non-global environment -- it cannot be defined as a global weak alias from this stack frame") % alias; 
+        return -1;       
+    }
+
+    def_parm_S parm = inparm; 
+#ifdef M_EXPOSE_SUPPORT
+    parm.exposed    = true;                                                        // globals are always exposed
+#endif
+
+    return def_weak_alias(*get_global_environ(), ident, alias, parm);       
+}
+M_endf
+   
+
+// note: use undef_xxx_alias() to undefine weak aliases
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// note: use update_xxx_var() and get_xx_var() to update of find aliases
 
 
 //_________________________________________________________________________________________________________________________________________________________________
