@@ -25,7 +25,7 @@ to be parsed as verbs ("@" leading sigil), keyword names (":" trailing sigil), o
   * No garbage collection
   * No list comprehensions and generators, ranges, coroutines, etc.
   * No concurrency, multi-threading, green threads, fibers, channels, etc. 
-  * No trancendental functions, BigNum support, and other math support 
+  * No transcendental functions, BigNum support, and other math support 
   * No file I/O (except very limited I/O to/from stdout/stdin/stderr) 
   * No fancy general-purpose container structures, iterators, move semantics, etc.
   * No advanced string functions or container-based functions
